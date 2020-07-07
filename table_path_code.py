@@ -1,11 +1,17 @@
 import numpy as np
 import math
 import random
+import copy
+import cv2
+import pickle
+import seaborn as sns
+import matplotlib.pylab as plt
+import sys
 
 from shapely.geometry import Point as fancyPoint
 from shapely.geometry import Polygon as fancyPolygon
 
-import sys
+# import custom libraries from PythonRobotics
 sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
 sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
 
@@ -14,8 +20,8 @@ print(sys.path)
 import state_lattice_planner as slp
 import model_predictive_trajectory_generator as mptj
 
-
 OPTION_SHOW_VISIBILITY = True
+OPTION_FORCE_GENERATE_VISIBILITY = False
 OPTION_EXPORT = False
 
 # window dimensions
@@ -46,12 +52,20 @@ tables = []
 observers = []
 start = []
 path = []
+agents = []
+
 
 #lookup tables linking related objects 
 goal_observers = {}
 goal_obj_set = {}
 
-agents = []
+visibility_maps = {}
+VIS_INFO_RESOLUTION = -1
+VIS_ALL = 0
+VIS_TABLE = 1
+VIS_INDIVIDUALS = 2
+
+FILENAME_PICKLE_VIS = 'generated/pickled_visibility'
 
 
 def get_path(start, end, obs=[]):
@@ -59,8 +73,6 @@ def get_path(start, end, obs=[]):
 	x_start, y_start = start
 	x_end, y_end = end
 
-	print("Path")
-	print(path)
 	return path
 
 def get_path_2(start, end, obs=[]):
@@ -378,10 +390,8 @@ goal = goals[5]
 path = get_path(start, goal)
 
 
-# #DRAW the environment
-import cv2
-
-# # Create a black image
+# DRAW the environment
+# Create a black image
 img = np.zeros((length,width,3), np.uint8)
 
 # Draw tables
@@ -416,28 +426,30 @@ for i in range(len(path) - 1):
 	cv2.line(img, a, b, COLOR_START, thickness=2, lineType=8)
 
 
-# VISIBILITY TEST
-score = 0
-rx, ry = (133, 232)
-for obs in observers:
-	this_vis = obs.get_visibility((rx,ry))
-	print(this_vis)
-	score += this_vis
+# VISIBILITY Unit TEST
+if False:
+	score = 0
+	rx, ry = (133, 232)
+	for obs in observers:
+		this_vis = obs.get_visibility((rx,ry))
+		print(this_vis)
+		score += this_vis
 
-print(score)
+	print(score)
 
-print("OR")
-score = 0
-rx, ry = (233, 133)
-for obs in observers:
-	this_vis = obs.get_visibility((rx,ry))
-	print(this_vis)
-	score += this_vis
+	print("OR")
+	score = 0
+	rx, ry = (233, 133)
+	for obs in observers:
+		this_vis = obs.get_visibility((rx,ry))
+		print(this_vis)
+		score += this_vis
 
-print(score)
+	print(score)
 
 
-if OPTION_SHOW_VISIBILITY:
+if OPTION_FORCE_GENERATE_VISIBILITY:
+	visibility_maps[VIS_INFO_RESOLUTION] = resolution_visibility
 
 	r_width = int(width / resolution_visibility)
 	r_length = int(length / resolution_visibility)
@@ -453,12 +465,10 @@ if OPTION_SHOW_VISIBILITY:
 
 			visibility[x,y] = score
 
-	import numpy as np
-	import seaborn as sns
-	import matplotlib.pylab as plt
 	visibility = visibility.T
 	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: All")
+	visibility_maps[VIS_ALL] = [copy.copy(visibility)]
 	plt.savefig('generated/fig_vis_all.png')
 	plt.clf()
 
@@ -479,11 +489,14 @@ if OPTION_SHOW_VISIBILITY:
 	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Table")
 	# plt.show()
+	visibility_maps[VIS_TABLE] = [copy.copy(visibility)]
 	plt.savefig('generated/fig_vis_table.png')
 	plt.clf()
 
 
 	indic = 0
+	visibility_maps[VIS_INDIVIDUALS] = []
+
 	for obs in goal_observers[goal]:
 		visibility = np.zeros((r_width, r_length))
 		for x in range(r_width):
@@ -499,10 +512,26 @@ if OPTION_SHOW_VISIBILITY:
 		# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 		ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Observer #" + str(indic))
 		# plt.show()
+		visibility_maps[VIS_INDIVIDUALS].append(copy.copy(visibility))
 		plt.savefig('generated/fig_vis_person_' + str(indic) + '.png')
 		indic += 1
 		plt.clf()
 
+		# Its important to use binary mode 
+		dbfile = open(FILENAME_PICKLE_VIS, 'ab') 
+		  
+		# source, destination 
+		pickle.dump(visibility_maps, dbfile)					  
+		dbfile.close() 
+
+# Import the visibility info for work
+print("Importing pickle of visibility info")
+dbfile = open(FILENAME_PICKLE_VIS, 'rb')	  
+visibility_maps = pickle.load(dbfile)
+resolution_visibility = visibility_maps[VIS_INFO_RESOLUTION]
+print("Found maps at resolution " + str(resolution_visibility))
+
+dbfile.close() 
 
 
 if OPTION_EXPORT:
