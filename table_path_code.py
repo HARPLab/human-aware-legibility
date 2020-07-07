@@ -1,12 +1,3 @@
-goals = []
-tables = []
-observers = []
-start = []
-path = []
-goal_observers = {}
-
-agents = []
-
 import numpy as np
 import math
 import random
@@ -27,22 +18,40 @@ import model_predictive_trajectory_generator as mptj
 OPTION_SHOW_VISIBILITY = True
 OPTION_EXPORT = False
 
+# window dimensions
 length = 450
 width = 600
 pixels_to_foot = 10
+resolution_visibility = 5
+resolution_planning = 10
 
 num_tables = 6
 num_observers = 6
 
+# Choose the table layout for the scene
 TYPE_PLOTTED = 0
 TYPE_RANDOM = 1
 
-COLOR_TABLE = (235, 64, 52)
-COLOR_OBSERVER = (32, 85, 230)
-COLOR_FOCUS = (52, 192, 235)
-COLOR_PERIPHERAL = (178, 221, 235)
-COLOR_GOAL = (50, 168, 82)
-COLOR_START = (255, 255, 255)
+# Color options for visualization
+COLOR_TABLE = (235, 64, 52) 		# dark blue
+COLOR_OBSERVER = (32, 85, 230) 		# dark orange
+COLOR_FOCUS = (52, 192, 235) 		# dark yellow
+COLOR_PERIPHERAL = (178, 221, 235) 	# light yellow
+COLOR_GOAL = (50, 168, 82) 			# green
+COLOR_START = (255, 255, 255) 		# white
+
+
+goals = []
+tables = []
+observers = []
+start = []
+path = []
+
+#lookup tables linking related objects 
+goal_observers = {}
+goal_obj_set = {}
+
+agents = []
 
 
 def get_path(start, end, obs=[]):
@@ -429,16 +438,15 @@ print(score)
 
 
 if OPTION_SHOW_VISIBILITY:
-	resolution = 5
 
-	r_width = int(width / resolution)
-	r_length = int(length / resolution)
+	r_width = int(width / resolution_visibility)
+	r_length = int(length / resolution_visibility)
 
 	visibility = np.zeros((r_width, r_length))
 	for x in range(r_width):
 		for y in range(r_length):
-			rx = x*resolution
-			ry = y*resolution
+			rx = x*resolution_visibility
+			ry = y*resolution_visibility
 			score = 0
 			for obs in observers:
 				score += obs.get_visibility((rx,ry))
@@ -459,8 +467,8 @@ if OPTION_SHOW_VISIBILITY:
 	visibility = np.zeros((r_width, r_length))
 	for x in range(r_width):
 		for y in range(r_length):
-			rx = x*resolution
-			ry = y*resolution
+			rx = x*resolution_visibility
+			ry = y*resolution_visibility
 			score = 0
 			for obs in goal_observers[goal]:
 				score += obs.get_visibility((rx,ry))
@@ -480,8 +488,8 @@ if OPTION_SHOW_VISIBILITY:
 		visibility = np.zeros((r_width, r_length))
 		for x in range(r_width):
 			for y in range(r_length):
-				rx = x*resolution
-				ry = y*resolution
+				rx = x*resolution_visibility
+				ry = y*resolution_visibility
 				score = 0
 				score += obs.get_visibility((rx,ry))
 
