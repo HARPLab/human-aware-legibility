@@ -31,6 +31,7 @@ width = 600
 pixels_to_foot = 10
 resolution_visibility = 5
 resolution_planning = 10
+NAVIGATION_BUFFER = 10
 
 num_tables = 6
 num_observers = 6
@@ -46,6 +47,10 @@ COLOR_FOCUS = (52, 192, 235) 		# dark yellow
 COLOR_PERIPHERAL = (178, 221, 235) 	# light yellow
 COLOR_GOAL = (50, 168, 82) 			# green
 COLOR_START = (255, 255, 255) 		# white
+
+OBSTACLE_CLEAR = (0, 0, 0)
+OBSTACLE_BUFFER = (100, 100, 100)
+OBSTACLE_FULL = (255, 255, 255)
 
 
 goals = []
@@ -68,7 +73,9 @@ VIS_INDIVIDUALS = 2
 SCENARIO_IDENTIFIER = "new_scenario"
 
 FILENAME_PICKLE_VIS = 'generated/pickled_visibility'
+FILENAME_PICKLE_OBSTACLES = 'generated/pickled_obstacles'
 FILENAME_VIS_PREFIX = "generated/fig_vis_"
+FILENAME_OBSTACLE_PREFIX = "generated/fig_obstacles"
 
 
 def get_path(start, end, obs=[]):
@@ -374,29 +381,31 @@ else:
 # Get paths
 # goal = random.choice(goals)
 goal = goals[5]
-
 path = get_path(start, goal)
 
-
+obstacle_map = np.zeros((length,width,3), np.uint8)
 # DRAW the environment
+
 # Create a black image
 img = np.zeros((length,width,3), np.uint8)
 # Draw tables
 for table in tables:
-	# cv2.rectangle(img, pt1, pt2, color[, thickness[, lineType[, shift]]])
-	# print("TABLE at " + str(table.get_center()))
 	cv2.rectangle(img, table.pt_top_left(), table.pt_bottom_right(), COLOR_TABLE, table.get_radius())
-	# print(table.pt_top_left(), table.pt_bottom_right())
+
+	cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_BUFFER, table.get_radius() + NAVIGATION_BUFFER)
+	cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_FULL, table.get_radius())
 
 # Draw observers
 # Draw observer cones
-# Draw paths
-
 for obs in observers:
 	# Draw person
 	cv2.circle(img, obs.get_center(), obs.get_radius(), COLOR_OBSERVER, obs.get_radius())
+
+	cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), OBSTACLE_BUFFER, obs.get_radius() + NAVIGATION_BUFFER)
+	cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), OBSTACLE_FULL, obs.get_radius())
+
+	# Draw shortened rep for view cones
 	cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
-	# Draw view cones
 	cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
 
 for goal in goals:
@@ -406,6 +415,22 @@ for goal in goals:
 cv2.circle(img, start, obs.get_radius(), COLOR_START, obs.get_radius())
 
 
+cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '.png', obstacle_map) 
+# ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
+# plt.savefig()
+# plt.clf()
+
+dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
+pickle.dump(obstacle_map, dbfile)					  
+dbfile.close()
+
+
+print("Importing pickle of obstacle info")
+dbfile = open(FILENAME_PICKLE_VIS, 'rb')
+obstacle_map = pickle.load(dbfile)
+dbfile.close() 
+
+# Draw the path
 for i in range(len(path) - 1):
 	a = path[i]
 	b = path[i + 1]
@@ -504,10 +529,8 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 		indic += 1
 		plt.clf()
 
-		# Its important to use binary mode 
+		# Export the new visibility maps and resolution info
 		dbfile = open(FILENAME_PICKLE_VIS, 'ab') 
-		  
-		# source, destination 
 		pickle.dump(visibility_maps, dbfile)					  
 		dbfile.close() 
 
@@ -517,7 +540,6 @@ dbfile = open(FILENAME_PICKLE_VIS, 'rb')
 visibility_maps = pickle.load(dbfile)
 resolution_visibility = visibility_maps[VIS_INFO_RESOLUTION]
 print("Found maps at resolution " + str(resolution_visibility))
-
 dbfile.close() 
 
 
