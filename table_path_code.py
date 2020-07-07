@@ -28,10 +28,16 @@ OPTION_EXPORT = False
 # window dimensions
 length = 450
 width = 600
-pixels_to_foot = 10
+pixels_to_foot = 20
+
 resolution_visibility = 5
 resolution_planning = 10
-NAVIGATION_BUFFER = 10
+
+# divide by two because these are radiuses
+DIM_TABLE_RADIUS = int(4 * pixels_to_foot / 2.0)
+DIM_OBSERVER_RADIUS = int(1.5 * pixels_to_foot / 2.0)
+DIM_ROBOT_RADIUS = int(3 * pixels_to_foot / 2.0)
+DIM_NAVIGATION_BUFFER = int(2.5 * pixels_to_foot)
 
 num_tables = 6
 num_observers = 6
@@ -158,7 +164,7 @@ class Polygon:
 		self.points = pt_list
 
 class Table:
-	radius = 40
+	radius = DIM_TABLE_RADIUS
 
 	def __init__(self, pt):
 		self.location = pt
@@ -188,7 +194,7 @@ class Table:
 		return self.points[2]
 
 	def get_radius(self):
-		return self.radius
+		return int(self.radius)
 
 	def get_center(self):
 		return self.location
@@ -199,7 +205,7 @@ class Table:
 
 
 class Observer:
-	entity_radius = 10
+	entity_radius = DIM_OBSERVER_RADIUS
 	draw_depth = 50
 	cone_depth = max(length, width)*.5
 	focus_angle = 60 / 2.0
@@ -291,7 +297,7 @@ class Observer:
 		return np.int32([self.draw_field_peripheral])
 
 	def get_radius(self):
-		return self.entity_radius
+		return int(self.entity_radius)
 
 
 generate_type = TYPE_PLOTTED
@@ -383,7 +389,8 @@ else:
 goal = goals[5]
 path = get_path(start, goal)
 
-obstacle_map = np.zeros((length,width,3), np.uint8)
+obstacle_vis = np.zeros((length,width,3), np.uint8)
+obstacle_map = np.zeros((length,width), np.uint8)
 # DRAW the environment
 
 # Create a black image
@@ -392,17 +399,23 @@ img = np.zeros((length,width,3), np.uint8)
 for table in tables:
 	cv2.rectangle(img, table.pt_top_left(), table.pt_bottom_right(), COLOR_TABLE, table.get_radius())
 
-	cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_BUFFER, table.get_radius() + NAVIGATION_BUFFER)
-	cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_FULL, table.get_radius())
+	cv2.rectangle(obstacle_vis, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_BUFFER, table.get_radius() + DIM_NAVIGATION_BUFFER)
+	cv2.rectangle(obstacle_vis, table.pt_top_left(), table.pt_bottom_right(), OBSTACLE_FULL, table.get_radius())
 
-# Draw observers
+	# cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), 1, table.get_radius() + DIM_NAVIGATION_BUFFER)
+	# cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), 1, table.get_radius())
+
+# Draw table.gets
 # Draw observer cones
 for obs in observers:
 	# Draw person
 	cv2.circle(img, obs.get_center(), obs.get_radius(), COLOR_OBSERVER, obs.get_radius())
 
-	cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), OBSTACLE_BUFFER, obs.get_radius() + NAVIGATION_BUFFER)
-	cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), OBSTACLE_FULL, obs.get_radius())
+	cv2.circle(obstacle_vis, obs.get_center(), obs.get_radius(), OBSTACLE_BUFFER, obs.get_radius() + DIM_NAVIGATION_BUFFER)
+	cv2.circle(obstacle_vis, obs.get_center(), obs.get_radius(), OBSTACLE_FULL, obs.get_radius())
+
+	# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius() + DIM_NAVIGATION_BUFFER)
+	# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius())
 
 	# Draw shortened rep for view cones
 	cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
@@ -414,20 +427,29 @@ for goal in goals:
 
 cv2.circle(img, start, obs.get_radius(), COLOR_START, obs.get_radius())
 
+obstacle_map = cv2.cvtColor(obstacle_vis, cv2.COLOR_BGR2GRAY)
+(thresh, obstacle_map) = cv2.threshold(obstacle_map, 1, 255, cv2.THRESH_BINARY)
 
-cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '.png', obstacle_map) 
+obstacles = {}
+obstacles['map'] = copy.copy(obstacle_map)
+obstacles['vis'] = copy.copy(obstacle_vis)
+cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_map.png', obstacle_map) 
+cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_vis.png', obstacle_vis) 
 # ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
 # plt.savefig()
 # plt.clf()
 
 dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
-pickle.dump(obstacle_map, dbfile)					  
+pickle.dump(obstacles, dbfile)					  
 dbfile.close()
+print("Saved obstacle maps")
 
 
 print("Importing pickle of obstacle info")
-dbfile = open(FILENAME_PICKLE_VIS, 'rb')
-obstacle_map = pickle.load(dbfile)
+dbfile = open(FILENAME_PICKLE_OBSTACLES, 'rb')
+obstacles = pickle.load(dbfile)
+obstacle_map = obstacles['map']
+obstacle_vis = obstacles['vis']
 dbfile.close() 
 
 # Draw the path
