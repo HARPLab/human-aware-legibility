@@ -22,6 +22,7 @@ import model_predictive_trajectory_generator as mptj
 
 OPTION_SHOW_VISIBILITY = True
 OPTION_FORCE_GENERATE_VISIBILITY = False
+OPTION_FORCE_GENERATE_OBSTACLE_MAP = False
 OPTION_EXPORT = False
 
 # window dimensions
@@ -52,7 +53,6 @@ tables = []
 observers = []
 start = []
 path = []
-agents = []
 
 
 #lookup tables linking related objects 
@@ -64,6 +64,8 @@ VIS_INFO_RESOLUTION = -1
 VIS_ALL = 0
 VIS_TABLE = 1
 VIS_INDIVIDUALS = 2
+
+SCENARIO_IDENTIFIER = "new_scenario"
 
 FILENAME_PICKLE_VIS = 'generated/pickled_visibility'
 FILENAME_VIS_PREFIX = "generated/fig_vis_"
@@ -285,28 +287,10 @@ class Observer:
 		return self.entity_radius
 
 
-class Agent:
-	total_path = []
-	done = False
-
-	def __init__(self, start, goal, environment):
-		self.start = start
-		self.pos = start
-		self.goal = goal
-		self.envir = environment
-
-	def step(self):
-		pass
-
-	def is_done(self):
-		return done
-
-	def get_radius(self):
-		return self.entity_radius
-
 generate_type = TYPE_PLOTTED
 
 if generate_type == TYPE_PLOTTED:
+	SCENARIO_IDENTIFIER = "3x2_all_full"
 	start = (10, 10)
 
 	# for i in range(num_tables):
@@ -358,6 +342,9 @@ if generate_type == TYPE_PLOTTED:
 		goal_observers[goal_pt] = [obs1, obs2]
 
 elif generate_type == TYPE_RANDOM:
+	random_id = ''.join([random.choice(string.ascii_letters 
+            + string.digits) for n in range(10)]) 
+	SCENARIO_IDENTIFIER = "new_scenario_" + random_id
 
 	start = get_random_point_in_room(length, width)
 
@@ -394,7 +381,6 @@ path = get_path(start, goal)
 # DRAW the environment
 # Create a black image
 img = np.zeros((length,width,3), np.uint8)
-
 # Draw tables
 for table in tables:
 	# cv2.rectangle(img, pt1, pt2, color[, thickness[, lineType[, shift]]])
@@ -562,9 +548,9 @@ if OPTION_EXPORT:
 
 cv2.imwrite('generated/fig_tables.png', img) 
 
-cv2.imshow("Display window", img)
-cv2.waitKey()
-cv2.destroyAllWindows()
+# cv2.imshow("Display window", img)
+# cv2.waitKey()
+# cv2.destroyAllWindows()
 
 print("Done")
 
