@@ -66,6 +66,7 @@ VIS_TABLE = 1
 VIS_INDIVIDUALS = 2
 
 FILENAME_PICKLE_VIS = 'generated/pickled_visibility'
+FILENAME_VIS_PREFIX = "generated/fig_vis_"
 
 
 def get_path(start, end, obs=[]):
@@ -469,7 +470,7 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: All")
 	visibility_maps[VIS_ALL] = [copy.copy(visibility)]
-	plt.savefig('generated/fig_vis_all.png')
+	plt.savefig(FILENAME_VIS_PREFIX + '_all.png')
 	plt.clf()
 
 	# plt.show()
@@ -490,7 +491,7 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Table")
 	# plt.show()
 	visibility_maps[VIS_TABLE] = [copy.copy(visibility)]
-	plt.savefig('generated/fig_vis_table.png')
+	plt.savefig(FILENAME_VIS_PREFIX + '_table.png')
 	plt.clf()
 
 
@@ -513,7 +514,7 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 		ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Observer #" + str(indic))
 		# plt.show()
 		visibility_maps[VIS_INDIVIDUALS].append(copy.copy(visibility))
-		plt.savefig('generated/fig_vis_person_' + str(indic) + '.png')
+		plt.savefig(FILENAME_VIS_PREFIX + '_person_' + str(indic) + '.png')
 		indic += 1
 		plt.clf()
 
