@@ -24,7 +24,7 @@ import state_lattice_planner as slp
 import model_predictive_trajectory_generator as mptj
 
 
-OPTION_SHOW_VISIBILITY = False
+OPTION_SHOW_VISIBILITY = True
 OPTION_EXPORT = False
 
 length = 450
@@ -451,7 +451,7 @@ if OPTION_SHOW_VISIBILITY:
 	visibility = visibility.T
 	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: All")
-	plt.savefig('all_vis.png')
+	plt.savefig('generated/fig_vis_all.png')
 	plt.clf()
 
 	# plt.show()
@@ -471,7 +471,7 @@ if OPTION_SHOW_VISIBILITY:
 	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Table")
 	# plt.show()
-	plt.savefig('goal_vis.png')
+	plt.savefig('generated/fig_vis_table.png')
 	plt.clf()
 
 
@@ -491,7 +491,7 @@ if OPTION_SHOW_VISIBILITY:
 		# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
 		ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Observer #" + str(indic))
 		# plt.show()
-		plt.savefig('goal_vis_' + str(indic) + '.png')
+		plt.savefig('generated/fig_vis_person_' + str(indic) + '.png')
 		indic += 1
 		plt.clf()
 
@@ -507,7 +507,7 @@ if OPTION_EXPORT:
 
 
 	print("Exporting path")
-	file1 = open("path_v1.txt","a")
+	file1 = open("generated/path_v1.txt","a")
 	data = {}
 	data['path'] = path
 	data['start'] = start
@@ -521,6 +521,8 @@ if OPTION_EXPORT:
 	file1.write(json.dumps(data, indent=4)) 
 	file1.close() 
 
+
+cv2.imwrite('generated/fig_tables.png', img) 
 
 cv2.imshow("Display window", img)
 cv2.waitKey()
