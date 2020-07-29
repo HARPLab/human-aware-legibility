@@ -104,7 +104,9 @@ FILENAME_PICKLE_OBSTACLES = 'generated/pickled_obstacles'
 FILENAME_VIS_PREFIX = "generated/fine_fig_vis_"
 FILENAME_OVERVIEW_PREFIX = "generated/overview_"
 FILENAME_OBSTACLE_PREFIX = "generated/fig_obstacles"
-FILENAME_CSV_PREFIX = "csv/"
+FILENAME_TO_UNITY = "export/"
+FILENAME_EXPORT_IMGS_PREFIX = FILENAME_TO_UNITY + "imgs/"
+FILENAME_EXPORT_CSV_PREFIX = FILENAME_TO_UNITY + "csv/"
 
 # visibility = np.zeros((r_width, r_length))
 # for x in range(r_width):
@@ -351,9 +353,11 @@ def pascal_row(n, memo={}):
     memo[n] = result
     return result
 
-def get_path_spoof(start, end, goal_pts, vis_type, visibility_map):
+def get_path_spoof(start, end, goal_pts, table_pts, vis_type, visibility_map):
 	STEPSIZE = 15
 	points = []
+
+
 
 	if vis_type == VIS_OMNI:
 		xys = [start, end]
@@ -751,6 +755,8 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 	waypoint = (6.46, 2.57)
 	waypoint = unity_to_image(waypoint)
 
+	unity_goal_pt = (4.43, -7.0)
+
 	unity_table_pts = []
 	unity_table_pts.append((3.6, -4.0))
 	unity_table_pts.append((3.6, -7.0))
@@ -765,7 +771,7 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 
 	unity_goal_options = []
 	unity_goal_options.append((4.3, -4.0))
-	unity_goal_options.append((4.3, -7.0))
+	unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
 	unity_goal_options.append((5.6, -9.3))
 	unity_goal_options.append((6.9, -7.0))
 
@@ -777,7 +783,6 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 	for g in unity_goal_options:
 		goal_pts.append(unity_to_image(g))
 
-	unity_goal_pt = (3.6, -7.0)
 	goal = unity_to_image(unity_goal_pt)
 
 	for pt in table_pts:
@@ -1092,7 +1097,7 @@ for vis_type in VIS_CHECKLIST:
 
 		pkey = vis_type + "-" + str(goal_index)
 
-		new_path = get_path_spoof(start, end, goal_pts, vis_type, vis_map)
+		new_path = get_path_spoof(start, end, goal_pts, table_pts, vis_type, vis_map)
 		
 		saved_paths[pkey] = new_path
 
@@ -1138,15 +1143,15 @@ for pkey in saved_paths.keys():
 		cv2.line(by_method, a, b, color, thickness=2, lineType=8)
 		cv2.line(by_goal, a, b, color, thickness=2, lineType=8)		
 
-	cv2.imwrite('generated_paths/fig_path_' + path_title + '.png', path_img) 
+	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
 
-cv2.imwrite('generated_paths/ALL_CONDITIONS' + '.png', all_paths_img) 
+cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
 ### END DISPLAY PATHS CODE
 
 for key in img_deck.keys():
 	this_img = img_deck[key]
 
-	cv2.imwrite('generated_paths/total_' + key + '.png', this_img) 
+	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'total_' + key + '.png', this_img) 
 
 
 if OPTION_EXPORT:
@@ -1175,7 +1180,7 @@ if OPTION_EXPORT:
 	
 	elif OPTION_EXPORT_MODE == EXPORT_MODE_CSV:
 		for pkey in saved_paths.keys():
-			csv_name = FILENAME_CSV_PREFIX + pkey + ".csv"
+			csv_name = FILENAME_EXPORT_CSV_PREFIX + pkey + ".csv"
 			csv_file  = open(csv_name, "w")
 
 			output_string = ""
