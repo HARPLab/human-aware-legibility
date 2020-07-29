@@ -780,7 +780,7 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 		table_pts.append(unity_to_image(t))
 
 	goal_pts = []
-	for g in unity_goal_options:
+	for g in unity_goal_stop_options:
 		goal_pts.append(unity_to_image(g))
 
 	goal = unity_to_image(unity_goal_pt)
