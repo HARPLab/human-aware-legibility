@@ -741,10 +741,11 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 	# length = abs(y1 - y2)
 	# width = abs(x1 - x2)
 
-	start = (7.4, 2.37)
+	# start = (7.4, 2.37)
+	start = (6.46, 2.37)
 	start = unity_to_image(start)
 
-	length = 999
+	length = 1000
 	width = 1375
 
 	waypoint = (6.46, 2.57)
@@ -1139,7 +1140,7 @@ for pkey in saved_paths.keys():
 
 	cv2.imwrite('generated_paths/fig_path_' + path_title + '.png', path_img) 
 
-cv2.imwrite('generated_paths/fig_path_' + "VARIETY" + '.png', all_paths_img) 
+cv2.imwrite('generated_paths/ALL_CONDITIONS' + '.png', all_paths_img) 
 ### END DISPLAY PATHS CODE
 
 for key in img_deck.keys():
