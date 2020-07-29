@@ -721,4 +721,52 @@
     ],
     "server_type": "SERVER_HUMAN",
     "condition": "naive"
+}{
+    "path": [
+        [
+            67,
+            617
+        ],
+        [
+            1005,
+            237
+        ]
+    ],
+    "start": [
+        67,
+        617
+    ],
+    "goals": [],
+    "tables": [
+        [
+            [
+                705,
+                237
+            ],
+            1
+        ],
+        [
+            [
+                1005,
+                237
+            ],
+            1
+        ],
+        [
+            [
+                1305,
+                437
+            ],
+            1
+        ],
+        [
+            [
+                1005,
+                637
+            ],
+            1
+        ]
+    ],
+    "server_type": "SERVER_HUMAN",
+    "condition": "naive"
 }
