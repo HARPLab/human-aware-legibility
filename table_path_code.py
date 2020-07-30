@@ -357,7 +357,8 @@ def get_path_spoof(start, end, goal_pts, table_pts, vis_type, visibility_map):
 	STEPSIZE = 15
 	points = []
 
-
+	goal_index = goal_pts.index(end)
+	helper = goal_helper_pts[goal_index]	
 
 	if vis_type == VIS_OMNI:
 		xys = [start, end]
@@ -680,6 +681,7 @@ def plan_to_image(pt):
 n_width = int(width / resolution_planning) + 1
 n_length = int(length / resolution_planning) + 1
 
+goal_helper_pts = []
 
 if generate_type == TYPE_PLOTTED:
 	SCENARIO_IDENTIFIER = "3x2_all_full"
@@ -746,13 +748,13 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 	# width = abs(x1 - x2)
 
 	# start = (7.4, 2.37)
-	start = (6.46, 2.37)
+	start = (6.0, 2.0)
 	start = unity_to_image(start)
 
 	length = 1000
 	width = 1375
 
-	waypoint = (6.46, 2.57)
+	waypoint = (6.0, 2.0)
 	waypoint = unity_to_image(waypoint)
 
 	unity_goal_pt = (4.43, -7.0)
@@ -781,6 +783,7 @@ elif generate_type == TYPE_UNITY_ALIGNED:
 
 	goal_pts = []
 	for g in unity_goal_stop_options:
+		goal_helper_pts.append(unity_to_image(g))
 		goal_pts.append(unity_to_image(g))
 
 	goal = unity_to_image(unity_goal_pt)
@@ -890,8 +893,11 @@ for obs in observers:
 	# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius())
 
 	# Draw shortened rep for view cones
-	cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
-	cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
+	# cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
+	# cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
+
+	# cv2.polylines(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
+	# cv2.polylines(img, obs.get_draw_field_focus(), COLOR_FOCUS)
 
 
 for goal in goal_pts:
@@ -1186,6 +1192,8 @@ if OPTION_EXPORT:
 			output_string = ""
 
 			path = saved_paths[pkey]
+			waypoint = (6.45477, 2.57)
+			output_string += str(waypoint[0]) + "," + str(waypoint[1]) + "\r\n"
 			unity_path = []
 			for p in path:
 				up = image_to_unity(p)
