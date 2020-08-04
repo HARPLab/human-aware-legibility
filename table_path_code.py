@@ -859,7 +859,7 @@ obstacle_map = np.zeros((length,width), np.uint8)
 
 # Create a black image
 img = np.zeros((length,width,3), np.uint8)
-table_radius = int(.5 * UNITY_SCALE_X)
+table_radius = int(.3 * UNITY_SCALE_X)
 obs_radius = int(.125 * UNITY_SCALE_X)
 goal_radius = int(.125 * UNITY_SCALE_X)
 start_radius = int(.125 * UNITY_SCALE_X)
@@ -1054,12 +1054,12 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 
 
 # Import the visibility info for work
-print("Importing pickle of visibility info")
-dbfile = open(FILENAME_PICKLE_VIS, 'rb')	  
-visibility_maps = pickle.load(dbfile)
-resolution_visibility = visibility_maps[VIS_INFO_RESOLUTION]
-print("Found maps at resolution " + str(resolution_visibility))
-dbfile.close() 
+# print("Importing pickle of visibility info")
+# dbfile = open(FILENAME_PICKLE_VIS, 'rb')	  
+# visibility_maps = pickle.load(dbfile)
+# resolution_visibility = visibility_maps[VIS_INFO_RESOLUTION]
+# print("Found maps at resolution " + str(resolution_visibility))
+# dbfile.close() 
 
 # # Raw coded paths
 # # more vis
@@ -1095,7 +1095,8 @@ for vis_type in VIS_CHECKLIST:
 
 	# UPDATE TO BETTER MAPS
 	# vis_map = visibility_maps[vis_type]
-	vis_map = visibility_maps[2][0]
+	# vis_map = visibility_maps[2][0]
+	vis_map = None
 
 	for goal_index in range(len(goal_pts)):
 		end = goal_pts[goal_index]
@@ -1143,20 +1144,22 @@ for pkey in saved_paths.keys():
 		a = path[i]
 		b = path[i + 1]
 		
-		cv2.line(path_img, a, b, color, thickness=2, lineType=8)
-		cv2.line(all_paths_img, a, b, color, thickness=2, lineType=8)
+		cv2.line(path_img, a, b, color, thickness=6, lineType=8)
+		cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
 
-		cv2.line(by_method, a, b, color, thickness=2, lineType=8)
-		cv2.line(by_goal, a, b, color, thickness=2, lineType=8)		
+		cv2.line(by_method, a, b, color, thickness=6, lineType=8)
+		cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
 
+	path_img = cv2.flip(path_img, 0)
 	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
 
+all_paths_img = cv2.flip(all_paths_img, 0)
 cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
 ### END DISPLAY PATHS CODE
 
 for key in img_deck.keys():
 	this_img = img_deck[key]
-
+	this_img = cv2.flip(this_img, 0)
 	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'total_' + key + '.png', this_img) 
 
 
