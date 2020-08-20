@@ -79,16 +79,17 @@ VIS_A = "VIS_A"
 VIS_B = "VIS_B"
 
 
-PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
-# PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
-COLOR_P_BACK = (0,255,255)
-COLOR_P_FACING = (255,64,64)
-# PATH_COLORS = ["red", "yellow", "blue", "green"]
 VIS_CHECKLIST = [VIS_OMNI, VIS_A, VIS_B, VIS_MULTI]
+PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
+PATH_LABELS = ['red', 'yellow', 'blue', 'green']
+# PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
+
 VIS_COLOR_MAP = {}
 for i in range(len(PATH_COLORS)):
 	VIS_COLOR_MAP[VIS_CHECKLIST[i]] = PATH_COLORS[i]
 
+COLOR_P_BACK 	= VIS_COLOR_MAP[VIS_A]
+COLOR_P_FACING 	= VIS_COLOR_MAP[VIS_B]
 
 goals = []
 tables = []
