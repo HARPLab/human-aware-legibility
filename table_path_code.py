@@ -627,21 +627,7 @@ UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
 length = ix2
 width = iy2
 
-# print(length)
-# print(width)
-
-# print("offsets")
-# print(UNITY_OFFSET_X)
-# print(UNITY_OFFSET_Y)
-# print("scales")
-# print(UNITY_SCALE_X)
-# print(UNITY_SCALE_Y)
-
 UNITY_TO_IRL_SCALE = 3
-# bottom right corner in unity
-# UNITY_OFFSET_X = -1.23
-# UNITY_OFFSET_Y = 3.05
-
 
 def unity_to_image(pt):
 	x, y = pt
@@ -665,29 +651,32 @@ def plan_to_image(pt):
 
 
 # # TESTING SUITE FOR CONVERSIONS
-# u_a = (11.22, 3.05) 
-# u_b = (1.23, 3.05)
-# u_c = (11.22, -10.7)
-# u_d = (1.23, -10.7)
+def verify_conversions():
+	u_a = (11.22, 3.05) 
+	u_b = (1.23, 3.05)
+	u_c = (11.22, -10.7)
+	u_d = (1.23, -10.7)
 
-# u_pts = [u_a, u_b, u_c, u_d]
-# i_pts = []
+	u_pts = [u_a, u_b, u_c, u_d]
+	i_pts = []
 
-# print("TARGETS")
-# print(u_pts)
-# for pt in u_pts:
-# 	ip = unity_to_image(pt)
-# 	# print(str(pt) + "->" + str(ip))
-# 	i_pts.append(ip)
+	print("TARGETS")
+	print(u_pts)
+	for pt in u_pts:
+		ip = unity_to_image(pt)
+		# print(str(pt) + "->" + str(ip))
+		i_pts.append(ip)
 
-# print(i_pts)
-# n_u_pts = []
-# for pt in i_pts:
-# 	ip = image_to_unity(pt)
-# 	# print(ip)
-# 	n_u_pts.append(ip)
+	print(i_pts)
+	n_u_pts = []
+	for pt in i_pts:
+		ip = image_to_unity(pt)
+		# print(ip)
+		n_u_pts.append(ip)
 
-# print(n_u_pts)
+	print(n_u_pts)
+
+	print("Validate points transform to and from correctly")
 
 
 # nodes = width x length divided up by planning resolution\
@@ -696,172 +685,213 @@ n_length = int(length / resolution_planning) + 1
 
 goal_helper_pts = []
 
-if generate_type == TYPE_PLOTTED:
-	SCENARIO_IDENTIFIER = "3x2_all_full"
-	start = (10, 10)
+class Restaurant: 
+	def __init__(self, generate_type):
+		self.observers = []
+		self.goals = []
+		self.tables = []
+		self.start = []
+		self.SCENARIO_IDENTIFIER = ""
+		self.waypoints = []
 
-	# for i in range(num_tables):
-	# 	new_goal = get_random_point_in_room(length, width)
-	# 	goals.append(new_goal)
+		if generate_type == TYPE_PLOTTED:
+			# Creates a 2x3 layout restaurant with start location in between
+			self.SCENARIO_IDENTIFIER = "3x2_all_full"
+			self.start = (10, 10)
 
-	# goal = goals[0]
+			row1 = 60
+			row2 = 360
 
-	row1 = 60
-	row2 = 360
+			col1 = 100
+			col2 = 300
+			col3 = 500
 
-	col1 = 100
-	col2 = 300
-	col3 = 500
+			self.start = (col1 - 30, int((row1 + row2) / 2))
 
-	start = (col1 - 30, int((row1 + row2) / 2))
+			table_pts = [(col1,row1), (col2,row1), (col3, row1), (col1,row2), (col2,row2), (col3, row2)]
 
-	table_pts = [(col1,row1), (col2,row1), (col3, row1), (col1,row2), (col2,row2), (col3, row2)]
+			for pt in table_pts:
+				table = Table(pt, generate_type)
+				self.tables.append(table)
 
-	for pt in table_pts:
-		table = Table(pt, generate_type)
-		tables.append(table)
-
-	for table in tables:
-		obs1_pt = table.get_center()
-		obs1_pt = tuple_plus(obs1_pt, (-60, 0))
-		obs1_angle = 270
-		obs1 = Observer(obs1_pt, obs1_angle)
-		observers.append(obs1)
-
-
-		obs2_pt = table.get_center()
-		obs2_pt = tuple_plus(obs2_pt, (60, 0))
-		obs2_angle = 90
-		obs2 = Observer(obs2_pt, obs2_angle)
-		observers.append(obs2)
-
-		goal_pt = table.get_center()
-		offset = (0,0)
-		if (table.get_center()[1] == row1):
-			offset = (0, 80)
-		else: 
-			offset = (0, -80)
-
-		goal_pt = tuple_plus(goal_pt, offset)
-		goal_angle = 0
-		goals.append(goal_pt)
-
-		goal_observers[goal_pt] = [obs1, obs2]
-
-elif generate_type == TYPE_UNITY_ALIGNED:
-	SCENARIO_IDENTIFIER = "_unity_v1_"
-	# images will be made at the scale of
-	
-	# x1 = 3.05
-	# x2 = -10.7
-	# y1 = 11.22
-	# y2 = 1.23
-
-	# length = abs(y1 - y2)
-	# width = abs(x1 - x2)
-
-	# start = (7.4, 2.37)
-	start = (6.0, 2.0)
-	start = unity_to_image(start)
-
-	length = 1000
-	width = 1375
-
-	waypoint = (6.0, 2.0)
-	waypoint = unity_to_image(waypoint)
-
-	unity_goal_pt = (4.43, -7.0)
-
-	unity_table_pts = []
-	unity_table_pts.append((3.6, -4.0))
-	unity_table_pts.append((3.6, -7.0))
-	unity_table_pts.append((5.6, -10.0))
-	unity_table_pts.append((7.6, -7.0))
-
-	unity_goal_stop_options = []
-	unity_goal_stop_options.append((4.3, -4.3))
-	unity_goal_stop_options.append((4.3, -7.3))
-	unity_goal_stop_options.append((5.6, -9.3))
-	unity_goal_stop_options.append((6.9, -7.3))
-
-	unity_goal_options = []
-	unity_goal_options.append((4.3, -4.0))
-	unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
-	unity_goal_options.append((5.6, -9.3))
-	unity_goal_options.append((6.9, -7.0))
-
-	table_pts = []
-	for t in unity_table_pts:
-		table_pts.append(unity_to_image(t))
-
-	goal_pts = []
-	for g in unity_goal_stop_options:
-		goal_helper_pts.append(unity_to_image(g))
-		goal_pts.append(unity_to_image(g))
-
-	goal = unity_to_image(unity_goal_pt)
-
-	for pt in table_pts:
-		table = Table(pt, generate_type)
-		tables.append(table)
-
-	# Set up observers
-	obs1_pt = (3.50, -7.71)
-	obs1_pt = unity_to_image(obs1_pt)
-
-	obs1_angle = 55
-	obs1 = Observer(obs1_pt, obs1_angle)
-	observers.append(obs1)
+			for table in tables:
+				obs1_pt = table.get_center()
+				obs1_pt = tuple_plus(obs1_pt, (-60, 0))
+				obs1_angle = 270
+				obs1 = Observer(obs1_pt, obs1_angle)
+				self.observers.append(obs1)
 
 
-	obs2_pt = (3.50, -6.37)
-	obs2_pt = unity_to_image(obs2_pt)
-	
-	obs2_angle = 305
-	obs2 = Observer(obs2_pt, obs2_angle)
-	observers.append(obs2)
+				obs2_pt = table.get_center()
+				obs2_pt = tuple_plus(obs2_pt, (60, 0))
+				obs2_angle = 90
+				obs2 = Observer(obs2_pt, obs2_angle)
+				self.observers.append(obs2)
 
-	goal_observers[goal] = [obs1, obs2]
+				goal_pt = table.get_center()
+				offset = (0,0)
+				if (table.get_center()[1] == row1):
+					offset = (0, 80)
+				else: 
+					offset = (0, -80)
+
+				goal_pt = tuple_plus(goal_pt, offset)
+				goal_angle = 0
+				self.goals.append(goal_pt)
+
+				goal_observers[goal_pt] = [obs1, obs2]
+
+		elif generate_type == TYPE_UNITY_ALIGNED:
+			# Unity scenario created specifically for parameters of Unity restaurant
+
+			self.SCENARIO_IDENTIFIER = "_unity_v1_"
+			# images will be made at the scale of
+			
+			# x1 = 3.05
+			# x2 = -10.7
+			# y1 = 11.22
+			# y2 = 1.23
+
+			# length = abs(y1 - y2)
+			# width = abs(x1 - x2)
+
+			# start = (7.4, 2.37)
+			start = (6.0, 2.0)
+			self.start = unity_to_image(start)
+
+			length = 1000
+			width = 1375
+
+			waypoint = (6.0, 2.0)
+			self.waypoint = unity_to_image(waypoint)
+
+			unity_goal_pt = (4.43, -7.0)
+
+			unity_table_pts = []
+			unity_table_pts.append((3.6, -4.0))
+			unity_table_pts.append((3.6, -7.0))
+			unity_table_pts.append((5.6, -10.0))
+			unity_table_pts.append((7.6, -7.0))
+
+			unity_goal_stop_options = []
+			unity_goal_stop_options.append((4.3, -4.3))
+			unity_goal_stop_options.append((4.3, -7.3))
+			unity_goal_stop_options.append((5.6, -9.3))
+			unity_goal_stop_options.append((6.9, -7.3))
+
+			unity_goal_options = []
+			unity_goal_options.append((4.3, -4.0))
+			unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
+			unity_goal_options.append((5.6, -9.3))
+			unity_goal_options.append((6.9, -7.0))
+
+			table_pts = []
+			for t in unity_table_pts:
+				pt = unity_to_image(t)
+				table = Table(pt, generate_type)
+				self.tables.append(table)
+
+			for g in unity_goal_stop_options:
+				goal_helper_pts.append(unity_to_image(g))
+				self.goals.append(unity_to_image(g))
+
+			goal = unity_to_image(unity_goal_pt)
+			self.current_goal = goal
+			
+			# Set up observers
+			obs1_pt = (3.50, -7.71)
+			obs1_pt = unity_to_image(obs1_pt)
+
+			obs1_angle = 55
+			obs1 = Observer(obs1_pt, obs1_angle)
+			self.observers.append(obs1)
 
 
-elif generate_type == TYPE_RANDOM:
-	random_id = ''.join([random.choice(string.ascii_letters 
-			+ string.digits) for n in range(10)]) 
-	SCENARIO_IDENTIFIER = "new_scenario_" + random_id
+			obs2_pt = (3.50, -6.37)
+			obs2_pt = unity_to_image(obs2_pt)
+			
+			obs2_angle = 305
+			obs2 = Observer(obs2_pt, obs2_angle)
+			self.observers.append(obs2)
 
-	start = get_random_point_in_room(length, width)
+			goal_observers[goal] = [obs1, obs2]
 
-	for i in range(num_tables):
-		new_goal = get_random_point_in_room(length, width)
-		goals.append(new_goal)
 
-	goal = goals[0]
+		elif generate_type == TYPE_RANDOM:
+			# random generation of locations and objects
+			# mainly useful for testing things such as vision cone impact
 
-	for i in range(num_tables):
-		table_pt = get_random_point_in_room(length, width)
-		
-		table = Table(table_pt)
-		tables.append(table)
+			random_id = ''.join([random.choice(string.ascii_letters 
+					+ string.digits) for n in range(10)]) 
+			self.SCENARIO_IDENTIFIER = "new_scenario_" + random_id
 
-	# add customer locations
-	for i in range(num_observers):
-		obs_loc = get_random_point_in_room(length, width)
-		angle = random.randrange(360)
-		print((obs_loc, angle))
+			self.start = get_random_point_in_room(length, width)
 
-		observers.append(Observer(obs_loc, angle))
+			for i in range(num_tables):
+				new_goal = get_random_point_in_room(length, width)
+				self.goals.append(new_goal)
 
-else:
-	print("Incorrect generate_type")
+			goal = goals[0]
 
-print("GOALS")
-print(goals)
+			for i in range(num_tables):
+				table_pt = get_random_point_in_room(length, width)
+				
+				table = Table(table_pt)
+				self.tables.append(table)
+
+			# add customer locations
+			for i in range(num_observers):
+				obs_loc = get_random_point_in_room(length, width)
+				angle = random.randrange(360)
+				print((obs_loc, angle))
+
+				self.observers.append(Observer(obs_loc, angle))
+
+		else:
+			print("Incorrect generate_type")
+
+	def get_observers(self):
+		return self.observers
+
+	def get_scenario_identifier(self):
+		return self.SCENARIO_IDENTIFIER
+
+	def get_tables(self):
+		return self.tables
+
+	def get_goals_all(self):
+		return self.goals
+
+	def get_current_goal(self):
+		return self.current_goal
+
+	def get_start(self):
+		return self.start
+
+	def get_waypoints(self):
+		return self.waypoints
+
+
+def generate_restaurant(generate_type):
+	r = Restaurant(generate_type)
+	return r
 
 FILENAME_PICKLE_VIS += SCENARIO_IDENTIFIER
 FILENAME_PICKLE_OBSTACLES += SCENARIO_IDENTIFIER
 FILENAME_VIS_PREFIX += SCENARIO_IDENTIFIER
 FILENAME_OBSTACLE_PREFIX += SCENARIO_IDENTIFIER
 FILENAME_OVERVIEW_PREFIX += SCENARIO_IDENTIFIER
+
+r = generate_restaurant(generate_type)
+
+start 		= r.get_start()
+goals 		= r.get_goals_all()
+goal 		= r.get_current_goal()
+observers 	= r.get_observers()
+tables 		= r.get_tables()
+waypoints 	= r.get_waypoints()
+SCENARIO_IDENTIFIER = r.get_scenario_identifier()
+
 
 # Get paths
 path = get_path(start, goal)
@@ -878,7 +908,7 @@ goal_radius = int(.125 * UNITY_SCALE_X)
 start_radius = int(.125 * UNITY_SCALE_X)
 
 # observers = [observers[0]]
-print(observers)
+# print(observers)
 # for obs in observers:
 if True:
 	# Draw person
@@ -956,7 +986,7 @@ cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 	# cv2.polylines(img, obs.get_draw_field_focus(), COLOR_FOCUS)
 
 
-for goal in goal_pts:
+for goal in goals:
 	# Draw person
 	print(goal)
 	cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
@@ -1150,20 +1180,20 @@ saved_paths = {}
 # All the types there are
 for vis_type in VIS_CHECKLIST:
 	# print(visibility_maps.keys())
-	# print(vis_type)
+	print(vis_type)
 
 	# UPDATE TO BETTER MAPS
 	# vis_map = visibility_maps[vis_type]
 	# vis_map = visibility_maps[2][0]
 	vis_map = None
 
-	for goal_index in range(len(goal_pts)):
-		end = goal_pts[goal_index]
+	for goal_index in range(len(goals)):
+		end = goals[goal_index]
 		# print(str(goal_index) + "->" + str(end))
 
 		pkey = vis_type + "-" + str(goal_index)
 
-		new_path = get_path_spoof(start, end, goal_pts, table_pts, vis_type, vis_map)
+		new_path = get_path_spoof(start, end, goals, tables, vis_type, vis_map)
 		
 		saved_paths[pkey] = new_path
 
@@ -1171,7 +1201,7 @@ for vis_type in VIS_CHECKLIST:
 
 
 # DISPLAY PATHS CODE
-path_titles = ["OMNI", "TABLE", "Person A", "Person B"]
+path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
 # omni_paths_img = img.copy()
 # cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
@@ -1183,12 +1213,13 @@ for vis_type in VIS_CHECKLIST:
 	type_img = img.copy()
 	img_deck[vis_type] = type_img
 
-for i in range(len(goal_pts)):
+for i in range(len(goals)):
 	type_img = img.copy()
 	img_deck[str(i)] = type_img
 
 
 for pkey in saved_paths.keys():
+	print(pkey)
 	path = saved_paths[pkey]
 	path_img = img.copy()
 	path_title = pkey
@@ -1211,6 +1242,7 @@ for pkey in saved_paths.keys():
 
 	path_img = cv2.flip(path_img, 0)
 	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
+	print("exported image of " + pkey)
 
 all_paths_img = cv2.flip(all_paths_img, 0)
 cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
