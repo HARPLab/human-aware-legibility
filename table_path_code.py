@@ -106,11 +106,13 @@ visibility_maps = {}
 
 SCENARIO_IDENTIFIER = "new_scenario"
 
-FILENAME_PICKLE_VIS = 'generated/pickled_visibility'
-FILENAME_PICKLE_OBSTACLES = 'generated/pickled_obstacles'
-FILENAME_VIS_PREFIX = "generated/fine_fig_vis_"
-FILENAME_OVERVIEW_PREFIX = "generated/overview_"
-FILENAME_OBSTACLE_PREFIX = "generated/fig_obstacles"
+FILENAME_OUTPUTS = 'generated/'
+FILENAME_PICKLE_VIS = FILENAME_OUTPUTS + 'pickled_visibility'
+FILENAME_PICKLE_OBSTACLES = FILENAME_OUTPUTS + 'pickled_obstacles'
+FILENAME_VIS_PREFIX = FILENAME_OUTPUTS + "fine_fig_vis_"
+FILENAME_OVERVIEW_PREFIX = FILENAME_OUTPUTS + "overview_"
+FILENAME_OBSTACLE_PREFIX = FILENAME_OUTPUTS + "fig_obstacles"
+
 FILENAME_TO_UNITY = "export/"
 FILENAME_EXPORT_IMGS_PREFIX = FILENAME_TO_UNITY + "imgs/"
 FILENAME_EXPORT_CSV_PREFIX = FILENAME_TO_UNITY + "csv/"
@@ -184,9 +186,7 @@ def in_bounds(point):
 
 def get_cost_of_segment(pos1, pos2, obstacle_map, visibility_map):
 	# time in visibility
-	  
-
-
+	
 	return cost
 
 def get_cost_of_move(pos1, pos2, obstacle_map, visibility_map):
