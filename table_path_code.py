@@ -4,6 +4,7 @@ import random
 import copy
 import cv2
 import pickle
+import json
 import seaborn as sns
 import matplotlib.pylab as plt
 import sys
@@ -28,10 +29,9 @@ OPTION_FORCE_GENERATE_VISIBILITY = False
 OPTION_FORCE_GENERATE_OBSTACLE_MAP = True
 OPTION_EXPORT = True
 
-EXPORT_MODE_JSON = 1
-EXPORT_MODE_CSV = 2
-OPTION_EXPORT_MODE = EXPORT_MODE_CSV
-
+EXPORT_JSON = True
+EXPORT_CSV = True
+EXPORT_DIAGRAMS = True
 
 # window dimensions
 length = 409
@@ -116,6 +116,24 @@ FILENAME_OBSTACLE_PREFIX = FILENAME_OUTPUTS + "fig_obstacles"
 FILENAME_TO_UNITY = "export/"
 FILENAME_EXPORT_IMGS_PREFIX = FILENAME_TO_UNITY + "imgs/"
 FILENAME_EXPORT_CSV_PREFIX = FILENAME_TO_UNITY + "csv/"
+
+UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
+ux1, uy1 = UNITY_CORNERS[0]
+ux2, uy2 = UNITY_CORNERS[1]
+
+IMG_CORNERS = [(0,0), (1000, 1375)]
+ix1, iy1 = IMG_CORNERS[0]
+ix2, iy2 = IMG_CORNERS[1]
+
+UNITY_OFFSET_X = (ux1 - ix1)
+UNITY_OFFSET_Y = (uy1 - iy1)
+UNITY_SCALE_X = (ix2 - ix1) / (ux2 - ux1)
+UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
+
+length = ix2
+width = iy2
+
+UNITY_TO_IRL_SCALE = 3
 
 # visibility = np.zeros((r_width, r_length))
 # for x in range(r_width):
@@ -611,23 +629,11 @@ class Observer:
 	def get_radius(self):
 		return int(self.entity_radius)
 
-UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
-ux1, uy1 = UNITY_CORNERS[0]
-ux2, uy2 = UNITY_CORNERS[1]
-
-IMG_CORNERS = [(0,0), (1000, 1375)]
-ix1, iy1 = IMG_CORNERS[0]
-ix2, iy2 = IMG_CORNERS[1]
-
-UNITY_OFFSET_X = (ux1 - ix1)
-UNITY_OFFSET_Y = (uy1 - iy1)
-UNITY_SCALE_X = (ix2 - ix1) / (ux2 - ux1)
-UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
-
-length = ix2
-width = iy2
-
-UNITY_TO_IRL_SCALE = 3
+	def get_JSON(self):
+		json_dict = {}
+		json_dict['orientation'] = self.orientation
+		json_dict['location'] = self.location
+		return json_dict
 
 def unity_to_image(pt):
 	x, y = pt
@@ -762,8 +768,11 @@ class Restaurant:
 			length = 1000
 			width = 1375
 
-			waypoint = (6.0, 2.0)
-			self.waypoint = unity_to_image(waypoint)
+			waypoint_kitchen_exit = (6.45477, 2.57)
+			wpt = unity_to_image(waypoint_kitchen_exit)
+			# TODO verify units on this
+			self.waypoints.append(wpt)
+
 
 			unity_goal_pt = (4.43, -7.0)
 
@@ -1023,7 +1032,7 @@ obstacle_vis = obstacles['vis']
 dbfile.close() 
 
 # VISIBILITY Unit TEST
-if False:
+def visibility_unit_test():
 	score = 0
 	rx, ry = (133, 232)
 	for obs in observers:
@@ -1199,113 +1208,124 @@ for vis_type in VIS_CHECKLIST:
 
 
 
-
 # DISPLAY PATHS CODE
-path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
+def export_diagrams_with_paths(img, saved_paths):
+	print("Exporting diagrams")
+	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
-# omni_paths_img = img.copy()
-# cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
+	# omni_paths_img = img.copy()
+	# cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
 
-all_paths_img = img.copy()
+	all_paths_img = img.copy()
 
-img_deck = {}
-for vis_type in VIS_CHECKLIST:
-	type_img = img.copy()
-	img_deck[vis_type] = type_img
+	img_deck = {}
+	for vis_type in VIS_CHECKLIST:
+		type_img = img.copy()
+		img_deck[vis_type] = type_img
 
-for i in range(len(goals)):
-	type_img = img.copy()
-	img_deck[str(i)] = type_img
-
-
-for pkey in saved_paths.keys():
-	print(pkey)
-	path = saved_paths[pkey]
-	path_img = img.copy()
-	path_title = pkey
-
-	vis_type, goal_index = pkey.split("-")
-	color = VIS_COLOR_MAP[vis_type]
-	by_method = img_deck[vis_type]
-	by_goal = img_deck[goal_index]
-
-	# Draw the path  
-	for i in range(len(path) - 1):
-		a = path[i]
-		b = path[i + 1]
-		
-		cv2.line(path_img, a, b, color, thickness=6, lineType=8)
-		cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
-
-		cv2.line(by_method, a, b, color, thickness=6, lineType=8)
-		cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
-
-	path_img = cv2.flip(path_img, 0)
-	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
-	print("exported image of " + pkey)
-
-all_paths_img = cv2.flip(all_paths_img, 0)
-cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
-### END DISPLAY PATHS CODE
-
-for key in img_deck.keys():
-	this_img = img_deck[key]
-	this_img = cv2.flip(this_img, 0)
-	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'total_' + key + '.png', this_img) 
+	for i in range(len(goals)):
+		type_img = img.copy()
+		img_deck[str(i)] = type_img
 
 
-if OPTION_EXPORT:
-	import json 
+	for pkey in saved_paths.keys():
+		path = saved_paths[pkey]
+		path_img = img.copy()
+		path_title = pkey
 
-	if OPTION_EXPORT_MODE == EXPORT_MODE_JSON:
-		# Ready JSON Export
-		table_json = []
-		for table in tables:
-			table_json.append(table.get_JSON())
+		vis_type, goal_index = pkey.split("-")
+		color = VIS_COLOR_MAP[vis_type]
+		by_method = img_deck[vis_type]
+		by_goal = img_deck[goal_index]
+
+		# Draw the path  
+		for i in range(len(path) - 1):
+			a = path[i]
+			b = path[i + 1]
+			
+			cv2.line(path_img, a, b, color, thickness=6, lineType=8)
+			cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
+
+			cv2.line(by_method, a, b, color, thickness=6, lineType=8)
+			cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
+
+		path_img = cv2.flip(path_img, 0)
+		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
+		print("exported image of " + pkey)
+
+	all_paths_img = cv2.flip(all_paths_img, 0)
+	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
+	### END DISPLAY PATHS CODE
+
+	for key in img_deck.keys():
+		this_img = img_deck[key]
+		this_img = cv2.flip(this_img, 0)
+		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'total_' + key + '.png', this_img) 
+
+	cv2.imwrite('generated/fig_tables.png', img) 
 
 
-		print("Exporting path")
-		file1 = open("generated/path_v1.txt","a")
-		data = {}
-		data['path'] = unity_path
-		data['start'] = start
-		data['goals'] = goals
-		data['tables'] = table_json
-		data['server_type'] = "SERVER_HUMAN"
-		data['condition'] = "naive"
 
-		# print(json.dumps(data, indent=4))
+def export_json(r, saved_paths):
+	print("Exporting JSON")
+	# Ready JSON Export
+	table_json = []
+	for table in r.get_tables():
+		table_json.append(table.get_JSON())
 
-		file1.write(json.dumps(data, indent=4)) 
+	obs_json = []
+	for obs in r.get_observers():
+		obs_json.append(obs.get_JSON())
+
+	print("Exporting path")
+	file1 = open(FILENAME_OUTPUTS + "path_v1.json","a")
+	data = {}
+	data['paths'] = saved_paths
+	data['start'] = r.get_start()
+	data['goals'] = r.get_goals_all()
+	data['tables'] = table_json
+	data['observers'] = table_json
+
+	# print(json.dumps(data, indent=4))
+
+	file1.write(json.dumps(data, indent=4)) 
+
+def export_paths_csv(saved_paths):
+	print("Exporting JSON")
+	for pkey in saved_paths.keys():
+		csv_name = FILENAME_EXPORT_CSV_PREFIX + pkey + ".csv"
+		csv_file  = open(csv_name, "w")
+
+		output_string = ""
+
+		path = saved_paths[pkey]
+		#TODO verify the waypoint added in path creation?
+		waypoint = (6.45477, 2.57)
+		output_string += str(waypoint[0]) + "," + str(waypoint[1]) + "\r\n"
+		unity_path = []
+		for p in path:
+			up = image_to_unity(p)
+			unity_path.append(up)
+			output_string += str(up[0]) + "," + str(up[1]) + "\r\n"
+
+
+		csv_file.write(output_string) 
+		csv_file.close()
+		print("exported csv path to " + csv_name)
+
+
+def export(r, saved_paths, export_all=False):
+	if EXPORT_DIAGRAMS or export_all:
+		export_diagrams_with_paths(img, saved_paths)
+
+	if EXPORT_JSON or export_all:
+		export_json(r, saved_paths)
 	
-	elif OPTION_EXPORT_MODE == EXPORT_MODE_CSV:
-		for pkey in saved_paths.keys():
-			csv_name = FILENAME_EXPORT_CSV_PREFIX + pkey + ".csv"
-			csv_file  = open(csv_name, "w")
-
-			output_string = ""
-
-			path = saved_paths[pkey]
-			waypoint = (6.45477, 2.57)
-			output_string += str(waypoint[0]) + "," + str(waypoint[1]) + "\r\n"
-			unity_path = []
-			for p in path:
-				up = image_to_unity(p)
-				unity_path.append(up)
-				output_string += str(up[0]) + "," + str(up[1]) + "\r\n"
+	if EXPORT_CSV or export_all:
+		export_paths_csv(saved_paths)
 
 
-			csv_file.write(output_string) 
-			csv_file.close()
-			print("exported csv path to " + csv_name)
-
-
-cv2.imwrite('generated/fig_tables.png', img) 
-
-# cv2.imshow("Display window", img)
-# cv2.waitKey()
-# cv2.destroyAllWindows()
-
+export(r, saved_paths)
 print("Done")
 
 
