@@ -60,8 +60,8 @@ generate_type = TYPE_UNITY_ALIGNED
 # Color options for visualization
 COLOR_TABLE = (32, 85, 230) #(235, 64, 52) 		# dark blue
 COLOR_OBSERVER = (32, 85, 230) 		# dark orange
-COLOR_FOCUS_AWAY = (52, 192, 235) 		# dark yellow
-COLOR_PERIPHERAL_AWAY = (178, 221, 235) 	# light yellow
+COLOR_FOCUS_BACK = (52, 192, 235) 		# dark yellow
+COLOR_PERIPHERAL_BACK = (178, 221, 235) 	# light yellow
 COLOR_FOCUS_TOWARDS = (235, 64, 52)		# dark yellow
 COLOR_PERIPHERAL_TOWARDS = (55, 120, 191) 	# light yellow
 COLOR_GOAL = (255, 255, 255) # (50, 168, 82) 			# green
@@ -700,6 +700,10 @@ class Restaurant:
 		self.SCENARIO_IDENTIFIER = ""
 		self.waypoints = []
 
+		self.img = None
+		self.obstacle_map = None
+		self.visibility_maps = None
+
 		if generate_type == TYPE_PLOTTED:
 			# Creates a 2x3 layout restaurant with start location in between
 			self.SCENARIO_IDENTIFIER = "3x2_all_full"
@@ -859,8 +863,132 @@ class Restaurant:
 		else:
 			print("Incorrect generate_type")
 
+		self.generate_obstacle_map_and_img()
+
+
+	def generate_obstacle_map_and_img(self):
+		obstacle_vis = np.zeros((length,width,3), np.uint8)
+		obstacle_map = np.zeros((length,width), np.uint8)
+		# DRAW the environment
+
+		# Create a black image
+		table_radius = int(.3 * UNITY_SCALE_X)
+		obs_radius = int(.125 * UNITY_SCALE_X)
+		goal_radius = int(.125 * UNITY_SCALE_X)
+		start_radius = int(.125 * UNITY_SCALE_X)
+
+		img = np.zeros((length, width,3), np.uint8)
+
+		# observers = [observers[0]]
+		# print(observers)
+		# for obs in observers:
+		if True:
+			# Draw person
+			# obs = observers[1]
+
+			# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_BUFFER, obs_radius + DIM_NAVIGATION_BUFFER)
+			# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_FULL, obs_radius)
+
+			# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius() + DIM_NAVIGATION_BUFFER)
+			# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius())
+
+			# Draw shortened rep for view cones
+			# cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
+			# cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
+
+			overlay = img.copy()
+			# Draw shortened rep for view cones
+			# away = obs[1]
+			obs = self.get_observer_back()
+			# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+			cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
+			alpha = 0.3  # Transparency factor.
+			img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+
+			obs = self.get_observer_towards()
+			# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_TOWARDS)
+			cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_TOWARDS)
+
+			alpha = 0.3  # Transparency factor.
+			img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+			# Following line overlays transparent rectangle over the image
+
+		# Draw tables
+		for table in self.tables:
+			table_center = table.get_center()
+			cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
+
+			cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
+			cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
+
+
+		obs = self.get_observer_back()
+		cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
+		obs = self.get_observer_towards()
+		cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
+
+		for goal in self.goals:
+			# Draw person
+			cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
+
+		cv2.circle(img, self.start, start_radius, COLOR_START, start_radius)
+
+		# Export the images
+		self.img = copy.copy(img)
+		obs_i = cv2.flip(img, 0)
+		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_o'+ '.png', obs_i) 
+		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_' + path_title + '.png', path_img) 
+
+
+
+		obstacle_map = cv2.cvtColor(obstacle_vis, cv2.COLOR_BGR2GRAY)
+		(thresh, obstacle_map) = cv2.threshold(obstacle_map, 1, 255, cv2.THRESH_BINARY)
+
+		self.obstacle_map = copy.copy(obstacle_map)
+		self.obstacle_vis = copy.copy(obstacle_vis)
+
+		obstacles = {}
+		obstacles['map'] = copy.copy(obstacle_map)
+		obstacles['vis'] = copy.copy(obstacle_vis)
+		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_map.png', obstacle_map) 
+		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_vis.png', obstacle_vis) 
+
+		cv2.imwrite(FILENAME_OVERVIEW_PREFIX + ".png", img)
+		print("Exported overview pic without paths")
+		# ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
+		# plt.savefig()
+		# plt.clf()
+
+		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
+		pickle.dump(obstacles, dbfile)					  
+		dbfile.close()
+		print("Saved obstacle maps")
+
+
+		print("Importing pickle of obstacle info")
+		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'rb')
+		obstacles = pickle.load(dbfile)
+		obstacle_map = obstacles['map']
+		obstacle_vis = obstacles['vis']
+		dbfile.close() 
+
 	def get_observers(self):
 		return self.observers
+
+	# observers[1] = TOWARDS
+	# observers[0] = BACK
+
+	def get_observer_a(self):
+		return self.observers[0]
+
+	def get_observer_b(self):
+		return self.observers[1]
+
+	def get_observer_towards(self):
+		return self.get_observer_b()
+
+	def get_observer_back(self):
+		return self.get_observer_a()
 
 	def get_scenario_identifier(self):
 		return self.SCENARIO_IDENTIFIER
@@ -880,16 +1008,18 @@ class Restaurant:
 	def get_waypoints(self):
 		return self.waypoints
 
+	def get_img(self):
+		return copy.copy(self.img)
+
+	def get_obstacle_map(self):
+		return copy.copy(self.obstacle_map)
+
+	def get_obstacle_vis(self):
+		return copy.copy(self.obstacle_vis)
 
 def generate_restaurant(generate_type):
 	r = Restaurant(generate_type)
 	return r
-
-FILENAME_PICKLE_VIS += SCENARIO_IDENTIFIER
-FILENAME_PICKLE_OBSTACLES += SCENARIO_IDENTIFIER
-FILENAME_VIS_PREFIX += SCENARIO_IDENTIFIER
-FILENAME_OBSTACLE_PREFIX += SCENARIO_IDENTIFIER
-FILENAME_OVERVIEW_PREFIX += SCENARIO_IDENTIFIER
 
 r = generate_restaurant(generate_type)
 
@@ -901,135 +1031,14 @@ tables 		= r.get_tables()
 waypoints 	= r.get_waypoints()
 SCENARIO_IDENTIFIER = r.get_scenario_identifier()
 
+FILENAME_PICKLE_VIS += SCENARIO_IDENTIFIER
+FILENAME_PICKLE_OBSTACLES += SCENARIO_IDENTIFIER
+FILENAME_VIS_PREFIX += SCENARIO_IDENTIFIER
+FILENAME_OBSTACLE_PREFIX += SCENARIO_IDENTIFIER
+FILENAME_OVERVIEW_PREFIX += SCENARIO_IDENTIFIER
 
 # Get paths
 path = get_path(start, goal)
-
-obstacle_vis = np.zeros((length,width,3), np.uint8)
-obstacle_map = np.zeros((length,width), np.uint8)
-# DRAW the environment
-
-# Create a black image
-img = np.zeros((length,width,3), np.uint8)
-table_radius = int(.3 * UNITY_SCALE_X)
-obs_radius = int(.125 * UNITY_SCALE_X)
-goal_radius = int(.125 * UNITY_SCALE_X)
-start_radius = int(.125 * UNITY_SCALE_X)
-
-# observers = [observers[0]]
-# print(observers)
-# for obs in observers:
-if True:
-	# Draw person
-	# obs = observers[1]
-
-	# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_BUFFER, obs_radius + DIM_NAVIGATION_BUFFER)
-	# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_FULL, obs_radius)
-
-	# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius() + DIM_NAVIGATION_BUFFER)
-	# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius())
-
-	# Draw shortened rep for view cones
-	# cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
-	# cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
-
-	overlay = img.copy()
-	# Draw shortened rep for view cones
-	# away = obs[1]
-	obs = observers[1]
-	# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-	cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_AWAY)
-	alpha = 0.3  # Transparency factor.
-	img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
-
-	obs = observers[0]
-	# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_TOWARDS)
-	cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_TOWARDS)
-
-	alpha = 0.3  # Transparency factor.
-	img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
-	# Following line overlays transparent rectangle over the image
-	
-
-	# cone = obs.get_draw_field_focus()[0]
-	# print(cone)
-	# cone0 = cone[0]
-	# cone0 = (826, 248) #(cone0[0], cone0[1])
-	# cone1 = cone[1]
-	# cone0 = (826, 248) #(cone1[0], cone1[1])
-	# cone2 = cone[2]
-	# cone2 = (cone2[0], cone2[1])
-
-
-	# print(cone0)
-	# cv2.line(img, cone0, cone1, COLOR_FOCUS, thickness=2, lineType=8)
-	# cv2.line(img, cone0, cone2, COLOR_FOCUS, thickness=2, lineType=8)
-
-	# cone = obs.get_draw_field_peripheral()
-	# cv2.line(img, cone[0], cone[1], COLOR_PERIPHERAL, thickness=2, lineType=8)
-	# cv2.line(img, cone[0], cone[2], COLOR_PERIPHERAL, thickness=2, lineType=8)
-
-# Draw tables
-for table in tables:	
-	table_center = table.get_center()
-
-
-	cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
-
-	cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
-	cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
-
-	# cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), 1, table.get_radius() + DIM_NAVIGATION_BUFFER)
-	# cv2.rectangle(obstacle_map, table.pt_top_left(), table.pt_bottom_right(), 1, table.get_radius())
-
-
-obs = observers[1]
-cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
-obs = observers[0]
-cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
-# Draw table.gets
-# Draw observer cones
-
-
-	# cv2.polylines(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
-	# cv2.polylines(img, obs.get_draw_field_focus(), COLOR_FOCUS)
-
-
-for goal in goals:
-	# Draw person
-	print(goal)
-	cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
-
-# print(start)
-cv2.circle(img, start, start_radius, COLOR_START, start_radius)
-
-obstacle_map = cv2.cvtColor(obstacle_vis, cv2.COLOR_BGR2GRAY)
-(thresh, obstacle_map) = cv2.threshold(obstacle_map, 1, 255, cv2.THRESH_BINARY)
-
-obstacles = {}
-obstacles['map'] = copy.copy(obstacle_map)
-obstacles['vis'] = copy.copy(obstacle_vis)
-cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_map.png', obstacle_map) 
-cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_vis.png', obstacle_vis) 
-
-cv2.imwrite(FILENAME_OVERVIEW_PREFIX + ".png", img)
-print("Exported overview pic without paths")
-# ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
-# plt.savefig()
-# plt.clf()
-
-dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
-pickle.dump(obstacles, dbfile)					  
-dbfile.close()
-print("Saved obstacle maps")
-
-
-print("Importing pickle of obstacle info")
-dbfile = open(FILENAME_PICKLE_OBSTACLES, 'rb')
-obstacles = pickle.load(dbfile)
-obstacle_map = obstacles['map']
-obstacle_vis = obstacles['vis']
-dbfile.close() 
 
 # VISIBILITY Unit TEST
 def visibility_unit_test():
@@ -1144,11 +1153,6 @@ if OPTION_FORCE_GENERATE_VISIBILITY:
 	pickle.dump(visibility_maps, dbfile)					  
 	dbfile.close()
 	# Successfully dumped pickle
-
-
-obs_i = cv2.flip(img, 0)
-cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_o'+ '.png', obs_i) 
-# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_' + path_title + '.png', path_img) 
 
 
 # Import the visibility info for work
@@ -1315,6 +1319,8 @@ def export_paths_csv(saved_paths):
 
 
 def export(r, saved_paths, export_all=False):
+	img = r.get_img()
+
 	if EXPORT_DIAGRAMS or export_all:
 		export_diagrams_with_paths(img, saved_paths)
 
