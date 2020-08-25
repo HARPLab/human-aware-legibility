@@ -3,6 +3,7 @@ import math
 import random
 import copy
 import cv2
+import pandas as pd
 import pickle
 import json
 import seaborn as sns
@@ -78,8 +79,15 @@ VIS_MULTI = "VIS_MULTI"
 VIS_A = "VIS_A"
 VIS_B = "VIS_B"
 
+SUFFIX_RAW 	= "-raw"
+RAW_ALL 	= VIS_ALL 	+ SUFFIX_RAW
+RAW_OMNI 	= VIS_OMNI 	+ SUFFIX_RAW
+RAW_MULTI 	= VIS_MULTI + SUFFIX_RAW
+RAW_A 		= VIS_A 	+ SUFFIX_RAW
+RAW_B 		= VIS_B 	+ SUFFIX_RAW
 
 VIS_CHECKLIST = [VIS_OMNI, VIS_A, VIS_B, VIS_MULTI]
+RAW_CHECKLIST = [RAW_OMNI, RAW_A, RAW_B, RAW_MULTI]
 PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 PATH_LABELS = ['red', 'yellow', 'blue', 'green']
 # PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
@@ -87,6 +95,12 @@ PATH_LABELS = ['red', 'yellow', 'blue', 'green']
 VIS_COLOR_MAP = {}
 for i in range(len(PATH_COLORS)):
 	VIS_COLOR_MAP[VIS_CHECKLIST[i]] = PATH_COLORS[i]
+
+RAW_TO_VIS_COL = {}
+VIS_TO_RAW_COL = {}
+for i in range(len(PATH_COLORS)):
+	RAW_TO_VIS_COL[RAW_CHECKLIST[i]] = VIS_CHECKLIST[i]
+	VIS_TO_RAW_COL[VIS_CHECKLIST[i]] = RAW_CHECKLIST[i]
 
 COLOR_P_BACK 	= VIS_COLOR_MAP[VIS_A]
 COLOR_P_FACING 	= VIS_COLOR_MAP[VIS_B]
@@ -190,6 +204,27 @@ def bresenham_line(xy1, xy2):
 	if switched:
 		line.reverse()
 	return line
+
+def unit_vector(vector):
+    """ Returns the unit vector of the vector.  """
+    return vector / np.linalg.norm(vector)
+
+def angle_between(v1, v2):
+    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+            >>> angle_between((1, 0, 0), (0, 1, 0))
+            1.5707963267948966
+            >>> angle_between((1, 0, 0), (1, 0, 0))
+            0.0
+            >>> angle_between((1, 0, 0), (-1, 0, 0))
+            3.141592653589793
+    """
+    print(v1)
+    print(v2)
+
+    v1_u = unit_vector(v1)
+    v2_u = unit_vector(v2)
+    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
 def in_bounds(point):
 	x, y = point
@@ -540,6 +575,7 @@ class Observer:
 	cone_depth = 2000
 	focus_angle = 60 / 2.0
 	peripheral_angle = 160 / 2.0
+	FOV_angle = 120
 
 	orientation = 0
 
@@ -613,6 +649,12 @@ class Observer:
 
 	def get_center(self):
 		return self.location
+
+	def get_orientation(self):
+		return self.orientation
+
+	def get_FOV(self):
+		return self.FOV_angle
 
 	def get_field_focus(self):
 		return np.int32([self.field_focus])
@@ -864,6 +906,7 @@ class Restaurant:
 			print("Incorrect generate_type")
 
 		self.generate_obstacle_map_and_img()
+		self.generate_visibility_maps()
 
 
 	def generate_obstacle_map_and_img(self):
@@ -972,6 +1015,170 @@ class Restaurant:
 		obstacle_vis = obstacles['vis']
 		dbfile.close() 
 
+	def get_visibility_of_pt_raw(self, pt):
+		observations = []
+
+		for observer in observers:
+			obs_orient 	= observer.get_orientation()
+			obs_FOV 	= observer.get_FOV()
+
+			angle 		= angle_between(pt, observer.get_center())
+			distance 	= dist(pt, observer.get_center())
+
+			observation = (pt, angle, distance)
+			observations.append(observation)
+		return observations
+
+	def get_visibility_of_pt_pandas(self, pt, f_vis):
+		# Note only supports up to two observers
+		a = self.get_observer_a()
+		b = self.get_observer_b()
+
+
+		obs_omni = []
+		obs_multi = []
+		obs_a = []
+		obs_b = []
+		obs_all = []
+
+		for observer in observers:
+			obs_orient 	= observer.get_orientation()
+			obs_FOV 	= observer.get_FOV()
+			obs_center 	= observer.get_center()
+
+			angle 		= angle_between(pt, obs_center)
+			distance 	= dist(pt, obs_center)
+
+			obs_val = (obs_center, angle, distance)
+			obs_all.append(obs_val)
+			obs_multi.append(obs_val)
+
+			if obs_center == a.get_center():
+				obs_a.append(obs_val)
+			elif obs_center == b.get_center():
+				obs_b.append(obs_val)
+
+		# print('vis omni')
+		vis_omni 	= f_vis(obs_omni)
+		# print('vis a')
+		vis_a 		= f_vis(obs_a)
+		# print('vis b')
+		vis_b 		= f_vis(obs_b)
+		# print('vis multi')
+		vis_multi 	= f_vis(obs_multi)
+
+		x, y = pt
+		entry = [x, y, obs_all, obs_omni, obs_a, obs_b, obs_multi, vis_omni, vis_a, vis_b, vis_multi]
+		  
+		return entry
+
+	def get_visibility_of_pts_pandas(self, f_vis):
+		entries = [] 
+		for x in range(length):
+			for y in range(width):
+				entry = self.get_visibility_of_pt_pandas((x, y), f_vis)
+				entries.append(entry)
+
+		# entry = [x, y, obs_all, obs_omni, obs_a, obs_b, obs_multi]
+		df = pd.DataFrame(entries, columns = ['x', 'y', RAW_ALL, RAW_OMNI, RAW_A, RAW_B, RAW_MULTI, VIS_OMNI, VIS_A, VIS_B, VIS_MULTI])
+		return df
+
+
+	def generate_visibility_maps(self):
+		visibility_maps = {}
+		if OPTION_FORCE_GENERATE_VISIBILITY:
+			# visibility_maps[VIS_INFO_RESOLUTION] = resolution_visibility
+
+			r_width = int(width / resolution_visibility)
+			r_length = int(length / resolution_visibility)
+
+			visibility = np.zeros((r_width, r_length))
+			omni = copy.copy(visibility)
+			omni = omni.T
+
+			ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: Omniscient")
+			visibility_maps[VIS_OMNI] = [copy.copy(visibility)]
+			# print(visibility.shape)
+			plt.savefig(FILENAME_VIS_PREFIX + '_omni.png')
+			plt.clf()
+
+			# DEPRECATED: SAVING AN ALL VERSION
+			# for x in range(r_width):
+			# 	for y in range(r_length):
+			# 		rx = x*resolution_visibility
+			# 		ry = y*resolution_visibility
+			# 		score = 0
+			# 		for obs in observers:
+			# 			score += obs.get_visibility((rx,ry))
+
+			# 		visibility[x,y] = score
+
+			# visibility = visibility.T
+			# # xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
+			# ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: All")
+			# visibility_maps[VIS_ALL] = [copy.copy(visibility)]
+			# plt.savefig(FILENAME_VIS_PREFIX + '_all.png')
+			# plt.clf()
+			# plt.show()
+
+			visibility = np.zeros((r_width, r_length))
+			for x in range(r_width):
+				for y in range(r_length):
+					rx = x*resolution_visibility
+					ry = y*resolution_visibility
+					score = 0
+					for obs in observers:
+						score += obs.get_visibility((rx,ry))
+
+					visibility[x,y] = score
+
+			visibility = visibility.T
+			# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
+			ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: Both Perspectives")
+			# plt.show()
+			visibility_maps[VIS_MULTI] = [copy.copy(visibility)]
+			plt.savefig(FILENAME_VIS_PREFIX + '_multi.png')
+			plt.clf()
+
+			print("generated multi vis")
+
+			indic = 0
+			# visibility_maps[VIS_INDIVIDUALS] = []
+			solo_paths = []
+
+			for obs in self.observers:
+				visibility = np.zeros((r_width, r_length))
+				for x in range(r_width):
+					for y in range(r_length):
+						rx = x*resolution_visibility
+						ry = y*resolution_visibility
+						score = 0
+						score += obs.get_visibility((rx,ry))
+
+						visibility[x,y] = score
+
+				visibility = visibility.T
+				# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
+				ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Observer #" + str(indic))
+				# plt.show()
+				solo_paths.append(copy.copy(visibility))
+				# visibility_maps[VIS_INDIVIDUALS].append(copy.copy(visibility))
+				plt.savefig(FILENAME_VIS_PREFIX + '_person_' + str(indic) + '.png')
+				print("generated person vis " + str(indic))
+				indic += 1
+				plt.clf()
+
+			# visibility_maps[VIS_INDIVIDUALS] = solo_paths
+			visibility_maps[VIS_A] = solo_paths[0]
+			visibility_maps[VIS_B] = solo_paths[1]
+
+			# Export the new visibility maps and resolution info
+			dbfile = open(FILENAME_PICKLE_VIS, 'ab') 
+			pickle.dump(visibility_maps, dbfile)					  
+			dbfile.close()
+			# Successfully dumped pickle
+		self.visibility_maps = visibility_maps
+
 	def get_observers(self):
 		return self.observers
 
@@ -1017,6 +1224,10 @@ class Restaurant:
 	def get_obstacle_vis(self):
 		return copy.copy(self.obstacle_vis)
 
+	def get_visibility_maps(self):
+		return self.visibility_maps
+
+
 def generate_restaurant(generate_type):
 	r = Restaurant(generate_type)
 	return r
@@ -1061,98 +1272,6 @@ def visibility_unit_test():
 
 	print(score)
 
-
-if OPTION_FORCE_GENERATE_VISIBILITY:
-	# visibility_maps[VIS_INFO_RESOLUTION] = resolution_visibility
-
-	r_width = int(width / resolution_visibility)
-	r_length = int(length / resolution_visibility)
-
-	visibility = np.zeros((r_width, r_length))
-	omni = copy.copy(visibility)
-	omni = omni.T
-
-	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: Omniscient")
-	visibility_maps[VIS_OMNI] = [copy.copy(visibility)]
-	# print(visibility.shape)
-	plt.savefig(FILENAME_VIS_PREFIX + '_omni.png')
-	plt.clf()
-
-	# DEPRECATED: SAVING AN ALL VERSION
-	# for x in range(r_width):
-	# 	for y in range(r_length):
-	# 		rx = x*resolution_visibility
-	# 		ry = y*resolution_visibility
-	# 		score = 0
-	# 		for obs in observers:
-	# 			score += obs.get_visibility((rx,ry))
-
-	# 		visibility[x,y] = score
-
-	# visibility = visibility.T
-	# # xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
-	# ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: All")
-	# visibility_maps[VIS_ALL] = [copy.copy(visibility)]
-	# plt.savefig(FILENAME_VIS_PREFIX + '_all.png')
-	# plt.clf()
-	# plt.show()
-
-	visibility = np.zeros((r_width, r_length))
-	for x in range(r_width):
-		for y in range(r_length):
-			rx = x*resolution_visibility
-			ry = y*resolution_visibility
-			score = 0
-			for obs in observers:
-				score += obs.get_visibility((rx,ry))
-
-			visibility[x,y] = score
-
-	visibility = visibility.T
-	# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
-	ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: Both Perspectives")
-	# plt.show()
-	visibility_maps[VIS_MULTI] = [copy.copy(visibility)]
-	plt.savefig(FILENAME_VIS_PREFIX + '_multi.png')
-	plt.clf()
-
-	print("generated multi vis")
-
-	indic = 0
-	# visibility_maps[VIS_INDIVIDUALS] = []
-	solo_paths = []
-
-	for obs in observers:
-		visibility = np.zeros((r_width, r_length))
-		for x in range(r_width):
-			for y in range(r_length):
-				rx = x*resolution_visibility
-				ry = y*resolution_visibility
-				score = 0
-				score += obs.get_visibility((rx,ry))
-
-				visibility[x,y] = score
-
-		visibility = visibility.T
-		# xticklabels=range(0, width, resolution), yticklabels=range(0, length, resolution)
-		ax = sns.heatmap(visibility).set_title("Visibility of Restaurant Tiles: 1 Observer #" + str(indic))
-		# plt.show()
-		solo_paths.append(copy.copy(visibility))
-		# visibility_maps[VIS_INDIVIDUALS].append(copy.copy(visibility))
-		plt.savefig(FILENAME_VIS_PREFIX + '_person_' + str(indic) + '.png')
-		print("generated person vis " + str(indic))
-		indic += 1
-		plt.clf()
-
-	# visibility_maps[VIS_INDIVIDUALS] = solo_paths
-	visibility_maps[VIS_A] = solo_paths[0]
-	visibility_maps[VIS_B] = solo_paths[1]
-
-	# Export the new visibility maps and resolution info
-	dbfile = open(FILENAME_PICKLE_VIS, 'ab') 
-	pickle.dump(visibility_maps, dbfile)					  
-	dbfile.close()
-	# Successfully dumped pickle
 
 
 # Import the visibility info for work
@@ -1330,8 +1449,8 @@ def export(r, saved_paths, export_all=False):
 	if EXPORT_CSV or export_all:
 		export_paths_csv(saved_paths)
 
-
-export(r, saved_paths)
+# if EXPO
+# export(r, saved_paths)
 print("Done")
 
 
