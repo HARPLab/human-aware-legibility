@@ -1029,6 +1029,15 @@ class Restaurant:
 			observations.append(observation)
 		return observations
 
+	def sample_points(self, num_pts, target, vis_type):
+		start = self.start
+		pts = []
+		for i in range(num_pts):
+			pt = (random.randrange(width), random.randrange(length))
+			pts.append(pt)
+
+		return pts
+
 	def get_visibility_of_pt_pandas(self, pt, f_vis):
 		# Note only supports up to two observers
 		a = self.get_observer_a()
@@ -1068,7 +1077,7 @@ class Restaurant:
 		vis_multi 	= f_vis(obs_multi)
 
 		x, y = pt
-		entry = [x, y, obs_all, obs_omni, obs_a, obs_b, obs_multi, vis_omni, vis_a, vis_b, vis_multi]
+		entry = [x, y, obs_all, vis_omni, vis_a, vis_b, vis_multi]
 		  
 		return entry
 
@@ -1080,7 +1089,7 @@ class Restaurant:
 				entries.append(entry)
 
 		# entry = [x, y, obs_all, obs_omni, obs_a, obs_b, obs_multi]
-		df = pd.DataFrame(entries, columns = ['x', 'y', RAW_ALL, RAW_OMNI, RAW_A, RAW_B, RAW_MULTI, VIS_OMNI, VIS_A, VIS_B, VIS_MULTI])
+		df = pd.DataFrame(entries, columns = ['x', 'y', RAW_ALL, VIS_OMNI, VIS_A, VIS_B, VIS_MULTI])
 		return df
 
 
@@ -1387,6 +1396,32 @@ def export_diagrams_with_paths(img, saved_paths):
 
 	cv2.imwrite('generated/fig_tables.png', img) 
 
+
+def export_raw_paths(img, saved_paths_list, fn):
+	print("Exporting diagrams")
+	all_paths_img = img.copy()
+
+	for path in saved_paths_list:
+		path_img = img.copy()
+
+		color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+
+		
+		# Draw the path  
+		for i in range(len(path) - 1):
+			a = path[i]
+			b = path[i + 1]
+			
+			# cv2.line(path_img, a, b, color, thickness=6, lineType=8)
+			cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
+
+		# path_img = cv2.flip(path_img, 0)
+		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
+		# print("exported image of " + pkey)
+
+	all_paths_img = cv2.flip(all_paths_img, 0)
+	cv2.imwrite(fn, all_paths_img) 
+	### END DISPLAY PATHS CODE
 
 
 def export_json(r, saved_paths):
