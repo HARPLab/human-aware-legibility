@@ -32,6 +32,13 @@ def f_cost(t1, t2):
 def f_cost(t1, t2):
 	return resto.dist(t1, t2)
 
+def f_path_cost(path):
+	cost = 0
+	for i in range(len(path) - 1):
+		cost = cost + f_cost(path[i], path[i + 1])
+
+	return cost
+
 
 def f_audience_agnostic():
 	return f_leg_personalized()
@@ -62,7 +69,7 @@ def f_visibility(df_obs):
 	return vis
 
 def f(t):
-	return PATH_TIMESTEPS - f(t)
+	return PATH_TIMESTEPS - t
 
 	# return (PATH_TIMESTEPS - f(t)) * visibility(pt(t))
 	# non-vanilla version
@@ -73,7 +80,7 @@ def prob_goal_given_path(start, pt, goal, goals):
 	c2 = f_cost(pt, goal)
 	c3 = f_cost(start, goal)
 
-	return numpy.exp(-c1 -c2) / numpy.exp(c3)
+	return np.exp(-c1 -c2) / np.exp(c3)
 
 # Given a 
 def f_legibility(goal, goals, path, df_obs):
@@ -82,12 +89,15 @@ def f_legibility(goal, goals, path, df_obs):
 	total_dist = 0
 	LAMBDA = 1
 
+	start = path[0]
+	total_cost = 0
+
 	t = 1
-	p_n = pts[0]
-	for pt in pts:
+	p_n = path[0]
+	for pt in path:
 		legibility += prob_goal_given_path(start, pt, goal, goals) * f(t)
 		
-		total_cost += dist(p_n, pt)
+		total_cost += f_cost(p_n, pt)
 		p_n = pt
 
 		divisor += f(t)
@@ -95,6 +105,26 @@ def f_legibility(goal, goals, path, df_obs):
 	
 	overall = (legibility / divisor) - LAMBDA*total_cost
 	return overall
+
+def get_costs(path, target, obs_sets):
+	vals = []
+
+	for aud in obs_sets:
+		new_val = f_cost()
+
+	return vals
+
+
+def get_legibilities(path, target, goals, obs_sets):
+	vals = []
+
+	for aud in obs_sets:
+		# goal, goals, path, df_obs
+		new_val = f_legibility(target, goals, path, aud)
+		vals.append(new_val)
+
+	return vals
+
 
 def generate_visibility(df, vis_function):
 	pass
@@ -143,10 +173,33 @@ def generate_paths(num_paths, restaurant, vis_types):
 			path_options[target][vis_type] = create_path_options(num_paths, target, restaurant, vis_type)
 	return path_options
 
+def get_path_analysis(all_paths, r, target):	
+	obs_none 	= []
+	obs_a 		= [r.get_observer_back()]
+	obs_b 		= [r.get_observer_towards()]
+	obs_multi 	= [r.get_observer_back(), r.get_observer_towards()]
 
-def assess_paths():
-	pass
+	obs_sets = [obs_none, obs_a, obs_b, obs_multi]
 
+	goals = r.get_goals_all()
+	col_labels = ['path', 'cost', 'l_agnostic', 'l_a', 'l_b', 'l_multi', 'target']
+
+	data = []
+	for p in all_paths:
+		cost = f_path_cost(p)
+		l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets)
+
+		entry = [p, cost, l_o, l_a, l_b, l_m, target]
+		data.append(entry)
+
+	df = pd.DataFrame(data, columns = col_labels) 
+
+	return df
+
+def assess_paths(all_paths, r, target):
+	df = get_path_analysis(all_paths, r, target)
+
+	return df
 
 def iterate_on_paths():
 	path_options 		= generate_paths(NUM_PATHS, r, VISIBILITY_TYPES)
@@ -226,12 +279,19 @@ goals = r.get_goals_all()
 
 # Decide how many control points to provide
 for ti in range(len(goals)):
+	all_paths = []
+	target = goals[ti]
 	for n_control in range(3):
-		target = goals[ti]
+
 		paths = generate_n_paths(r, 20, target, n_control)
 		fn = FILENAME_PATH_ASSESS + str(ti) + "-" + str(n_control) + "-cp" + "-all.png"
-		print(fn)
 		resto.export_raw_paths(img, paths, fn)
+		all_paths.extend(paths)
+
+	options = assess_paths(all_paths, r, target)
+	print(options)
+	# options.
+
 
 
 
