@@ -345,7 +345,7 @@ def inspect_heatmap(df):
 def select_paths_and_draw(restaurant, unique_key):
 	NUM_PATHS = 200
 
-	unique_key = "_" + unique_key + "_"
+	unique_key = "" + unique_key + "_"
 
 	img = restaurant.get_img()
 	empty_img = cv2.flip(img, 0)
@@ -356,7 +356,7 @@ def select_paths_and_draw(restaurant, unique_key):
 	for ti in range(len(goals)):
 		all_paths = []
 		target = goals[ti]
-		for n_control in range(1, 3):
+		for n_control in range(0, 3):
 
 			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
 			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"

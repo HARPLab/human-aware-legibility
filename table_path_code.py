@@ -949,7 +949,7 @@ class Restaurant:
 		goal_radius = int(.125 * UNITY_SCALE_X)
 		start_radius = int(.125 * UNITY_SCALE_X)
 
-		img = np.zeros((length, width,3), np.uint8)
+		img = np.zeros((self.length, self.width,3), np.uint8)
 
 		# observers = [observers[0]]
 		# print(observers)
