@@ -55,6 +55,7 @@ num_observers = 6
 TYPE_PLOTTED = 0
 TYPE_RANDOM = 1
 TYPE_UNITY_ALIGNED = 2
+TYPE_CUSTOM = 3
 
 generate_type = TYPE_UNITY_ALIGNED
 
@@ -131,6 +132,7 @@ FILENAME_TO_UNITY = "export/"
 FILENAME_EXPORT_IMGS_PREFIX = FILENAME_TO_UNITY + "imgs/"
 FILENAME_EXPORT_CSV_PREFIX = FILENAME_TO_UNITY + "csv/"
 
+# Note: inform restaurant code of these values also
 UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
 ux1, uy1 = UNITY_CORNERS[0]
 ux2, uy2 = UNITY_CORNERS[1]
@@ -219,9 +221,6 @@ def angle_between(v1, v2):
             >>> angle_between((1, 0, 0), (-1, 0, 0))
             3.141592653589793
     """
-    print(v1)
-    print(v2)
-
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
@@ -734,7 +733,7 @@ n_length = int(length / resolution_planning) + 1
 goal_helper_pts = []
 
 class Restaurant: 
-	def __init__(self, generate_type):
+	def __init__(self, generate_type, tables=None, goals=None, start=None, observers=None, dim=None):
 		self.observers = []
 		self.goals = []
 		self.tables = []
@@ -745,8 +744,17 @@ class Restaurant:
 		self.img = None
 		self.obstacle_map = None
 		self.visibility_maps = None
+		self.dim = None
 
-		if generate_type == TYPE_PLOTTED:
+		if generate_type == TYPE_CUSTOM:
+			self.goals 	= goals
+			self.tables = tables
+			self.start 	= start
+			self.observers = observers
+			self.dim = dim
+			self.length, self.width = self.dim
+
+		elif generate_type == TYPE_PLOTTED:
 			# Creates a 2x3 layout restaurant with start location in between
 			self.SCENARIO_IDENTIFIER = "3x2_all_full"
 			self.start = (10, 10)
@@ -797,6 +805,25 @@ class Restaurant:
 			# Unity scenario created specifically for parameters of Unity restaurant
 
 			self.SCENARIO_IDENTIFIER = "_unity_v1_"
+
+			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
+			ux1, uy1 = UNITY_CORNERS[0]
+			ux2, uy2 = UNITY_CORNERS[1]
+
+			IMG_CORNERS = [(0,0), (1000, 1375)]
+			ix1, iy1 = IMG_CORNERS[0]
+			ix2, iy2 = IMG_CORNERS[1]
+
+			UNITY_OFFSET_X = (ux1 - ix1)
+			UNITY_OFFSET_Y = (uy1 - iy1)
+			UNITY_SCALE_X = (ix2 - ix1) / (ux2 - ux1)
+			UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
+
+			self.length = ix2
+			self.width = iy2
+
+			UNITY_TO_IRL_SCALE = 3
+			
 			# images will be made at the scale of
 			
 			# x1 = 3.05
@@ -876,6 +903,8 @@ class Restaurant:
 			# random generation of locations and objects
 			# mainly useful for testing things such as vision cone impact
 
+			self.length, self.width = 600, 800
+
 			random_id = ''.join([random.choice(string.ascii_letters 
 					+ string.digits) for n in range(10)]) 
 			self.SCENARIO_IDENTIFIER = "new_scenario_" + random_id
@@ -910,8 +939,8 @@ class Restaurant:
 
 
 	def generate_obstacle_map_and_img(self):
-		obstacle_vis = np.zeros((length,width,3), np.uint8)
-		obstacle_map = np.zeros((length,width), np.uint8)
+		obstacle_vis = np.zeros((self.length, self.width,3), np.uint8)
+		obstacle_map = np.zeros((self.length, self.width), np.uint8)
 		# DRAW the environment
 
 		# Create a black image
@@ -1339,9 +1368,10 @@ for vis_type in VIS_CHECKLIST:
 		saved_paths[pkey] = new_path
 
 
+def export_diagrams_with_paths(img, saved_paths, fn=None):
+	if fn is None:
+		fn = FILENAME_EXPORT_IMGS_PREFIX
 
-# DISPLAY PATHS CODE
-def export_diagrams_with_paths(img, saved_paths):
 	print("Exporting diagrams")
 	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
@@ -1382,17 +1412,87 @@ def export_diagrams_with_paths(img, saved_paths):
 			cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
 
 		path_img = cv2.flip(path_img, 0)
-		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
+		cv2.imwrite(fn + 'fig_path_' + path_title + '.png', path_img) 
 		print("exported image of " + pkey)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
-	cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'ALL_CONDITIONS' + '.png', all_paths_img) 
+	cv2.imwrite(fn + 'ALL_CONDITIONS' + '.png', all_paths_img) 
 	### END DISPLAY PATHS CODE
 
 	for key in img_deck.keys():
 		this_img = img_deck[key]
 		this_img = cv2.flip(this_img, 0)
-		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'total_' + key + '.png', this_img) 
+		cv2.imwrite(fn + 'total_' + key + '.png', this_img) 
+
+	cv2.imwrite('generated/fig_tables.png', img) 
+
+
+# DISPLAY PATHS CODE
+def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None):
+	if fn is None:
+		fn = FILENAME_EXPORT_IMGS_PREFIX
+
+	print("Exporting diagrams")
+	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
+
+	# omni_paths_img = img.copy()
+	# cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
+
+	all_paths_img = img.copy()
+
+	img_deck = {}
+	for vis_type in VIS_CHECKLIST:
+		type_img = img.copy()
+		img_deck[vis_type] = type_img
+
+	for i in range(len(goals)):
+		type_img = img.copy()
+		img_deck[str(i)] = type_img
+
+	print(img_deck.keys())
+
+	for pkey in saved_paths.keys():
+		paths = saved_paths[pkey]
+
+		# !!! KEY difference: this one can have multiple options for a path
+		counter = 0
+		for path in paths:
+			path_img = img.copy()
+			path_title = pkey
+
+			vis_type = pkey
+			goal_index = str(target_index)
+
+			color = VIS_COLOR_MAP[vis_type]
+			by_method = img_deck[vis_type]
+			by_goal = img_deck[goal_index]
+
+			# Draw the path  
+			for i in range(len(path) - 1):
+				a = path[i]
+				b = path[i + 1]
+				
+				cv2.line(path_img, a, b, color, thickness=6, lineType=8)
+				cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
+
+				cv2.line(by_method, a, b, color, thickness=6, lineType=8)
+				cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
+
+			path_img = cv2.flip(path_img, 0)
+			cv2.imwrite(fn + goal_index + 'fig_path_' + path_title + '.png', path_img) 
+			print("exported image of " + pkey)
+
+	all_paths_img = cv2.flip(all_paths_img, 0)
+	cv2.imwrite(fn + 'ALL_CONDITIONS' + goal_index + '.png', all_paths_img) 
+	### END DISPLAY PATHS CODE
+
+	print(img_deck.keys())
+
+	for key in img_deck.keys():
+		if key == goal_index:
+			this_img = img_deck[key]
+			this_img = cv2.flip(this_img, 0)
+			cv2.imwrite(fn  + goal_index + 'total_' + key + '.png', this_img) 
 
 	cv2.imwrite('generated/fig_tables.png', img) 
 
