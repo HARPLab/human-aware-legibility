@@ -25,6 +25,8 @@ resto_pickle = 'pickle_vis'
 vis_pickle = 'pickle_resto'
 FILENAME_PATH_ASSESS = 'path_assessment/'
 
+# PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
+
 
 def f_cost(t1, t2):
 	return resto.dist(t1, t2)
@@ -68,8 +70,61 @@ def f_visibility(df_obs):
 
 	return vis
 
-def f(t):
+def f_og(t):
 	return PATH_TIMESTEPS - t
+
+# def f_vis_eqn(observers):
+# 	value = 0
+
+# 	for person in observers:
+# 		if ob
+
+# 	return value
+
+def get_visibility_of_pt_w_observers(pt, aud):
+	observers = []
+	score = 0
+
+	MAX_DISTANCE = 500
+	for observer in aud:
+		obs_orient 	= observer.get_orientation()
+		obs_FOV 	= observer.get_FOV()
+
+		angle 		= resto.angle_between(pt, observer.get_center())
+		distance 	= resto.dist(pt, observer.get_center())
+
+		# print(angle, distance)
+		observation = (pt, angle, distance)
+		observers.append(observation)
+
+
+		if angle < obs_FOV:
+			# full credit at the center of view
+			offset_multiplier = (obs_FOV - angle) / obs_FOV
+
+			# 1 if very close
+			distance_bonus = (MAX_DISTANCE - distance) / MAX_DISTANCE
+			score += (distance_bonus*offset_multiplier)
+
+	return score
+
+def f_remix(t, p1, p2, aud):
+	epsilon = .0001
+	multiplier = (PATH_TIMESTEPS - t)
+
+	vis1 = get_visibility_of_pt_w_observers(p1, aud)
+	vis2 = get_visibility_of_pt_w_observers(p2, aud)
+	vis_aggregate = vis1 + vis2 / 2.0
+
+
+	# print(vis1)
+	# print(vis2)
+	# print("vis printed, exiting")
+	# exit()
+
+	# print(str(multiplier) + "vs" + str(vis_aggregate))
+
+	return (multiplier * vis_aggregate) + epsilon
 
 	# return (PATH_TIMESTEPS - f(t)) * visibility(pt(t))
 	# non-vanilla version
@@ -80,14 +135,19 @@ def prob_goal_given_path(start, pt, goal, goals):
 	c2 = f_cost(pt, goal)
 	c3 = f_cost(start, goal)
 
-	return np.exp(-c1 -c2) / np.exp(c3)
+	# print(np.exp(-c1 -c2))
+	# print(np.exp(c3))
+
+	return (-c1 -c2) / c3
+	# ~always returns 0 if keep the exps
+	# return np.exp(-c1 -c2) / np.exp(c3)
 
 # Given a 
-def f_legibility(goal, goals, path, df_obs):
+def f_legibility(goal, goals, path, aud):
 	legibility = 0
 	divisor = 0
 	total_dist = 0
-	LAMBDA = 1
+	LAMBDA = .005
 
 	start = path[0]
 	total_cost = 0
@@ -95,14 +155,25 @@ def f_legibility(goal, goals, path, df_obs):
 	t = 1
 	p_n = path[0]
 	for pt in path:
-		legibility += prob_goal_given_path(start, pt, goal, goals) * f(t)
+		f = f_og(t)
+		# f = f_remix(t, p_n, pt, aud)
+
+		legibility += prob_goal_given_path(start, pt, goal, goals) * f
 		
 		total_cost += f_cost(p_n, pt)
 		p_n = pt
 
-		divisor += f(t)
+		divisor += f
 		t = t + 1
 	
+
+	print("leg, div, f(t)")
+	print(legibility, divisor, f, f_og(t))
+
+	# if legibility != 0.0:
+	# 	print("got one")
+	# 	exit()
+
 	overall = (legibility / divisor) - LAMBDA*total_cost
 	return overall
 
@@ -123,16 +194,13 @@ def get_legibilities(path, target, goals, obs_sets):
 		new_val = f_legibility(target, goals, path, aud)
 		vals.append(new_val)
 
+	print(vals)
 	return vals
 
 
-def generate_visibility(df, vis_function):
-	pass
-
-
 def generate_single_path(restaurant, target, vis_type, n_control):
-	sample_pts 	= r.sample_points(n_control, target, vis_type)
-	path 		= construct_single_path(r.get_start(), target, sample_pts)
+	sample_pts 	= restaurant.sample_points(n_control, target, vis_type)
+	path 		= construct_single_path(restaurant.get_start(), target, sample_pts)
 	return path
 
 def construct_single_path(start, end, sample_pts):
@@ -196,10 +264,48 @@ def get_path_analysis(all_paths, r, target):
 
 	return df
 
-def assess_paths(all_paths, r, target):
+def minMax(x):
+    return pd.Series(index=['min','max'],data=[x.min(),x.max()])
+
+def assess_paths(all_paths, r, ti):
+	target = r.get_goals_all()[ti]
 	df = get_path_analysis(all_paths, r, target)
 
-	return df
+	df_minmax = df.apply(minMax)
+	print(df_minmax)
+	print(df_minmax['l_agnostic'])
+	print(df_minmax['l_a'])
+	print(df_minmax['l_b'])
+	print(df_minmax['l_multi'])
+	df.to_csv(FILENAME_PATH_ASSESS + 'scores.csv')
+
+
+
+	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']	
+	path_key = 'path'
+	path_keys = resto.VIS_CHECKLIST
+
+	best_list 	= []
+	worst_list 	= []
+
+	paths_dict = {}
+
+	for li in range(len(leg_labels)):
+		l = leg_labels[li]
+
+		best 	= df.loc[df[l].idxmax()]
+		worst 	= df.loc[df[l].idxmin()]
+
+		best_path 	= best[path_key]
+		worst_path 	= worst[path_key]
+
+		best_list.append(best_path)
+		worst_list.append(worst_path)
+
+		paths_dict[path_keys[li]] = [best_path, worst_path]
+
+
+	return paths_dict
 
 def iterate_on_paths():
 	path_options 		= generate_paths(NUM_PATHS, r, VISIBILITY_TYPES)
@@ -216,7 +322,7 @@ def inspect_heatmap(df):
 	max_b 		= df['VIS_B'].max()
 	max_omni 	= df['VIS_OMNI'].max()
 
-	print((length, width))
+	# print((length, width))
 	print((max_omni, max_multi))
 
 	img = np.zeros((length,width), np.uint8)
@@ -236,62 +342,81 @@ def inspect_heatmap(df):
 
 # df.at[i,COL_PATHING] = get_pm_label(row)
 
-NUM_PATHS = 200
-generate_type = resto.TYPE_UNITY_ALIGNED
+def select_paths_and_draw(restaurant, unique_key):
+	NUM_PATHS = 200
 
-# SETUP FROM SCRATCH AND SAVE
-if FLAG_SAVE:
-	r 	= resto.Restaurant(generate_type)
-	# vis = r.get_visibility_of_pts_pandas()
-	print("PLANNER: get visibility info")
+	unique_key = "_" + unique_key + "_"
 
-	if FLAG_VIS_GRID:
-		df_vis = r.get_visibility_of_pts_pandas(f_visibility)
+	img = restaurant.get_img()
+	empty_img = cv2.flip(img, 0)
+	cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
+	goals = restaurant.get_goals_all()
 
-		dbfile = open(vis_pickle, 'ab') 
-		pickle.dump(df_vis, dbfile)					  
+	# Decide how many control points to provide
+	for ti in range(len(goals)):
+		all_paths = []
+		target = goals[ti]
+		for n_control in range(1, 3):
+
+			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
+			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"
+			resto.export_raw_paths(img, paths, fn)
+			all_paths.extend(paths)
+
+		options = assess_paths(all_paths, restaurant, ti)
+		resto.export_goal_options_from_assessment(img, ti, options, fn=FILENAME_PATH_ASSESS + unique_key)
+
+
+
+
+
+
+
+
+
+def unity_scenario():
+	generate_type = resto.TYPE_UNITY_ALIGNED
+
+	# SETUP FROM SCRATCH AND SAVE
+	if FLAG_SAVE:
+		r 	= resto.Restaurant(generate_type)
+		# vis = r.get_visibility_of_pts_pandas()
+		print("PLANNER: get visibility info")
+
+		if FLAG_VIS_GRID:
+			df_vis = r.get_visibility_of_pts_pandas(f_visibility)
+
+			dbfile = open(vis_pickle, 'ab') 
+			pickle.dump(df_vis, dbfile)					  
+			dbfile.close()
+			print("Saved visibility map")
+			df_vis.to_csv('visibility.csv')
+			print("Visibility point grid created")
+		
+		dbfile = open(resto_pickle, 'ab') 
+		pickle.dump(r, dbfile)					  
 		dbfile.close()
-		print("Saved visibility map")
-		df_vis.to_csv('visibility.csv')
-		print("Visibility point grid created")
-	
-	dbfile = open(resto_pickle, 'ab') 
-	pickle.dump(r, dbfile)					  
-	dbfile.close()
-	print("Saved restaurant maps")
+		print("Saved restaurant maps")
 
-# OR LOAD FROM FILE
-else:
-	dbfile = open(resto_pickle, 'rb')
-	r = pickle.load(dbfile)
-	print("Imported pickle of restaurant")
+	# OR LOAD FROM FILE
+	else:
+		dbfile = open(resto_pickle, 'rb')
+		r = pickle.load(dbfile)
+		print("Imported pickle of restaurant")
 
-	if FLAG_VIS_GRID:
-		dbfile = open(vis_pickle, 'rb')
-		df_vis = pickle.load(dbfile)
-		print("Imported pickle of vis")
+		if FLAG_VIS_GRID:
+			dbfile = open(vis_pickle, 'rb')
+			df_vis = pickle.load(dbfile)
+			print("Imported pickle of vis")
 
 
-img = r.get_img()
-empty_img = cv2.flip(img, 0)
-cv2.imwrite(FILENAME_PATH_ASSESS + 'empty.png', empty_img) 
-goals = r.get_goals_all()
+	select_paths_and_draw(r, "mainexp")
 
-# Decide how many control points to provide
-for ti in range(len(goals)):
-	all_paths = []
-	target = goals[ti]
-	for n_control in range(3):
 
-		paths = generate_n_paths(r, 20, target, n_control)
-		fn = FILENAME_PATH_ASSESS + str(ti) + "-" + str(n_control) + "-cp" + "-all.png"
-		resto.export_raw_paths(img, paths, fn)
-		all_paths.extend(paths)
 
-	options = assess_paths(all_paths, r, target)
-	print(options)
-	# options.
 
+
+unity_scenario()
 
 
 
