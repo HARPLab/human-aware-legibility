@@ -972,18 +972,21 @@ class Restaurant:
 			# Draw shortened rep for view cones
 			# away = obs[1]
 			obs = self.get_observer_back()
-			# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-			cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
-			alpha = 0.3  # Transparency factor.
-			img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+			if obs is not None:
+
+				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+				cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
+				alpha = 0.3  # Transparency factor.
+				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 			obs = self.get_observer_towards()
-			# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_TOWARDS)
-			cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_TOWARDS)
+			if obs is not None:
+				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_TOWARDS)
+				cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_TOWARDS)
 
-			alpha = 0.3  # Transparency factor.
-			img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
-			# Following line overlays transparent rectangle over the image
+				alpha = 0.3  # Transparency factor.
+				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+				# Following line overlays transparent rectangle over the image
 
 		# Draw tables
 		for table in self.tables:
@@ -995,9 +998,11 @@ class Restaurant:
 
 
 		obs = self.get_observer_back()
-		cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
+		if obs is not None:
+			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
 		obs = self.get_observer_towards()
-		cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
+		if obs is not None:
+			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
 			# Draw person
@@ -1224,10 +1229,14 @@ class Restaurant:
 	# observers[0] = BACK
 
 	def get_observer_a(self):
-		return self.observers[0]
+		if len(self.observers) > 0:
+			return self.observers[0]
+		return None
 
 	def get_observer_b(self):
-		return self.observers[1]
+		if len(self.observers) > 1:
+			return self.observers[1]
+		return None
 
 	def get_observer_towards(self):
 		return self.get_observer_b()
