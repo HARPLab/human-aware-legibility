@@ -78,8 +78,12 @@ def f_vis4(p, df_obs):
 		return 0
 	
 	vis = 0
-	for obs in df_obs:	
-		angle, dist = obs.get_obs_of_pt(p)
+	for obs in df_obs:
+		if obs == None:
+			return 0
+		else:
+			angle, dist = obs.get_obs_of_pt(p)
+
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += (distance_cutoff - dist) * (np.abs(angle_cone - angle) / angle) 
 
@@ -98,7 +102,11 @@ def f_vis3(p, df_obs):
 	
 	vis = 0
 	for obs in df_obs:	
-		angle, dist = obs.get_obs_of_pt(p)
+		if obs == None:
+			return 0
+		else:
+			angle, dist = obs.get_obs_of_pt(p)
+
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += np.abs(angle_cone - angle)
 
@@ -116,8 +124,12 @@ def f_vis2(p, df_obs):
 		return 0
 	
 	vis = 0
-	for obs in df_obs:	
-		angle, dist = obs.get_obs_of_pt(p)
+	for obs in df_obs:
+		if obs == None:
+			return 0
+		else:
+			angle, dist = obs.get_obs_of_pt(p)
+
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += (distance_cutoff - dist)
 
@@ -128,6 +140,7 @@ def f_vis1(p, df_obs):
 	angle_cone = 60
 	distance_cutoff = 500
 
+
 	# Given a list of entries in the format 
 	# ((obsx, obsy), angle, distance)
 	if len(df_obs) == 0:
@@ -135,7 +148,10 @@ def f_vis1(p, df_obs):
 	
 	vis = 0
 	for obs in df_obs:
-		angle, dist = obs.get_obs_of_pt(p)
+		if obs == None:
+			return 0
+		else:
+			angle, dist = obs.get_obs_of_pt(p)
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += 1
 
@@ -157,6 +173,7 @@ def f_visibility(df_obs):
 	for obs in df_obs:	
 		pt, angle, dist = obs.get_visibility_of_pt_raw(pt)
 		if angle < angle_cone and dist < distance_cutoff:
+
 			vis += (distance_cutoff - dist)
 
 	return vis
@@ -194,7 +211,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 		if angle < obs_FOV:
 			# full credit at the center of view
-			offset_multiplier = (obs_FOV - angle) / obs_FOV
+			offset_multiplier = np.abs(obs_FOV - angle) / obs_FOV
 
 			# 1 if very close
 			distance_bonus = (MAX_DISTANCE - distance) / MAX_DISTANCE
@@ -203,16 +220,16 @@ def get_visibility_of_pt_w_observers(pt, aud):
 	return score
 
 def f_remix1(t, pt, aud):
-	return f_og(t) * f_vis1(pt, aud) + 1
+	return (f_og(t) * f_vis1(pt, aud)) + 1
 
 def f_remix2(t, pt, aud):
-	return f_og(t) * f_vis2(pt, aud) + 1
+	return (f_og(t) * f_vis2(pt, aud)) + 1
 
 def f_remix3(t, pt, aud):
-	return f_og(t) * f_vis3(pt, aud) + 1
+	return (f_og(t) * f_vis3(pt, aud)) + 1
 
 def f_remix4(t, pt, aud):
-	return f_og(t) * f_vis4(pt, aud) + 1
+	return (f_og(t) * f_vis4(pt, aud)) + 1
 
 def f_remix_novis(t, pt, aud):
 	# novis just always returns 1, so this is f_og
@@ -300,7 +317,7 @@ def f_legibility(goal, goals, path, aud, f_vis_convo):
 		t = t + 1
 
 	legibility = (legibility / divisor)
-	total_cost =  - LAMBDA*total_cost
+	# total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
 	return overall
@@ -464,7 +481,7 @@ def get_vis_labels():
 def minMax(x):
     return pd.Series(index=['min','max'],data=[x.min(),x.max()])
 
-def assess_paths(all_paths, r, ti):
+def assess_paths(all_paths, r, ti, unique_key):
 	target = r.get_goals_all()[ti]
 	df = get_path_analysis(all_paths, r, target)
 
@@ -474,7 +491,9 @@ def assess_paths(all_paths, r, ti):
 	# print(df_minmax['l_a'])
 	# print(df_minmax['l_b'])
 	# print(df_minmax['l_multi'])
-	df.to_csv(FILENAME_PATH_ASSESS + 'scores.csv')
+	csv_title = FILENAME_PATH_ASSESS + unique_key + 'scores.csv'
+	print(csv_title)
+	df.to_csv(csv_title)
 
 	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']	
 	path_key = 'path'
@@ -490,20 +509,21 @@ def assess_paths(all_paths, r, ti):
 
 	for li in range(len(inspection_labels)):
 		l = inspection_labels[li]
-		print(l)
-		print(df[l])
-
+		
 		best 	= df.loc[df[l].idxmax()]
-		worst 	= df.loc[df[l].idxmin()]
+		# worst 	= df.loc[df[l].idxmin()]
 
 		best_path 	= best[path_key]
-		worst_path 	= worst[path_key]
+		# worst_path 	= worst[path_key]
 
 		best_list.append(best_path)
-		worst_list.append(worst_path)
+		# worst_list.append(worst_path)
 
-		paths_dict[path_keys[li]] = [best_path, worst_path]
-		raw_dict[path_keys[li]] = [best, worst]
+		# paths_dict[path_keys[li]] = [best_path, worst_path]
+		# raw_dict[path_keys[li]] = [best, worst]
+
+		paths_dict[path_keys[li]] = [best_path]
+		raw_dict[path_keys[li]] = [best]
 
 
 	return paths_dict, raw_dict
@@ -626,7 +646,7 @@ def select_paths_and_draw(restaurant, unique_key):
 			resto.export_raw_paths(img, paths, fn)
 			all_paths.extend(paths)
 
-		options, details = assess_paths(all_paths, restaurant, ti)
+		options, details = assess_paths(all_paths, restaurant, ti, unique_key)
 
 		fn = fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
 		inspect_details(details, fn)
@@ -680,7 +700,7 @@ def unity_scenario():
 
 
 
-unity_scenario()
+# unity_scenario()
 
 
 
