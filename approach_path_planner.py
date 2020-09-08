@@ -5,6 +5,8 @@ import seaborn as sns
 import numpy as np
 import cv2
 import matplotlib.pylab as plt
+import math
+import copy
 
 
 
@@ -35,6 +37,7 @@ def f_cost_old(t1, t2):
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
+
 	return np.abs(a * a)
 
 def f_path_cost(path):
@@ -52,6 +55,16 @@ def f_audience_agnostic():
 def f_leg_personalized():
 
 	pass
+
+def f_convolved(val_list, f_function):
+	tstamps = range(len(val_list))
+	ret = []
+	for t in tstamps:
+		ret.append(f_function(t) * val_list[t])
+	return ret
+
+
+
 
 # Given the observers of a given location, in terms of distance and relative heading
 def f_vis4(p, df_obs):
@@ -121,8 +134,7 @@ def f_vis1(p, df_obs):
 		return 0
 	
 	vis = 0
-	for obs in df_obs:	
-		print(obs)
+	for obs in df_obs:
 		angle, dist = obs.get_obs_of_pt(p)
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += 1
@@ -151,6 +163,9 @@ def f_visibility(df_obs):
 
 def f_og(t):
 	return PATH_TIMESTEPS - t
+
+def f_novis(t, obs):
+	return 1
 
 # def f_vis_eqn(observers):
 # 	value = 0
@@ -187,6 +202,23 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 	return score
 
+def f_remix1(t, pt, aud):
+	return f_og(t) * f_vis1(pt, aud) + 1
+
+def f_remix2(t, pt, aud):
+	return f_og(t) * f_vis2(pt, aud) + 1
+
+def f_remix3(t, pt, aud):
+	return f_og(t) * f_vis3(pt, aud) + 1
+
+def f_remix4(t, pt, aud):
+	return f_og(t) * f_vis4(pt, aud) + 1
+
+def f_remix_novis(t, pt, aud):
+	# novis just always returns 1, so this is f_og
+	return f_og(t) * f_novis(pt, aud) + 1
+
+
 def f_remix(t, p1, p2, aud):
 	epsilon = .0001
 	multiplier = (PATH_TIMESTEPS - t)
@@ -195,34 +227,54 @@ def f_remix(t, p1, p2, aud):
 	vis2 = get_visibility_of_pt_w_observers(p2, aud)
 	vis_aggregate = vis1 + vis2 / 2.0
 
-
-	# print(vis1)
-	# print(vis2)
-	# print("vis printed, exiting")
-	# exit()
-
-	# print(str(multiplier) + "vs" + str(vis_aggregate))
-
 	return (multiplier * vis_aggregate) + epsilon
 
-	# return (PATH_TIMESTEPS - f(t)) * visibility(pt(t))
-	# non-vanilla version
 
+def prob_goal_given_path(start, pt, goal, goals, cost_path_to_here):
 
-def prob_goal_given_path(start, pt, goal, goals):
-	c1 = f_cost(start, pt)
+	c1 = cost_path_to_here
+	# c1 = f_cost(start, pt)
+	# for these optimal paths, 
+	# this distance is as the bird flies
 	c2 = f_cost(pt, goal)
 	c3 = f_cost(start, goal)
 
-	# print(np.exp(-c1 -c2))
-	# print(np.exp(c3))
+	# print("~")
+	# print(c1)
+	# print(c2)
+	# print(c3)
+	a = np.exp(-c1 -c2)
+	b = np.exp(-c3)
+	# print("exps")
+	# print(a)
+	# print(b)
+	ratio 		= np.exp(-c1 -c2) / np.exp(-c3)
+	silly_ratio = (-c1 -c2) / (-c3)
+	# print(ratio)
+	# print(ratio)
+	# print(silly_ratio)
+	if math.isnan(ratio):
+		ratio = 0
 
-	# return (-c1 -c2) / c3
-	# ~always returns 0 if keep the exps
-	return np.exp(-c1 -c2) / np.exp(c3)
+	return silly_ratio
+
+def get_costs_along_path(path):
+	output = []
+	ci = 0
+	csf = 0
+	for pi in range(len(path)):
+		
+		cst = f_cost(path[ci], path[pi])
+		csf = csf + cst
+		log = (path[pi], csf)
+		ci = pi
+		output.append(log)
+		
+	return output
+
 
 # Given a 
-def f_legibility(goal, goals, path, aud):
+def f_legibility(goal, goals, path, aud, f_vis_convo):
 	legibility = 0
 	divisor = 0
 	total_dist = 0
@@ -230,30 +282,27 @@ def f_legibility(goal, goals, path, aud):
 
 	start = path[0]
 	total_cost = 0
+	aug_path = get_costs_along_path(path)
 
 	t = 1
 	p_n = path[0]
-	for pt in path:
-		f = f_og(t)
+	for pt, cost_to_here in aug_path:
+		f = f_vis_convo(t, pt, aud)
+		# print(f)
 		# f = f_remix(t, p_n, pt, aud)
 
-		legibility += prob_goal_given_path(start, pt, goal, goals) * f
+		legibility += prob_goal_given_path(start, pt, goal, goals, cost_to_here) * f
 		
 		total_cost += f_cost(p_n, pt)
 		p_n = pt
 
 		divisor += f
 		t = t + 1
-	
 
-	print("leg, div, f(t)")
-	print(legibility, divisor, f, f_og(t))
+	legibility = (legibility / divisor)
+	total_cost =  - LAMBDA*total_cost
+	overall = legibility + total_cost
 
-	# if legibility != 0.0:
-	# 	print("got one")
-	# 	exit()
-
-	overall = (legibility / divisor) # - LAMBDA*total_cost
 	return overall
 
 def get_costs(path, target, obs_sets):
@@ -265,14 +314,13 @@ def get_costs(path, target, obs_sets):
 	return vals
 
 def get_visibilities(path, target, goals, obs_sets):
-	vis_labels 		= ['vis1-flat', 'vis2-dist', 'vis3-angle', 'vis4-angle-dist']
+	vis_labels 		= ['vis1-flat', 'vis2-dist', 'vis3-angle', 'vis4-angle-dist', 'no-vis']
 	# vis_functions 	= [f_vis1, 	f_vis2, f_vis3, f_vis4]
 	# vis_lists 		= [[], 		[], 	[], 	[]]
 	# vis_totals 		= [0, 		0, 		0, 		0]
 
-	v1, v2, v3, v4 = [], [], [], []
-	print(obs_sets)
-
+	v1, v2, v3, v4, v5 = [], [], [], [], []
+	
 	if obs_sets == []:
 		return vis_labels, None
 
@@ -282,23 +330,23 @@ def get_visibilities(path, target, goals, obs_sets):
 		v1.append(f_vis1(p, obs))
 		v2.append(f_vis2(p, obs))
 		v3.append(f_vis3(p, obs))
-		v4.append(f_vis4(p, obs))		
+		v4.append(f_vis4(p, obs))
+		v5.append(f_novis(p, obs))		
 
-	vis_values = [v1, v2, v3, v4]
+	vis_values = [v1, v2, v3, v4, v5]
 
 	return vis_labels, vis_values
 
 
 
-def get_legibilities(path, target, goals, obs_sets):
+def get_legibilities(path, target, goals, obs_sets, f_vis):
 	vals = []
 
 	for aud in obs_sets:
 		# goal, goals, path, df_obs
-		new_val = f_legibility(target, goals, path, aud)
+		new_val = f_legibility(target, goals, path, aud, f_vis)
 		vals.append(new_val)
 
-	print(vals)
 	return vals
 
 
@@ -354,26 +402,60 @@ def get_path_analysis(all_paths, r, target):
 	obs_sets = [obs_none, obs_a, obs_b, obs_multi]
 
 	goals = r.get_goals_all()
-	col_labels = ['path', 'cost', 'l_agnostic', 'l_a', 'l_b', 'l_multi', 'target']
+	col_labels = ['cost', 'target', 'path']
 
 	vis_labels = get_vis_labels()
+	f_list = [f_remix1, f_remix2, f_remix3, f_remix4, f_remix_novis]
+	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']
+
 	col_labels.extend(vis_labels)
 
 	data = []
 	for p in all_paths:
+		# Do analytics that are constant for all views of path, such as cost
+		# these are the pre-listed options in col_labels
 		cost = f_path_cost(p)
-		l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets)
-
 		vis_types, vis_values = get_visibilities(p, target, goals, obs_sets)
-
-
-		entry = [p, cost, l_o, l_a, l_b, l_m, target]
+		entry = [cost, target, p]
+		remix_labels = []
 		entry.extend(vis_values)
+
+		#####
+
+		for fi in range(len(f_list)):
+			f_vis = f_list[fi]
+			f_label = vis_labels[fi]
+
+			l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets, f_vis)
+
+			labels = copy.copy(leg_labels)
+			for i in range(len(labels)):
+				labels[i] = labels[i] + "-" + f_label
+
+			remix_labels.extend(labels)
+			entry.extend([l_o, l_a, l_b, l_m])
 
 		data.append(entry)
 
-	df = pd.DataFrame(data, columns = col_labels) 
+	col_labels.extend(remix_labels)
+	df = pd.DataFrame(data, columns = col_labels)
+	df = df.fillna(0)
 	return df
+
+def get_all_label_combos():
+	vis_labels = get_vis_labels()
+	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']
+
+	all_labels = []
+
+	for v in vis_labels:
+		labels = copy.copy(leg_labels)
+		for i in range(len(labels)):
+			labels[i] = labels[i] + "-" + v
+		all_labels.extend(labels)
+
+	return labels
+
 
 def get_vis_labels():
 	vis_labels, dummy = get_visibilities([], [], [], [])
@@ -387,11 +469,11 @@ def assess_paths(all_paths, r, ti):
 	df = get_path_analysis(all_paths, r, target)
 
 	df_minmax = df.apply(minMax)
-	print(df_minmax)
-	print(df_minmax['l_agnostic'])
-	print(df_minmax['l_a'])
-	print(df_minmax['l_b'])
-	print(df_minmax['l_multi'])
+	# print(df_minmax)
+	# print(df_minmax['l_agnostic'])
+	# print(df_minmax['l_a'])
+	# print(df_minmax['l_b'])
+	# print(df_minmax['l_multi'])
 	df.to_csv(FILENAME_PATH_ASSESS + 'scores.csv')
 
 	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']	
@@ -404,8 +486,12 @@ def assess_paths(all_paths, r, ti):
 	paths_dict = {}
 	raw_dict = {}
 
-	for li in range(len(leg_labels)):
-		l = leg_labels[li]
+	inspection_labels = get_all_label_combos()
+
+	for li in range(len(inspection_labels)):
+		l = inspection_labels[li]
+		print(l)
+		print(df[l])
 
 		best 	= df.loc[df[l].idxmax()]
 		worst 	= df.loc[df[l].idxmin()]
@@ -468,6 +554,7 @@ def inspect_details(detail_dict, fn):
 	vl2 = vis_labels[1]
 	vl3 = vis_labels[2]
 	vl4 = vis_labels[3]
+	vl5 = vis_labels[4]
 
 	for pkey in detail_dict.keys():
 		# print('saving fig')
@@ -478,8 +565,7 @@ def inspect_details(detail_dict, fn):
 			v2 = detail[vl2]
 			v3 = detail[vl3]
 			v4 = detail[vl4]
-
-			leg = detail['l_agnostic']
+			v5 = detail[vl5]
 
 			x = range(len(v1))
 	
@@ -490,9 +576,28 @@ def inspect_details(detail_dict, fn):
 			ax1.scatter(x, v2, s=10, c='r', marker="o", label=vl2)
 			ax1.scatter(x, v3, s=10, c='g', marker="o", label=vl3)
 			ax1.scatter(x, v4, s=10, c='y', marker="o", label=vl4)
+			ax1.scatter(x, v5, s=10, c='grey', marker="o", label=vl5)
 			plt.legend(loc='upper left');
 			
-			plt.savefig(fn + str(leg) + '.png')
+			plt.savefig(fn + 'vis' + '.png')
+			plt.clf()
+
+			f1 = f_convolved(v1, f_og)
+			f2 = f_convolved(v2, f_og)
+			f3 = f_convolved(v3, f_og)
+			f4 = f_convolved(v4, f_og)
+			f4 = f_convolved(v5, f_og)
+
+			fig = plt.figure()
+			ax1 = fig.add_subplot(111)
+
+			ax1.scatter(x, f1, s=10, c='b', marker="o", label=vl1)
+			ax1.scatter(x, f2, s=10, c='r', marker="o", label=vl2)
+			ax1.scatter(x, f3, s=10, c='g', marker="o", label=vl3)
+			ax1.scatter(x, f4, s=10, c='y', marker="o", label=vl4)
+			plt.legend(loc='upper left');
+			
+			plt.savefig(fn + 'convolved' + '.png')
 			plt.clf()
 
 
@@ -514,7 +619,7 @@ def select_paths_and_draw(restaurant, unique_key):
 	for ti in range(len(goals)):
 		all_paths = []
 		target = goals[ti]
-		for n_control in range(0, 3):
+		for n_control in range(1, 3):
 
 			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
 			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"
@@ -527,9 +632,6 @@ def select_paths_and_draw(restaurant, unique_key):
 		inspect_details(details, fn)
 
 		resto.export_goal_options_from_assessment(img, ti, options, fn=FILENAME_PATH_ASSESS + unique_key)
-
-
-
 
 
 
