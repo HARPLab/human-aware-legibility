@@ -4,6 +4,8 @@ import pickle
 import seaborn as sns
 import numpy as np
 import cv2
+import matplotlib.pylab as plt
+
 
 
 # start 		= r.get_start()
@@ -28,11 +30,12 @@ FILENAME_PATH_ASSESS = 'path_assessment/'
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
 
-def f_cost(t1, t2):
+def f_cost_old(t1, t2):
 	return resto.dist(t1, t2)
 
 def f_cost(t1, t2):
-	return resto.dist(t1, t2)
+	a = resto.dist(t1, t2)
+	return np.abs(a * a)
 
 def f_path_cost(path):
 	cost = 0
@@ -50,6 +53,82 @@ def f_leg_personalized():
 
 	pass
 
+# Given the observers of a given location, in terms of distance and relative heading
+def f_vis4(p, df_obs):
+	dist_units = 100
+	angle_cone = 60
+	distance_cutoff = 500
+
+	# Given a list of entries in the format 
+	# ((obsx, obsy), angle, distance)
+	if len(df_obs) == 0:
+		return 0
+	
+	vis = 0
+	for obs in df_obs:	
+		angle, dist = obs.get_obs_of_pt(p)
+		if angle < angle_cone and dist < distance_cutoff:
+			vis += (distance_cutoff - dist) * (np.abs(angle_cone - angle) / angle) 
+
+	return vis
+
+# Given the observers of a given location, in terms of distance and relative heading
+def f_vis3(p, df_obs):
+	dist_units = 100
+	angle_cone = 60
+	distance_cutoff = 500
+
+	# Given a list of entries in the format 
+	# ((obsx, obsy), angle, distance)
+	if len(df_obs) == 0:
+		return 0
+	
+	vis = 0
+	for obs in df_obs:	
+		angle, dist = obs.get_obs_of_pt(p)
+		if angle < angle_cone and dist < distance_cutoff:
+			vis += np.abs(angle_cone - angle)
+
+	return vis
+
+
+def f_vis2(p, df_obs):
+	dist_units = 100
+	angle_cone = 60
+	distance_cutoff = 500
+
+	# Given a list of entries in the format 
+	# ((obsx, obsy), angle, distance)
+	if len(df_obs) == 0:
+		return 0
+	
+	vis = 0
+	for obs in df_obs:	
+		angle, dist = obs.get_obs_of_pt(p)
+		if angle < angle_cone and dist < distance_cutoff:
+			vis += (distance_cutoff - dist)
+
+	return vis
+
+def f_vis1(p, df_obs):
+	dist_units = 100
+	angle_cone = 60
+	distance_cutoff = 500
+
+	# Given a list of entries in the format 
+	# ((obsx, obsy), angle, distance)
+	if len(df_obs) == 0:
+		return 0
+	
+	vis = 0
+	for obs in df_obs:	
+		print(obs)
+		angle, dist = obs.get_obs_of_pt(p)
+		if angle < angle_cone and dist < distance_cutoff:
+			vis += 1
+
+	return vis
+
 
 # Given the observers of a given location, in terms of distance and relative heading
 def f_visibility(df_obs):
@@ -64,7 +143,7 @@ def f_visibility(df_obs):
 	
 	vis = 0
 	for obs in df_obs:	
-		pt, angle, dist = obs
+		pt, angle, dist = obs.get_visibility_of_pt_raw(pt)
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += (distance_cutoff - dist)
 
@@ -138,16 +217,16 @@ def prob_goal_given_path(start, pt, goal, goals):
 	# print(np.exp(-c1 -c2))
 	# print(np.exp(c3))
 
-	return (-c1 -c2) / c3
+	# return (-c1 -c2) / c3
 	# ~always returns 0 if keep the exps
-	# return np.exp(-c1 -c2) / np.exp(c3)
+	return np.exp(-c1 -c2) / np.exp(c3)
 
 # Given a 
 def f_legibility(goal, goals, path, aud):
 	legibility = 0
 	divisor = 0
 	total_dist = 0
-	LAMBDA = .005
+	LAMBDA = 1
 
 	start = path[0]
 	total_cost = 0
@@ -174,7 +253,7 @@ def f_legibility(goal, goals, path, aud):
 	# 	print("got one")
 	# 	exit()
 
-	overall = (legibility / divisor) - LAMBDA*total_cost
+	overall = (legibility / divisor) # - LAMBDA*total_cost
 	return overall
 
 def get_costs(path, target, obs_sets):
@@ -184,6 +263,31 @@ def get_costs(path, target, obs_sets):
 		new_val = f_cost()
 
 	return vals
+
+def get_visibilities(path, target, goals, obs_sets):
+	vis_labels 		= ['vis1-flat', 'vis2-dist', 'vis3-angle', 'vis4-angle-dist']
+	# vis_functions 	= [f_vis1, 	f_vis2, f_vis3, f_vis4]
+	# vis_lists 		= [[], 		[], 	[], 	[]]
+	# vis_totals 		= [0, 		0, 		0, 		0]
+
+	v1, v2, v3, v4 = [], [], [], []
+	print(obs_sets)
+
+	if obs_sets == []:
+		return vis_labels, None
+
+	obs = obs_sets[-1]
+
+	for p in path:
+		v1.append(f_vis1(p, obs))
+		v2.append(f_vis2(p, obs))
+		v3.append(f_vis3(p, obs))
+		v4.append(f_vis4(p, obs))		
+
+	vis_values = [v1, v2, v3, v4]
+
+	return vis_labels, vis_values
+
 
 
 def get_legibilities(path, target, goals, obs_sets):
@@ -252,17 +356,28 @@ def get_path_analysis(all_paths, r, target):
 	goals = r.get_goals_all()
 	col_labels = ['path', 'cost', 'l_agnostic', 'l_a', 'l_b', 'l_multi', 'target']
 
+	vis_labels = get_vis_labels()
+	col_labels.extend(vis_labels)
+
 	data = []
 	for p in all_paths:
 		cost = f_path_cost(p)
 		l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets)
 
+		vis_types, vis_values = get_visibilities(p, target, goals, obs_sets)
+
+
 		entry = [p, cost, l_o, l_a, l_b, l_m, target]
+		entry.extend(vis_values)
+
 		data.append(entry)
 
 	df = pd.DataFrame(data, columns = col_labels) 
-
 	return df
+
+def get_vis_labels():
+	vis_labels, dummy = get_visibilities([], [], [], [])
+	return vis_labels
 
 def minMax(x):
     return pd.Series(index=['min','max'],data=[x.min(),x.max()])
@@ -279,8 +394,6 @@ def assess_paths(all_paths, r, ti):
 	print(df_minmax['l_multi'])
 	df.to_csv(FILENAME_PATH_ASSESS + 'scores.csv')
 
-
-
 	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']	
 	path_key = 'path'
 	path_keys = resto.VIS_CHECKLIST
@@ -289,6 +402,7 @@ def assess_paths(all_paths, r, ti):
 	worst_list 	= []
 
 	paths_dict = {}
+	raw_dict = {}
 
 	for li in range(len(leg_labels)):
 		l = leg_labels[li]
@@ -303,14 +417,20 @@ def assess_paths(all_paths, r, ti):
 		worst_list.append(worst_path)
 
 		paths_dict[path_keys[li]] = [best_path, worst_path]
+		raw_dict[path_keys[li]] = [best, worst]
 
 
-	return paths_dict
+	return paths_dict, raw_dict
 
 def iterate_on_paths():
 	path_options 		= generate_paths(NUM_PATHS, r, VISIBILITY_TYPES)
-	path_assessments 	= assess_paths(path_options)
+	path_dict, path_assessments 	= assess_paths(path_options)
 
+def determine_lambda():
+
+
+
+	pass
 
 def inspect_heatmap(df):
 	# print(df)
@@ -342,6 +462,44 @@ def inspect_heatmap(df):
 
 # df.at[i,COL_PATHING] = get_pm_label(row)
 
+def inspect_details(detail_dict, fn):
+	vis_labels = get_vis_labels()
+	vl1 = vis_labels[0]
+	vl2 = vis_labels[1]
+	vl3 = vis_labels[2]
+	vl4 = vis_labels[3]
+
+	for pkey in detail_dict.keys():
+		# print('saving fig')
+		paths_details = detail_dict[pkey]
+
+		for detail in paths_details:
+			v1 = detail[vl1]
+			v2 = detail[vl2]
+			v3 = detail[vl3]
+			v4 = detail[vl4]
+
+			leg = detail['l_agnostic']
+
+			x = range(len(v1))
+	
+			fig = plt.figure()
+			ax1 = fig.add_subplot(111)
+
+			ax1.scatter(x, v1, s=10, c='b', marker="o", label=vl1)
+			ax1.scatter(x, v2, s=10, c='r', marker="o", label=vl2)
+			ax1.scatter(x, v3, s=10, c='g', marker="o", label=vl3)
+			ax1.scatter(x, v4, s=10, c='y', marker="o", label=vl4)
+			plt.legend(loc='upper left');
+			
+			plt.savefig(fn + str(leg) + '.png')
+			plt.clf()
+
+
+
+
+
+
 def select_paths_and_draw(restaurant, unique_key):
 	NUM_PATHS = 200
 
@@ -363,7 +521,11 @@ def select_paths_and_draw(restaurant, unique_key):
 			resto.export_raw_paths(img, paths, fn)
 			all_paths.extend(paths)
 
-		options = assess_paths(all_paths, restaurant, ti)
+		options, details = assess_paths(all_paths, restaurant, ti)
+
+		fn = fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
+		inspect_details(details, fn)
+
 		resto.export_goal_options_from_assessment(img, ti, options, fn=FILENAME_PATH_ASSESS + unique_key)
 
 
