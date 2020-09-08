@@ -332,7 +332,7 @@ def get_paths_astar(start, goal, obstacle_map, visibility_maps):
 	vis_maps.append(visibility_maps[VIS_INDIVIDUALS][0])
 	# vis_maps.append(visibility_maps[VIS_INDIVIDUALS][1])
 
-	print(len(vis_maps))
+	# print(len(vis_maps))
 	
 	for visibility_map in vis_maps:
 		print("math path being added")
