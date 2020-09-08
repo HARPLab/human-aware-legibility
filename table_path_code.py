@@ -646,6 +646,16 @@ class Observer:
 			return .5
 		return 0
 
+	def get_obs_of_pt(self, pt):
+		obs_orient 	= self.get_orientation()
+		obs_FOV 	= self.get_FOV()
+
+		angle 		= angle_between(pt, self.get_center())
+		distance 	= dist(pt, self.get_center())
+
+		observation = (angle, distance)
+		return observation
+
 	def get_center(self):
 		return self.location
 
