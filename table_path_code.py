@@ -151,6 +151,8 @@ width = iy2
 
 UNITY_TO_IRL_SCALE = 3
 
+UNITY_GOAL_NAMES = ["BEFORE", "ME", "PAST", "ACROSS"]
+
 # visibility = np.zeros((r_width, r_length))
 # for x in range(r_width):
 # 	for y in range(r_length):
@@ -734,6 +736,19 @@ def verify_conversions():
 	print(n_u_pts)
 
 	print("Validate points transform to and from correctly")
+
+
+class PathPlan: 
+	def __init__(self, path, generation_details):
+		self.path = path
+		self.generation_details = generation_details
+
+	def get_path(self):
+		return self.path
+
+	def get_generation_details(self):
+		return self.generation_details
+
 
 
 # nodes = width x length divided up by planning resolution\
@@ -1415,6 +1430,7 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 		path_title = pkey
 
 		vis_type, goal_index = pkey.split("-")
+		
 		color = VIS_COLOR_MAP[vis_type]
 		by_method = img_deck[vis_type]
 		by_goal = img_deck[goal_index]
@@ -1447,6 +1463,78 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 
 
 # DISPLAY PATHS CODE
+def export_assessments_by_criteria(img, saved_paths, fn=None):
+	# Given a dictionary of pairs
+	# and each path with a unique set of criteria that enables them 
+
+
+	if fn is None:
+		fn = FILENAME_EXPORT_IMGS_PREFIX
+
+	print("Exporting diagrams")
+
+	all_paths_img = img.copy()
+
+	# img_deck = {}
+	# for vis_type in VIS_CHECKLIST:
+	# 	type_img = img.copy()
+	# 	img_deck[vis_type] = type_img
+
+	# for i in range(len(goals)):
+	# 	type_img = img.copy()
+	# 	img_deck[str(i)] = type_img
+
+	# print(img_deck.keys())
+
+	for pkey in saved_paths.keys():
+		paths = saved_paths[pkey]
+		# print(paths)
+
+		# !!! KEY difference: this one can have multiple options for a path
+		counter = 0
+		for path in paths:
+			path_img = img.copy()
+			path_title = pkey
+
+			# color = VIS_COLOR_MAP[vis_type]
+			color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+
+			# by_method = img_deck[vis_type]
+			# by_goal = img_deck[goal_index]
+
+			# print("PATH IS ")
+			# print(path)
+
+			# Draw the path  
+			for i in range(len(path) - 1):
+				a = path[i]
+				b = path[i + 1]
+				
+				cv2.line(path_img, a, b, color, thickness=6, lineType=8)
+				cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
+
+				# cv2.line(by_method, a, b, color, thickness=6, lineType=8)
+				# cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
+
+			path_img = cv2.flip(path_img, 0)
+			cv2.imwrite(fn + 'fig_path_' + path_title + '.png', path_img) 
+			print("exported image of " + pkey)
+
+	all_paths_img = cv2.flip(all_paths_img, 0)
+	cv2.imwrite(fn + 'ALL_CONDITIONS' + '.png', all_paths_img) 
+	### END DISPLAY PATHS CODE
+
+	# print(img_deck.keys())
+
+	# for key in img_deck.keys():
+	# 	if key == goal_index:
+	# 		this_img = img_deck[key]
+	# 		this_img = cv2.flip(this_img, 0)
+	# 		cv2.imwrite(fn  + goal_index + 'total_' + key + '.png', this_img) 
+
+	cv2.imwrite('generated/fig_tables.png', img) 
+
+# DISPLAY PATHS CODE
 def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None):
 	if fn is None:
 		fn = FILENAME_EXPORT_IMGS_PREFIX
@@ -1454,8 +1542,8 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 	print("Exporting diagrams")
 	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
-	# omni_paths_img = img.copy()
-	# cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
+	omni_paths_img = img.copy()
+	cv2.imwrite('generated/fig_path_' + "OMNISCIENT" + '.png', omni_paths_img) 
 
 	all_paths_img = img.copy()
 
@@ -1472,6 +1560,7 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 
 	for pkey in saved_paths.keys():
 		paths = saved_paths[pkey]
+		print(paths)
 
 		# !!! KEY difference: this one can have multiple options for a path
 		counter = 0
@@ -1483,6 +1572,8 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 			goal_index = str(target_index)
 
 			color = VIS_COLOR_MAP[vis_type]
+			# color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+
 			by_method = img_deck[vis_type]
 			by_goal = img_deck[goal_index]
 
@@ -1502,10 +1593,10 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 			print("exported image of " + pkey)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
-	cv2.imwrite(fn + 'ALL_CONDITIONS' + goal_index + '.png', all_paths_img) 
+	cv2.imwrite(fn + 'ALL_CONDITIONS-' + goal_index + '.png', all_paths_img) 
 	### END DISPLAY PATHS CODE
 
-	print(img_deck.keys())
+	# print(img_deck.keys())
 
 	for key in img_deck.keys():
 		if key == goal_index:

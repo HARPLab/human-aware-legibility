@@ -7,6 +7,7 @@ import cv2
 import matplotlib.pylab as plt
 import math
 import copy
+import decimal
 
 
 
@@ -23,11 +24,16 @@ FLAG_VIS_GRID 		= False
 VISIBILITY_TYPES 	= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 	= 3
 
+NUMBER_STEPS = 15
+
 PATH_TIMESTEPS = 15
 
 resto_pickle = 'pickle_vis'
 vis_pickle = 'pickle_resto'
 FILENAME_PATH_ASSESS = 'path_assessment/'
+
+FLAG_PROB_HEADING = False
+FLAG_PROB_PATH = True
 
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
@@ -219,6 +225,11 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 	return score
 
+
+def f_vis_t3(t, pt, aud):
+	return (f_vis3(pt, aud)) + 1
+
+
 def f_remix1(t, pt, aud):
 	return (f_og(t) * f_vis1(pt, aud)) + 1
 
@@ -246,34 +257,141 @@ def f_remix(t, p1, p2, aud):
 
 	return (multiplier * vis_aggregate) + epsilon
 
+# TODO Cache this result for a given path so far and set of goals
+def prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
+	g_array = []
+	g_target = 0
+	for g in goals:
+		p_raw = unnormalized_prob_goal_given_path(start, p_n1, pt, g, goals, cost_path_to_here)
+		g_array.append(p_raw)
+		if g is goal:
+			g_target = p_raw
 
-def prob_goal_given_path(start, pt, goal, goals, cost_path_to_here):
+	if(sum(g_array) == 0):
+		return 0
 
-	c1 = cost_path_to_here
-	# c1 = f_cost(start, pt)
-	# for these optimal paths, 
-	# this distance is as the bird flies
-	c2 = f_cost(pt, goal)
-	c3 = f_cost(start, goal)
+	return g_target / (sum(g_array))
 
-	# print("~")
+
+def unnormalized_prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
+	decimal.getcontext().prec = 20
+
+	c1 = decimal.Decimal(cost_path_to_here)
+	c2 = decimal.Decimal(f_cost(pt, goal))
+	c3 = decimal.Decimal(f_cost(start, goal))
+
+	a = np.exp((-c1 + -c2))
+	b = np.exp(-c3)
+	ratio 		= a / b
+	# silly_ratio = (c1 + c2) / (c3)
+
 	# print(c1)
 	# print(c2)
 	# print(c3)
-	a = np.exp(-c1 -c2)
-	b = np.exp(-c3)
-	# print("exps")
-	# print(a)
-	# print(b)
-	ratio 		= np.exp(-c1 -c2) / np.exp(-c3)
-	silly_ratio = (-c1 -c2) / (-c3)
 	# print(ratio)
-	# print(ratio)
-	# print(silly_ratio)
+	# exit()
+
+	# ratio = silly_ratio
 	if math.isnan(ratio):
 		ratio = 0
 
-	return silly_ratio
+	return ratio
+
+def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here):
+
+	g_probs = prob_goals_given_heading(pn, pt, goals)
+	g_index = goals.index(goal)
+
+	return g_probs[g_index]
+
+
+def f_angle_prob(heading, goal_theta):
+	diff = (np.abs(np.abs(heading - goal_theta) - 180))
+	return diff * diff
+	# print(diff)
+
+	# if diff < 90:
+	# 	return diff
+
+	# return 0.0
+
+
+def prob_goals_given_heading(p0, p1, goals):
+	# works with
+	# diff = (np.abs(np.abs(heading - goal_theta) - 180))
+
+	# find the heading from start to pt
+	# start to pt
+	# TODO theta
+	heading = resto.angle_between(p0, p1)
+	# print("heading: " + str(heading))
+	
+	# return an array of the normalized prob of each goal from this current heading
+	# for each goal, find the probability this angle is pointing to it
+
+
+
+	probs = []
+	for goal in goals:
+		# 180 		= 0
+		# 0 or 360 	= 1
+		# divide by other options, 
+		# so if 2 in same dir, 50/50 odds
+		goal_theta = resto.angle_between(p0, goal)
+		prob = f_angle_prob(heading, goal_theta)
+		probs.append(prob)
+
+
+	divisor = sum(probs)
+	# divisor = 1.0
+
+	return np.true_divide(probs, divisor)
+	# return ratio
+
+
+def tests_prob_heading():
+	p1 = (0,0)
+	p2 = (0,1)
+
+	goals 	= [(1,1), (-1,1), (0, -1)]
+	correct = [ 0.5,  0.5, -0.]
+	result 	= prob_goals_given_heading(p1, p2, goals)
+
+	if np.array_equal(correct, result):
+		pass
+	else:
+		print("Error in heading probabilities")
+
+	goals 	= [(4,0), (5,0)]
+	correct = [ 0.5,  0.5]
+	result 	= prob_goals_given_heading(p1, p2, goals)
+
+	print(goals)
+	print(result)
+
+	goals 	= [(4,1), (4,1)]
+	correct = [ 0.5,  0.5]
+	result 	= prob_goals_given_heading(p1, p2, goals)	
+
+	print(goals)
+	print(result)
+
+	print("ERR")
+	goals 	= [(1,1), (-1,1), (-1,-1), (1,-1)]
+	correct = [ 0.5,  0.5, 0, 0]
+	result 	= prob_goals_given_heading(p1, p2, goals)	
+
+	print(goals)
+	print(result)
+
+	goals 	= [(2,0), (0,2), (-2,0), (0,-2)]
+	correct = [ 0.25,  0.5, 0.25, 0]
+	result 	= prob_goals_given_heading(p1, p2, goals)	
+
+	print(goals)
+	print(result)
+
+
 
 def get_costs_along_path(path):
 	output = []
@@ -292,33 +410,37 @@ def get_costs_along_path(path):
 
 # Given a 
 def f_legibility(goal, goals, path, aud, f_vis_convo):
-	legibility = 0
-	divisor = 0
-	total_dist = 0
-	LAMBDA = 1
+	legibility = decimal.Decimal(0)
+	divisor = decimal.Decimal(0)
+	total_dist = decimal.Decimal(0)
+	LAMBDA = 0 #.0000001
 
 	start = path[0]
-	total_cost = 0
+	total_cost = decimal.Decimal(0)
 	aug_path = get_costs_along_path(path)
 
 	t = 1
 	p_n = path[0]
 	for pt, cost_to_here in aug_path:
-		f = f_vis_convo(t, pt, aud)
+		f = decimal.Decimal(f_vis_convo(t, pt, aud))
 		# print(f)
 		# f = f_remix(t, p_n, pt, aud)
-
-		legibility += prob_goal_given_path(start, pt, goal, goals, cost_to_here) * f
 		
-		total_cost += f_cost(p_n, pt)
+		prob_goal_given = prob_goal_given_path(start, p_n, pt, goal, goals, cost_to_here)
+
+		legibility += prob_goal_given * f
+		
+		total_cost += decimal.Decimal(f_cost(p_n, pt))
 		p_n = pt
 
 		divisor += f
 		t = t + 1
 
 	legibility = (legibility / divisor)
-	# total_cost =  - LAMBDA*total_cost
+	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
+
+	# print(legibility, total_cost)
 
 	return overall
 
@@ -348,9 +470,13 @@ def get_visibilities(path, target, goals, obs_sets):
 		v2.append(f_vis2(p, obs))
 		v3.append(f_vis3(p, obs))
 		v4.append(f_vis4(p, obs))
-		v5.append(f_novis(p, obs))		
+		v5.append(f_novis(p, obs))
 
 	vis_values = [v1, v2, v3, v4, v5]
+
+	# 'vis3-angle'
+	vis_labels = [vis_labels[2]]
+	vis_values = [vis_values[2]]
 
 	return vis_labels, vis_values
 
@@ -362,6 +488,7 @@ def get_legibilities(path, target, goals, obs_sets, f_vis):
 	for aud in obs_sets:
 		# goal, goals, path, df_obs
 		new_val = f_legibility(target, goals, path, aud, f_vis)
+
 		vals.append(new_val)
 
 	return vals
@@ -372,13 +499,13 @@ def generate_single_path(restaurant, target, vis_type, n_control):
 	path 		= construct_single_path(restaurant.get_start(), target, sample_pts)
 	return path
 
+
 def construct_single_path(start, end, sample_pts):
-	STEPSIZE = 15
 	points = []
 	
 	xys = [start] + sample_pts + [end]
 
-	ts = [t/STEPSIZE for t in range(STEPSIZE + 1)]
+	ts = [t/NUMBER_STEPS for t in range(NUMBER_STEPS + 1)]
 	bezier = resto.make_bezier(xys)
 	points = bezier(ts)
 
@@ -410,7 +537,14 @@ def generate_paths(num_paths, restaurant, vis_types):
 			path_options[target][vis_type] = create_path_options(num_paths, target, restaurant, vis_type)
 	return path_options
 
-def get_path_analysis(all_paths, r, target):	
+def add_further_overall_stats(df):
+
+	return df
+
+
+def get_path_analysis(all_paths, r, ti):
+	target = r.get_goals_all()[ti]	
+
 	obs_none 	= []
 	obs_a 		= [r.get_observer_back()]
 	obs_b 		= [r.get_observer_towards()]
@@ -419,13 +553,14 @@ def get_path_analysis(all_paths, r, target):
 	obs_sets = [obs_none, obs_a, obs_b, obs_multi]
 
 	goals = r.get_goals_all()
-	col_labels = ['cost', 'target', 'path']
+	col_labels = ['cost', 'target', 'path', 'target_index']
 
-	vis_labels = get_vis_labels()
-	f_list = [f_remix1, f_remix2, f_remix3, f_remix4, f_remix_novis]
-	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']
+	# vis_labels = get_vis_labels()
+	# f_list = [f_remix1, f_remix2, f_remix3, f_remix4, f_remix_novis]
+	f_list = [f_vis_t3, f_remix3, f_remix_novis]
+	f_labels = ['fvis','fcombo', 'fog']
 
-	col_labels.extend(vis_labels)
+	leg_labels = ['lo', 'la', 'lb', 'lm']
 
 	data = []
 	for p in all_paths:
@@ -433,35 +568,64 @@ def get_path_analysis(all_paths, r, target):
 		# these are the pre-listed options in col_labels
 		cost = f_path_cost(p)
 		vis_types, vis_values = get_visibilities(p, target, goals, obs_sets)
-		entry = [cost, target, p]
+		# print(vis_types)
+		# print(len(vis_values))
+
+		entry = [cost, target, p, ti]
 		remix_labels = []
+
+		# Record the graphs of visibility for this path
 		entry.extend(vis_values)
+		remix_labels.extend(vis_types)
 
 		#####
 
+		# for each of the options of f functions
 		for fi in range(len(f_list)):
 			f_vis = f_list[fi]
-			f_label = vis_labels[fi]
+			f_label = f_labels[fi]
 
+			# For the legibility relative to each of these other audiences
 			l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets, f_vis)
 
-			labels = copy.copy(leg_labels)
-			for i in range(len(labels)):
-				labels[i] = labels[i] + "-" + f_label
+			max_labels = copy.copy(leg_labels)
+			# ratio_labels = copy.copy(leg_labels)
 
-			remix_labels.extend(labels)
+			# make labels for each assessment criteria
+			for i in range(len(max_labels)):
+				max_labels[i] 		= "max-" + max_labels[i] + "-" + f_label
+
+
+				# ratio_labels[i] = "ratio-" + ratio_labels[i] + "-" + f_label
+
+			denominator = l_o + l_a + l_b + l_m
+
+			remix_labels.extend(max_labels)
 			entry.extend([l_o, l_a, l_b, l_m])
+
+			
+			if denominator == 0:
+				ratio_values = [0, 0, 0, 0]
+			else:
+				ratio_values = [(l_o / denominator), (l_a / denominator), (l_b / denominator), (l_m / denominator)]
+
+			# remix_labels.extend(ratio_labels)
+			# entry.extend(ratio_values)
 
 		data.append(entry)
 
 	col_labels.extend(remix_labels)
 	df = pd.DataFrame(data, columns = col_labels)
 	df = df.fillna(0)
+
+	df = add_further_overall_stats(df)
+
 	return df
 
-def get_all_label_combos():
+
+def get_legib_label_combos():
 	vis_labels = get_vis_labels()
-	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']
+	leg_labels = ['lo', 'la', 'lb', 'lm']
 
 	all_labels = []
 
@@ -471,7 +635,21 @@ def get_all_label_combos():
 			labels[i] = labels[i] + "-" + v
 		all_labels.extend(labels)
 
-	return labels
+	return all_labels
+
+def get_ratio_label_combos():
+	vis_labels = get_vis_labels()
+	leg_labels = ['lo', 'la', 'lb', 'lm']
+
+	all_labels = []
+
+	for v in vis_labels:
+		labels = copy.copy(leg_labels)
+		for i in range(len(labels)):
+			labels[i] = "ratio-" + labels[i] + "-" + v
+		all_labels.extend(labels)
+
+	return all_labels
 
 
 def get_vis_labels():
@@ -481,9 +659,11 @@ def get_vis_labels():
 def minMax(x):
     return pd.Series(index=['min','max'],data=[x.min(),x.max()])
 
+# Given a set of paths, get all analysis and log it
 def assess_paths(all_paths, r, ti, unique_key):
 	target = r.get_goals_all()[ti]
-	df = get_path_analysis(all_paths, r, target)
+	goal_label = resto.UNITY_GOAL_NAMES[ti]
+	df = get_path_analysis(all_paths, r, ti)
 
 	df_minmax = df.apply(minMax)
 	# print(df_minmax)
@@ -491,11 +671,11 @@ def assess_paths(all_paths, r, ti, unique_key):
 	# print(df_minmax['l_a'])
 	# print(df_minmax['l_b'])
 	# print(df_minmax['l_multi'])
-	csv_title = FILENAME_PATH_ASSESS + unique_key + 'scores.csv'
+	csv_title = FILENAME_PATH_ASSESS + unique_key + str(goal_label) +  'scores.csv'
 	print(csv_title)
 	df.to_csv(csv_title)
 
-	leg_labels = ['l_agnostic', 'l_a', 'l_b', 'l_multi']	
+	leg_labels = ['lo', 'la', 'lb', 'lm']	
 	path_key = 'path'
 	path_keys = resto.VIS_CHECKLIST
 
@@ -505,25 +685,38 @@ def assess_paths(all_paths, r, ti, unique_key):
 	paths_dict = {}
 	raw_dict = {}
 
-	inspection_labels = get_all_label_combos()
+	inspection_labels = df.columns[5:-1]
+	print(inspection_labels)
+
+	# inspection_labels = get_legib_label_combos()
+	# print(inspection_labels)
+	# inspection_labels.extend(get_ratio_label_combos())
 
 	for li in range(len(inspection_labels)):
 		l = inspection_labels[li]
 		
-		best 	= df.loc[df[l].idxmax()]
-		# worst 	= df.loc[df[l].idxmin()]
+		print(l)
+		print(df[l].max())
 
+		max_val = df[l].max()
+		min_val = df[l].min()
+
+		# if df[l].idxmax()
+
+		best 	= df.loc[df[l] == max_val].iloc[0]
+		worst 	= df.loc[df[l] == min_val].iloc[0]
+		
 		best_path 	= best[path_key]
-		# worst_path 	= worst[path_key]
+		worst_path 	= worst[path_key]
 
 		best_list.append(best_path)
-		# worst_list.append(worst_path)
+		worst_list.append(worst_path)
 
 		# paths_dict[path_keys[li]] = [best_path, worst_path]
 		# raw_dict[path_keys[li]] = [best, worst]
 
-		paths_dict[path_keys[li]] = [best_path]
-		raw_dict[path_keys[li]] = [best]
+		paths_dict[l] = [best_path]
+		raw_dict[l] = [best]
 
 
 	return paths_dict, raw_dict
@@ -532,8 +725,20 @@ def iterate_on_paths():
 	path_options 		= generate_paths(NUM_PATHS, r, VISIBILITY_TYPES)
 	path_dict, path_assessments 	= assess_paths(path_options)
 
-def determine_lambda():
+def determine_lambda(r):
+	start = r.get_start()
+	goals = r.get_goals_all()
+	lambda_val = 0
+	costs = []
 
+	for g in goals:
+		p = generate_single_path(r, g, None, 0)
+
+		p_cost = f_path_cost(p)
+		costs.append(p_cost)
+
+
+	final_cost = max(costs)
 
 
 	pass
@@ -569,6 +774,10 @@ def inspect_heatmap(df):
 # df.at[i,COL_PATHING] = get_pm_label(row)
 
 def inspect_details(detail_dict, fn):
+	if FLAG_PROB_HEADING:
+		return
+	return
+
 	vis_labels = get_vis_labels()
 	vl1 = vis_labels[0]
 	vl2 = vis_labels[1]
@@ -587,6 +796,9 @@ def inspect_details(detail_dict, fn):
 			v4 = detail[vl4]
 			v5 = detail[vl5]
 
+			goal_index = detail['target_index']
+			goal = resto.UNITY_GOAL_NAMES[goal_index]
+
 			x = range(len(v1))
 	
 			fig = plt.figure()
@@ -597,6 +809,7 @@ def inspect_details(detail_dict, fn):
 			ax1.scatter(x, v3, s=10, c='g', marker="o", label=vl3)
 			ax1.scatter(x, v4, s=10, c='y', marker="o", label=vl4)
 			ax1.scatter(x, v5, s=10, c='grey', marker="o", label=vl5)
+			ax1.set_title('visibility of best path to goal ' + goal)
 			plt.legend(loc='upper left');
 			
 			plt.savefig(fn + 'vis' + '.png')
@@ -606,7 +819,7 @@ def inspect_details(detail_dict, fn):
 			f2 = f_convolved(v2, f_og)
 			f3 = f_convolved(v3, f_og)
 			f4 = f_convolved(v4, f_og)
-			f4 = f_convolved(v5, f_og)
+			f5 = f_convolved(v5, f_og)
 
 			fig = plt.figure()
 			ax1 = fig.add_subplot(111)
@@ -615,18 +828,39 @@ def inspect_details(detail_dict, fn):
 			ax1.scatter(x, f2, s=10, c='r', marker="o", label=vl2)
 			ax1.scatter(x, f3, s=10, c='g', marker="o", label=vl3)
 			ax1.scatter(x, f4, s=10, c='y', marker="o", label=vl4)
+			ax1.scatter(x, f5, s=10, c='grey', marker="o", label=vl5)
+			ax1.set_title('f_remix for best path to goal ' + goal)
 			plt.legend(loc='upper left');
 			
-			plt.savefig(fn + 'convolved' + '.png')
+			plt.savefig(fn + goal + '-' + pkey + '-convolved' + '.png')
 			plt.clf()
 
 
 
+def combine_list_of_dicts(all_options):
+	new_dict = {}
+	keys = {}
 
+	for option in all_options:
+		keys = option.keys() | keys
 
+	for key in keys:
+		new_dict[key] = []
 
+	for option in all_options:
+		for key in keys:
+			new_dict[key].append(option[key])
+	
+	return new_dict
+
+# MAIN METHOD
+# 
 def select_paths_and_draw(restaurant, unique_key):
-	NUM_PATHS = 200
+	# TODO import old good paths for further analysis
+	# hand-coded
+	# best x of the past
+
+	NUM_PATHS = 300
 
 	unique_key = "" + unique_key + "_"
 
@@ -635,11 +869,13 @@ def select_paths_and_draw(restaurant, unique_key):
 	cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 	goals = restaurant.get_goals_all()
 
+	all_options = []
+
 	# Decide how many control points to provide
 	for ti in range(len(goals)):
 		all_paths = []
 		target = goals[ti]
-		for n_control in range(1, 3):
+		for n_control in range(1, 2):
 
 			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
 			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"
@@ -647,11 +883,16 @@ def select_paths_and_draw(restaurant, unique_key):
 			all_paths.extend(paths)
 
 		options, details = assess_paths(all_paths, restaurant, ti, unique_key)
+		all_options.append(options)
 
-		fn = fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
+		fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
 		inspect_details(details, fn)
 
-		resto.export_goal_options_from_assessment(img, ti, options, fn=FILENAME_PATH_ASSESS + unique_key)
+		resto.export_assessments_by_criteria(img, options, fn=fn)
+
+
+	options = combine_list_of_dicts(all_options)
+	print(options)
 
 
 
@@ -663,20 +904,23 @@ def unity_scenario():
 
 	# SETUP FROM SCRATCH AND SAVE
 	if FLAG_SAVE:
+		# Create the restaurant scene from our saved description of it
 		r 	= resto.Restaurant(generate_type)
-		# vis = r.get_visibility_of_pts_pandas()
 		print("PLANNER: get visibility info")
 
 		if FLAG_VIS_GRID:
+			# If we'd like to make a graph of what the visibility score is at different points
 			df_vis = r.get_visibility_of_pts_pandas(f_visibility)
 
 			dbfile = open(vis_pickle, 'ab') 
 			pickle.dump(df_vis, dbfile)					  
 			dbfile.close()
 			print("Saved visibility map")
+
 			df_vis.to_csv('visibility.csv')
 			print("Visibility point grid created")
 		
+		# pickle the map for future use
 		dbfile = open(resto_pickle, 'ab') 
 		pickle.dump(r, dbfile)					  
 		dbfile.close()
@@ -688,6 +932,7 @@ def unity_scenario():
 		r = pickle.load(dbfile)
 		print("Imported pickle of restaurant")
 
+
 		if FLAG_VIS_GRID:
 			dbfile = open(vis_pickle, 'rb')
 			df_vis = pickle.load(dbfile)
@@ -697,17 +942,8 @@ def unity_scenario():
 	select_paths_and_draw(r, "mainexp")
 
 
-
-
-
-# unity_scenario()
-
-
-
-
-
-
-
+# Run the scenario that aligns with our use case
+unity_scenario()
 
 
 
