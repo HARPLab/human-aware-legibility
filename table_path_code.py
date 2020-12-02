@@ -14,6 +14,7 @@ from PIL import ImageDraw
 
 from shapely.geometry import Point as fancyPoint
 from shapely.geometry import Polygon as fancyPolygon
+from shapely.geometry import LineString as fancyLineString
 
 # import custom libraries from PythonRobotics
 sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -553,6 +554,21 @@ class Table:
 	def is_within(self, point):
 		return Point(point).within(self.shape)
 
+	def intersects_line(self, pt1, pt2):
+		# TODO ADA
+		table_radius = int(.35 * UNITY_SCALE_X)
+		p = fancyPoint(self.get_center()).buffer(table_radius)
+		l = fancyLineString([pt1, pt2])
+		i = l.intersects(p)
+
+		if i:
+			# print("intersection")
+			# print(p)
+			# print(l)
+			return True
+
+		return False
+
 	def pt_top_left(self):
 		return self.points[0]
 
@@ -574,7 +590,7 @@ class Observer:
 	entity_radius = DIM_OBSERVER_RADIUS
 	draw_depth = 25000
 	cone_depth = 2000
-	focus_angle = 60 / 2.0
+	focus_angle = 135 / 2.0
 	peripheral_angle = 160 / 2.0
 	FOV_angle = 120
 
@@ -1428,10 +1444,14 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 		path = saved_paths[pkey]
 		path_img = img.copy()
 		path_title = pkey
+		# print()
 
 		vis_type, goal_index = pkey.split("-")
+		print(vis_type)
 		
 		color = VIS_COLOR_MAP[vis_type]
+		print(color)
+
 		by_method = img_deck[vis_type]
 		by_goal = img_deck[goal_index]
 
@@ -1448,7 +1468,7 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 
 		path_img = cv2.flip(path_img, 0)
 		cv2.imwrite(fn + 'fig_path_' + path_title + '.png', path_img) 
-		print("exported image of " + pkey)
+		print("exported image of " + pkey + " for goal " + goal_index)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
 	cv2.imwrite(fn + 'ALL_CONDITIONS' + '.png', all_paths_img) 
@@ -1461,6 +1481,25 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 
 	cv2.imwrite('generated/fig_tables.png', img) 
 
+
+def lighten_color(color, amount=0.5):
+    """
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Examples:
+    >> lighten_color('g', 0.3)
+    >> lighten_color('#F034A3', 0.6)
+    >> lighten_color((.3,.55,.1), 0.5)
+    """
+    # import matplotlib.colors as mc
+    # import colorsys
+    # try:
+    #     c = mc.cnames[color]
+    # except:
+    #     c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(color))
+    return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 # DISPLAY PATHS CODE
 def export_assessments_by_criteria(img, saved_paths, fn=None):
@@ -1475,16 +1514,41 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 
 	all_paths_img = img.copy()
 
-	# img_deck = {}
-	# for vis_type in VIS_CHECKLIST:
-	# 	type_img = img.copy()
-	# 	img_deck[vis_type] = type_img
+	l_lookup = ['lo', 'la', 'lb', 'lm']
+	f_lookup = ['fvis', 'fcombo']
+
+	colors_2 = [(69,21,113), (52, 192, 235), (32, 85, 230), (0,100,45)]
+
+	# VIS_CHECKLIST = [VIS_OMNI, VIS_A, VIS_B, VIS_MULTI]
+	# RAW_CHECKLIST = [RAW_OMNI, RAW_A, RAW_B, RAW_MULTI]
+	# PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
+	# PATH_LABELS = ['red', 'yellow', 'blue', 'green']
+
+
+	# COLOR_TABLE = (32, 85, 230) #(235, 64, 52) 		# dark blue
+	# COLOR_OBSERVER = (32, 85, 230) 		# dark orange
+	# COLOR_FOCUS_BACK = (52, 192, 235) 		# dark yellow
+	# COLOR_PERIPHERAL_BACK = (178, 221, 235) 	# light yellow
+	# COLOR_FOCUS_TOWARDS = (235, 64, 52)		# dark yellow
+	# COLOR_PERIPHERAL_TOWARDS = (55, 120, 191) 	# light yellow
+	# COLOR_GOAL = (255, 255, 255) # (50, 168, 82) 			# green
+	# COLOR_START = (100, 100, 100) 		# white
+
+	img_deck = {}
+	for aud_type in l_lookup:
+		type_img = img.copy()
+		img_deck[aud_type] = type_img
+
+	for vis_type in f_lookup:
+		type_img = img.copy()
+		img_deck[vis_type] = type_img
 
 	# for i in range(len(goals)):
 	# 	type_img = img.copy()
 	# 	img_deck[str(i)] = type_img
 
 	# print(img_deck.keys())
+
 
 	for pkey in saved_paths.keys():
 		paths = saved_paths[pkey]
@@ -1495,12 +1559,18 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 		for path in paths:
 			path_img = img.copy()
 			path_title = pkey
+			crit, l, f = pkey.split("-")
 
-			# color = VIS_COLOR_MAP[vis_type]
-			color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
+			ci = l_lookup.index(l)
+			
+			if f == 'fvis':
+				color = PATH_COLORS[ci]
+			else:
+				# colors2
+				color = PATH_COLORS[ci]
 
-			# by_method = img_deck[vis_type]
-			# by_goal = img_deck[goal_index]
+			by_f = img_deck[f]
+			by_aud = img_deck[l]
 
 			# print("PATH IS ")
 			# print(path)
@@ -1513,8 +1583,8 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 				cv2.line(path_img, a, b, color, thickness=6, lineType=8)
 				cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
 
-				# cv2.line(by_method, a, b, color, thickness=6, lineType=8)
-				# cv2.line(by_goal, a, b, color, thickness=6, lineType=8)		
+				cv2.line(by_f, a, b, color, thickness=6, lineType=8)
+				cv2.line(by_aud, a, b, color, thickness=6, lineType=8)		
 
 			path_img = cv2.flip(path_img, 0)
 			cv2.imwrite(fn + 'fig_path_' + path_title + '.png', path_img) 
@@ -1526,11 +1596,10 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 
 	# print(img_deck.keys())
 
-	# for key in img_deck.keys():
-	# 	if key == goal_index:
-	# 		this_img = img_deck[key]
-	# 		this_img = cv2.flip(this_img, 0)
-	# 		cv2.imwrite(fn  + goal_index + 'total_' + key + '.png', this_img) 
+	for key in img_deck.keys():
+		this_img = img_deck[key]
+		this_img = cv2.flip(this_img, 0)
+		cv2.imwrite(fn + 'total_' + key + '.png', this_img) 
 
 	cv2.imwrite('generated/fig_tables.png', img) 
 
