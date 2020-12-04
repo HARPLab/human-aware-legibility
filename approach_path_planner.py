@@ -98,14 +98,14 @@ def f_vis4(p, df_obs):
 
 # Given the observers of a given location, in terms of distance and relative heading
 def f_vis3(p, df_obs):
-	dist_units = 100
+	# dist_units = 100
 	angle_cone = 135.0 / 2.
-	distance_cutoff = 500
+	distance_cutoff = 2000
 
 	# Given a list of entries in the format 
 	# ((obsx, obsy), angle, distance)
 	if len(df_obs) == 0:
-		return 0
+		return 1
 	
 	vis = 0
 	for obs in df_obs:	
@@ -117,7 +117,10 @@ def f_vis3(p, df_obs):
 		if angle < angle_cone and dist < distance_cutoff:
 			vis += np.abs(angle_cone - angle)
 
+	# print(vis)
 	return vis
+
+
 
 def f_vis_exp1(t, pt, aud):
 	return (f_og(t) * f_vis3(pt, aud)) + .000001
@@ -190,8 +193,9 @@ def f_visibility(df_obs):
 
 	return vis
 
-def f_og(t):
-	return PATH_TIMESTEPS - t
+def f_og(t, path):
+	# len(path)
+	return NUMBER_STEPS - t
 
 def f_novis(t, obs):
 	return 1
@@ -243,8 +247,17 @@ def f_remix1(t, pt, aud):
 def f_remix2(t, pt, aud):
 	return (f_og(t) * f_vis2(pt, aud)) + 1
 
-def f_remix3(t, pt, aud):
-	return (f_og(t) * f_vis3(pt, aud)) + .000001
+def f_remix3(t, pt, aud, path):
+	val = (f_og(t, path) * f_vis3(pt, aud)) 
+
+	# if f_vis3(pt, aud) < 0:
+	# 	print(val)
+	# 	print(f_og(t))
+	# 	print(f_vis3(pt, aud))
+	# 	print(aud)
+	# 	exit()
+
+	return val
 
 def f_remix4(t, pt, aud):
 	return (f_og(t) * f_vis4(pt, aud)) + 1
@@ -420,6 +433,7 @@ def f_legibility(goal, goals, path, aud, f_vis_convo):
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
+	LAMBDA = decimal.Decimal(.0000002)
 	LAMBDA = decimal.Decimal(.000000)
 
 	start = path[0]
@@ -429,10 +443,8 @@ def f_legibility(goal, goals, path, aud, f_vis_convo):
 	t = 1
 	p_n = path[0]
 	for pt, cost_to_here in aug_path:
-		f = decimal.Decimal(f_vis_convo(t, pt, aud))
-		# print(f)
-		# f = f_remix(t, p_n, pt, aud)
-		
+		f = decimal.Decimal(f_vis_convo(t, pt, aud, path))
+	
 		prob_goal_given = prob_goal_given_path(start, p_n, pt, goal, goals, cost_to_here)
 
 		legibility += prob_goal_given * f
@@ -440,10 +452,14 @@ def f_legibility(goal, goals, path, aud, f_vis_convo):
 		total_cost += decimal.Decimal(f_cost(p_n, pt))
 		p_n = pt
 
-		divisor += f
+		divisor = f
 		t = t + 1
 
-	legibility = (legibility / divisor)
+	if divisor == 0:
+		legibility = 0
+	else:
+		legibility = (legibility / divisor)
+
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
@@ -465,26 +481,27 @@ def get_visibilities(path, target, goals, obs_sets):
 	# vis_lists 		= [[], 		[], 	[], 	[]]
 	# vis_totals 		= [0, 		0, 		0, 		0]
 
-	v1, v2, v3, v4, v5 = [], [], [], [], []
+	# v1, v2, v3, v4, v5 = [], [], [], [], []
 	
-	if obs_sets == []:
-		return vis_labels, None
+	# if obs_sets == []:
+	# 	return vis_labels, None
 
-	obs = obs_sets[-1]
+	# obs = obs_sets[-1]
 
-	for p in path:
-		v1.append(f_vis1(p, obs))
-		v2.append(f_vis2(p, obs))
-		v3.append(f_vis3(p, obs))
-		v4.append(f_vis4(p, obs))
-		v5.append(f_novis(p, obs))
+	# for p in path:
+	# 	v1.append(f_vis1(p, obs))
+	# 	v2.append(f_vis2(p, obs))
+	# 	v3.append(f_vis3(p, obs))
+	# 	v4.append(f_vis4(p, obs))
+	# 	v5.append(f_novis(p, obs))
 
-	vis_values = [v1, v2, v3, v4, v5]
+	# vis_values = [v1, v2, v3, v4, v5]
 
-	# 'vis3-angle'
-	vis_labels = [vis_labels[2]]
-	vis_values = [vis_values[2]]
+	# # 'vis3-angle'
+	# vis_labels = [vis_labels[2]]
+	# vis_values = [vis_values[2]]
 
+	return [], []
 	return vis_labels, vis_values
 
 
@@ -560,8 +577,8 @@ def smoothed(blocky_path, r):
 
 def generate_single_path_grid(restaurant, target, vis_type, n_control):
 	sample_pts 	= restaurant.sample_points(n_control, target, vis_type)
-	blocky_path = construct_single_path(restaurant.get_start(), target, sample_pts)
-	path 		= smoothed(blocky_path, restaurant)
+	path = construct_single_path(restaurant.get_start(), target, sample_pts)
+	path 		= smoothed(path, restaurant)
 	return path
 
 def generate_single_path(restaurant, target, vis_type, n_control):
@@ -571,6 +588,7 @@ def generate_single_path(restaurant, target, vis_type, n_control):
 		sample_pts 	= restaurant.sample_points(n_control, target, vis_type)
 		path 		= construct_single_path_bezier(restaurant.get_start(), target, sample_pts)
 		valid_path  = is_valid_path(restaurant, path)
+
 		if (not valid_path):
 			# print("regenerating")
 			pass
@@ -658,7 +676,7 @@ def generate_n_paths(restaurant, num_paths, target, n_control):
 	for i in range(num_paths):
 		valid_path = False
 		# while (not valid_path):
-		path_option = generate_single_path(restaurant, target, vis_type, n_control)
+		path_option = generate_single_path_grid(restaurant, target, vis_type, n_control)
 	
 
 		path_list.append(path_option)
@@ -743,7 +761,7 @@ def get_path_analysis(all_paths, r, ti):
 			l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets, f_vis)
 
 			max_labels = copy.copy(leg_labels)
-			# ratio_labels = copy.copy(leg_labels)
+			ratio_labels = copy.copy(leg_labels)
 
 			# make labels for each assessment criteria
 			for i in range(len(max_labels)):
@@ -931,10 +949,7 @@ def inspect_heatmap(df):
 
 # df.at[i,COL_PATHING] = get_pm_label(row)
 
-def inspect_visibility(options, restaurant, fn):
-	vis_labels = get_vis_labels()
-	vl3 = vis_labels[2]
-
+def inspect_visibility(options, restaurant, ti, fn):
 	options = options[0]
 
 	for pkey in options.keys():
@@ -950,12 +965,6 @@ def inspect_visibility(options, restaurant, fn):
 		fig = plt.figure()
 		ax1 = fig.add_subplot(111)
 
-		print(len(t))
-		print(len(vo))
-
-		print(t)
-		print(vo)
-
 		ax1.scatter(t, vo, s=10, c='r', marker="o", label="Vis Omni")
 		ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
 		ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
@@ -963,7 +972,7 @@ def inspect_visibility(options, restaurant, fn):
 		ax1.set_title('visibility of ' + pkey)
 		plt.legend(loc='upper left');
 		
-		plt.savefig(fn + 'vis' + '.png')
+		plt.savefig(fn + "-" + str(ti) + "-" + pkey + '-vis' + '.png')
 		plt.clf()
 
 		# f1 = f_convolved(v1, f_og)
@@ -991,7 +1000,7 @@ def get_vis_graph_info(path, restaurant):
 	for t in range(len(path)):
 		for aud_i in range(len(obs_sets)):
 			# goal, goals, path, df_obs
-			new_val = f_remix3(t, path[t], obs_sets[aud_i])
+			new_val = f_remix3(t, path[t], obs_sets[aud_i], path)
 			# print(new_val)
 			# exit()
 
@@ -1082,6 +1091,23 @@ def combine_list_of_dicts(all_options):
 	
 	return new_dict
 
+def get_hardcoded():
+
+	labels = ['max-lo-fcombo', 'max-la-fcombo', 'max-lb-fcombo', 'max-lm-fcombo']
+	p1 = [(104, 477), (141, 459), (178, 444), (215, 430), (251, 417), (287, 405), (322, 395), (357, 386), (391, 379), (425, 373), (459, 368), (492, 365), (525, 363), (557, 363), (588, 364), (620, 366), (651, 370), (681, 375), (711, 381), (740, 389), (769, 398), (798, 409), (826, 421), (854, 434), (881, 449), (908, 465), (934, 483), (960, 502), (985, 522), (1010, 543), (1035, 567)]
+	p2 = [(104, 477), (147, 447), (190, 419), (231, 394), (272, 371), (312, 350), (351, 331), (390, 315), (427, 301), (464, 289), (499, 280), (534, 273), (568, 268), (601, 265), (634, 265), (665, 267), (696, 271), (726, 277), (755, 286), (783, 297), (810, 310), (836, 325), (862, 343), (886, 363), (910, 385), (933, 410), (955, 437), (976, 466), (996, 497), (1016, 531), (1035, 567)]
+	p3 = [(104, 477), (124, 447), (145, 419), (167, 394), (190, 371), (213, 350), (237, 332), (262, 315), (288, 301), (314, 290), (341, 280), (369, 273), (397, 268), (427, 266), (457, 265), (487, 267), (519, 271), (551, 278), (584, 286), (617, 297), (652, 310), (687, 326), (722, 343), (759, 363), (796, 386), (834, 410), (873, 437), (912, 466), (952, 497), (993, 531), (1035, 567)]
+	p4 = [(104, 477), (146, 446), (187, 418), (228, 392), (268, 369), (307, 348), (345, 329), (383, 313), (420, 298), (456, 286), (491, 277), (525, 269), (559, 264), (592, 262), (624, 261), (656, 263), (686, 267), (716, 274), (745, 282), (774, 293), (801, 307), (828, 322), (854, 340), (879, 361), (904, 383), (928, 408), (950, 435), (973, 464), (994, 496), (1015, 530), (1035, 567)]
+	p5 = [(104, 477), (98, 509), (95, 540), (95, 569), (97, 596), (101, 620), (108, 643), (118, 663), (130, 682), (145, 698), (162, 712), (182, 725), (204, 735), (229, 743), (256, 749), (286, 753), (318, 755), (353, 755), (390, 753), (430, 749), (472, 742), (517, 734), (565, 724), (615, 711), (667, 697), (722, 680), (779, 662), (839, 641), (902, 618), (967, 593), (1035, 567)]
+
+	options = {}
+	options[labels[0]] = [p5]
+	options[labels[1]] = [p1]
+	options[labels[2]] = [p2]
+	options[labels[3]] = [p3]
+
+	return options
+
 # MAIN METHOD
 # 
 def select_paths_and_draw(restaurant, unique_key):
@@ -1100,8 +1126,16 @@ def select_paths_and_draw(restaurant, unique_key):
 
 	all_options = []
 
+	# Option for exporting a specific set of saved paths
+	# options = get_hardcoded()
+	# fn = FILENAME_PATH_ASSESS + "presentation-drama.png"
+	# resto.export_assessments_by_criteria(img, options, fn=fn)
+	# exit()
+
+
 	# Decide how many control points to provide
-	for ti in range(len(goals)):
+	# Reversed so most interesting done first
+	for ti in range(len(goals))[::-1]:
 		all_paths = []
 		target = goals[ti]
 		for n_control in range(1, 2):
@@ -1116,7 +1150,7 @@ def select_paths_and_draw(restaurant, unique_key):
 		print("Completed assessment")
 
 		fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
-		inspect_visibility(all_options, restaurant, fn)
+		inspect_visibility(all_options, restaurant, ti, fn)
 
 		resto.export_assessments_by_criteria(img, options, fn=fn)
 

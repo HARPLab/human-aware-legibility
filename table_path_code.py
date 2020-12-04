@@ -1108,7 +1108,11 @@ class Restaurant:
 		start = self.start
 		pts = []
 		for i in range(num_pts):
-			pt = (random.randrange(width), random.randrange(length))
+			if False:
+				pt = (random.randrange(2*width) - .5*width, random.randrange(2*length) - .5*length)
+			else:
+				pt = (random.randrange(width), random.randrange(length))
+
 			pts.append(pt)
 
 		return pts
@@ -1516,6 +1520,7 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 
 	l_lookup = ['lo', 'la', 'lb', 'lm']
 	f_lookup = ['fvis', 'fcombo']
+	f_lookup = ['fcombo']
 
 	colors_2 = [(69,21,113), (52, 192, 235), (32, 85, 230), (0,100,45)]
 
@@ -1557,6 +1562,7 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 		# !!! KEY difference: this one can have multiple options for a path
 		counter = 0
 		for path in paths:
+			print(path)
 			path_img = img.copy()
 			path_title = pkey
 			crit, l, f = pkey.split("-")
@@ -1629,7 +1635,6 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 
 	for pkey in saved_paths.keys():
 		paths = saved_paths[pkey]
-		print(paths)
 
 		# !!! KEY difference: this one can have multiple options for a path
 		counter = 0
