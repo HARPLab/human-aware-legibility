@@ -934,6 +934,7 @@ class Restaurant:
 			table_x = 3.6
 			table_y = -7.0
 			customer_offset = 0.67
+			customer_offset_diag = customer_offset * 0.70710
 
 			# person a
 			obs1_pt = (table_x, table_y - customer_offset)
@@ -944,22 +945,38 @@ class Restaurant:
 			self.observers.append(obs1)
 
 			# person b
-			obs2_pt = (table_x - customer_offset, table_y)
+			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
 			obs2_pt = unity_to_image(obs2_pt)
 			
-			obs2_angle = 0
+			obs2_angle = 27.5
 			obs2 = Observer(obs2_pt, obs2_angle)
 			self.observers.append(obs2)
 
 			# person c
-			obs3_pt = (table_x, table_y + customer_offset)
-			obs3_pt = unity_to_image(obs2_pt)
+			obs3_pt = (table_x - customer_offset, table_y)
+			obs3_pt = unity_to_image(obs3_pt)
 			
-			obs3_angle = 305
-			obs3 = Observer(obs2_pt, obs2_angle)
-			self.observers.append(obs2)
+			obs3_angle = 0
+			obs3 = Observer(obs3_pt, obs3_angle)
+			self.observers.append(obs3)
 
-			goal_observers[goal] = [obs1, obs2]
+			# person d
+			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
+			obs4_pt = unity_to_image(obs4_pt)
+			
+			obs4_angle = 332.5
+			obs4 = Observer(obs4_pt, obs4_angle)
+			self.observers.append(obs4)
+
+			# person e
+			obs5_pt = (table_x, table_y + customer_offset)
+			obs5_pt = unity_to_image(obs5_pt)
+			
+			obs5_angle = 305
+			obs5 = Observer(obs5_pt, obs5_angle)
+			self.observers.append(obs5)
+
+			goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
 
 
 		elif generate_type == TYPE_RANDOM:
@@ -1146,12 +1163,9 @@ class Restaurant:
 			cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
 
 
-		obs = self.get_observer_back()
-		if obs is not None:
+		for obs in observers:
 			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
-		obs = self.get_observer_towards()
-		if obs is not None:
-			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
+			# cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
 			if goal[0] == 1035 and goal[1] != 307:
