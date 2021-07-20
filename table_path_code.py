@@ -57,6 +57,7 @@ TYPE_PLOTTED = 0
 TYPE_RANDOM = 1
 TYPE_UNITY_ALIGNED = 2
 TYPE_CUSTOM = 3
+TYPE_EXP_SINGLE = 4
 
 generate_type = TYPE_UNITY_ALIGNED
 
@@ -80,6 +81,9 @@ VIS_OMNI = "VIS_OMNI"
 VIS_MULTI = "VIS_MULTI"
 VIS_A = "VIS_A"
 VIS_B = "VIS_B"
+VIS_C = "VIS_C"
+VIS_D = "VIS_D"
+VIS_E = "VIS_E"
 
 SUFFIX_RAW 	= "-raw"
 RAW_ALL 	= VIS_ALL 	+ SUFFIX_RAW
@@ -533,7 +537,7 @@ class Table:
 	def __init__(self, pt, gen_type):
 		self.location = pt
 
-		if gen_type == TYPE_UNITY_ALIGNED:
+		if gen_type == TYPE_UNITY_ALIGNED or gen_type == TYPE_EXP_SINGLE:
 			self.radius = 1
 		
 		half_radius = self.radius / 2.0
@@ -891,9 +895,152 @@ class Restaurant:
 			unity_goal_pt = (4.43, -7.0)
 
 			unity_table_pts = []
-			unity_table_pts.append((3.6, -4.0))
+			# unity_table_pts.append((3.6, -4.0))
 			unity_table_pts.append((3.6, -7.0))
-			unity_table_pts.append((5.6, -10.0))
+			# unity_table_pts.append((5.6, -10.0))
+			unity_table_pts.append((7.6, -7.0))
+
+			unity_goal_stop_options = []
+			# unity_goal_stop_options.append((4.3, -4.3))
+			unity_goal_stop_options.append((4.3, -7.3))
+			# unity_goal_stop_options.append((5.6, -9.3))
+			unity_goal_stop_options.append((6.9, -7.3))
+
+			unity_goal_options = []
+			# unity_goal_options.append((4.3, -4.0))
+			unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
+			# unity_goal_options.append((5.6, -9.3))
+			unity_goal_options.append((6.9, -7.0))
+
+			table_pts = []
+			for t in unity_table_pts:
+				pt = unity_to_image(t)
+				table = Table(pt, generate_type)
+				self.tables.append(table)
+
+			for g in unity_goal_stop_options:
+				goal_helper_pts.append(unity_to_image(g))
+				self.goals.append(unity_to_image(g))
+
+			goal = unity_to_image(unity_goal_pt)
+			self.current_goal = goal
+			
+			# Set up observers
+
+			# unity table points are
+			# unity_table_pts.append((3.6, -7.0))
+			# unity_table_pts.append((7.6, -7.0))
+
+			table_x = 3.6
+			table_y = -7.0
+			customer_offset = 0.67
+
+			# person a
+			obs1_pt = (table_x, table_y - customer_offset)
+			obs1_pt = unity_to_image(obs1_pt)
+
+			obs1_angle = 55
+			obs1 = Observer(obs1_pt, obs1_angle)
+			self.observers.append(obs1)
+
+			# person b
+			obs2_pt = (table_x - customer_offset, table_y)
+			obs2_pt = unity_to_image(obs2_pt)
+			
+			obs2_angle = 0
+			obs2 = Observer(obs2_pt, obs2_angle)
+			self.observers.append(obs2)
+
+			# person c
+			obs3_pt = (table_x, table_y + customer_offset)
+			obs3_pt = unity_to_image(obs2_pt)
+			
+			obs3_angle = 305
+			obs3 = Observer(obs2_pt, obs2_angle)
+			self.observers.append(obs2)
+
+			goal_observers[goal] = [obs1, obs2]
+
+
+		elif generate_type == TYPE_RANDOM:
+			# random generation of locations and objects
+			# mainly useful for testing things such as vision cone impact
+
+			self.length, self.width = 600, 800
+
+			random_id = ''.join([random.choice(string.ascii_letters 
+					+ string.digits) for n in range(10)]) 
+			self.SCENARIO_IDENTIFIER = "new_scenario_" + random_id
+
+			self.start = get_random_point_in_room(length, width)
+
+			for i in range(num_tables):
+				new_goal = get_random_point_in_room(length, width)
+				self.goals.append(new_goal)
+
+			goal = goals[0]
+
+			for i in range(num_tables):
+				table_pt = get_random_point_in_room(length, width)
+				
+				table = Table(table_pt)
+				self.tables.append(table)
+
+			# add customer locations
+			for i in range(num_observers):
+				obs_loc = get_random_point_in_room(length, width)
+				angle = random.randrange(360)
+				print((obs_loc, angle))
+
+				self.observers.append(Observer(obs_loc, angle))
+
+		elif generate_type == TYPE_EXP_SINGLE:
+			# Unity scenario created specifically for parameters of Unity restaurant
+
+			self.SCENARIO_IDENTIFIER = "_exp_single_"
+
+			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
+			ux1, uy1 = UNITY_CORNERS[0]
+			ux2, uy2 = UNITY_CORNERS[1]
+
+			IMG_CORNERS = [(0,0), (1000, 1375)]
+			ix1, iy1 = IMG_CORNERS[0]
+			ix2, iy2 = IMG_CORNERS[1]
+
+			UNITY_OFFSET_X = (ux1 - ix1)
+			UNITY_OFFSET_Y = (uy1 - iy1)
+			UNITY_SCALE_X = (ix2 - ix1) / (ux2 - ux1)
+			UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
+
+			self.length = ix2
+			self.width = iy2
+
+			UNITY_TO_IRL_SCALE = 3
+			
+			# images will be made at the scale of
+			
+			# x1 = 3.05
+			# x2 = -10.7
+			# y1 = 11.22
+			# y2 = 1.23
+
+			start = (6.0, 2.0)
+			self.start = unity_to_image(start)
+
+			length = 1000
+			width = 1375
+
+			waypoint_kitchen_exit = (6.45477, 2.57)
+			wpt = unity_to_image(waypoint_kitchen_exit)
+			# TODO verify units on this
+			self.waypoints.append(wpt)
+
+			unity_goal_pt = (4.43, -7.0)
+
+			unity_table_pts = []
+			# unity_table_pts.append((3.6, -4.0))
+			unity_table_pts.append((3.6, -7.0))
+			# unity_table_pts.append((5.6, -10.0))
 			unity_table_pts.append((7.6, -7.0))
 
 			unity_goal_stop_options = []
@@ -940,43 +1087,13 @@ class Restaurant:
 			goal_observers[goal] = [obs1, obs2]
 
 
-		elif generate_type == TYPE_RANDOM:
-			# random generation of locations and objects
-			# mainly useful for testing things such as vision cone impact
-
-			self.length, self.width = 600, 800
-
-			random_id = ''.join([random.choice(string.ascii_letters 
-					+ string.digits) for n in range(10)]) 
-			self.SCENARIO_IDENTIFIER = "new_scenario_" + random_id
-
-			self.start = get_random_point_in_room(length, width)
-
-			for i in range(num_tables):
-				new_goal = get_random_point_in_room(length, width)
-				self.goals.append(new_goal)
-
-			goal = goals[0]
-
-			for i in range(num_tables):
-				table_pt = get_random_point_in_room(length, width)
-				
-				table = Table(table_pt)
-				self.tables.append(table)
-
-			# add customer locations
-			for i in range(num_observers):
-				obs_loc = get_random_point_in_room(length, width)
-				angle = random.randrange(360)
-				print((obs_loc, angle))
-
-				self.observers.append(Observer(obs_loc, angle))
-
 		else:
 			print("Incorrect generate_type")
 
 		self.generate_obstacle_map_and_img()
 		self.generate_visibility_maps()
+
+
 
 
 	def generate_obstacle_map_and_img(self):
@@ -1012,22 +1129,13 @@ class Restaurant:
 			overlay = img.copy()
 			# Draw shortened rep for view cones
 			# away = obs[1]
-			obs = self.get_observer_back()
-			if obs is not None:
 
-				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-				cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
-				alpha = 0.3  # Transparency factor.
-				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
-
-			obs = self.get_observer_towards()
-			if obs is not None:
-				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_TOWARDS)
-				cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_TOWARDS)
-
-				alpha = 0.3  # Transparency factor.
-				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
-				# Following line overlays transparent rectangle over the image
+			for obs in observers:
+				if obs is not None:
+					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+					cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
+					alpha = 0.3  # Transparency factor.
+					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 		# Draw tables
 		for table in self.tables:
@@ -1046,8 +1154,9 @@ class Restaurant:
 			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
-			# Draw person
-			cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
+			if goal[0] == 1035 and goal[1] != 307:
+				# Draw person
+				cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
 
 		cv2.circle(img, self.start, start_radius, COLOR_START, start_radius)
 
@@ -1520,7 +1629,7 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 
 	l_lookup = ['lo', 'la', 'lb', 'lm']
 	f_lookup = ['fvis', 'fcombo']
-	f_lookup = ['fcombo']
+	# f_lookup = ['fcombo']
 
 	colors_2 = [(69,21,113), (52, 192, 235), (32, 85, 230), (0,100,45)]
 
@@ -1760,6 +1869,7 @@ def export(r, saved_paths, export_all=False):
 	img = r.get_img()
 
 	if EXPORT_DIAGRAMS or export_all:
+		print('ok')
 		export_diagrams_with_paths(img, saved_paths)
 
 	if EXPORT_JSON or export_all:
