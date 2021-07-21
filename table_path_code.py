@@ -85,17 +85,26 @@ VIS_C = "VIS_C"
 VIS_D = "VIS_D"
 VIS_E = "VIS_E"
 
+OBS_ALL = 'all'
+OBS_NONE = 'omniscient'
+OBS_KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+
 SUFFIX_RAW 	= "-raw"
 RAW_ALL 	= VIS_ALL 	+ SUFFIX_RAW
 RAW_OMNI 	= VIS_OMNI 	+ SUFFIX_RAW
 RAW_MULTI 	= VIS_MULTI + SUFFIX_RAW
 RAW_A 		= VIS_A 	+ SUFFIX_RAW
 RAW_B 		= VIS_B 	+ SUFFIX_RAW
+RAW_C 		= VIS_C 	+ SUFFIX_RAW
+RAW_D 		= VIS_D 	+ SUFFIX_RAW
+RAW_E 		= VIS_E 	+ SUFFIX_RAW
 
-VIS_CHECKLIST = [VIS_OMNI, VIS_A, VIS_B, VIS_MULTI]
-RAW_CHECKLIST = [RAW_OMNI, RAW_A, RAW_B, RAW_MULTI]
-PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
+VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
+RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
+
+PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,128,128), (0,10,10), (255,64,64), (255,10,10)]
 PATH_LABELS = ['red', 'yellow', 'blue', 'green']
+# PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 # PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
 
 VIS_COLOR_MAP = {}
@@ -600,6 +609,8 @@ class Observer:
 
 	orientation = 0
 
+	color = COLOR_OBSERVER
+
 	field_focus = []
 	field_peripheral = []
 
@@ -779,6 +790,7 @@ goal_helper_pts = []
 
 class Restaurant: 
 	def __init__(self, generate_type, tables=None, goals=None, start=None, observers=None, dim=None):
+		self.generate_type = generate_type
 		self.observers = []
 		self.goals = []
 		self.tables = []
@@ -1295,6 +1307,33 @@ class Restaurant:
 		return df
 
 
+	def get_obs_sets(self):
+		obs_none 	= []
+		obs_all 	= self.get_observers()
+
+		obs_sets = {}
+		obs_sets[OBS_NONE] = obs_none
+		obs_sets[OBS_ALL]  = obs_all
+
+		if self.generate_type == TYPE_UNITY_ALIGNED:	
+			obs_a 		= [self.get_observer_back()]
+			obs_b 		= [self.get_observer_towards()]
+
+			obs_sets[OBS_A] = obs_a
+			obs_sets[OBS_B] = obs_b
+		
+		elif self.generate_type == TYPE_EXP_SINGLE:
+			for i in range(len(obs_all)):
+				key = OBS_KEYS[i]
+				obs_sets[key]  = [obs_all[i]]
+
+		else:
+			print("TO DO: IMPLEMENT SUBGROUPING SCENARIOS")
+			exit()
+
+		return obs_sets
+
+
 	def generate_visibility_maps(self):
 		visibility_maps = {}
 		if OPTION_FORCE_GENERATE_VISIBILITY:
@@ -1396,21 +1435,38 @@ class Restaurant:
 	# observers[1] = TOWARDS
 	# observers[0] = BACK
 
-	def get_observer_a(self):
-		if len(self.observers) > 0:
-			return self.observers[0]
-		return None
+	# def get_observer_a(self):
+	# 	if len(self.observers) > 0:
+	# 		return self.observers[0]
+	# 	return None
 
-	def get_observer_b(self):
-		if len(self.observers) > 1:
-			return self.observers[1]
-		return None
+	# def get_observer_b(self):
+	# 	if len(self.observers) > 1:
+	# 		return self.observers[1]
+	# 	return None
 
-	def get_observer_towards(self):
-		return self.get_observer_b()
 
-	def get_observer_back(self):
-		return self.get_observer_a()
+	# def get_observer_c(self):
+	# 	if len(self.observers) > 0:
+	# 		return self.observers[0]
+	# 	return None
+
+	# def get_observer_d(self):
+	# 	if len(self.observers) > 1:
+	# 		return self.observers[1]
+	# 	return None
+
+	# def get_observer_e(self):
+	# 	if len(self.observers) > 0:
+	# 		return self.observers[0]
+	# 	return None
+
+
+	# def get_observer_towards(self):
+	# 	return self.get_observer_b()
+
+	# def get_observer_back(self):
+	# 	return self.get_observer_a()
 
 	def get_scenario_identifier(self):
 		return self.SCENARIO_IDENTIFIER
@@ -1539,9 +1595,13 @@ for vis_type in VIS_CHECKLIST:
 		# print(str(goal_index) + "->" + str(end))
 
 		pkey = vis_type + "-" + str(goal_index)
+		print(pkey)
 
-		new_path = get_path_spoof(start, end, goals, tables, vis_type, vis_map)
+		# new_path = get_path_spoof(start, end, goals, tables, vis_type, vis_map)
 		
+		# TODO fill in a more useful path here
+		new_path = []
+
 		saved_paths[pkey] = new_path
 
 
@@ -1641,7 +1701,18 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 
 	all_paths_img = img.copy()
 
-	l_lookup = ['lo', 'la', 'lb', 'lm']
+	l_lookup = {} #['lo', 'la', 'lb', 'lm']
+	l_lookup['omniscient'] = 0
+	l_lookup['all'] = 1
+	l_lookup['a'] = 2
+	l_lookup['b'] = 3
+	l_lookup['c'] = 4
+	l_lookup['d'] = 5
+	l_lookup['e'] = 6
+
+	# [VIS_OMNI, VIS_A, VIS_B, VIS_MULTI]
+	color_listing = [(69,21,113), (0,100,45), (52, 192, 235), (32, 85, 230),(52, 0, 235), (0, 85, 230),(52, 192, 0), (0, 0, 230),]
+
 	f_lookup = ['fvis', 'fcombo']
 	# f_lookup = ['fcombo']
 
@@ -1690,13 +1761,8 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 			path_title = pkey
 			crit, l, f = pkey.split("-")
 
-			ci = l_lookup.index(l)
-			
-			if f == 'fvis':
-				color = PATH_COLORS[ci]
-			else:
-				# colors2
-				color = PATH_COLORS[ci]
+			ci = l_lookup[l]			
+			color = PATH_COLORS[ci]
 
 			by_f = img_deck[f]
 			by_aud = img_deck[l]
