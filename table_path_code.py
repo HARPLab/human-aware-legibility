@@ -108,6 +108,7 @@ OBS_INDEX_E = 6
 VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
 RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 
+# 				red 		green 		yellow 			light yellow	grey 		light blue		blue			
 PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,128,128), (100,100,100), (255,64,64), (255,10,10)]
 PATH_LABELS = ['red', 'yellow', 'blue', 'green']
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
