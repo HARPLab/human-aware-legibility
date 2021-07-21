@@ -844,7 +844,7 @@ def assess_paths(all_paths, r, ti, unique_key):
 	# print(csv_title)
 	df.to_csv(csv_title)
 
-	leg_labels = ['lo', 'la', 'lb', 'lm']	
+	leg_labels = ['lo', 'la', 'lb', 'lm']
 	path_key = 'path'
 	path_keys = resto.VIS_CHECKLIST
 
@@ -1130,16 +1130,18 @@ def select_paths_and_draw(restaurant, unique_key):
 	# best x of the past
 
 	NUM_PATHS = 500
-
 	unique_key = "" + unique_key + "_"
+	goals = restaurant.get_goals_all()
 
+	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = restaurant.get_img()
 	empty_img = cv2.flip(img, 0)
 	cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
-	goals = restaurant.get_goals_all()
+	
 
 	all_options = []
 
+	# OPTIONS FOR HARDCODED/CACHED PATHS FOR CONSISTENT VISUALIZATIONS
 	if FLAG_EXPORT_HARDCODED:
 		# Option for exporting a specific set of saved paths
 		options = get_hardcoded()
@@ -1154,12 +1156,13 @@ def select_paths_and_draw(restaurant, unique_key):
 		all_paths = []
 		target = goals[ti]
 		for n_control in range(1, 2):
-
 			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
 			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"
 			resto.export_raw_paths(img, paths, fn)
 			all_paths.extend(paths)
 
+
+		# For this goal, assess all the paths and keep the best
 		options, details = assess_paths(all_paths, restaurant, ti, unique_key)
 		all_options.append(options)
 		print("Completed assessment")
