@@ -99,10 +99,16 @@ RAW_C 		= VIS_C 	+ SUFFIX_RAW
 RAW_D 		= VIS_D 	+ SUFFIX_RAW
 RAW_E 		= VIS_E 	+ SUFFIX_RAW
 
+OBS_INDEX_A = 2
+OBS_INDEX_B = 3
+OBS_INDEX_C = 4
+OBS_INDEX_D = 5
+OBS_INDEX_E = 6
+
 VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
 RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 
-PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,128,128), (0,10,10), (255,64,64), (255,10,10)]
+PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,128,128), (100,100,100), (255,64,64), (255,10,10)]
 PATH_LABELS = ['red', 'yellow', 'blue', 'green']
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 # PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
@@ -666,6 +672,9 @@ class Observer:
 		self.draw_field_focus = [location, draw_focus_a, draw_focus_b]
 		self.draw_field_peripheral = [location, draw_periph_a, draw_periph_b]
 
+	def set_color(self, c):
+		self.color = c
+
 	def get_visibility(self, location):
 		# print(location)
 		fancy_location = fancyPoint(location)
@@ -718,6 +727,10 @@ class Observer:
 		json_dict['orientation'] = self.orientation
 		json_dict['location'] = self.location
 		return json_dict
+
+	def get_color(self):
+		return self.color
+
 
 def unity_to_image(pt):
 	x, y = pt
@@ -954,6 +967,7 @@ class Restaurant:
 
 			obs1_angle = 55
 			obs1 = Observer(obs1_pt, obs1_angle)
+			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
 			self.observers.append(obs1)
 
 			# person b
@@ -962,6 +976,7 @@ class Restaurant:
 			
 			obs2_angle = 27.5
 			obs2 = Observer(obs2_pt, obs2_angle)
+			obs2.set_color(PATH_COLORS[OBS_INDEX_B])
 			self.observers.append(obs2)
 
 			# person c
@@ -970,6 +985,7 @@ class Restaurant:
 			
 			obs3_angle = 0
 			obs3 = Observer(obs3_pt, obs3_angle)
+			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
 			self.observers.append(obs3)
 
 			# person d
@@ -978,6 +994,7 @@ class Restaurant:
 			
 			obs4_angle = 332.5
 			obs4 = Observer(obs4_pt, obs4_angle)
+			obs4.set_color(PATH_COLORS[OBS_INDEX_D])
 			self.observers.append(obs4)
 
 			# person e
@@ -986,6 +1003,7 @@ class Restaurant:
 			
 			obs5_angle = 305
 			obs5 = Observer(obs5_pt, obs5_angle)
+			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			self.observers.append(obs5)
 
 			goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
@@ -1073,15 +1091,15 @@ class Restaurant:
 			unity_table_pts.append((7.6, -7.0))
 
 			unity_goal_stop_options = []
-			unity_goal_stop_options.append((4.3, -4.3))
+			# unity_goal_stop_options.append((4.3, -4.3))
 			unity_goal_stop_options.append((4.3, -7.3))
-			unity_goal_stop_options.append((5.6, -9.3))
+			# unity_goal_stop_options.append((5.6, -9.3))
 			unity_goal_stop_options.append((6.9, -7.3))
 
 			unity_goal_options = []
-			unity_goal_options.append((4.3, -4.0))
-			unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
-			unity_goal_options.append((5.6, -9.3))
+			# unity_goal_options.append((4.3, -4.0))
+			unity_goal_options.append((4.429, -7.0)) #(4.3, -7.03)
+			# unity_goal_options.append((5.6, -9.3))
 			unity_goal_options.append((6.9, -7.0))
 
 			table_pts = []
@@ -1162,7 +1180,7 @@ class Restaurant:
 			for obs in observers:
 				if obs is not None:
 					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-					cv2.fillPoly(overlay, obs.get_draw_field_focus(), COLOR_FOCUS_BACK)
+					cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
 					alpha = 0.3  # Transparency factor.
 					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
@@ -1176,7 +1194,7 @@ class Restaurant:
 
 
 		for obs in observers:
-			cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_BACK, obs_radius)
+			cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
 			# cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
@@ -1580,29 +1598,30 @@ def visibility_unit_test():
 
 saved_paths = {}
 
-# All the types there are
-for vis_type in VIS_CHECKLIST:
-	# print(visibility_maps.keys())
-	print(vis_type)
+# VERIFY: this is no longer where paths are chosen, just where they're drawn
+# # All the types there are
+# for vis_type in VIS_CHECKLIST:
+# 	# print(visibility_maps.keys())
+# 	print(vis_type)
 
-	# UPDATE TO BETTER MAPS
-	# vis_map = visibility_maps[vis_type]
-	# vis_map = visibility_maps[2][0]
-	vis_map = None
+# 	# UPDATE TO BETTER MAPS
+# 	# vis_map = visibility_maps[vis_type]
+# 	# vis_map = visibility_maps[2][0]
+# 	vis_map = None
 
-	for goal_index in range(len(goals)):
-		end = goals[goal_index]
-		# print(str(goal_index) + "->" + str(end))
+# 	for goal_index in range(len(goals)):
+# 		end = goals[goal_index]
+# 		# print(str(goal_index) + "->" + str(end))
 
-		pkey = vis_type + "-" + str(goal_index)
-		print(pkey)
+# 		pkey = vis_type + "-" + str(goal_index)
+# 		print(pkey)
 
-		# new_path = get_path_spoof(start, end, goals, tables, vis_type, vis_map)
+# 		# new_path = get_path_spoof(start, end, goals, tables, vis_type, vis_map)
 		
-		# TODO fill in a more useful path here
-		new_path = []
+# 		# TODO fill in a more useful path here
+# 		new_path = []
 
-		saved_paths[pkey] = new_path
+# 		saved_paths[pkey] = new_path
 
 
 def export_diagrams_with_paths(img, saved_paths, fn=None):
@@ -1634,10 +1653,10 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 		# print()
 
 		vis_type, goal_index = pkey.split("-")
-		print(vis_type)
+		# print(vis_type)
 		
 		color = VIS_COLOR_MAP[vis_type]
-		print(color)
+		# print(color)
 
 		by_method = img_deck[vis_type]
 		by_goal = img_deck[goal_index]
