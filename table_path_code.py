@@ -30,6 +30,7 @@ OPTION_SHOW_VISIBILITY = True
 OPTION_FORCE_GENERATE_VISIBILITY = False
 OPTION_FORCE_GENERATE_OBSTACLE_MAP = True
 OPTION_EXPORT = True
+FLAG_MAKE_OBSTACLE_MAP = False
 
 EXPORT_JSON = True
 EXPORT_CSV = True
@@ -1141,12 +1142,44 @@ class Restaurant:
 		self.generate_obstacle_map_and_img()
 		self.generate_visibility_maps()
 
+	def make_obstacle_map(self, obstacle_vis, img):
+		obstacle_map = np.zeros((self.length, self.width), np.uint8)
 
+		obstacle_map = cv2.cvtColor(obstacle_vis, cv2.COLOR_BGR2GRAY)
+		(thresh, obstacle_map) = cv2.threshold(obstacle_map, 1, 255, cv2.THRESH_BINARY)
+
+		self.obstacle_map = copy.copy(obstacle_map)
+		self.obstacle_vis = copy.copy(obstacle_vis)
+
+		obstacles = {}
+		obstacles['map'] = copy.copy(obstacle_map)
+		obstacles['vis'] = copy.copy(obstacle_vis)
+		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_map.png', obstacle_map) 
+		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_vis.png', obstacle_vis) 
+
+		cv2.imwrite(FILENAME_OVERVIEW_PREFIX + ".png", img)
+		print("Exported overview pic without paths")
+		# ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
+		# plt.savefig()
+		# plt.clf()
+
+		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
+		pickle.dump(obstacles, dbfile)					  
+		dbfile.close()
+		print("Saved obstacle maps")
+
+
+		print("Importing pickle of obstacle info")
+		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'rb')
+		obstacles = pickle.load(dbfile)
+		obstacle_map = obstacles['map']
+		obstacle_vis = obstacles['vis']
+		dbfile.close() 
 
 
 	def generate_obstacle_map_and_img(self):
 		obstacle_vis = np.zeros((self.length, self.width,3), np.uint8)
-		obstacle_map = np.zeros((self.length, self.width), np.uint8)
+
 		# DRAW the environment
 
 		# Create a black image
@@ -1199,9 +1232,9 @@ class Restaurant:
 			# cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
-			if goal[0] == 1035 and goal[1] != 307:
-				# Draw person
-				cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
+			# if goal[0] == 1035 and goal[1] != 307:
+			# Draw person
+			cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
 
 		cv2.circle(img, self.start, start_radius, COLOR_START, start_radius)
 
@@ -1211,38 +1244,8 @@ class Restaurant:
 		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_o'+ '.png', obs_i) 
 		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_' + path_title + '.png', path_img) 
 
-
-
-		obstacle_map = cv2.cvtColor(obstacle_vis, cv2.COLOR_BGR2GRAY)
-		(thresh, obstacle_map) = cv2.threshold(obstacle_map, 1, 255, cv2.THRESH_BINARY)
-
-		self.obstacle_map = copy.copy(obstacle_map)
-		self.obstacle_vis = copy.copy(obstacle_vis)
-
-		obstacles = {}
-		obstacles['map'] = copy.copy(obstacle_map)
-		obstacles['vis'] = copy.copy(obstacle_vis)
-		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_map.png', obstacle_map) 
-		cv2.imwrite(FILENAME_OBSTACLE_PREFIX + '_vis.png', obstacle_vis) 
-
-		cv2.imwrite(FILENAME_OVERVIEW_PREFIX + ".png", img)
-		print("Exported overview pic without paths")
-		# ax = sns.heatmap(obstacle_map).set_title("Obstacle map of restaurant")
-		# plt.savefig()
-		# plt.clf()
-
-		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'ab') 
-		pickle.dump(obstacles, dbfile)					  
-		dbfile.close()
-		print("Saved obstacle maps")
-
-
-		print("Importing pickle of obstacle info")
-		dbfile = open(FILENAME_PICKLE_OBSTACLES, 'rb')
-		obstacles = pickle.load(dbfile)
-		obstacle_map = obstacles['map']
-		obstacle_vis = obstacles['vis']
-		dbfile.close() 
+		if FLAG_MAKE_OBSTACLE_MAP:
+			self.make_obstacle_map(obstacle_vis, img)
 
 	def get_visibility_of_pt_raw(self, pt):
 		observations = []
@@ -1509,9 +1512,13 @@ class Restaurant:
 		return copy.copy(self.img)
 
 	def get_obstacle_map(self):
+		print("DEPRECATED")
+		return None
 		return copy.copy(self.obstacle_map)
 
 	def get_obstacle_vis(self):
+		print("DEPRECATED")
+		return None
 		return copy.copy(self.obstacle_vis)
 
 	def get_visibility_maps(self):
