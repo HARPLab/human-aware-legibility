@@ -1229,7 +1229,7 @@ class Restaurant:
 
 		overlay = img.copy()
 
-		for obs in observers:
+		for obs in self.observers:
 			if obs is not None:
 				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
 				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
@@ -1247,7 +1247,7 @@ class Restaurant:
 				cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
 
 
-		for obs in observers:
+		for obs in self.observers:
 			cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
 			# cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
