@@ -60,8 +60,6 @@ TYPE_UNITY_ALIGNED = 2
 TYPE_CUSTOM = 3
 TYPE_EXP_SINGLE = 4
 
-generate_type = TYPE_UNITY_ALIGNED
-
 # Color options for visualization
 COLOR_TABLE = (32, 85, 230) #(235, 64, 52) 		# dark blue
 COLOR_OBSERVER = (32, 85, 230) 		# dark orange
@@ -75,6 +73,12 @@ COLOR_START = (100, 100, 100) 		# white
 COLOR_OBSTACLE_CLEAR = (0, 0, 0)
 COLOR_OBSTACLE_BUFFER = (100, 100, 100)
 COLOR_OBSTACLE_FULL = (255, 255, 255)
+
+# Verify that these are correctly in degrees/radians
+DIR_NORTH 	= 0
+DIR_EAST 	= 90
+DIR_SOUTH 	= 180
+DIR_WEST 	= 270
 
 VIS_INFO_RESOLUTION = -1
 VIS_ALL = "VIS_ALL"
@@ -187,6 +191,11 @@ UNITY_GOAL_NAMES = ["BEFORE", "ME", "PAST", "ACROSS"]
 # 		visibility[x,y] = score
 
 # visibility = visibility.T
+
+def to_xy(pt):
+	if len(pt) == 3:
+		return (pt[0], pt[1])
+	return pt
 
 def dist(p0, p1):
 	return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2)
@@ -735,24 +744,45 @@ class Observer:
 
 
 def unity_to_image(pt):
-	x, y = pt
+	if len(pt) == 3:
+		x, y, theta = pt
+	else:
+		x, y = pt
+
 	nx = (x - UNITY_OFFSET_X) * UNITY_SCALE_X
 	ny = (y - UNITY_OFFSET_Y) * UNITY_SCALE_Y
+
+	if len(pt) == 3:
+		return (int(ny), int(nx), theta)
 	return (int(ny), int(nx))
 
 def image_to_unity(pt):
-	y, x = pt
+	if len(pt) == 3:
+		x, y, theta = pt
+	else:
+		x, y = pt
+
 	x = float(x)
 	y = float(y)
 	nx = (x / UNITY_SCALE_X) + UNITY_OFFSET_X
 	ny = (y / UNITY_SCALE_Y) + UNITY_OFFSET_Y
-	return (nx, ny)
+	
+	if len(pt) == 3:
+		return (int(ny), int(nx), theta)
+	return (int(ny), int(nx))
 
 def plan_to_image(pt):
-	x, y = pt
+	if len(pt) == 3:
+		x, y, theta = pt
+	else:
+		x, y = pt
+
 	nx = x
 	ny = y
-	return (nx, ny)
+
+	if len(pt) == 3:
+		return (int(ny), int(nx), theta)
+	return (int(ny), int(nx))
 
 
 # # TESTING SUITE FOR CONVERSIONS
@@ -806,6 +836,7 @@ goal_helper_pts = []
 class Restaurant: 
 	def __init__(self, generate_type, tables=None, goals=None, start=None, observers=None, dim=None):
 		self.generate_type = generate_type
+		print(generate_type)
 		self.observers = []
 		self.goals = []
 		self.tables = []
@@ -871,12 +902,12 @@ class Restaurant:
 				goal_angle = 0
 				self.goals.append(goal_pt)
 
-				goal_observers[goal_pt] = [obs1, obs2]
+				# goal_observers[goal_pt] = [obs1, obs2]
 
-		elif generate_type == TYPE_UNITY_ALIGNED:
+		elif generate_type == TYPE_EXP_SINGLE:
 			# Unity scenario created specifically for parameters of Unity restaurant
 
-			self.SCENARIO_IDENTIFIER = "_unity_v1_"
+			self.SCENARIO_IDENTIFIER = "_exp_single_"
 
 			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
 			ux1, uy1 = UNITY_CORNERS[0]
@@ -907,37 +938,37 @@ class Restaurant:
 			# width = abs(x1 - x2)
 
 			# start = (7.4, 2.37)
-			start = (6.0, 2.0)
+			start = (6.0, 2.0, DIR_EAST)
 			self.start = unity_to_image(start)
 
 			length = 1000
 			width = 1375
 
-			waypoint_kitchen_exit = (6.45477, 2.57)
+			waypoint_kitchen_exit = (6.45477, 2.57, None)
 			wpt = unity_to_image(waypoint_kitchen_exit)
 			# TODO verify units on this
 			self.waypoints.append(wpt)
 
 
-			unity_goal_pt = (4.43, -7.0)
+			# unity_goal_pt = (4.43, -7.0)
 
 			unity_table_pts = []
 			# unity_table_pts.append((3.6, -4.0))
-			unity_table_pts.append((3.6, -7.0))
+			unity_table_pts.append((3.6, 	-7.0))
 			# unity_table_pts.append((5.6, -10.0))
-			unity_table_pts.append((7.6, -7.0))
+			unity_table_pts.append((7.6, 	-7.0))
 
 			unity_goal_stop_options = []
 			# unity_goal_stop_options.append((4.3, -4.3))
-			unity_goal_stop_options.append((4.3, -7.3))
+			unity_goal_stop_options.append((4.3, 	-7.3, 	DIR_SOUTH))
 			# unity_goal_stop_options.append((5.6, -9.3))
-			unity_goal_stop_options.append((6.9, -7.3))
+			unity_goal_stop_options.append((6.9, 	-7.3, 	DIR_NORTH))
 
 			unity_goal_options = []
 			# unity_goal_options.append((4.3, -4.0))
-			unity_goal_options.append((4.429, -7.03)) #(4.3, -7.0)
+			unity_goal_options.append((4.429, 	-7.0, 	DIR_SOUTH)) #(4.3, -7.0)
 			# unity_goal_options.append((5.6, -9.3))
-			unity_goal_options.append((6.9, -7.0))
+			unity_goal_options.append((6.9, 	-7.0, 	DIR_NORTH))
 
 			table_pts = []
 			for t in unity_table_pts:
@@ -949,9 +980,9 @@ class Restaurant:
 				goal_helper_pts.append(unity_to_image(g))
 				self.goals.append(unity_to_image(g))
 
-			goal = unity_to_image(unity_goal_pt)
-			self.current_goal = goal
-			
+			# goal = unity_to_image(unity_goal_pt)
+			# self.current_goal = goal
+
 			# Set up observers
 
 			# unity table points are
@@ -1008,8 +1039,7 @@ class Restaurant:
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			self.observers.append(obs5)
 
-			goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
-
+			# goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
 
 		elif generate_type == TYPE_RANDOM:
 			# random generation of locations and objects
@@ -1043,10 +1073,17 @@ class Restaurant:
 
 				self.observers.append(Observer(obs_loc, angle))
 
-		elif generate_type == TYPE_EXP_SINGLE:
+			print("NOTE: These values have no yaw")
+			exit()
+
+
+		elif generate_type == TYPE_UNITY_ALIGNED:
+			print("Needs an update to have yaw values")
+			exit()
+
 			# Unity scenario created specifically for parameters of Unity restaurant
 
-			self.SCENARIO_IDENTIFIER = "_exp_single_"
+			self.SCENARIO_IDENTIFIER = "_unity_v1_"
 
 			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
 			ux1, uy1 = UNITY_CORNERS[0]
@@ -1073,7 +1110,7 @@ class Restaurant:
 			# y1 = 11.22
 			# y2 = 1.23
 
-			start = (6.0, 2.0)
+			start = (6.0, 2.0, DIR_EAST)
 			self.start = unity_to_image(start)
 
 			length = 1000
@@ -1094,15 +1131,15 @@ class Restaurant:
 
 			unity_goal_stop_options = []
 			# unity_goal_stop_options.append((4.3, -4.3))
-			unity_goal_stop_options.append((4.3, -7.3))
+			unity_goal_stop_options.append((4.3, -7.3, DIR_SOUTH))
 			# unity_goal_stop_options.append((5.6, -9.3))
-			unity_goal_stop_options.append((6.9, -7.3))
+			unity_goal_stop_options.append((6.9, -7.3, DIR_NORTH))
 
 			unity_goal_options = []
 			# unity_goal_options.append((4.3, -4.0))
-			unity_goal_options.append((4.429, -7.0)) #(4.3, -7.03)
+			unity_goal_options.append((4.429, -7.0, DIR_SOUTH)) #(4.3, -7.03)
 			# unity_goal_options.append((5.6, -9.3))
-			unity_goal_options.append((6.9, -7.0))
+			unity_goal_options.append((6.9, -7.0, DIR_NORTH))
 
 			table_pts = []
 			for t in unity_table_pts:
@@ -1133,7 +1170,7 @@ class Restaurant:
 			obs2 = Observer(obs2_pt, obs2_angle)
 			self.observers.append(obs2)
 
-			goal_observers[goal] = [obs1, obs2]
+			# goal_observers[goal] = [obs1, obs2]
 
 
 		else:
@@ -1190,37 +1227,19 @@ class Restaurant:
 
 		img = np.zeros((self.length, self.width,3), np.uint8)
 
-		# observers = [observers[0]]
-		# print(observers)
-		# for obs in observers:
-		if True:
-			# Draw person
-			# obs = observers[1]
+		overlay = img.copy()
 
-			# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_BUFFER, obs_radius + DIM_NAVIGATION_BUFFER)
-			# cv2.circle(obstacle_vis, obs.get_center(), obs_radius, COLOR_OBSTACLE_FULL, obs_radius)
-
-			# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius() + DIM_NAVIGATION_BUFFER)
-			# cv2.circle(obstacle_map, obs.get_center(), obs.get_radius(), 1, obs.get_radius())
-
-			# Draw shortened rep for view cones
-			# cv2.fillPoly(img, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL)
-			# cv2.fillPoly(img, obs.get_draw_field_focus(), COLOR_FOCUS)
-
-			overlay = img.copy()
-			# Draw shortened rep for view cones
-			# away = obs[1]
-
-			for obs in observers:
-				if obs is not None:
-					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-					cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
-					alpha = 0.3  # Transparency factor.
-					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+		for obs in observers:
+			if obs is not None:
+				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
+				alpha = 0.3  # Transparency factor.
+				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 		# Draw tables
 		for table in self.tables:
 			table_center = table.get_center()
+			# print(table_center)
 			cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
 
 			if FLAG_MAKE_OBSTACLE_MAP:
@@ -1235,9 +1254,9 @@ class Restaurant:
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
-			cv2.circle(img, goal, goal_radius, COLOR_GOAL, goal_radius)
+			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
 
-		cv2.circle(img, self.start, start_radius, COLOR_START, start_radius)
+		cv2.circle(img, to_xy(self.start), start_radius, COLOR_START, start_radius)
 
 		# Export the images
 		self.img = copy.copy(img)
@@ -1530,15 +1549,6 @@ def generate_restaurant(generate_type):
 	r = Restaurant(generate_type)
 	return r
 
-r = generate_restaurant(generate_type)
-
-start 		= r.get_start()
-goals 		= r.get_goals_all()
-goal 		= r.get_current_goal()
-observers 	= r.get_observers()
-tables 		= r.get_tables()
-waypoints 	= r.get_waypoints()
-SCENARIO_IDENTIFIER = r.get_scenario_identifier()
 
 FILENAME_PICKLE_VIS += SCENARIO_IDENTIFIER
 FILENAME_PICKLE_OBSTACLES += SCENARIO_IDENTIFIER
@@ -1546,8 +1556,6 @@ FILENAME_VIS_PREFIX += SCENARIO_IDENTIFIER
 FILENAME_OBSTACLE_PREFIX += SCENARIO_IDENTIFIER
 FILENAME_OVERVIEW_PREFIX += SCENARIO_IDENTIFIER
 
-# Get paths
-path = get_path(start, goal)
 
 # VISIBILITY Unit TEST
 def visibility_unit_test():
@@ -1725,7 +1733,7 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 	if fn is None:
 		fn = FILENAME_EXPORT_IMGS_PREFIX
 
-	print("Exporting diagrams")
+	print("Exporting assessment diagrams")
 
 	all_paths_img = img.copy()
 
@@ -1985,6 +1993,22 @@ def export(r, saved_paths, export_all=False):
 	
 	if EXPORT_CSV or export_all:
 		export_paths_csv(saved_paths)
+
+
+def main():
+	r = generate_restaurant(TYPE_EXP_SINGLE)
+
+	start 		= r.get_start()
+	goals 		= r.get_goals_all()
+	goal 		= r.get_current_goal()
+	observers 	= r.get_observers()
+	tables 		= r.get_tables()
+	waypoints 	= r.get_waypoints()
+	SCENARIO_IDENTIFIER = r.get_scenario_identifier()
+
+
+	# Get paths
+	path = get_path(start, goal)
 
 # if EXPO
 # export(r, saved_paths)
