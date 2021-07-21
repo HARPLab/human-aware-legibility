@@ -1223,8 +1223,9 @@ class Restaurant:
 			table_center = table.get_center()
 			cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
 
-			cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
-			cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
+			if FLAG_MAKE_OBSTACLE_MAP:
+				cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
+				cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
 
 
 		for obs in observers:
