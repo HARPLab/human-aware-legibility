@@ -511,13 +511,14 @@ def get_visibilities(path, target, goals, obs_sets):
 
 
 def get_legibilities(path, target, goals, obs_sets, f_vis):
-	vals = []
+	vals = {}
 
-	for aud in obs_sets:
+	for key in obs_sets.keys():
+		aud = obs_sets[key]
 		# goal, goals, path, df_obs
 		new_val = f_legibility(target, goals, path, aud, f_vis)
 
-		vals.append(new_val)
+		vals[key] = new_val
 
 	return vals
 
@@ -707,22 +708,11 @@ def add_further_overall_stats(df):
 
 	return df
 
-def get_obs_sets(r):
-	obs_none 	= []
-	obs_a 		= [r.get_observer_back()]
-	obs_b 		= [r.get_observer_towards()]
-	obs_multi 	= [r.get_observer_back(), r.get_observer_towards()]
-
-	obs_sets = [obs_none, obs_a, obs_b, obs_multi]
-
-	return obs_sets
-
-
 def get_path_analysis(all_paths, r, ti):
 	target = r.get_goals_all()[ti]	
 
 
-	obs_sets = get_obs_sets(r)
+	obs_sets = r.get_obs_sets()
 
 	goals = r.get_goals_all()
 	col_labels = ['cost', 'target', 'path', 'target_index']
@@ -732,11 +722,12 @@ def get_path_analysis(all_paths, r, ti):
 	# f_list = [f_vis_t3, f_remix3]
 	# f_labels = ['fvis','fcombo']
 
+	# TODO: tweak this
 	f_list = [f_remix3]
 	f_labels = ['fcombo']
 
 
-	leg_labels = ['lo', 'la', 'lb', 'lm']
+	leg_labels = list(obs_sets.keys())
 
 	data = []
 	for p in all_paths:
@@ -760,9 +751,10 @@ def get_path_analysis(all_paths, r, ti):
 		for fi in range(len(f_list)):
 			f_vis = f_list[fi]
 			f_label = f_labels[fi]
+			# print(f_label)
 
 			# For the legibility relative to each of these other audiences
-			l_o, l_a, l_b, l_m = get_legibilities(p, target, goals, obs_sets, f_vis)
+			all_legibilities = get_legibilities(p, target, goals, obs_sets, f_vis)
 
 			max_labels = copy.copy(leg_labels)
 			ratio_labels = copy.copy(leg_labels)
@@ -774,10 +766,10 @@ def get_path_analysis(all_paths, r, ti):
 
 				# ratio_labels[i] = "ratio-" + ratio_labels[i] + "-" + f_label
 
-			denominator = l_o + l_a + l_b + l_m
+			# denominator = l_o + l_a + l_b + l_m
 
 			remix_labels.extend(max_labels)
-			entry.extend([l_o, l_a, l_b, l_m])
+			entry.extend(list(all_legibilities.values()))
 
 			# print(remix_labels)
 
@@ -964,15 +956,18 @@ def inspect_visibility(options, restaurant, ti, fn):
 
 		t = range(len(path))
 		v = get_vis_graph_info(path, restaurant)
-		vo, va, vb, vm = v
+		# vo, va, vb, vm = v
 
 		fig = plt.figure()
 		ax1 = fig.add_subplot(111)
 
-		ax1.scatter(t, vo, s=10, c='r', marker="o", label="Vis Omni")
-		ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
-		ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
-		ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
+		for key in v.keys():
+			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
+
+		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
+		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
+		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
+
 		ax1.set_title('visibility of ' + pkey)
 		plt.legend(loc='upper left');
 		
@@ -997,20 +992,24 @@ def inspect_visibility(options, restaurant, ti, fn):
 		# plt.legend(loc='upper left');
 			
 def get_vis_graph_info(path, restaurant):
-	vals = [[], [], [], []]
+	vals_dict = {}
 
-	obs_sets = get_obs_sets(restaurant)
+	obs_sets = restaurant.get_obs_sets()
 
-	for t in range(len(path)):
-		for aud_i in range(len(obs_sets)):
+	for aud_i in obs_sets.keys():
+		vals = []
+		for t in range(len(path)):
+
 			# goal, goals, path, df_obs
 			new_val = f_remix3(t, path[t], obs_sets[aud_i], path)
 			# print(new_val)
 			# exit()
 
-			vals[aud_i].append(new_val)
+			vals.append(new_val)
 
-	return vals
+		vals_dict[aud_i] = vals
+
+	return vals_dict
 	# return vo, va, vb, vm
 
 
