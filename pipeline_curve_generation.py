@@ -26,8 +26,8 @@ import random
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-VISIBILITY_TYPES 	= resto.VIS_CHECKLIST
-NUM_CONTROL_PTS 	= 3
+VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
+NUM_CONTROL_PTS 		= 3
 
 NUMBER_STEPS = 30
 
@@ -1095,7 +1095,6 @@ def combine_list_of_dicts(all_options):
 	return new_dict
 
 def get_hardcoded():
-
 	start = (104, 477)
 	end = (1035, 567)
 	l1 = construct_single_path_bezier(start, end, [(894, 265)])
@@ -1123,12 +1122,7 @@ def get_hardcoded():
 	return options
 
 # MAIN METHOD
-# 
 def select_paths_and_draw(restaurant, unique_key):
-	# TODO import old good paths for further analysis
-	# hand-coded
-	# best x of the past
-
 	NUM_PATHS = 500
 	unique_key = "" + unique_key + "_"
 	goals = restaurant.get_goals_all()
@@ -1142,6 +1136,9 @@ def select_paths_and_draw(restaurant, unique_key):
 	all_options = []
 
 	# OPTIONS FOR HARDCODED/CACHED PATHS FOR CONSISTENT VISUALIZATIONS
+	# TODO import old good paths for further analysis
+	# hand-coded
+	# best x of the past
 	if FLAG_EXPORT_HARDCODED:
 		# Option for exporting a specific set of saved paths
 		options = get_hardcoded()
@@ -1185,6 +1182,7 @@ def unity_scenario():
 	# SETUP FROM SCRATCH AND SAVE
 	if FLAG_SAVE:
 		# Create the restaurant scene from our saved description of it
+		print("PLANNER: Creating layout of type " + str(generate_type))
 		r 	= resto.Restaurant(generate_type)
 		print("PLANNER: get visibility info")
 
