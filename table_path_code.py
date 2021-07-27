@@ -586,7 +586,10 @@ class Table:
 
 	def intersects_line(self, pt1, pt2):
 		# TODO ADA
-		table_radius = int(.35 * UNITY_SCALE_X)
+		# print(DIM_TABLE_RADIUS)
+		table_radius = int(.3 * UNITY_SCALE_X)
+		table_radius = int(table_radius * 2)
+		# print(table_radius)
 		p = fancyPoint(self.get_center()).buffer(table_radius)
 		l = fancyLineString([pt1, pt2])
 		i = l.intersects(p)
@@ -1179,6 +1182,9 @@ class Restaurant:
 		self.generate_obstacle_map_and_img()
 		self.generate_visibility_maps()
 
+	def get_goal_index(self, goal):
+		return self.goals.index(goal)
+
 	def make_obstacle_map(self, obstacle_vis, img):
 		obstacle_map = np.zeros((self.length, self.width), np.uint8)
 
@@ -1527,6 +1533,12 @@ class Restaurant:
 
 	def get_waypoints(self):
 		return self.waypoints
+
+	def get_length(self):
+		return self.length
+
+	def get_width(self):
+		return self.width
 
 	def get_img(self):
 		return copy.copy(self.img)

@@ -10,10 +10,11 @@ import copy
 import decimal
 import random
 
-# import sys
+import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
-# sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
+sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
 
+import state_lattice_planner as slp
 
 # start 		= r.get_start()
 # goals 		= r.get_goals_all()
@@ -47,6 +48,11 @@ def f_cost_old(t1, t2):
 	return resto.dist(t1, t2)
 
 def f_cost(t1, t2):
+	a = resto.dist(t1, t2)
+
+	return np.abs(a * a)
+
+def f_path_length(t1, t2):
 	a = resto.dist(t1, t2)
 
 	return np.abs(a * a)
@@ -203,6 +209,35 @@ def f_og(t, path):
 
 def f_novis(t, obs):
 	return 1
+
+# Given the observers of a given location, in terms of distance and relative heading
+def f_vis_single(p, observers):
+	# dist_units = 100
+	angle_cone = 135.0 / 2.
+	distance_cutoff = 2000
+
+	# Given a list of entries in the format 
+	# ((obsx, obsy), angle, distance)
+	if len(df_obs) == 0:
+		return 1
+	
+	vis = 0
+	for obs in observers:	
+		if obs == None:
+			return 0
+		else:
+			angle, dist = obs.get_obs_of_pt(p)
+
+		if angle < angle_cone and dist < distance_cutoff:
+			vis += np.abs(angle_cone - angle)
+
+	# print(vis)
+	return vis
+
+def f_exp_single(t, pt, aud, path):
+	# f_og(t, path) * 
+	val = (f_vis_single(pt, aud))
+	return val
 
 # def f_vis_eqn(observers):
 # 	value = 0
@@ -432,42 +467,61 @@ def get_costs_along_path(path):
 	return output
 
 
+def get_path_length(path):
+	output = []
+	ci = 0
+	csf = 0
+	total = 0
+	for pi in range(len(path)):
+		
+		cst = f_path_length(path[ci], path[pi])
+		total += cst
+		ci = pi
+		output.append(log)
+		
+	return output
+
 # Given a 
-def f_legibility(goal, goals, path, aud, f_vis_convo):
+def f_legibility(goal, goals, path, aud, f_function):
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
 	LAMBDA = decimal.Decimal(.0000002)
 	LAMBDA = decimal.Decimal(.000000)
 
+	epsilon = decimal.Decimal(.0000001)
+
 	start = path[0]
 	total_cost = decimal.Decimal(0)
 	aug_path = get_costs_along_path(path)
 
+	path_length = get_path_length(path)
+	delta_x = decimal.Decimal(path_length) / len(aug_path)
+
 	t = 1
 	p_n = path[0]
+	divisor = epsilon
+
 	for pt, cost_to_here in aug_path:
-		f = decimal.Decimal(f_vis_convo(t, pt, aud, path))
+		f = decimal.Decimal(f_function(t, pt, aud, path))
 	
 		prob_goal_given = prob_goal_given_path(start, p_n, pt, goal, goals, cost_to_here)
 
-		legibility += prob_goal_given * f
-		
+		numerator += ((prob_goal_given * f) * delta_x)
+		divisor += delta_x*f
+
+		t = t + 1
 		total_cost += decimal.Decimal(f_cost(p_n, pt))
 		p_n = pt
 
-		divisor = f
-		t = t + 1
 
 	if divisor == 0:
 		legibility = 0
 	else:
-		legibility = (legibility / divisor)
+		legibility = (numerator / divisor)
 
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
-
-	# print(legibility, total_cost)
 
 	return overall
 
@@ -525,42 +579,42 @@ def get_legibilities(path, target, goals, obs_sets, f_vis):
 
 # https://medium.com/@jaems33/understanding-robot-motion-path-smoothing-5970c8363bc4
 def smooth_slow(path, weight_data=0.5, weight_smooth=0.1, tolerance=1):
-    """
-    Creates a smooth path for a n-dimensional series of coordinates.
-    Arguments:
-        path: List containing coordinates of a path
-        weight_data: Float, how much weight to update the data (alpha)
-        weight_smooth: Float, how much weight to smooth the coordinates (beta).
-        tolerance: Float, how much change per iteration is necessary to keep iterating.
-    Output:
-        new: List containing smoothed coordinates.
-    """
+	"""
+	Creates a smooth path for a n-dimensional series of coordinates.
+	Arguments:
+		path: List containing coordinates of a path
+		weight_data: Float, how much weight to update the data (alpha)
+		weight_smooth: Float, how much weight to smooth the coordinates (beta).
+		tolerance: Float, how much change per iteration is necessary to keep iterating.
+	Output:
+		new: List containing smoothed coordinates.
+	"""
 
-    dims = len(path[0])
-    new = [[0, 0]] * len(path)
-    # print(new)
-    change = tolerance
+	dims = len(path[0])
+	new = [[0, 0]] * len(path)
+	# print(new)
+	change = tolerance
 
-    while change >= tolerance:
-        change = 0.0
-        prev_change = change
-        
-        for i in range(1, len(new) - 1):
-            for j in range(dims):
+	while change >= tolerance:
+		change = 0.0
+		prev_change = change
+		
+		for i in range(1, len(new) - 1):
+			for j in range(dims):
 
-                x_i = path[i][j]
-                y_i, y_prev, y_next = new[i][j], new[i - 1][j], new[i + 1][j]
+				x_i = path[i][j]
+				y_i, y_prev, y_next = new[i][j], new[i - 1][j], new[i + 1][j]
 
-                y_i_saved = y_i
-                y_i += weight_data * (x_i - y_i) + weight_smooth * (y_next + y_prev - (2 * y_i))
-                new[i][j] = y_i
+				y_i_saved = y_i
+				y_i += weight_data * (x_i - y_i) + weight_smooth * (y_next + y_prev - (2 * y_i))
+				new[i][j] = y_i
 
-                change += abs(y_i - y_i_saved)
+				change += abs(y_i - y_i_saved)
 
-        print(change)
-        if prev_change == change:
-        	return new
-    return new
+		print(change)
+		if prev_change == change:
+			return new
+	return new
 
 
 def smoothed(blocky_path, r):
@@ -586,6 +640,12 @@ def generate_single_path_grid(restaurant, target, vis_type, n_control):
 	path 		= smoothed(path, restaurant)
 	return path
 
+def generate_single_path_with_angles(restaurant, target, vis_type, n_control):
+	sample_pts 	= restaurant.sample_points(n_control, target, vis_type)
+	path = construct_single_path_with_angles(restaurant.get_start(), target, sample_pts)
+	# path 		= smoothed(path, restaurant)
+	return path
+
 def generate_single_path(restaurant, target, vis_type, n_control):
 	valid_path = False
 
@@ -609,14 +669,13 @@ def construct_single_path(start, end, sample_pts):
 	# NUMBER_STEPS should be the final length
 
 	# randomly walk there
-	cx, cy = start
+	cx, cy, ctheta = start
 	targets = sample_pts + [end]
 
 	# print(sample_pts)
 
 	for target in targets:
-		# print(target)
-		tx, ty = target
+		tx, ty = resto.to_xy(target)
 		x_sign, y_sign = 1, 1
 		if tx < cx:
 			x_sign = -1
@@ -648,18 +707,150 @@ def construct_single_path(start, end, sample_pts):
 
 	return points
 
+# TODO: add test methods for this
 def is_valid_path(restaurant, path):
+	# return True
 	tables = restaurant.get_tables()
+	# print(len(tables))
 
 	for t in tables:
+		# print("TABLE MID: " + str(t.get_center()))
 		for i in range(len(path) - 1):
 			pt1 = path[i]
 			pt2 = path[i + 1]
 			
+			# print((pt1, pt2))
+
 			if t.intersects_line(pt1, pt2):
+				# print("Intersection!")
+
+				# print(t.get_center())
+				# print(path)
+				# print((pt1, pt2))
 				return False
+
 	return True
 
+def as_tangent(start_angle):
+	# start_angle is assumed to be in degrees
+	a = np.deg2rad(start_angle)
+
+	dx = np.cos(a)
+	dy = np.sin(a)
+
+	return [dx, dy]
+
+def as_tangent_test(sa):
+	sa = 90
+	print(sa)
+	print(as_tangent(sa))
+	sa = 0
+	print(sa)
+	print(as_tangent(sa))
+
+def path_formatted(xs, ys):
+	xs = [int(x) for x in xs]
+	ys = [int(y) for y in ys]
+	return list(zip(xs, ys))
+
+# https://hal.archives-ouvertes.fr/hal-03017566/document
+def construct_single_path_with_angles(start, goal, sample_pts):
+	print("WITH ANGLE")
+	xy_0 = start
+	xy_n = goal
+	xy_mid = sample_pts	
+
+	x = []
+	y = []
+
+	x.append(xy_0[0])
+	y.append(xy_0[1])
+
+	for i in range(len(sample_pts)):
+		spt = sample_pts[i]
+		sx = spt[0]
+		sy = spt[1]
+		x.append(sx)
+		y.append(sy)
+
+	x.append(xy_n[0])
+	y.append(xy_n[1])
+
+	# Subtract 90 to turn path angle into tangent
+	start_angle = xy_0[2] - 90
+	# Do the reverse for the ending point
+	end_angle 	= xy_n[2] + 90
+
+	# Strength of how much we're enforcing the exit angle
+	k = 800
+	t1 = np.array(as_tangent(start_angle)) * k
+	tn = np.array(as_tangent(end_angle)) * k
+
+	print(type(t1))
+	# tangent vectors
+
+	print("Tangents")
+	print(t1)
+	print(tn)
+
+
+	Px=np.concatenate(([t1[0]],x,[tn[0]]))
+	Py=np.concatenate(([t1[1]],y,[tn[1]]))
+
+	# interpolation equations
+	n = len(x)
+	phi = np.zeros((n+2,n+2))
+	for i in range(n):
+		phi[i+1,i]=1
+		phi[i+1,i+1]=4
+		phi[i+1,i+2]=1
+
+	# end condition constraints
+	phi=np.zeros((n+2,n+2))
+	for i in range(n):
+		phi[i+1,i] = 1
+		phi[i+1,i+1] = 4
+		phi[i+1,i+2] = 1 
+	phi[0,0] = -3
+	phi[0,2] = 3
+	phi[n+1,n-1] = -3
+	phi[n+1,n+1] = 3
+	# passage matrix
+	phi_inv = np.linalg.inv(phi)
+	# control points
+	Qx=6*phi_inv.dot(Px)
+	Qy=6*phi_inv.dot(Py)
+	# figure plot
+	# plt.figure(figsize=(12, 5))
+	t=np.linspace(0,1,num=101)
+
+	length = 1000
+	width = 1375
+
+	plt.xlim([0, width])
+	plt.ylim([0, length])
+
+	x_all = []
+	y_all = []
+
+	for k in range(0,n-1):
+		x_t = 1.0/6.0*(((1-t)**3)*Qx[k]+(3*t**3-6*t**2+4)*Qx[k+1]+(-3*t**3+3*t**2+3*t+1)*Qx[k+2]+(t**3)*Qx[k+3])
+		y_t = 1.0/6.0*(((1-t)**3)*Qy[k]+(3*t**3-6*t**2+4)*Qy[k+1]+(-3*t**3+3*t**2+3*t+1)*Qy[k+2]+(t**3)*Qy[k+3]) 
+		plt.plot(x_t,y_t,'k',linewidth=2.0,color='orange')
+
+		x_all.extend(x_t)
+		y_all.extend(y_t)
+
+
+	plt.plot(x, y, 'ko', label='fit knots',markersize=15.0)
+	plt.plot(Qx, Qy, 'o--', label='control points',markersize=15.0)
+	plt.xlabel('x')
+	plt.ylabel('y')
+	plt.legend(loc='upper left', ncol=2)
+	plt.savefig('cubic_spline_imposed_tangent_direction.png')
+	# plt.show()
+
+	return path_formatted(x_all, y_all)
 
 def construct_single_path_bezier(start, end, sample_pts):
 	points = []
@@ -677,12 +868,13 @@ def construct_single_path_bezier(start, end, sample_pts):
 def generate_n_paths(restaurant, num_paths, target, n_control):
 	path_list = []
 	vis_type = resto.VIS_OMNI
+	print("Generating n paths ")
 
 	for i in range(num_paths):
 		valid_path = False
 		# while (not valid_path):
-		path_option = generate_single_path_grid(restaurant, target, vis_type, n_control)
-	
+		# path_option = generate_single_path_grid(restaurant, target, vis_type, n_control)
+		path_option = generate_single_path_with_angles(restaurant, target, vis_type, n_control)
 
 		path_list.append(path_option)
 		# print(path_option)
@@ -710,23 +902,14 @@ def add_further_overall_stats(df):
 
 def get_path_analysis(all_paths, r, ti):
 	target = r.get_goals_all()[ti]	
-
-
 	obs_sets = r.get_obs_sets()
 
 	goals = r.get_goals_all()
 	col_labels = ['cost', 'target', 'path', 'target_index']
 
-	# vis_labels = get_vis_labels()
-	# f_list = [f_remix1, f_remix2, f_remix3, f_remix4, f_remix_novis]
-	# f_list = [f_vis_t3, f_remix3]
-	# f_labels = ['fvis','fcombo']
-
-	# TODO: tweak this
-	f_list = [f_remix3]
-	f_labels = ['fcombo']
-
-
+	# list of 
+	f_list = {'fexp_single': f_exp_single}
+	
 	leg_labels = list(obs_sets.keys())
 
 	data = []
@@ -735,9 +918,7 @@ def get_path_analysis(all_paths, r, ti):
 		# these are the pre-listed options in col_labels
 		cost = f_path_cost(p)
 		vis_types, vis_values = get_visibilities(p, target, goals, obs_sets)
-		# print(vis_types)
-		# print(len(vis_values))
-
+		
 		entry = [cost, target, p, ti]
 		remix_labels = []
 
@@ -826,7 +1007,7 @@ def get_vis_labels():
 	return vis_labels
 
 def minMax(x):
-    return pd.Series(index=['min','max'],data=[x.min(),x.max()])
+	return pd.Series(index=['min','max'],data=[x.min(),x.max()])
 
 # Given a set of paths, get all analysis and log it
 def assess_paths(all_paths, r, ti, unique_key):
@@ -1121,9 +1302,56 @@ def get_hardcoded():
 
 	return options
 
+
 # MAIN METHOD
 def select_paths_and_draw(restaurant, unique_key):
 	NUM_PATHS = 500
+	
+	
+
+	all_options = []
+
+	# OPTIONS FOR HARDCODED/CACHED PATHS FOR CONSISTENT VISUALIZATIONS
+	# TODO import old good paths for further analysis
+	# hand-coded
+	# best x of the past
+	if FLAG_EXPORT_HARDCODED:
+		# Option for exporting a specific set of saved paths
+		options = get_hardcoded()
+		fn = FILENAME_PATH_ASSESS + "presentation-saved-"
+		resto.export_assessments_by_criteria(img, options, fn=fn)
+		exit()
+
+
+	# Decide how many control points to provide
+	# Reversed so most interesting done first
+	for ti in range(len(goals))[::-1]:
+		all_paths = []
+		target = goals[ti]
+		for n_control in range(1, 2):
+			paths = generate_n_paths(restaurant, NUM_PATHS, target, n_control)
+			fn = FILENAME_PATH_ASSESS + unique_key + "g" + str(ti) + "-pts=" + str(n_control) + "-" + "-all.png"
+			resto.export_raw_paths(img, paths, fn)
+			all_paths.extend(paths)
+
+
+		# For this goal, assess all the paths and keep the best
+		options, details = assess_paths(all_paths, restaurant, ti, unique_key)
+		all_options.append(options)
+		print("Completed assessment")
+
+		fn = FILENAME_PATH_ASSESS + "vis_" + unique_key + "g" + str(ti) + "-"
+		inspect_visibility(all_options, restaurant, ti, fn)
+
+		resto.export_assessments_by_criteria(img, options, fn=fn)
+
+
+	options = combine_list_of_dicts(all_options)
+	# print(options)
+
+# MAIN METHOD
+def select_paths_and_draw_deprecated(restaurant, unique_key):
+	NUM_PATHS = 100
 	unique_key = "" + unique_key + "_"
 	goals = restaurant.get_goals_all()
 
@@ -1174,9 +1402,62 @@ def select_paths_and_draw(restaurant, unique_key):
 	# print(options)
 
 
+def trim_paths(r, all_paths, goal):
+	trimmed_paths = []
+	for p in all_paths:
+		if is_valid_path(r, p):
+			trimmed_paths.append(p)
+
+	print("Paths trimmed: " + str(len(all_paths)) + " -> " + str(len(trimmed_paths)))
+	return trimmed_paths
 
 
-def unity_scenario():
+def create_path_options_for_goal(r, label, start, goal, img, num_paths=500):
+	all_paths = []
+	target = goal
+
+	# num_paths = 20
+
+	# Addition of bezier raw paths
+	for n_control in range(1, 2):
+		paths = []
+		for n in range(num_paths):
+			if n % 10 == 0:
+				pass
+				# print(n)
+
+			vis_type = None
+
+			# Add grid paths
+			# path_option = generate_single_path_grid(r, target, vis_type, n_control)
+			path_option = generate_single_path_with_angles(r, target, vis_type, n_control)
+			print("Yay path options")
+			print(path_option)
+			paths.append(path_option)
+
+			# Add validated bezier paths
+			# path_option = generate_single_path(r, target, vis_type, n_control)
+			# paths.append(path_option)
+
+			# Add additional curves
+
+		goal_index = r.get_goal_index(goal)
+
+		fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + str(n_control) + "-" + "all.png"
+		resto.export_raw_paths(img, paths, fn)
+
+		paths = trim_paths(r, paths, goal)
+		fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + str(n_control) + "-" + "trimmed.png"
+		resto.export_raw_paths(img, paths, fn)
+
+		all_paths.extend(paths)
+
+	all_paths = trim_paths(r, all_paths, goal)
+	return all_paths
+
+
+
+def experimental_scenario_single():
 	generate_type = resto.TYPE_EXP_SINGLE
 
 	# SETUP FROM SCRATCH AND SAVE
@@ -1220,12 +1501,228 @@ def unity_scenario():
 	return r
 
 
+def image_to_planner(resto, pt):
+	if len(pt) == 3:
+		x, y, theta = pt
+	else:
+		x, y = pt
+
+	# planner always starts at (0,0)
+	gx, gy, gtheta = resto.get_start()
+
+
+	x = float(x) - gx
+	y = float(y) - gy
+	nx = x #(x / UNITY_SCALE_X) + UNITY_OFFSET_X
+	ny = y #(y / UNITY_SCALE_Y) + UNITY_OFFSET_Y
+	
+	if len(pt) == 3:
+		return (int(ny), int(nx), theta)
+	return (int(ny), int(nx))
+
+def planner_to_image(resto, pt):
+	if len(pt) == 3:
+		x, y, theta = pt
+	else:
+		x, y = pt
+
+	# planner always starts at (0,0)
+	gx, gy, gtheta = resto.get_start()
+
+
+	x = float(x) + gx
+	y = float(y) + gy
+	nx = y #(x / UNITY_SCALE_X) + UNITY_OFFSET_X
+	ny = x #(y / UNITY_SCALE_Y) + UNITY_OFFSET_Y
+	
+	if len(pt) == 3:
+		return (int(ny), int(nx), np.deg2rad(theta))
+	return (int(ny), int(nx))
+
+def angle_between_points(p1, p2):
+	ang1 = np.arctan2(*p1[::-1])
+	ang2 = np.arctan2(*p2[::-1])
+	return np.rad2deg((ang1 - ang2) % (2 * np.pi))
+
+
+def lane_state_sampling_test1(resto, goal, i):
+	start = resto.get_start()
+	sx, sy, stheta = image_to_planner(resto, start)
+	gx, gy, gtheta = image_to_planner(resto, goal)
+	print("FINDING ROUTE TO GOAL " + str(goal))
+	show_animation = False
+
+	min_distance = np.sqrt((sx-gx)**2 + (sy-gy)**2)
+	target_states = [image_to_planner(resto, goal)]
+	# print(target_states)
+
+	label = 'lanes' + str(i)
+
+	k0 = 0.0
+
+	# :param l_center: lane lateral position
+	# :param l_heading:  lane heading
+	# :param l_width:  lane width
+	# :param v_width: vehicle width
+	# :param d: longitudinal position
+	# :param nxy: sampling number
+	
+	l_center = sx
+	l_heading = angle_between_points((sx, sy), (gx, gy)) #np.deg2rad(0.0)
+	l_width = 300
+	v_width = 1.0
+	d = min_distance
+	nxy = 5
+	states = slp.calc_lane_states(l_center, l_heading, l_width, v_width, d, nxy)
+	print_states(resto, states, label)
+	result = slp.generate_path(states, k0)
+
+	if show_animation:
+		plt.close("all")
+
+
+	for table in result:
+		xc, yc, yawc = slp.motion_model.generate_trajectory(
+			table[3], table[4], table[5], k0)
+
+		print_path(resto, xc, yc, yawc, label)
+
+
+		if show_animation:
+			print((xc, yc))
+			plt.plot(xc, yc, "-r")
+
+
+	if show_animation:
+		plt.grid(True)
+		plt.axis("equal")
+		plt.show()
+
+def print_states(resto, states, label):
+	img = resto.get_img()
+	img = cv2.flip(img, 0)
+
+	cv2.circle(img, planner_to_image(resto, (0,0)), 5, (138,43,226), 5)
+	for s in states:
+		x, y, t = planner_to_image(resto, s)
+		print((x,y, t))
+
+		COLOR_RED = (138,43,226)
+		cv2.circle(img, (x, y), 5, COLOR_RED, 5)
+
+		angle = s[2];
+		length = 20;
+		
+		ax =  int(x + length * np.cos(angle * np.pi / 180.0))
+		ay =  int(y + length * np.sin(angle * np.pi / 180.0))
+		cv2.arrowedLine(img, (x,y), (ax, ay), COLOR_RED, 2)
+		# print((ax, ay))
+
+	cv2.imwrite(FILENAME_PATH_ASSESS + 'samples-' + label + '.png', img)
+
+def print_path(resto, xc, yc, yawc, label):
+	img = resto.get_img()
+	img = cv2.flip(img, 0)
+
+	cv2.circle(img, planner_to_image(resto, (0,0)), 5, (138,43,226), 5)
+	for i in range(len(xc)):
+		x = int(xc[i])
+		y = int(yc[i])
+		yaw = yawc[i]
+
+		COLOR_RED = (138,43,226)
+		cv2.circle(img, (x, y), 5, COLOR_RED, 5)
+
+		angle = yaw;
+		length = 20;
+		
+		ax =  int(x + length * np.cos(angle * np.pi / 180.0))
+		ay =  int(y + length * np.sin(angle * np.pi / 180.0))
+		cv2.arrowedLine(img, (x,y), (ax, ay), COLOR_RED, 2)
+
+	cv2.imwrite(FILENAME_PATH_ASSESS + 'path-' + label + '.png', img)
+
+def make_path_libs(resto, goal):
+	start = resto.get_start()
+	sx, sy, stheta = image_to_planner(resto, start)
+	gx, gy, gtheta = image_to_planner(resto, goal)
+	print("FINDING ROUTE TO GOAL " + str(goal))
+	show_animation = False
+
+	min_distance = np.sqrt((sx-gx)**2 + (sy-gy)**2)
+	target_states = [image_to_planner(resto, goal)]
+	# :param goal_angle: goal orientation for biased sampling
+	# :param ns: number of biased sampling
+	# :param nxy: number of position sampling
+	# :param nxy: number of position sampling
+	# :param nh: number of heading sampleing
+	# :param d: distance of terminal state
+	# :param a_min: position sampling min angle
+	# :param a_max: position sampling max angle
+	# :param p_min: heading sampling min angle
+	# :param p_max: heading sampling max angle
+	# :return: states list
+
+	k0 = 0.0
+	nxy = 7
+	nh = 9
+	# verify d is reasonable
+	d = min_distance
+	print("D=" + str(d))
+	a_min = - np.deg2rad(15.0)
+	a_max = np.deg2rad(15.0)
+	p_min = - np.deg2rad(15.0)
+	p_max = np.deg2rad(15.0)
+	print("calculating states")
+	states = slp.calc_uniform_polar_states(nxy, nh, d, a_min, a_max, p_min, p_max)
+	print(states)
+
+	print_states(resto, states, 'calc-unif')
+
+	print("calculating results")
+	result = slp.generate_path(states, k0)
+	print(result)
+
+	for table in result:
+		xc, yc, yawc = slp.motion_model.generate_trajectory(
+			table[3], table[4], table[5], k0)
+
+		print("gen trajectory")
+		print((xc, yc, yawc))
+
+		if show_animation:
+			plt.plot(xc, yc, "-r")
+			print(xc, yc)
+
+	if show_animation:
+		plt.grid(True)
+		plt.axis("equal")
+		plt.show()
+
+	print("Done")
+
 def main():
 	# Run the scenario that aligns with our use case
-	resto = unity_scenario()
-	start_x, start_y, start_theta = 0, 0, 0
-	goal_x, goal_y, goal_theta = 0, 0, 0
-	select_paths_and_draw(resto, "exp_single")
+	resto = experimental_scenario_single()
+	start = resto.get_start()
+	all_goals = resto.get_goals_all()
+
+	OPTION_DOING_STATE_LATTICE = False
+	if OPTION_DOING_STATE_LATTICE:
+		for i in range(len(all_goals)):
+			goal = all_goals[i]
+			lane_state_sampling_test1(resto, goal, i)
+			# make_path_libs(resto, goal)
+
+	# SET UP THE IMAGES FOR FUTURE DRAWINGS
+	img = resto.get_img()
+	empty_img = cv2.flip(img, 0)
+	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
+	
+	# TODO add permutations of goals with some final-angle-wiggle
+	for goal in all_goals:
+		print("Generating paths for goal " + str(goal))
+		paths = create_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
 
 	print("Done")
 
