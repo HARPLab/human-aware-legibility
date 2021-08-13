@@ -21,13 +21,31 @@ from klampt import vis
 from klampt.model import trajectory
 from klampt.model import multipath
 from klampt.vis import GLRealtimeProgram
+import cv2
 
-def draw_path(r, title, path, prefix):
+# #               red         green       yellow          light yellow    grey        light blue      blue            
+# PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,128,128), (100,100,100), (255,64,64), (255,10,10)]
+
+def draw_path(restaurant, title, traj, prefix):
     img = restaurant.get_img()
-    empty_img = cv2.flip(img, 0)
 
+    path = traj.milestones
 
-    cv2.imwrite(title+ '.png', img)
+    path_color = (255,64,64) #(0,201,87)
+    dot_color =  (255,10,10) # (0,255,255)
+
+    for i in range(len(path) - 1):
+        a = tuple(path[i])
+        b = tuple(path[i + 1])
+
+        a = (int(a[0]), int(a[1]))
+        b = (int(b[0]), int(b[1]))
+        
+        cv2.line(img, a, b, path_color, thickness=5, lineType=8)
+        cv2.circle(img, a, 6, dot_color, 6)
+
+    img = cv2.flip(img, 0)
+    cv2.imwrite(prefix + title + '.png', img)
     print("Drawing completed for " + title)
 
 
@@ -71,52 +89,105 @@ if __name__ == "__main__":
     generate_type   = resto.TYPE_EXP_SINGLE
     r               = resto.Restaurant(generate_type)
 
-    prefix = 'path_optimization/'
+    prefix = 'path_optimization/sqrt-'
+    prefix = 'path_optimization/simple-'
     dt = 1
 
-    path = p1
+    mid_path = int(len(p1) / 2)
+    path = [p1[0], p1[mid_path], p1[-1]][::-1]
+    # path = [[104, 477, 90], p1[mid_path], [1035, 567, 0]]
+
+    title = 'linear'
+    traj = trajectory.path_to_trajectory(path, speed=1, timing='sqrt-L2', velocities='auto')
+    dt = int(len(traj.milestones)) * .001
+
+    print(dt)
+
+    traj = traj.discretize(dt)
+    traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
+    print(traj.milestones)
+    print(len(traj.milestones))
+
+    title = 'limited'
+    traj = trajectory.path_to_trajectory(path, speed=1, timing='limited', velocities='auto')
+    dt = int(len(traj.milestones)) * .001
+
+    print(dt)
+
+    traj = traj.discretize(dt)
+    traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
+    print(traj.milestones)
+    print(len(traj.milestones))
+
+    print("min-jerk")
+    title = 'min-jerk'
+    traj = trajectory.path_to_trajectory(path, speed=1, velocities='minimum-jerk', timing='sqrt-L2')
+    dt = int(len(traj.milestones)) * .001
+    traj = traj.discretize(dt)
+    traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
+    print(traj.milestones)
+    print(len(traj.milestones))
+
+    exit()
 
     title = 't1'
     traj = trajectory.path_to_trajectory(path, speed=1, timing='limited')
     traj = traj.discretize(dt)
     traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
 
     print(traj.milestones)
     print(len(traj.milestones))
 
-    print("no_vel")
+    print("parabolic")
     title = 't2'
-    traj = trajectory.path_to_trajectory(path, speed=1, velocities='parabolic', timing='L2')
+    traj = trajectory.path_to_trajectory(path, speed=1, velocities='parabolic', timing='sqrt-L2')
     traj = traj.discretize(dt)
     traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
     print(traj.milestones)
     print(len(traj.milestones))
 
-    title = 't3'
-    traj = trajectory.path_to_trajectory(path, speed=1, velocities='triangular', timing='L2')
+    title = 'triangular'
+    traj = trajectory.path_to_trajectory(path, speed=1, velocities='triangular', timing='sqrt-L2')
     traj = traj.discretize(dt)
     traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
     print("auto")
     print(traj.milestones)
     print(len(traj.milestones))
     
-    title = 't4'
-    traj = trajectory.path_to_trajectory(path, speed=1, velocities='trapezoidal', timing='L2')
+    title = 'trapezoid'
+    traj = trajectory.path_to_trajectory(path, speed=1, velocities='trapezoidal', timing='sqrt-L2')
     traj = traj.discretize(dt)
     traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
     print("trapezoidal")
+    print(traj.milestones)
+    print(len(traj.milestones))
+
+    title = 'cosine'
+    traj = trajectory.path_to_trajectory(path, speed=1, velocities='cosine', timing='sqrt-L2')
+    traj = traj.discretize(dt)
+    traj.save(prefix + title + '.txt')
+    draw_path(r, title, traj, prefix)
+
+    print("cosine")
     print(traj.milestones)
     print(len(traj.milestones))
 
     # velocities=’auto’, trapezoidal’, ‘triangular’, ‘parabolic’, ‘cosine’, or ‘minimum-jerk’;
 
-    print("min-jerk")
-    title = 't5'
-    traj = trajectory.path_to_trajectory(path, speed=1, velocities='minimum-jerk', timing='L2')
-    traj = traj.discretize(dt)
-    traj.save(prefix + title + '.txt')
-    print(traj.milestones)
-    print(len(traj.milestones))
+
 
 
     print("got trajectories")
