@@ -1145,7 +1145,6 @@ def get_hardcoded():
 	return options
 
 # MAIN METHOD
-# 
 def select_paths_and_draw(restaurant, unique_key):
 	# TODO import old good paths for further analysis
 	# hand-coded
@@ -1193,15 +1192,13 @@ def select_paths_and_draw(restaurant, unique_key):
 
 
 	options = combine_list_of_dicts(all_options)
-	# print(options)
-
-
+	print(options)
 
 
 
 
 def unity_scenario():
-	generate_type = resto.TYPE_UNITY_ALIGNED
+	generate_type = resto.TYPE_EXP_SINGLE
 
 	# SETUP FROM SCRATCH AND SAVE
 	if FLAG_SAVE:
@@ -1242,9 +1239,9 @@ def unity_scenario():
 
 	select_paths_and_draw(r, "mainexp")
 
-
-# Run the scenario that aligns with our use case
-unity_scenario()
+def main():
+	# Run the scenario that aligns with our use case
+	unity_scenario()
 
 
 
