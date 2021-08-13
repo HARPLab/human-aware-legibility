@@ -755,7 +755,7 @@ def path_formatted(xs, ys):
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
 def construct_single_path_with_angles(start, goal, sample_pts):
-	print("WITH ANGLE")
+	# print("WITH ANGLE")
 	xy_0 = start
 	xy_n = goal
 	xy_mid = sample_pts	
@@ -786,12 +786,12 @@ def construct_single_path_with_angles(start, goal, sample_pts):
 	t1 = np.array(as_tangent(start_angle)) * k
 	tn = np.array(as_tangent(end_angle)) * k
 
-	print(type(t1))
+	# print(type(t1))
 	# tangent vectors
 
-	print("Tangents")
-	print(t1)
-	print(tn)
+	# print("Tangents")
+	# print(t1)
+	# print(tn)
 
 
 	Px=np.concatenate(([t1[0]],x,[tn[0]]))
@@ -1411,13 +1411,142 @@ def trim_paths(r, all_paths, goal):
 	print("Paths trimmed: " + str(len(all_paths)) + " -> " + str(len(trimmed_paths)))
 	return trimmed_paths
 
+def get_sample_points_sets(r, start, goal, sampling_type):
+	# sampling_type = 'systematic'
+	# sampling_type = 'visible'
+	# sampling_type = 'in_zone'
+
+	sample_sets = []
+	resolution = 100
+
+	if sampling_type == 'systematic':
+		width = r.get_width()
+		length = r.get_length()
+
+		print(start)
+		for xi in range(int(width / resolution)):
+			for yi in range(int(length / resolution)):
+				x = int(resolution * xi)
+				y = int(resolution * yi)
+
+				point_set = [(x, y)]
+				sample_sets.append(point_set)
+
+
+	elif sampling_type == 'hardcoded':
+		print(start)
+		print(goal)
+		sx, sy, stheta = start
+		gx, gy, gt = goal
+
+		mx = int((sx + gx)/2.0)
+		my = int((sy + gy)/2.0)
+
+		resolution = 200
+		point_set = []
+		sample_sets.append(point_set)
+
+		# point_set = [(sx + resolution,		sy)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx + 2*resolution,	sy)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx + 3*resolution,	sy)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx + 4*resolution,	sy)]
+		# sample_sets.append(point_set)
+
+
+		point_set = [(mx + resolution,		my)]
+		sample_sets.append(point_set)
+		point_set = [(mx + 2*resolution,	my)]
+		sample_sets.append(point_set)
+		point_set = [(mx + 3*resolution,	my)]
+		sample_sets.append(point_set)
+		point_set = [(mx + 4*resolution,	my)]
+		sample_sets.append(point_set)
+
+
+		# point_set = [(sx - resolution,sy)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx,sy + resolution)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx,sy - resolution)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx - resolution,sy + resolution)]
+		# sample_sets.append(point_set)
+		# point_set = [(sx - resolution,sy - resolution)]
+		# sample_sets.append(point_set)
+
+		# point_set = [(gx - resolution,gy)]
+		# sample_sets.append(point_set)
+		# # point_set = [(gx - resolution,gy + resolution)]
+		# # sample_sets.append(point_set)
+		# # point_set = [(gx - resolution,gy - resolution)]
+		# # sample_sets.append(point_set)
+		# point_set = [(gx - 2*resolution,gy)]
+		# sample_sets.append(point_set)
+
+		# # point_set = [(gx - 2*resolution,gy + resolution)]
+		# # sample_sets.append(point_set)
+		# # point_set = [(gx - 2*resolution,gy - resolution)]
+		# # sample_sets.append(point_set)
+
+		# point_set = [(gx - 3*resolution,gy)]
+		# sample_sets.append(point_set)
+
+		# point_set = [(gx - 4*resolution,gy)]
+		# sample_sets.append(point_set)
+
+
+	return sample_sets
+
+def create_systematic_path_options_for_goal(r, label, start, goal, img, num_paths=500):
+	all_paths = []
+	target = goal
+
+	sample_pts = []
+	sampling_type = 'systematic'
+	# sampling_type = 'hardcoded'
+	# sampling_type = 'visible'
+	# sampling_type = 'in_zone'
+
+	sample_pts = get_sample_points_sets(r, start, goal, sampling_type)
+	print("Sampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
+
+	# Addition of bezier raw paths
+	for point_set in sample_pts:
+		vis_type = None
+
+		# Add grid paths
+		# path_option = generate_single_path_grid(r, target, vis_type, n_control)
+		path_option = construct_single_path_with_angles(r.get_start(), target, point_set)
+		all_paths.append(path_option)
+
+		# Add validated bezier paths
+		# path_option = generate_single_path(r, target, vis_type, n_control)
+		# paths.append(path_option)
+
+		# Add additional curves
+
+	goal_index = r.get_goal_index(goal)
+
+	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "all.png"
+	resto.export_raw_paths(img, all_paths, fn)
+
+	trimmed_paths = trim_paths(r, all_paths, goal)
+	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "trimmed.png"
+	resto.export_raw_paths(img, trimmed_paths, fn)
+
+	return all_paths
+
 
 def create_path_options_for_goal(r, label, start, goal, img, num_paths=500):
 	all_paths = []
 	target = goal
 
-	# num_paths = 20
-
+	sample_points = None
+	# sample_pts = []
+	
 	# Addition of bezier raw paths
 	for n_control in range(1, 2):
 		paths = []
@@ -1545,58 +1674,58 @@ def angle_between_points(p1, p2):
 	return np.rad2deg((ang1 - ang2) % (2 * np.pi))
 
 
-def lane_state_sampling_test1(resto, goal, i):
-	start = resto.get_start()
-	sx, sy, stheta = image_to_planner(resto, start)
-	gx, gy, gtheta = image_to_planner(resto, goal)
-	print("FINDING ROUTE TO GOAL " + str(goal))
-	show_animation = False
+# def lane_state_sampling_test1(resto, goal, i):
+# 	start = resto.get_start()
+# 	sx, sy, stheta = image_to_planner(resto, start)
+# 	gx, gy, gtheta = image_to_planner(resto, goal)
+# 	print("FINDING ROUTE TO GOAL " + str(goal))
+# 	show_animation = False
 
-	min_distance = np.sqrt((sx-gx)**2 + (sy-gy)**2)
-	target_states = [image_to_planner(resto, goal)]
-	# print(target_states)
+# 	min_distance = np.sqrt((sx-gx)**2 + (sy-gy)**2)
+# 	target_states = [image_to_planner(resto, goal)]
+# 	# print(target_states)
 
-	label = 'lanes' + str(i)
+# 	label = 'lanes' + str(i)
 
-	k0 = 0.0
+# 	k0 = 0.0
 
-	# :param l_center: lane lateral position
-	# :param l_heading:  lane heading
-	# :param l_width:  lane width
-	# :param v_width: vehicle width
-	# :param d: longitudinal position
-	# :param nxy: sampling number
+# 	# :param l_center: lane lateral position
+# 	# :param l_heading:  lane heading
+# 	# :param l_width:  lane width
+# 	# :param v_width: vehicle width
+# 	# :param d: longitudinal position
+# 	# :param nxy: sampling number
 	
-	l_center = sx
-	l_heading = angle_between_points((sx, sy), (gx, gy)) #np.deg2rad(0.0)
-	l_width = 300
-	v_width = 1.0
-	d = min_distance
-	nxy = 5
-	states = slp.calc_lane_states(l_center, l_heading, l_width, v_width, d, nxy)
-	print_states(resto, states, label)
-	result = slp.generate_path(states, k0)
+# 	l_center = sx
+# 	l_heading = angle_between_points((sx, sy), (gx, gy)) #np.deg2rad(0.0)
+# 	l_width = 300
+# 	v_width = 1.0
+# 	d = min_distance
+# 	nxy = 5
+# 	states = slp.calc_lane_states(l_center, l_heading, l_width, v_width, d, nxy)
+# 	print_states(resto, states, label)
+# 	result = slp.generate_path(states, k0)
 
-	if show_animation:
-		plt.close("all")
-
-
-	for table in result:
-		xc, yc, yawc = slp.motion_model.generate_trajectory(
-			table[3], table[4], table[5], k0)
-
-		print_path(resto, xc, yc, yawc, label)
+# 	if show_animation:
+# 		plt.close("all")
 
 
-		if show_animation:
-			print((xc, yc))
-			plt.plot(xc, yc, "-r")
+# 	for table in result:
+# 		xc, yc, yawc = slp.motion_model.generate_trajectory(
+# 			table[3], table[4], table[5], k0)
+
+# 		print_path(resto, xc, yc, yawc, label)
 
 
-	if show_animation:
-		plt.grid(True)
-		plt.axis("equal")
-		plt.show()
+# 		if show_animation:
+# 			print((xc, yc))
+# 			plt.plot(xc, yc, "-r")
+
+
+# 	if show_animation:
+# 		plt.grid(True)
+# 		plt.axis("equal")
+# 		plt.show()
 
 def print_states(resto, states, label):
 	img = resto.get_img()
@@ -1711,8 +1840,8 @@ def main():
 	if OPTION_DOING_STATE_LATTICE:
 		for i in range(len(all_goals)):
 			goal = all_goals[i]
-			lane_state_sampling_test1(resto, goal, i)
-			# make_path_libs(resto, goal)
+			# lane_state_sampling_test1(resto, goal, i)
+			make_path_libs(resto, goal)
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = resto.get_img()
@@ -1722,7 +1851,8 @@ def main():
 	# TODO add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
-		paths = create_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
+		paths = create_systematic_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
+		print("Made paths")
 
 	print("Done")
 
