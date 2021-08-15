@@ -9,6 +9,7 @@ import math
 import copy
 import decimal
 import random
+import os
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -27,6 +28,7 @@ import state_lattice_planner as slp
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
+FLAG_REDO_PATH_CREATION = False
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
 
@@ -754,7 +756,7 @@ def path_formatted(xs, ys):
 	return list(zip(xs, ys))
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
-def construct_single_path_with_angles(start, goal, sample_pts):
+def construct_single_path_with_angles(start, goal, sample_pts, fn):
 	# print("WITH ANGLE")
 	xy_0 = start
 	xy_n = goal
@@ -847,8 +849,9 @@ def construct_single_path_with_angles(start, goal, sample_pts):
 	plt.xlabel('x')
 	plt.ylabel('y')
 	plt.legend(loc='upper left', ncol=2)
-	plt.savefig('cubic_spline_imposed_tangent_direction.png')
+	plt.savefig(fn + 'sample-cubic_spline_imposed_tangent_direction.png')
 	# plt.show()
+	plt.clf()
 
 	return path_formatted(x_all, y_all)
 
@@ -1423,7 +1426,6 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 		width = r.get_width()
 		length = r.get_length()
 
-		print(start)
 		for xi in range(int(width / resolution)):
 			for yi in range(int(length / resolution)):
 				x = int(resolution * xi)
@@ -1434,8 +1436,6 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 
 
 	elif sampling_type == 'hardcoded':
-		print(start)
-		print(goal)
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 
@@ -1500,6 +1500,41 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 
 	return sample_sets
 
+def get_paths_from_sample_set(r, sampling_type, goal_index):
+	sample_pts = get_sample_points_sets(r, r.get_start(), r.get_goals_all()[goal_index], sampling_type)
+	print("Sampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
+
+	target = r.get_goals_all()[goal_index]
+	all_paths = []
+	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+
+	# FLAG_REDO_PATH_CREATION = True
+
+	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
+		print("Importing preassembled paths")
+		with open(fn, "rb") as f:
+			try:
+				all_paths = pickle.load(f)		
+				print("Imported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
+				return all_paths
+
+			except Exception: # so many things could go wrong, can't be more specific.
+				pass
+
+	print("Assembling set of paths")
+	# If I don't yet have a path
+	for point_set in sample_pts:
+		path_option = construct_single_path_with_angles(r.get_start(), target, point_set, fn)
+		all_paths.append(path_option)
+
+	dbfile = open(fn, 'ab')
+	pickle.dump(all_paths, dbfile)
+	dbfile.close()
+	print("\tSaved paths for faster future run on combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
+
+	return all_paths
+
+# TODO Ada
 def create_systematic_path_options_for_goal(r, label, start, goal, img, num_paths=500):
 	all_paths = []
 	target = goal
@@ -1510,25 +1545,10 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	# sampling_type = 'visible'
 	# sampling_type = 'in_zone'
 
-	sample_pts = get_sample_points_sets(r, start, goal, sampling_type)
-	print("Sampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
-
-	# Addition of bezier raw paths
-	for point_set in sample_pts:
-		vis_type = None
-
-		# Add grid paths
-		# path_option = generate_single_path_grid(r, target, vis_type, n_control)
-		path_option = construct_single_path_with_angles(r.get_start(), target, point_set)
-		all_paths.append(path_option)
-
-		# Add validated bezier paths
-		# path_option = generate_single_path(r, target, vis_type, n_control)
-		# paths.append(path_option)
-
-		# Add additional curves
-
+	fn = FILENAME_PATH_ASSESS + label + "_sample_path" + ".png"
 	goal_index = r.get_goal_index(goal)
+
+	all_paths = get_paths_from_sample_set(r, sampling_type, goal_index)
 
 	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "all.png"
 	resto.export_raw_paths(img, all_paths, fn)
@@ -1560,7 +1580,6 @@ def create_path_options_for_goal(r, label, start, goal, img, num_paths=500):
 			# Add grid paths
 			# path_option = generate_single_path_grid(r, target, vis_type, n_control)
 			path_option = generate_single_path_with_angles(r, target, vis_type, n_control)
-			print("Yay path options")
 			print(path_option)
 			paths.append(path_option)
 
@@ -1830,9 +1849,38 @@ def make_path_libs(resto, goal):
 
 	print("Done")
 
+def analyze_all_paths(resto, paths_for_analysis):
+	paths 		= None
+	goals 		= resto.get_goals_all()
+	obs_sets 	= resto.get_obs_sets()
+
+	all_entries = []
+	key_index 	= 0
+
+	for key in paths_for_analysis:
+		goal 	= key
+		paths 	= paths_for_analysis[key]
+
+
+		for path in paths:
+
+			datum = get_legibilities(path, goal, goals, obs_sets, f_vis)
+
+			print(datum)
+			exit()
+			datum = [goal_index] + []
+
+		key_index += 1
+
+	pass
+
+
+
+
 def main():
 	# Run the scenario that aligns with our use case
 	resto = experimental_scenario_single()
+	unique_key = 'exp_single'
 	start = resto.get_start()
 	all_goals = resto.get_goals_all()
 
@@ -1846,13 +1894,18 @@ def main():
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = resto.get_img()
 	empty_img = cv2.flip(img, 0)
-	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
-	
+	cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
+
+	paths_for_analysis = {}
 	# TODO add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
 		paths = create_systematic_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
 		print("Made paths")
+		paths_for_analysis[goal] = paths
+
+
+	df, best_paths = analyze_all_paths(resto, paths_for_analysis)
 
 	print("Done")
 
