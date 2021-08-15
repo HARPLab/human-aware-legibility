@@ -135,7 +135,7 @@ def f_vis3(p, df_obs):
 
 
 def f_vis_exp1(t, pt, aud):
-	return (f_og(t) * f_vis3(pt, aud)) + .000001
+	return (f_og(t) * f_vis3(pt, aud))
 
 
 
@@ -213,6 +213,7 @@ def f_novis(t, obs):
 	return 1
 
 # Given the observers of a given location, in terms of distance and relative heading
+# Ada TODO verify all correct
 def f_vis_single(p, observers):
 	# dist_units = 100
 	angle_cone = 135.0 / 2.
@@ -220,7 +221,7 @@ def f_vis_single(p, observers):
 
 	# Given a list of entries in the format 
 	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
+	if len(observers) == 0:
 		return 1
 	
 	vis = 0
@@ -468,7 +469,7 @@ def get_costs_along_path(path):
 		
 	return output
 
-
+# returns a list of the path length so far at each point
 def get_path_length(path):
 	output = []
 	ci = 0
@@ -479,9 +480,9 @@ def get_path_length(path):
 		cst = f_path_length(path[ci], path[pi])
 		total += cst
 		ci = pi
-		output.append(log)
+		output.append(total) #log
 		
-	return output
+	return output, total
 
 # Given a 
 def f_legibility(goal, goals, path, aud, f_function):
@@ -497,12 +498,14 @@ def f_legibility(goal, goals, path, aud, f_function):
 	total_cost = decimal.Decimal(0)
 	aug_path = get_costs_along_path(path)
 
-	path_length = get_path_length(path)
-	delta_x = decimal.Decimal(path_length) / len(aug_path)
+	path_length_list, length_of_total_path = get_path_length(path)
+	length_of_total_path = decimal.Decimal(length_of_total_path)
+	delta_x = length_of_total_path / len(aug_path)
 
 	t = 1
 	p_n = path[0]
 	divisor = epsilon
+	numerator = decimal.Decimal(0.0)
 
 	for pt, cost_to_here in aug_path:
 		f = decimal.Decimal(f_function(t, pt, aud, path))
@@ -564,15 +567,13 @@ def get_visibilities(path, target, goals, obs_sets):
 	return [], []
 	return vis_labels, vis_values
 
-
-
 def get_legibilities(path, target, goals, obs_sets, f_vis):
 	vals = {}
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		# goal, goals, path, df_obs
-		new_val = f_legibility(target, goals, path, aud, f_vis)
+		new_val = f_legibility(target, goals, path, aud, f_exp_single)
 
 		vals[key] = new_val
 
@@ -1404,7 +1405,7 @@ def select_paths_and_draw_deprecated(restaurant, unique_key):
 	options = combine_list_of_dicts(all_options)
 	# print(options)
 
-
+# remove invalid paths
 def trim_paths(r, all_paths, goal):
 	trimmed_paths = []
 	for p in all_paths:
@@ -1500,9 +1501,10 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 
 	return sample_sets
 
+# Convert sample points into actual useful paths
 def get_paths_from_sample_set(r, sampling_type, goal_index):
 	sample_pts = get_sample_points_sets(r, r.get_start(), r.get_goals_all()[goal_index], sampling_type)
-	print("Sampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
+	print("\tSampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
 
 	target = r.get_goals_all()[goal_index]
 	all_paths = []
@@ -1511,17 +1513,17 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	# FLAG_REDO_PATH_CREATION = True
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
-		print("Importing preassembled paths")
+		print("\tImporting preassembled paths")
 		with open(fn, "rb") as f:
 			try:
 				all_paths = pickle.load(f)		
-				print("Imported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
+				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
 				return all_paths
 
 			except Exception: # so many things could go wrong, can't be more specific.
 				pass
 
-	print("Assembling set of paths")
+	print("\tAssembling set of paths")
 	# If I don't yet have a path
 	for point_set in sample_pts:
 		path_option = construct_single_path_with_angles(r.get_start(), target, point_set, fn)
@@ -1558,51 +1560,6 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	resto.export_raw_paths(img, trimmed_paths, fn)
 
 	return all_paths
-
-
-def create_path_options_for_goal(r, label, start, goal, img, num_paths=500):
-	all_paths = []
-	target = goal
-
-	sample_points = None
-	# sample_pts = []
-	
-	# Addition of bezier raw paths
-	for n_control in range(1, 2):
-		paths = []
-		for n in range(num_paths):
-			if n % 10 == 0:
-				pass
-				# print(n)
-
-			vis_type = None
-
-			# Add grid paths
-			# path_option = generate_single_path_grid(r, target, vis_type, n_control)
-			path_option = generate_single_path_with_angles(r, target, vis_type, n_control)
-			print(path_option)
-			paths.append(path_option)
-
-			# Add validated bezier paths
-			# path_option = generate_single_path(r, target, vis_type, n_control)
-			# paths.append(path_option)
-
-			# Add additional curves
-
-		goal_index = r.get_goal_index(goal)
-
-		fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + str(n_control) + "-" + "all.png"
-		resto.export_raw_paths(img, paths, fn)
-
-		paths = trim_paths(r, paths, goal)
-		fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + str(n_control) + "-" + "trimmed.png"
-		resto.export_raw_paths(img, paths, fn)
-
-		all_paths.extend(paths)
-
-	all_paths = trim_paths(r, all_paths, goal)
-	return all_paths
-
 
 
 def experimental_scenario_single():
@@ -1857,23 +1814,31 @@ def analyze_all_paths(resto, paths_for_analysis):
 	all_entries = []
 	key_index 	= 0
 
+	df_all = []
+
+	data = []
+
 	for key in paths_for_analysis:
 		goal 	= key
 		paths 	= paths_for_analysis[key]
 
 
 		for path in paths:
-
+			f_vis = f_vis_exp1
 			datum = get_legibilities(path, goal, goals, obs_sets, f_vis)
-
-			print(datum)
-			exit()
-			datum = [goal_index] + []
+			datum['path'] = path
+			data.append(datum)
+			# datum = [goal_index] + []
 
 		key_index += 1
 
-	pass
+	df = pd.DataFrame.from_dict(data)
 
+	best_paths = get_best_paths_from_df(df)
+
+	print(df)
+	print(df.columns)
+	exit()
 
 
 
