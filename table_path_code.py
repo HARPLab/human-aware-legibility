@@ -1354,6 +1354,17 @@ class Restaurant:
 		df = pd.DataFrame(entries, columns = ['x', 'y', RAW_ALL, VIS_OMNI, VIS_A, VIS_B, VIS_MULTI])
 		return df
 
+	def get_obs_sets_colors(self):
+		color_lookup = {}
+		color_lookup['a'] = PATH_COLORS[OBS_INDEX_A]
+		color_lookup['b'] = PATH_COLORS[OBS_INDEX_B]
+		color_lookup['c'] = PATH_COLORS[OBS_INDEX_C]
+		color_lookup['d'] = PATH_COLORS[OBS_INDEX_D]
+		color_lookup['e'] = PATH_COLORS[OBS_INDEX_E]
+		color_lookup['omniscient'] = (0,0,0)
+		color_lookup['all'] = (138,43,226)
+
+		return color_lookup
 
 	def get_obs_sets(self):
 		obs_none 	= []
@@ -1657,7 +1668,7 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 	if fn is None:
 		fn = FILENAME_EXPORT_IMGS_PREFIX
 
-	print("Exporting diagrams")
+	print("\tExporting diagrams with paths")
 	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
 	# omni_paths_img = img.copy()
@@ -1851,7 +1862,7 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 	if fn is None:
 		fn = FILENAME_EXPORT_IMGS_PREFIX
 
-	print("Exporting diagrams")
+	print("\tExporting diagrams with paths from assessment")
 	path_titles = ["OMNISCIENT", "TABLE", "Person A", "Person B"]
 
 	omni_paths_img = img.copy()
@@ -1919,7 +1930,7 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 
 
 def export_raw_paths(img, saved_paths_list, fn):
-	print("Exporting diagrams")
+	print("\tExporting raw diagrams")
 	all_paths_img = img.copy()
 
 	for path in saved_paths_list:
