@@ -1811,7 +1811,47 @@ def export_path_options_for_each_goal(restaurant, best_paths):
 	empty_img = cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
+	fn = FILENAME_PATH_ASSESS
 
+	color_dict = restaurant.get_obs_sets_colors()
+
+	goal_imgs = {}
+	for pkey in best_paths.keys():
+		goal 		= pkey[0]
+		# audience 	= pkey[1]
+		goal_index 	= restaurant.get_goal_index(goal)
+
+		goal_imgs[goal_index] = copy.copy(empty_img)
+
+
+	for pkey in best_paths.keys():
+		path = best_paths[pkey]
+		path_img = img.copy()
+		
+		goal 		= pkey[0]
+		audience 	= pkey[1]
+		goal_index 	= restaurant.get_goal_index(goal)
+
+		goal_img = goal_imgs[goal_index]
+		solo_img = copy.copy(empty_img)
+		
+		color = color_dict[audience]
+
+		# Draw the path  
+		for i in range(len(path) - 1):
+			a = path[i]
+			b = path[i + 1]
+			
+			cv2.line(solo_img, a, b, color, thickness=6, lineType=8)
+			cv2.line(goal_img, a, b, color, thickness=6, lineType=8)
+			
+		cv2.imwrite(fn + 'solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
+		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
+
+
+	for goal_index in goal_imgs.keys():
+		goal_img = goal_imgs[goal_index]
+		cv2.imwrite(fn + 'goal_' + str(goal_index) + '.png', goal_img) 
 
 	# TODO: actually export pics for them
 
@@ -1874,7 +1914,7 @@ def analyze_all_paths(resto, paths_for_analysis):
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
-	export_path_options_for_each_goal(r, best_paths)
+	export_path_options_for_each_goal(resto, best_paths)
 
 def main():
 	# Run the scenario that aligns with our use case
@@ -1904,7 +1944,7 @@ def main():
 		paths_for_analysis[goal] = paths
 
 	print("~~~")
-	df, best_paths = analyze_all_paths(resto, paths_for_analysis)
+	analyze_all_paths(resto, paths_for_analysis)
 
 	print("Done")
 
