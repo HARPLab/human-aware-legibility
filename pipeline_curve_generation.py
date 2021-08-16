@@ -1806,6 +1806,42 @@ def make_path_libs(resto, goal):
 
 	print("Done")
 
+def export_path_options_for_each_goal(restaurant, best_paths):
+	img = restaurant.get_img()
+	empty_img = cv2.flip(img, 0)
+	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
+
+
+
+	# TODO: actually export pics for them
+
+
+
+# TODO: verify is indexing correctly and grabbing best overall, 
+# not best in short zone
+def get_best_paths_from_df(df):
+	best_paths = {}
+	best_index = {}
+
+	goals = df['goal'].unique()
+	columns = df.columns.tolist()
+	columns.remove("path")
+	columns.remove("goal")
+
+	for goal in goals:
+		is_goal =  df['goal']==goal
+		for col in columns:
+			df_goal 	= df[is_goal]
+			column 		= df_goal[col]
+			# print(column)
+			max_index 	= pd.to_numeric(column).idxmax()
+
+			best_paths[(goal, col)] = df.iloc[max_index]['path']
+			best_index[(goal, col)] = max_index
+
+	# print(best_index)
+	return best_paths, best_index
+
 def analyze_all_paths(resto, paths_for_analysis):
 	paths 		= None
 	goals 		= resto.get_goals_all()
@@ -1827,20 +1863,18 @@ def analyze_all_paths(resto, paths_for_analysis):
 			f_vis = f_vis_exp1
 			datum = get_legibilities(path, goal, goals, obs_sets, f_vis)
 			datum['path'] = path
+			datum['goal'] = goal
 			data.append(datum)
 			# datum = [goal_index] + []
 
 		key_index += 1
 
+	# data_frame of all paths overall
 	df = pd.DataFrame.from_dict(data)
 
-	best_paths = get_best_paths_from_df(df)
+	best_paths, best_index = get_best_paths_from_df(df)
 
-	print(df)
-	print(df.columns)
-	exit()
-
-
+	export_path_options_for_each_goal(r, best_paths)
 
 def main():
 	# Run the scenario that aligns with our use case
@@ -1869,7 +1903,7 @@ def main():
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
-
+	print("~~~")
 	df, best_paths = analyze_all_paths(resto, paths_for_analysis)
 
 	print("Done")
