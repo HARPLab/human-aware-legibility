@@ -489,10 +489,9 @@ def f_legibility(goal, goals, path, aud, f_function):
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
-	LAMBDA = decimal.Decimal(.0000002)
-	LAMBDA = decimal.Decimal(.000000)
+	LAMBDA = decimal.Decimal(.0000001)
 
-	epsilon = decimal.Decimal(.0000001)
+	epsilon = decimal.Decimal(.000000001)
 
 	start = path[0]
 	total_cost = decimal.Decimal(0)
@@ -786,6 +785,11 @@ def construct_single_path_with_angles(start, goal, sample_pts, fn):
 
 	# Strength of how much we're enforcing the exit angle
 	k = 800
+	# print("x=")
+	# print(x)
+	# print("y=")
+	# print(y)
+
 	t1 = np.array(as_tangent(start_angle)) * k
 	tn = np.array(as_tangent(end_angle)) * k
 
@@ -1421,7 +1425,7 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 	# sampling_type = 'in_zone'
 
 	sample_sets = []
-	resolution = 100
+	resolution = 10
 
 	if sampling_type == 'systematic':
 		width = r.get_width()
@@ -1435,6 +1439,32 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
 
+	elif sampling_type == 'central':
+		sx, sy, stheta = start
+		gx, gy, gt = goal
+		print("sampling central")
+		print((sx, gx))
+		print((sy, gy))
+
+		low_x, hi_x = sx, gx
+		low_y, hi_y = sy, gy
+
+		if sx > gx:
+			low_x, hi_x = gx, sx
+
+		if sy > gy:
+			low_y, hi_y = gy, sy
+
+		for xi in range(low_x, hi_x, resolution):
+			for yi in range(low_y, hi_y, resolution):
+				# print(xi, yi)
+				x = int(xi)
+				y = int(yi)
+
+				point_set = [(x, y)]
+				sample_sets.append(point_set)
+
+		print(point_set)
 
 	elif sampling_type == 'hardcoded':
 		sx, sy, stheta = start
@@ -1510,7 +1540,7 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	all_paths = []
 	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
 
-	# FLAG_REDO_PATH_CREATION = True
+	FLAG_REDO_PATH_CREATION = False
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
 		print("\tImporting preassembled paths")
@@ -1542,7 +1572,8 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	target = goal
 
 	sample_pts = []
-	sampling_type = 'systematic'
+	sampling_type = 'central'
+	# sampling_type = 'systematic'
 	# sampling_type = 'hardcoded'
 	# sampling_type = 'visible'
 	# sampling_type = 'in_zone'
@@ -1808,7 +1839,7 @@ def make_path_libs(resto, goal):
 
 def export_path_options_for_each_goal(restaurant, best_paths):
 	img = restaurant.get_img()
-	empty_img = cv2.flip(img, 0)
+	empty_img = img #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
 	fn = FILENAME_PATH_ASSESS
@@ -1844,13 +1875,16 @@ def export_path_options_for_each_goal(restaurant, best_paths):
 			
 			cv2.line(solo_img, a, b, color, thickness=6, lineType=8)
 			cv2.line(goal_img, a, b, color, thickness=6, lineType=8)
-			
+		
+		solo_img = cv2.flip(solo_img, 0)
 		cv2.imwrite(fn + 'solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
 		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
 
 
 	for goal_index in goal_imgs.keys():
 		goal_img = goal_imgs[goal_index]
+
+		goal_img = cv2.flip(goal_img, 0)
 		cv2.imwrite(fn + 'goal_' + str(goal_index) + '.png', goal_img) 
 
 	# TODO: actually export pics for them
@@ -1867,6 +1901,9 @@ def get_best_paths_from_df(df):
 	columns = df.columns.tolist()
 	columns.remove("path")
 	columns.remove("goal")
+
+	print("GOALS")
+	print(goals)
 
 	for goal in goals:
 		is_goal =  df['goal']==goal
@@ -1907,12 +1944,14 @@ def analyze_all_paths(resto, paths_for_analysis):
 			data.append(datum)
 			# datum = [goal_index] + []
 
-		key_index += 1
 
 	# data_frame of all paths overall
 	df = pd.DataFrame.from_dict(data)
+	df.to_csv(FILENAME_PATH_ASSESS + "all_legibilities.csv")
 
 	best_paths, best_index = get_best_paths_from_df(df)
+
+	print(best_paths.keys())
 
 	export_path_options_for_each_goal(resto, best_paths)
 
@@ -1942,6 +1981,7 @@ def main():
 		paths = create_systematic_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
 		print("Made paths")
 		paths_for_analysis[goal] = paths
+
 
 	print("~~~")
 	analyze_all_paths(resto, paths_for_analysis)
