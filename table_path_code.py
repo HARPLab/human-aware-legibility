@@ -759,7 +759,19 @@ def unity_to_image(pt):
 		return (int(ny), int(nx), theta)
 	return (int(ny), int(nx))
 
+def image_to_unity_list(path):
+	new_path = []
+	for pt in path:
+		new_path.append(image_to_unity(pt))
+
+	return new_path
+
 def image_to_unity(pt):
+	# print(UNITY_SCALE_X) = 100.1001001001001
+	# print(UNITY_SCALE_Y) = -100.0
+	# print(UNITY_OFFSET_X) = 1.23
+	# print(UNITY_OFFSET_Y) = 3.05
+
 	if len(pt) == 3:
 		x, y, theta = pt
 	else:
@@ -767,12 +779,12 @@ def image_to_unity(pt):
 
 	x = float(x)
 	y = float(y)
-	nx = (x / UNITY_SCALE_X) + UNITY_OFFSET_X
-	ny = (y / UNITY_SCALE_Y) + UNITY_OFFSET_Y
+	ny = (x / UNITY_SCALE_Y) + (UNITY_OFFSET_Y)
+	nx = (y / UNITY_SCALE_X) + (UNITY_OFFSET_X)
 	
 	if len(pt) == 3:
-		return (int(ny), int(nx), theta)
-	return (int(ny), int(nx))
+		return (nx, ny, theta)
+	return (nx, ny)
 
 def plan_to_image(pt):
 	if len(pt) == 3:
@@ -794,8 +806,9 @@ def verify_conversions():
 	u_b = (1.23, 3.05)
 	u_c = (11.22, -10.7)
 	u_d = (1.23, -10.7)
+	u_e = (0, 0)
 
-	u_pts = [u_a, u_b, u_c, u_d]
+	u_pts = [u_a, u_b, u_c, u_d, u_e]
 	i_pts = []
 
 	print("TARGETS")
@@ -829,6 +842,7 @@ class PathPlan:
 		return self.generation_details
 
 
+verify_conversions()
 
 # nodes = width x length divided up by planning resolution\
 n_width = int(width / resolution_planning) + 1
