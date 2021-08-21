@@ -10,6 +10,7 @@ import copy
 import decimal
 import random
 import os
+from pandas.plotting import table
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -1589,18 +1590,10 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	return all_paths
 
 # TODO Ada
-def create_systematic_path_options_for_goal(r, label, start, goal, img, num_paths=500):
+def create_systematic_path_options_for_goal(r, label, sampling_type, start, goal, img, num_paths=500):
 	all_paths = []
 	target = goal
 
-	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
-	sampling_type = SAMPLE_TYPE_DEMO
-	sampling_type = SAMPLE_TYPE_SPARSE
-	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
-	# sampling_type = SAMPLE_TYPE_HARDCODED
-	# sampling_type = SAMPLE_TYPE_VISIBLE
-	# sampling_type = SAMPLE_TYPE_INZONE
 
 	fn = FILENAME_PATH_ASSESS + label + "_sample_path" + ".png"
 	goal_index = r.get_goal_index(goal)
@@ -1863,7 +1856,7 @@ def make_path_libs(resto, goal):
 
 	print("Done")
 
-def export_path_options_for_each_goal(restaurant, best_paths):
+def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_type):
 	print(best_paths)
 	img = restaurant.get_img()
 	empty_img = img #cv2.flip(img, 0)
@@ -1904,7 +1897,7 @@ def export_path_options_for_each_goal(restaurant, best_paths):
 			cv2.line(goal_img, a, b, color, thickness=6, lineType=8)
 		
 		solo_img = cv2.flip(solo_img, 0)
-		cv2.imwrite(fn + 'solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
+		cv2.imwrite(fn + title + "-" + sampling_type + '_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
 		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
 
 
@@ -1912,9 +1905,30 @@ def export_path_options_for_each_goal(restaurant, best_paths):
 		goal_img = goal_imgs[goal_index]
 
 		goal_img = cv2.flip(goal_img, 0)
-		cv2.imwrite(fn + 'goal_' + str(goal_index) + '.png', goal_img) 
+		cv2.imwrite(fn + title + "-" + sampling_type + '_goal_' + str(goal_index) + '.png', goal_img) 
 
 	# TODO: actually export pics for them
+
+def dict_to_leg_df(data, title):
+	df = pd.DataFrame.from_dict(data)
+	columns = df.columns.tolist()
+	columns.remove("path")
+	columns.remove("goal")
+
+	for col in columns:
+		df = df.astype({col: float})
+
+	export_legibility_df(df, title)
+
+	return df
+
+def export_legibility_df(df, title):
+
+	df.to_csv(FILENAME_PATH_ASSESS + title + "_legibilities.csv")
+
+	df.describe().to_csv(FILENAME_PATH_ASSESS + title + "_description.csv")
+
+	print(df.columns)
 
 
 
@@ -1923,6 +1937,8 @@ def export_path_options_for_each_goal(restaurant, best_paths):
 def get_best_paths_from_df(df):
 	best_paths = {}
 	best_index = {}
+
+	print(df)
 
 	goals = df['goal'].unique()
 	columns = df.columns.tolist()
@@ -1946,7 +1962,7 @@ def get_best_paths_from_df(df):
 	# print(best_index)
 	return best_paths, best_index
 
-def analyze_all_paths(resto, paths_for_analysis):
+def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 	paths 		= None
 	goals 		= resto.get_goals_all()
 	obs_sets 	= resto.get_obs_sets()
@@ -1973,14 +1989,13 @@ def analyze_all_paths(resto, paths_for_analysis):
 
 
 	# data_frame of all paths overall
-	df = pd.DataFrame.from_dict(data)
-	df.to_csv(FILENAME_PATH_ASSESS + "all_legibilities.csv")
+	df = dict_to_leg_df(data, title)
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
 	print(best_paths.keys())
 
-	export_path_options_for_each_goal(resto, best_paths)
+	export_path_options_for_each_goal(resto, best_paths, title, sampling_type)
 
 def main():
 	# Run the scenario that aligns with our use case
@@ -1988,6 +2003,16 @@ def main():
 	unique_key = 'exp_single'
 	start = resto.get_start()
 	all_goals = resto.get_goals_all()
+
+	sample_pts = []
+	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_DEMO
+	# sampling_type = SAMPLE_TYPE_SPARSE
+	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
+	# sampling_type = SAMPLE_TYPE_HARDCODED
+	# sampling_type = SAMPLE_TYPE_VISIBLE
+	# sampling_type = SAMPLE_TYPE_INZONE
+
 
 	OPTION_DOING_STATE_LATTICE = False
 	if OPTION_DOING_STATE_LATTICE:
@@ -2005,13 +2030,13 @@ def main():
 	# TODO add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
-		paths = create_systematic_path_options_for_goal(resto, "exp_single", start, goal, img, num_paths=10)
+		paths = create_systematic_path_options_for_goal(resto, "exp_single", sampling_type, start, goal, img, num_paths=10)
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
 
 	print("~~~")
-	analyze_all_paths(resto, paths_for_analysis)
+	analyze_all_paths(resto, paths_for_analysis, unique_key, sampling_type)
 
 	print("Done")
 
