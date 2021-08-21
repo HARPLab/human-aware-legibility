@@ -47,6 +47,7 @@ FLAG_PROB_PATH = True
 
 SAMPLE_TYPE_CENTRAL 	= 'central'
 SAMPLE_TYPE_DEMO 		= 'demo'
+SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
 SAMPLE_TYPE_VISIBLE 	= 'visible'
@@ -247,7 +248,10 @@ def f_vis_single(p, observers):
 	return vis
 
 def f_exp_single(t, pt, aud, path):
-	# f_og(t, path) * 
+	# if this is the omniscient case, return the original equation
+	if len(aud) == 0:
+		return len(path) - t
+
 	val = (f_vis_single(pt, aud))
 	return val
 
@@ -1592,6 +1596,7 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	sampling_type = SAMPLE_TYPE_DEMO
+	sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
 	# sampling_type = SAMPLE_TYPE_HARDCODED
 	# sampling_type = SAMPLE_TYPE_VISIBLE
