@@ -45,6 +45,15 @@ FLAG_PROB_PATH = True
 
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
+SAMPLE_TYPE_CENTRAL 	= 'central'
+SAMPLE_TYPE_DEMO 		= 'demo'
+SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
+SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
+SAMPLE_TYPE_VISIBLE 	= 'visible'
+SAMPLE_TYPE_INZONE 		= 'in_zone'
+
+premade_path_sampling_types = [SAMPLE_TYPE_DEMO]
+
 
 def f_cost_old(t1, t2):
 	return resto.dist(t1, t2)
@@ -345,15 +354,7 @@ def unnormalized_prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to
 	a = np.exp((-c1 + -c2))
 	b = np.exp(-c3)
 	ratio 		= a / b
-	# silly_ratio = (c1 + c2) / (c3)
 
-	# print(c1)
-	# print(c2)
-	# print(c3)
-	# print(ratio)
-	# exit()
-
-	# ratio = silly_ratio
 	if math.isnan(ratio):
 		ratio = 0
 
@@ -489,7 +490,7 @@ def f_legibility(goal, goals, path, aud, f_function):
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
-	LAMBDA = decimal.Decimal(.0000001)
+	LAMBDA = decimal.Decimal(.0000011)
 
 	epsilon = decimal.Decimal(.000000001)
 
@@ -1427,7 +1428,7 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 	sample_sets = []
 	resolution = 10
 
-	if sampling_type == 'systematic':
+	if sampling_type == SAMPLE_TYPE_SYSTEMATIC:
 		width = r.get_width()
 		length = r.get_length()
 
@@ -1439,13 +1440,25 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
 
-	elif sampling_type == 'central':
+	elif sampling_type == SAMPLE_TYPE_DEMO:
+		start = (104, 477)
+		end = (1035, 567)
+		l1 = construct_single_path_bezier(start, end, [(894, 265)])
+
+		p1 = [(104, 477), (141, 459), (178, 444), (215, 430), (251, 417), (287, 405), (322, 395), (357, 386), (391, 379), (425, 373), (459, 368), (492, 365), (525, 363), (557, 363), (588, 364), (620, 366), (651, 370), (681, 375), (711, 381), (740, 389), (769, 398), (798, 409), (826, 421), (854, 434), (881, 449), (908, 465), (934, 483), (960, 502), (985, 522), (1010, 543), (1035, 567)]
+		p2 = [(104, 477), (147, 447), (190, 419), (231, 394), (272, 371), (312, 350), (351, 331), (390, 315), (427, 301), (464, 289), (499, 280), (534, 273), (568, 268), (601, 265), (634, 265), (665, 267), (696, 271), (726, 277), (755, 286), (783, 297), (810, 310), (836, 325), (862, 343), (886, 363), (910, 385), (933, 410), (955, 437), (976, 466), (996, 497), (1016, 531), (1035, 567)]
+		p3 = [(104, 477), (124, 447), (145, 419), (167, 394), (190, 371), (213, 350), (237, 332), (262, 315), (288, 301), (314, 290), (341, 280), (369, 273), (397, 268), (427, 266), (457, 265), (487, 267), (519, 271), (551, 278), (584, 286), (617, 297), (652, 310), (687, 326), (722, 343), (759, 363), (796, 386), (834, 410), (873, 437), (912, 466), (952, 497), (993, 531), (1035, 567)]
+		p4 = [(104, 477), (146, 446), (187, 418), (228, 392), (268, 369), (307, 348), (345, 329), (383, 313), (420, 298), (456, 286), (491, 277), (525, 269), (559, 264), (592, 262), (624, 261), (656, 263), (686, 267), (716, 274), (745, 282), (774, 293), (801, 307), (828, 322), (854, 340), (879, 361), (904, 383), (928, 408), (950, 435), (973, 464), (994, 496), (1015, 530), (1035, 567)]
+		p5 = [(104, 477), (98, 509), (95, 540), (95, 569), (97, 596), (101, 620), (108, 643), (118, 663), (130, 682), (145, 698), (162, 712), (182, 725), (204, 735), (229, 743), (256, 749), (286, 753), (318, 755), (353, 755), (390, 753), (430, 749), (472, 742), (517, 734), (565, 724), (615, 711), (667, 697), (722, 680), (779, 662), (839, 641), (902, 618), (967, 593), (1035, 567)]
+		p6 = l1
+
+		sample_sets = [p1, p2, p3, p4, p5, p6]
+
+	elif sampling_type == SAMPLE_TYPE_CENTRAL:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 		print("sampling central")
-		print((sx, gx))
-		print((sy, gy))
-
+		
 		low_x, hi_x = sx, gx
 		low_y, hi_y = sy, gy
 
@@ -1466,7 +1479,7 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 
 		print(point_set)
 
-	elif sampling_type == 'hardcoded':
+	elif sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 
@@ -1539,8 +1552,9 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	target = r.get_goals_all()[goal_index]
 	all_paths = []
 	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+	print(fn)
 
-	FLAG_REDO_PATH_CREATION = False
+	FLAG_REDO_PATH_CREATION = True
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
 		print("\tImporting preassembled paths")
@@ -1548,18 +1562,22 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 			try:
 				all_paths = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
+				print("imported " + str(len(all_paths)) + " paths")
 				return all_paths
 
 			except Exception: # so many things could go wrong, can't be more specific.
 				pass
 
-	print("\tAssembling set of paths")
-	# If I don't yet have a path
-	for point_set in sample_pts:
-		path_option = construct_single_path_with_angles(r.get_start(), target, point_set, fn)
-		all_paths.append(path_option)
+	if sampling_type not in premade_path_sampling_types:
+		print("\tAssembling set of paths")
+		# If I don't yet have a path
+		for point_set in sample_pts:
+			path_option = construct_single_path_with_angles(r.get_start(), target, point_set, fn)
+			all_paths.append(path_option)
+	else:
+		all_paths = sample_pts
 
-	dbfile = open(fn, 'ab')
+	dbfile = open(fn, 'wb')
 	pickle.dump(all_paths, dbfile)
 	dbfile.close()
 	print("\tSaved paths for faster future run on combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
@@ -1572,11 +1590,12 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	target = goal
 
 	sample_pts = []
-	sampling_type = 'central'
-	# sampling_type = 'systematic'
-	# sampling_type = 'hardcoded'
-	# sampling_type = 'visible'
-	# sampling_type = 'in_zone'
+	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_DEMO
+	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
+	# sampling_type = SAMPLE_TYPE_HARDCODED
+	# sampling_type = SAMPLE_TYPE_VISIBLE
+	# sampling_type = SAMPLE_TYPE_INZONE
 
 	fn = FILENAME_PATH_ASSESS + label + "_sample_path" + ".png"
 	goal_index = r.get_goal_index(goal)
@@ -1589,6 +1608,8 @@ def create_systematic_path_options_for_goal(r, label, start, goal, img, num_path
 	trimmed_paths = trim_paths(r, all_paths, goal)
 	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "trimmed.png"
 	resto.export_raw_paths(img, trimmed_paths, fn)
+
+	# print(all_paths)
 
 	return all_paths
 
@@ -1838,6 +1859,7 @@ def make_path_libs(resto, goal):
 	print("Done")
 
 def export_path_options_for_each_goal(restaurant, best_paths):
+	print(best_paths)
 	img = restaurant.get_img()
 	empty_img = img #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
