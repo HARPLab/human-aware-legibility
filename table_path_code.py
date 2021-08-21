@@ -842,7 +842,7 @@ class PathPlan:
 		return self.generation_details
 
 
-verify_conversions()
+# verify_conversions()
 
 # nodes = width x length divided up by planning resolution\
 n_width = int(width / resolution_planning) + 1
