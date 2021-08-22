@@ -1514,6 +1514,8 @@ def export_legibility_df(r, df, title, sampling_type):
 	ax[1] = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)    
 	ax[1].set_ylabel('Legibility with regard to goal')
 	ax[1].set_xlabel('Goal')
+
+	ax[1].legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
 	
 	# df_new.plot.box(vert=False) # , by=["goal"]
 	plt.tight_layout()
