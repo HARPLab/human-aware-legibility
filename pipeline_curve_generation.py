@@ -11,6 +11,7 @@ import decimal
 import random
 import os
 from pandas.plotting import table
+import matplotlib.gridspec as gridspec
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -409,7 +410,7 @@ def smooth_slow(path, weight_data=0.5, weight_smooth=0.1, tolerance=1):
 
 				change += abs(y_i - y_i_saved)
 
-		print(change)
+		# print(change)
 		if prev_change == change:
 			return new
 	return new
@@ -1000,7 +1001,7 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
 
-		print(point_set)
+		# print(point_set)
 
 	elif sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
@@ -1375,7 +1376,7 @@ def make_path_libs(resto, goal):
 	print("Done")
 
 def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_type):
-	print(best_paths)
+	# print(best_paths)
 	img = restaurant.get_img()
 	empty_img = img #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
@@ -1499,26 +1500,56 @@ def export_legibility_df(r, df, title, sampling_type):
 	obs_palette = r.get_obs_sets_hex()
 	goal_labels = r.get_goal_labels()
 
-	df["goal"] = df["goal"].map(goal_labels)
+	goals_list = r.get_goals_all()
+
+	df_a = df[df['goal'] == goals_list[0]]
+	df_b = df[df['goal'] == goals_list[1]]
+
+	df_a.loc[:,"goal"] = df_a.loc[:, "goal"].map(goal_labels)
+	df_b.loc[:,"goal"] = df_b.loc[:, "goal"].map(goal_labels)
 
 	# make the total overview plot
-	contents = np.round(df.describe(), 2)
-	fig, ax = plt.subplots(2, 1)
-	ax[0].axis('off')
-	table(ax[0], contents, loc="upper right")
-	plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-table'  + '.png')
+	contents_a = np.round(df_a.describe(), 2)
+	contents_b = np.round(df_b.describe(), 2)
+
+	contents_a.loc['count'] = contents_a.loc['count'].astype(int).astype(str)
+	contents_b.loc['count'] = contents_b.loc['count'].astype(int).astype(str)
+
+
+	gs = gridspec.GridSpec(ncols=2, nrows=2,
+                         width_ratios=[1, 1], wspace=None,
+                         hspace=None, height_ratios=[1, 2])
+	# gs.update(wspace=1)
+	ax1 = plt.subplot(gs[0, :1], )
+	ax2 = plt.subplot(gs[0, 1:])
+	ax3 = plt.subplot(gs[1, 0:2])
+
+	ax1.axis('off')
+	ax2.axis('off')
+
+	table_a = table(ax1, contents_a, loc="center")
+	table_b = table(ax2, contents_b, loc="center")
+
+	table_a.auto_set_font_size(False)
+	table_b.auto_set_font_size(False)
+
+	table_a.set_fontsize(6)
+	table_b.set_fontsize(6)
+
+	# plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-table'  + '.png')
 
 	key_cols = columns
 	key_cols.append('goal')
 	mdf = df[key_cols].melt(id_vars=['goal'])
-	ax[1] = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)    
-	ax[1].set_ylabel('Legibility with regard to goal')
-	ax[1].set_xlabel('Goal')
+	ax3 = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)    
+	ax3.set_ylabel('Legibility with regard to goal')
+	ax3.set_xlabel('Goal')
 
-	ax[1].legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
+	ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
 	
 	# df_new.plot.box(vert=False) # , by=["goal"]
 	plt.tight_layout()
+	# fig.tight_layout()
 	#save the plot as a png file
 	plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-desc_plot'  + '.png')
 	plt.clf()
@@ -1529,15 +1560,15 @@ def get_best_paths_from_df(df):
 	best_paths = {}
 	best_index = {}
 
-	print(df)
+	# print(df)
 
 	goals = df['goal'].unique()
 	columns = df.columns.tolist()
 	columns.remove("path")
 	columns.remove("goal")
 
-	print("GOALS")
-	print(goals)
+	# print("GOALS")
+	# print(goals)
 
 	for goal in goals:
 		is_goal =  df['goal']==goal
@@ -1584,7 +1615,7 @@ def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
-	print(best_paths.keys())
+	# print(best_paths.keys())
 
 	export_path_options_for_each_goal(resto, best_paths, title, sampling_type)
 
