@@ -55,6 +55,7 @@ SAMPLE_TYPE_VISIBLE 	= 'visible'
 SAMPLE_TYPE_INZONE 		= 'in_zone'
 
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO]
+non_metric_columns = ["path", "goal", 'path_length']
 
 
 def f_cost_old(t1, t2):
@@ -77,15 +78,6 @@ def f_path_cost(path):
 
 	return cost
 
-
-def f_audience_agnostic():
-	return f_leg_personalized()
-	pass
-
-def f_leg_personalized():
-
-	pass
-
 def f_convolved(val_list, f_function):
 	tstamps = range(len(val_list))
 	ret = []
@@ -93,128 +85,9 @@ def f_convolved(val_list, f_function):
 		ret.append(f_function(t) * val_list[t])
 	return ret
 
-
-
-
-# Given the observers of a given location, in terms of distance and relative heading
-def f_vis4(p, df_obs):
-	dist_units = 100
-	angle_cone = 60
-	distance_cutoff = 500
-
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
-		return 0
-	
-	vis = 0
-	for obs in df_obs:
-		if obs == None:
-			return 0
-		else:
-			angle, dist = obs.get_obs_of_pt(p)
-
-		if angle < angle_cone and dist < distance_cutoff:
-			vis += (distance_cutoff - dist) * (np.abs(angle_cone - angle) / angle) 
-
-	return vis
-
-# Given the observers of a given location, in terms of distance and relative heading
-def f_vis3(p, df_obs):
-	# dist_units = 100
-	angle_cone = 135.0 / 2.
-	distance_cutoff = 2000
-
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
-		return 1
-	
-	vis = 0
-	for obs in df_obs:	
-		if obs == None:
-			return 0
-		else:
-			angle, dist = obs.get_obs_of_pt(p)
-
-		if angle < angle_cone and dist < distance_cutoff:
-			vis += np.abs(angle_cone - angle)
-
-	# print(vis)
-	return vis
-
-
-
 def f_vis_exp1(t, pt, aud):
 	return (f_og(t) * f_vis3(pt, aud))
 
-
-
-
-def f_vis2(p, df_obs):
-	dist_units = 100
-	angle_cone = 60
-	distance_cutoff = 500
-
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
-		return 0
-	
-	vis = 0
-	for obs in df_obs:
-		if obs == None:
-			return 0
-		else:
-			angle, dist = obs.get_obs_of_pt(p)
-
-		if angle < angle_cone and dist < distance_cutoff:
-			vis += (distance_cutoff - dist)
-
-	return vis
-
-def f_vis1(p, df_obs):
-	dist_units = 100
-	angle_cone = 60
-	distance_cutoff = 500
-
-
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
-		return 0
-	
-	vis = 0
-	for obs in df_obs:
-		if obs == None:
-			return 0
-		else:
-			angle, dist = obs.get_obs_of_pt(p)
-		if angle < angle_cone and dist < distance_cutoff:
-			vis += 1
-
-	return vis
-
-# // NOT IN USE
-# Given the observers of a given location, in terms of distance and relative heading
-def f_visibility(df_obs):
-	dist_units = 100
-	angle_cone = 400
-	distance_cutoff = 500
-
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(df_obs) == 0:
-		return 0
-	
-	vis = 0
-	for obs in df_obs:	
-		pt, angle, dist = obs.get_visibility_of_pt_raw(pt)
-		if angle < angle_cone and dist < distance_cutoff:
-
-			vis += (distance_cutoff - dist)
-
-	return vis
 
 def f_og(t, path):
 	# len(path)
@@ -224,7 +97,7 @@ def f_novis(t, obs):
 	return 1
 
 # Given the observers of a given location, in terms of distance and relative heading
-# Ada TODO verify all correct
+# Ada final equation TODO verify all correct
 def f_vis_single(p, observers):
 	# dist_units = 100
 	angle_cone = 135.0 / 2.
@@ -248,6 +121,7 @@ def f_vis_single(p, observers):
 	# print(vis)
 	return vis
 
+# Ada final equation
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0:
@@ -256,13 +130,6 @@ def f_exp_single(t, pt, aud, path):
 	val = (f_vis_single(pt, aud))
 	return val
 
-# def f_vis_eqn(observers):
-# 	value = 0
-
-# 	for person in observers:
-# 		if ob
-
-# 	return value
 
 def get_visibility_of_pt_w_observers(pt, aud):
 	observers = []
@@ -291,48 +158,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 	return score
 
-
-# def f_vis_t3(t, pt, aud):
-# 	return (f_vis3(pt, aud)) + 1
-
-
-
-def f_remix1(t, pt, aud):
-	return (f_og(t) * f_vis1(pt, aud)) + 1
-
-def f_remix2(t, pt, aud):
-	return (f_og(t) * f_vis2(pt, aud)) + 1
-
-def f_remix3(t, pt, aud, path):
-	val = (f_og(t, path) * f_vis3(pt, aud)) 
-
-	# if f_vis3(pt, aud) < 0:
-	# 	print(val)
-	# 	print(f_og(t))
-	# 	print(f_vis3(pt, aud))
-	# 	print(aud)
-	# 	exit()
-
-	return val
-
-def f_remix4(t, pt, aud):
-	return (f_og(t) * f_vis4(pt, aud)) + 1
-
-def f_remix_novis(t, pt, aud):
-	# novis just always returns 1, so this is f_og
-	return f_og(t) * f_novis(pt, aud) + 1
-
-
-def f_remix(t, p1, p2, aud):
-	epsilon = .0001
-	multiplier = (PATH_TIMESTEPS - t)
-
-	vis1 = get_visibility_of_pt_w_observers(p1, aud)
-	vis2 = get_visibility_of_pt_w_observers(p2, aud)
-	vis_aggregate = vis1 + vis2 / 2.0
-
-	return (multiplier * vis_aggregate) + epsilon
-
+# Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
 def prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
 	g_array = []
@@ -348,7 +174,7 @@ def prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
 
 	return g_target / (sum(g_array))
 
-
+# Ada: final equation
 def unnormalized_prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
 	decimal.getcontext().prec = 20
 
@@ -376,12 +202,6 @@ def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here):
 def f_angle_prob(heading, goal_theta):
 	diff = (np.abs(np.abs(heading - goal_theta) - 180))
 	return diff * diff
-	# print(diff)
-
-	# if diff < 90:
-	# 	return diff
-
-	# return 0.0
 
 
 def prob_goals_given_heading(p0, p1, goals):
@@ -458,7 +278,6 @@ def tests_prob_heading():
 
 	print(goals)
 	print(result)
-
 
 
 def get_costs_along_path(path):
@@ -542,35 +361,6 @@ def get_costs(path, target, obs_sets):
 		new_val = f_cost()
 
 	return vals
-
-def get_visibilities(path, target, goals, obs_sets):
-	vis_labels 		= ['vis1-flat', 'vis2-dist', 'vis3-angle', 'vis4-angle-dist', 'no-vis']
-	# vis_functions 	= [f_vis1, 	f_vis2, f_vis3, f_vis4]
-	# vis_lists 		= [[], 		[], 	[], 	[]]
-	# vis_totals 		= [0, 		0, 		0, 		0]
-
-	# v1, v2, v3, v4, v5 = [], [], [], [], []
-	
-	# if obs_sets == []:
-	# 	return vis_labels, None
-
-	# obs = obs_sets[-1]
-
-	# for p in path:
-	# 	v1.append(f_vis1(p, obs))
-	# 	v2.append(f_vis2(p, obs))
-	# 	v3.append(f_vis3(p, obs))
-	# 	v4.append(f_vis4(p, obs))
-	# 	v5.append(f_novis(p, obs))
-
-	# vis_values = [v1, v2, v3, v4, v5]
-
-	# # 'vis3-angle'
-	# vis_labels = [vis_labels[2]]
-	# vis_values = [vis_values[2]]
-
-	return [], []
-	return vis_labels, vis_values
 
 def get_legibilities(path, target, goals, obs_sets, f_vis):
 	vals = {}
@@ -910,111 +700,6 @@ def generate_paths(num_paths, restaurant, vis_types):
 			path_options[target][vis_type] = create_path_options(num_paths, target, restaurant, vis_type)
 	return path_options
 
-def add_further_overall_stats(df):
-
-	return df
-
-def get_path_analysis(all_paths, r, ti):
-	target = r.get_goals_all()[ti]	
-	obs_sets = r.get_obs_sets()
-
-	goals = r.get_goals_all()
-	col_labels = ['cost', 'target', 'path', 'target_index']
-
-	# list of 
-	f_list = {'fexp_single': f_exp_single}
-	
-	leg_labels = list(obs_sets.keys())
-
-	data = []
-	for p in all_paths:
-		# Do analytics that are constant for all views of path, such as cost
-		# these are the pre-listed options in col_labels
-		cost = f_path_cost(p)
-		vis_types, vis_values = get_visibilities(p, target, goals, obs_sets)
-		
-		entry = [cost, target, p, ti]
-		remix_labels = []
-
-		# Record the graphs of visibility for this path
-		entry.extend(vis_values)
-		remix_labels.extend(vis_types)
-
-		#####
-
-		# for each of the options of f functions
-		for fi in range(len(f_list)):
-			f_vis = f_list[fi]
-			f_label = f_labels[fi]
-			# print(f_label)
-
-			# For the legibility relative to each of these other audiences
-			all_legibilities = get_legibilities(p, target, goals, obs_sets, f_vis)
-
-			max_labels = copy.copy(leg_labels)
-			ratio_labels = copy.copy(leg_labels)
-
-			# make labels for each assessment criteria
-			for i in range(len(max_labels)):
-				max_labels[i] 		= "max-" + max_labels[i] + "-" + f_label
-
-
-				# ratio_labels[i] = "ratio-" + ratio_labels[i] + "-" + f_label
-
-			# denominator = l_o + l_a + l_b + l_m
-
-			remix_labels.extend(max_labels)
-			entry.extend(list(all_legibilities.values()))
-
-			# print(remix_labels)
-
-			# if denominator == 0:
-			# 	ratio_values = [0, 0, 0, 0]
-			# else:
-			# 	ratio_values = [(l_o / denominator), (l_a / denominator), (l_b / denominator), (l_m / denominator)]
-
-			# remix_labels.extend(ratio_labels)
-			# entry.extend(ratio_values)
-
-		data.append(entry)
-
-	col_labels.extend(remix_labels)
-	df = pd.DataFrame(data, columns = col_labels)
-	df = df.fillna(0)
-
-	df = add_further_overall_stats(df)
-
-	return df
-
-
-def get_legib_label_combos():
-	vis_labels = get_vis_labels()
-	leg_labels = ['lo', 'la', 'lb', 'lm']
-
-	all_labels = []
-
-	for v in vis_labels:
-		labels = copy.copy(leg_labels)
-		for i in range(len(labels)):
-			labels[i] = labels[i] + "-" + v
-		all_labels.extend(labels)
-
-	return all_labels
-
-def get_ratio_label_combos():
-	vis_labels = get_vis_labels()
-	leg_labels = ['lo', 'la', 'lb', 'lm']
-
-	all_labels = []
-
-	for v in vis_labels:
-		labels = copy.copy(leg_labels)
-		for i in range(len(labels)):
-			labels[i] = "ratio-" + labels[i] + "-" + v
-		all_labels.extend(labels)
-
-	return all_labels
-
 
 def get_vis_labels():
 	vis_labels, dummy = get_visibilities([], [], [], [])
@@ -1022,75 +707,6 @@ def get_vis_labels():
 
 def minMax(x):
 	return pd.Series(index=['min','max'],data=[x.min(),x.max()])
-
-# Given a set of paths, get all analysis and log it
-def assess_paths(all_paths, r, ti, unique_key):
-	target = r.get_goals_all()[ti]
-	goal_label = resto.UNITY_GOAL_NAMES[ti]
-	df = get_path_analysis(all_paths, r, ti)
-
-	df_minmax = df.apply(minMax)
-	# print(df_minmax)
-	# print(df_minmax['l_agnostic'])
-	# print(df_minmax['l_a'])
-	# print(df_minmax['l_b'])
-	# print(df_minmax['l_multi'])
-	csv_title = FILENAME_PATH_ASSESS + unique_key + str(goal_label) +  '-scores.csv'
-	# print(csv_title)
-	df.to_csv(csv_title)
-
-	leg_labels = ['lo', 'la', 'lb', 'lm']
-	path_key = 'path'
-	path_keys = resto.VIS_CHECKLIST
-
-	best_list 	= []
-	worst_list 	= []
-
-	paths_dict = {}
-	raw_dict = {}
-
-	inspection_labels = df.columns[5:]
-	# print(inspection_labels)
-
-	# inspection_labels = get_legib_label_combos()
-	# print(inspection_labels)
-	# inspection_labels.extend(get_ratio_label_combos())
-
-	for li in range(len(inspection_labels)):
-		l = inspection_labels[li]
-		
-		# print(l)
-		# print(df[l].max())
-
-		max_val = df[l].max()
-		min_val = df[l].min()
-
-		print(l)
-		print(max_val)
-
-		# if df[l].idxmax()
-
-		best 	= df.loc[df[l] == max_val].iloc[0]
-		worst 	= df.loc[df[l] == min_val].iloc[0]
-		
-		best_path 	= best[path_key]
-		worst_path 	= worst[path_key]
-
-		best_list.append(best_path)
-		worst_list.append(worst_path)
-
-		# paths_dict[path_keys[li]] = [best_path, worst_path]
-		# raw_dict[path_keys[li]] = [best, worst]
-
-		paths_dict[l] = [best_path]
-		raw_dict[l] = [best]
-
-
-	return paths_dict, raw_dict
-
-def iterate_on_paths():
-	path_options 		= generate_paths(NUM_PATHS, r, VISIBILITY_TYPES)
-	path_dict, path_assessments 	= assess_paths(path_options)
 
 def determine_lambda(r):
 	start = r.get_start()
@@ -1321,8 +937,6 @@ def get_hardcoded():
 def select_paths_and_draw(restaurant, unique_key):
 	NUM_PATHS = 500
 	
-	
-
 	all_options = []
 
 	# OPTIONS FOR HARDCODED/CACHED PATHS FOR CONSISTENT VISUALIZATIONS
