@@ -1075,7 +1075,7 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	target = r.get_goals_all()[goal_index]
 	all_paths = []
 	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
-	print(fn)
+	print("\t Looking for import @ " + fn)
 
 	FLAG_REDO_PATH_CREATION = True
 
@@ -1465,13 +1465,12 @@ def export_legibility_df(df, title, sampling_type):
 
 	all_goals = df["goal"].unique().tolist()
 
+	df_array = []
+
 	g_index = 0
 	for g in all_goals:
 		df_new = df[df['goal'] == g]
-
-		contents = np.round(df_new.describe(), 2)
-		fig, ax = plt.subplots(1, 1)
-		table(ax, contents, loc="upper right")
+		df_array.append(df_new)
 		# df.plot(ax=ax, ylim=(0, 2), legend=None);
 		# df.plot.hist(orientation="horizontal", cumulative=True);
 
@@ -1492,6 +1491,23 @@ def export_legibility_df(df, title, sampling_type):
 
 		g_index += 1
 
+	# make the total overview plot
+	contents = np.round(df.describe(), 2)
+	fig, ax = plt.subplots(2, 1)
+	ax[0].axis('off')
+	table(ax[0], contents, loc="upper right")
+	plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-table'  + '.png')
+
+	key_cols = columns
+	key_cols.append('goal')
+	mdf = df[key_cols].melt(id_vars=['goal'])
+	ax[1] = sns.boxplot(x="goal", y="value", hue="variable", data=mdf)    
+	
+	# df_new.plot.box(vert=False) # , by=["goal"]
+	plt.tight_layout()
+	#save the plot as a png file
+	plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-desc_plot'  + '.png')
+	plt.clf()
 
 # TODO: verify is indexing correctly and grabbing best overall, 
 # not best in short zone
