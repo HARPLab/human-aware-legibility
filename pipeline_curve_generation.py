@@ -311,13 +311,13 @@ def get_path_length(path):
 	return output, total
 
 # Given a 
-def f_legibility(goal, goals, path, aud, f_function):
+def f_legibility(goal, goals, path, aud, f_function, exp_settings):
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
-	LAMBDA = decimal.Decimal(.0000011)
 
-	epsilon = decimal.Decimal(.000000001)
+	LAMBDA = decimal.Decimal(exp_settings['lambda'])
+	epsilon = decimal.Decimal(exp_settings['epsilon'])
 
 	start = path[0]
 	total_cost = decimal.Decimal(0)
@@ -363,13 +363,13 @@ def get_costs(path, target, obs_sets):
 
 	return vals
 
-def get_legibilities(path, target, goals, obs_sets, f_vis):
+def get_legibilities(path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		# goal, goals, path, df_obs
-		new_val = f_legibility(target, goals, path, aud, f_exp_single)
+		new_val = f_legibility(target, goals, path, aud, f_exp_single, exp_settings)
 
 		vals[key] = new_val
 
@@ -944,13 +944,15 @@ def trim_paths(r, all_paths, goal):
 	print("Paths trimmed: " + str(len(all_paths)) + " -> " + str(len(trimmed_paths)))
 	return trimmed_paths
 
-def get_sample_points_sets(r, start, goal, sampling_type):
+def get_sample_points_sets(r, start, goal, exp_settings):
 	# sampling_type = 'systematic'
 	# sampling_type = 'visible'
 	# sampling_type = 'in_zone'
 
 	sample_sets = []
 	resolution = 10
+
+	sampling_type = exp_settings['sampling_type']
 
 	if sampling_type == SAMPLE_TYPE_SYSTEMATIC:
 		width = r.get_width()
@@ -1068,14 +1070,55 @@ def get_sample_points_sets(r, start, goal, sampling_type):
 
 	return sample_sets
 
+def lam_to_str(lam):
+	return str(lam)#.replace('.', ',')
+
+def eps_to_str(eps):
+	return str(eps)#.replace('.', ',')
+
+def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
+	sampling_type = exp_settings['sampling_type']
+	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+	return fn
+
+def title_from_exp_settings(exp_settings):
+	title = exp_settings['title']
+	sampling_type = exp_settings['sampling_type']
+	eps = exp_settings['epsilon']
+	lam = exp_settings['lambda']
+
+	eps = eps_to_str(eps)
+	lam = lam_to_str(lam)
+
+	cool_title = title + ": " + sampling_type
+	cool_title += "\n eps=" + eps + " lam=" + lam
+
+	return cool_title
+
+def fn_export_from_exp_settings(exp_settings):
+	title = exp_settings['title']
+	sampling_type = exp_settings['sampling_type']
+	eps = exp_settings['epsilon']
+	lam = exp_settings['lambda']
+
+	eps = eps_to_str(eps)
+	lam = lam_to_str(lam)
+
+	fn = FILENAME_PATH_ASSESS + title + "_" 
+	fn += sampling_type + "-eps" + eps + "-lam" + lam
+	return fn
+
 # Convert sample points into actual useful paths
-def get_paths_from_sample_set(r, sampling_type, goal_index):
-	sample_pts = get_sample_points_sets(r, r.get_start(), r.get_goals_all()[goal_index], sampling_type)
+def get_paths_from_sample_set(r, exp_settings, goal_index):
+	sampling_type = exp_settings['sampling_type']
+
+	sample_pts = get_sample_points_sets(r, r.get_start(), r.get_goals_all()[goal_index], exp_settings)
 	print("\tSampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
 
 	target = r.get_goals_all()[goal_index]
 	all_paths = []
-	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+	fn = fn_pathpickle_from_exp_settings(exp_settings, goal_index)
+
 	print("\t Looking for import @ " + fn)
 
 	FLAG_REDO_PATH_CREATION = True
@@ -1109,22 +1152,25 @@ def get_paths_from_sample_set(r, sampling_type, goal_index):
 	return all_paths
 
 # TODO Ada
-def create_systematic_path_options_for_goal(r, label, sampling_type, start, goal, img, num_paths=500):
+def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, num_paths=500):
 	all_paths = []
 	target = goal
+
+	label = exp_settings['title']
+	sampling_type = exp_settings['sampling_type']
 
 
 	fn = FILENAME_PATH_ASSESS + label + "_sample_path" + ".png"
 	goal_index = r.get_goal_index(goal)
 
-	all_paths = get_paths_from_sample_set(r, sampling_type, goal_index)
+	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
 
 	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "all.png"
-	resto.export_raw_paths(img, all_paths, fn)
+	resto.export_raw_paths(img, all_paths, fn_export_from_exp_settings(exp_settings))
 
 	trimmed_paths = trim_paths(r, all_paths, goal)
 	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "trimmed.png"
-	resto.export_raw_paths(img, trimmed_paths, fn)
+	resto.export_raw_paths(img, trimmed_paths, fn_export_from_exp_settings(exp_settings))
 
 	# print(all_paths)
 
@@ -1375,7 +1421,7 @@ def make_path_libs(resto, goal):
 
 	print("Done")
 
-def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_type):
+def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
 	img = restaurant.get_img()
 	empty_img = img #cv2.flip(img, 0)
@@ -1416,7 +1462,9 @@ def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_ty
 			cv2.line(goal_img, a, b, color, thickness=6, lineType=8)
 		
 		solo_img = cv2.flip(solo_img, 0)
-		cv2.imwrite(fn + title + "-" + sampling_type + '_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
+		title = exp_settings['title']
+		sampling_type = exp_settings['sampling_type']
+		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
 		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
 
 
@@ -1424,11 +1472,11 @@ def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_ty
 		goal_img = goal_imgs[goal_index]
 
 		goal_img = cv2.flip(goal_img, 0)
-		cv2.imwrite(fn + title + "-" + sampling_type + '_goal_' + str(goal_index) + '.png', goal_img) 
+		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
 	# TODO: actually export pics for them
 
-def dict_to_leg_df(r, data, title, sampling_type):
+def dict_to_leg_df(r, data, exp_settings):
 	df = pd.DataFrame.from_dict(data)
 	columns = df.columns.tolist()
 	columns.remove("path")
@@ -1437,7 +1485,7 @@ def dict_to_leg_df(r, data, title, sampling_type):
 	for col in columns:
 		df = df.astype({col: float})
 
-	export_legibility_df(r, df, title, sampling_type)
+	export_legibility_df(r, df, exp_settings)
 
 	return df
 
@@ -1445,31 +1493,19 @@ def rgb_to_hex(red, green, blue):
     """Return color as #rrggbb for the given color values."""
     return '#%02x%02x%02x' % (red, green, blue)
 
-def export_legibility_df(r, df, title, sampling_type):
+def export_legibility_df(r, df, exp_settings):
+	title = exp_settings['title']
+	sampling_type = exp_settings['sampling_type']
 
-	df.to_csv(FILENAME_PATH_ASSESS + title + "_legibilities.csv")
+	df.to_csv(fn_export_from_exp_settings(exp_settings) + "_legibilities.csv")
 
-	df.describe().to_csv(FILENAME_PATH_ASSESS + title + "_" + sampling_type + "_description.csv")
+	df.describe().to_csv(fn_export_from_exp_settings(exp_settings) + "_description.csv")
 
 	columns = df.columns.tolist()
 	columns.remove("path")
 	columns.remove("goal")
 
-	# # for col in columns:
-	# desc = df.describe()
-
-	# #create a subplot without frame
-	# plot = plt.subplot(111, frame_on=False)
-
-	# #remove axis
-	# plot.xaxis.set_visible(False) 
-	# plot.yaxis.set_visible(False) 
-
-	# #create the table plot and position it in the upper left corner
-	# table(plot, desc,loc='upper right')
-
 	all_goals = df["goal"].unique().tolist()
-
 	df_array = []
 
 	g_index = 0
@@ -1478,20 +1514,14 @@ def export_legibility_df(r, df, title, sampling_type):
 		df_array.append(df_new)
 		# df.plot(ax=ax, ylim=(0, 2), legend=None);
 		# df.plot.hist(orientation="horizontal", cumulative=True);
-
-
-		# print(df.columns)
-
 		
 		df_new.plot.box(vert=False) # , by=["goal"]
 		# bp = df.boxplot(by="goal") #, column=columns)
 		# bp = df.groupby('goal').boxplot()
 
-
-
 		plt.tight_layout()
 		#save the plot as a png file
-		plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type + str(g_index) +  '-desc_plot'  + '.png')
+		plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-desc_plot'  + '.png')
 		plt.clf()
 
 		g_index += 1
@@ -1519,6 +1549,10 @@ def export_legibility_df(r, df, title, sampling_type):
 	gs = gridspec.GridSpec(ncols=2, nrows=2,
                          width_ratios=[1, 1], wspace=None,
                          hspace=None, height_ratios=[1, 2])
+
+	cool_title = title_from_exp_settings(exp_settings)
+	plt.suptitle(cool_title)
+
 	# gs.update(wspace=1)
 	ax1 = plt.subplot(gs[0, :1], )
 	ax2 = plt.subplot(gs[0, 1:])
@@ -1551,7 +1585,7 @@ def export_legibility_df(r, df, title, sampling_type):
 	plt.tight_layout()
 	# fig.tight_layout()
 	#save the plot as a png file
-	plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type+  '-desc_plot'  + '.png')
+	plt.savefig(fn_export_from_exp_settings(exp_settings) +  '-desc_plot'  + '.png')
 	plt.clf()
 
 # TODO: verify is indexing correctly and grabbing best overall, 
@@ -1584,7 +1618,7 @@ def get_best_paths_from_df(df):
 	# print(best_index)
 	return best_paths, best_index
 
-def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
+def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 	paths 		= None
 	goals 		= resto.get_goals_all()
 	obs_sets 	= resto.get_obs_sets()
@@ -1603,7 +1637,7 @@ def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 
 		for path in paths:
 			f_vis = f_vis_exp1
-			datum = get_legibilities(path, goal, goals, obs_sets, f_vis)
+			datum = get_legibilities(path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
 			data.append(datum)
@@ -1611,13 +1645,13 @@ def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 
 
 	# data_frame of all paths overall
-	df = dict_to_leg_df(resto, data, title, sampling_type)
+	df = dict_to_leg_df(resto, data, exp_settings)
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
 	# print(best_paths.keys())
 
-	export_path_options_for_each_goal(resto, best_paths, title, sampling_type)
+	export_path_options_for_each_goal(resto, best_paths, exp_settings)
 
 def main():
 	# Run the scenario that aligns with our use case
@@ -1643,22 +1677,28 @@ def main():
 			# lane_state_sampling_test1(resto, goal, i)
 			make_path_libs(resto, goal)
 
+	exp_settings = {}
+	exp_settings['title'] 			= unique_key
+	exp_settings['sampling_type'] 	= SAMPLE_TYPE_DEMO
+	exp_settings['epsilon'] 		= .000000001
+	exp_settings['lambda'] 			= .0000011
+
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = resto.get_img()
 	empty_img = cv2.flip(img, 0)
-	cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + 'empty.png', empty_img)
 
 	paths_for_analysis = {}
 	# TODO add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
-		paths = create_systematic_path_options_for_goal(resto, "exp_single", sampling_type, start, goal, img, num_paths=10)
+		paths = create_systematic_path_options_for_goal(resto, exp_settings, start, goal, img, num_paths=10)
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
 
 	print("~~~")
-	analyze_all_paths(resto, paths_for_analysis, unique_key, sampling_type)
+	analyze_all_paths(resto, paths_for_analysis, exp_settings)
 
 	print("Done")
 
