@@ -1497,6 +1497,9 @@ def export_legibility_df(r, df, title, sampling_type):
 
 
 	obs_palette = r.get_obs_sets_hex()
+	goal_labels = r.get_goal_labels()
+
+	df["goal"] = df["goal"].map(goal_labels)
 
 	# make the total overview plot
 	contents = np.round(df.describe(), 2)
