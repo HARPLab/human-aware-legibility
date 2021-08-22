@@ -1909,7 +1909,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_ty
 
 	# TODO: actually export pics for them
 
-def dict_to_leg_df(data, title):
+def dict_to_leg_df(data, title, sampling_type):
 	df = pd.DataFrame.from_dict(data)
 	columns = df.columns.tolist()
 	columns.remove("path")
@@ -1918,18 +1918,61 @@ def dict_to_leg_df(data, title):
 	for col in columns:
 		df = df.astype({col: float})
 
-	export_legibility_df(df, title)
+	export_legibility_df(df, title, sampling_type)
 
 	return df
 
-def export_legibility_df(df, title):
+def export_legibility_df(df, title, sampling_type):
 
 	df.to_csv(FILENAME_PATH_ASSESS + title + "_legibilities.csv")
 
-	df.describe().to_csv(FILENAME_PATH_ASSESS + title + "_description.csv")
+	df.describe().to_csv(FILENAME_PATH_ASSESS + title + "_" + sampling_type + "_description.csv")
 
-	print(df.columns)
+	columns = df.columns.tolist()
+	columns.remove("path")
+	columns.remove("goal")
 
+	# # for col in columns:
+	# desc = df.describe()
+
+	# #create a subplot without frame
+	# plot = plt.subplot(111, frame_on=False)
+
+	# #remove axis
+	# plot.xaxis.set_visible(False) 
+	# plot.yaxis.set_visible(False) 
+
+	# #create the table plot and position it in the upper left corner
+	# table(plot, desc,loc='upper right')
+
+	all_goals = df["goal"].unique().tolist()
+
+	g_index = 0
+	for g in all_goals:
+		df_new = df[df['goal'] == g]
+
+		contents = np.round(df_new.describe(), 2)
+		fig, ax = plt.subplots(1, 1)
+		table(ax, contents, loc="upper right")
+		# df.plot(ax=ax, ylim=(0, 2), legend=None);
+		# df.plot.hist(orientation="horizontal", cumulative=True);
+
+
+		# print(df.columns)
+
+		
+		df_new.plot.box(vert=False) # , by=["goal"]
+		# bp = df.boxplot(by="goal") #, column=columns)
+		# bp = df.groupby('goal').boxplot()
+
+
+
+		plt.tight_layout()
+		#save the plot as a png file
+		plt.savefig(FILENAME_PATH_ASSESS + title + "_" + sampling_type + str(g_index) +  '-desc_plot'  + '.png')
+		plt.clf()
+
+		g_index += 1
 
 
 # TODO: verify is indexing correctly and grabbing best overall, 
@@ -1989,7 +2032,7 @@ def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 
 
 	# data_frame of all paths overall
-	df = dict_to_leg_df(data, title)
+	df = dict_to_leg_df(data, title, sampling_type)
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
