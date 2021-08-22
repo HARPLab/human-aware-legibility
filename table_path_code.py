@@ -110,6 +110,22 @@ OBS_INDEX_C = 4
 OBS_INDEX_D = 5
 OBS_INDEX_E = 6
 
+OBS_COLOR_A = (0,255,255)
+OBS_COLOR_B = (0,228,171)
+OBS_COLOR_C = (0,201,87)
+OBS_COLOR_D = (128,106,50)
+OBS_COLOR_E = (255,10,10)
+OBS_COLOR_OMNISCIENT = (0,0,0)
+OBS_COLOR_ALL = (138,43,226)
+
+OBS_HEX_A = '#00ffff'
+OBS_HEX_B = '#00e4ab'
+OBS_HEX_C = '#00c957'
+OBS_HEX_D = '#7cd61c'
+OBS_HEX_E = '#ffeb0a'
+OBS_HEX_OMNISCIENT = '#FFFFFF'
+OBS_HEX_ALL = '#ff2f0a'
+
 VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
 RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 
@@ -1197,6 +1213,9 @@ class Restaurant:
 		self.generate_visibility_maps()
 
 	def get_goal_index(self, goal):
+		if goal not in self.goals:
+			inv_map = {v: k for k, v in self.get_goal_labels().items()}
+			goal = inv_map[goal]
 		return self.goals.index(goal)
 
 	def make_obstacle_map(self, obstacle_vis, img):
@@ -1370,13 +1389,25 @@ class Restaurant:
 
 	def get_obs_sets_colors(self):
 		color_lookup = {}
-		color_lookup['a'] = PATH_COLORS[OBS_INDEX_A]
-		color_lookup['b'] = PATH_COLORS[OBS_INDEX_B]
-		color_lookup['c'] = PATH_COLORS[OBS_INDEX_C]
-		color_lookup['d'] = PATH_COLORS[OBS_INDEX_D]
-		color_lookup['e'] = PATH_COLORS[OBS_INDEX_E]
-		color_lookup['omniscient'] = (0,0,0)
-		color_lookup['all'] = (138,43,226)
+		color_lookup['a'] = OBS_COLOR_A
+		color_lookup['b'] = OBS_COLOR_B
+		color_lookup['c'] = OBS_COLOR_C
+		color_lookup['d'] = OBS_COLOR_D
+		color_lookup['e'] = OBS_COLOR_E
+		color_lookup['omniscient'] = OBS_COLOR_OMNISCIENT
+		color_lookup['all'] = OBS_COLOR_ALL
+
+		return color_lookup
+
+	def get_obs_sets_hex(self):
+		color_lookup = {}
+		color_lookup['a'] = OBS_HEX_A
+		color_lookup['b'] = OBS_HEX_B
+		color_lookup['c'] = OBS_HEX_C
+		color_lookup['d'] = OBS_HEX_D
+		color_lookup['e'] = OBS_HEX_E
+		color_lookup['omniscient'] = OBS_HEX_OMNISCIENT
+		color_lookup['all'] = OBS_HEX_ALL
 
 		return color_lookup
 
@@ -1386,7 +1417,6 @@ class Restaurant:
 
 		obs_sets = {}
 		obs_sets[OBS_NONE] = obs_none
-		obs_sets[OBS_ALL]  = obs_all
 
 		if self.generate_type == TYPE_UNITY_ALIGNED:	
 			obs_a 		= [self.get_observer_back()]
@@ -1404,6 +1434,7 @@ class Restaurant:
 			print("TO DO: IMPLEMENT SUBGROUPING SCENARIOS")
 			exit()
 
+		obs_sets[OBS_ALL]  = obs_all
 		return obs_sets
 
 
@@ -1549,6 +1580,17 @@ class Restaurant:
 
 	def get_goals_all(self):
 		return self.goals
+
+	def get_goal_labels(self):
+		goal_labels = {}
+		keys = self.get_goals_all()
+		goal_labels[keys[0]] = 'GOAL-OTHER'
+		goal_labels[keys[1]] = 'GOAL-ME'
+
+		# goal_labels['GOAL-OTHER'] = keys[0]
+		# goal_labels['GOAL-ME'] = keys[1]
+
+		return goal_labels
 
 	def get_current_goal(self):
 		return self.current_goal
