@@ -1427,7 +1427,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, title, sampling_ty
 
 	# TODO: actually export pics for them
 
-def dict_to_leg_df(data, title, sampling_type):
+def dict_to_leg_df(r, data, title, sampling_type):
 	df = pd.DataFrame.from_dict(data)
 	columns = df.columns.tolist()
 	columns.remove("path")
@@ -1436,11 +1436,15 @@ def dict_to_leg_df(data, title, sampling_type):
 	for col in columns:
 		df = df.astype({col: float})
 
-	export_legibility_df(df, title, sampling_type)
+	export_legibility_df(r, df, title, sampling_type)
 
 	return df
 
-def export_legibility_df(df, title, sampling_type):
+def rgb_to_hex(red, green, blue):
+    """Return color as #rrggbb for the given color values."""
+    return '#%02x%02x%02x' % (red, green, blue)
+
+def export_legibility_df(r, df, title, sampling_type):
 
 	df.to_csv(FILENAME_PATH_ASSESS + title + "_legibilities.csv")
 
@@ -1491,6 +1495,9 @@ def export_legibility_df(df, title, sampling_type):
 
 		g_index += 1
 
+
+	obs_palette = r.get_obs_sets_hex()
+
 	# make the total overview plot
 	contents = np.round(df.describe(), 2)
 	fig, ax = plt.subplots(2, 1)
@@ -1501,7 +1508,9 @@ def export_legibility_df(df, title, sampling_type):
 	key_cols = columns
 	key_cols.append('goal')
 	mdf = df[key_cols].melt(id_vars=['goal'])
-	ax[1] = sns.boxplot(x="goal", y="value", hue="variable", data=mdf)    
+	ax[1] = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)    
+	ax[1].set_ylabel('Legibility with regard to goal')
+	ax[1].set_xlabel('Goal')
 	
 	# df_new.plot.box(vert=False) # , by=["goal"]
 	plt.tight_layout()
@@ -1566,7 +1575,7 @@ def analyze_all_paths(resto, paths_for_analysis, title, sampling_type):
 
 
 	# data_frame of all paths overall
-	df = dict_to_leg_df(data, title, sampling_type)
+	df = dict_to_leg_df(resto, data, title, sampling_type)
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
