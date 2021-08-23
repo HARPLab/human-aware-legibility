@@ -590,7 +590,7 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn)
 	end_angle 	= xy_n[2] + 90
 
 	# Strength of how much we're enforcing the exit angle
-	k = 800
+	k = exp_settings['angle_strength']
 	# print("x=")
 	# print(x)
 	# print("y=")
@@ -1089,11 +1089,12 @@ def title_from_exp_settings(exp_settings):
 	lam = exp_settings['lambda']
 	n_chunks 		= exp_settings['num_chunks']
 	chunking_type 	= exp_settings['chunk_type']
+	angle_strength = exp_settings['angle_strength']
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
-	cool_title = title + ": " + sampling_type
+	cool_title = title + ": " + sampling_type + " ang_str=" + str(angle_strength)
 	cool_title += "\n eps=" + eps + " lam=" + lam
 	cool_title += "\n n=" + str(n_chunks) + " distr=" + str(chunking_type)
 
@@ -1695,6 +1696,7 @@ def main():
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 25
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
+	exp_settings['angle_strength']	= 800
 	exp_settings['min_path_length'] = {}
 	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 
