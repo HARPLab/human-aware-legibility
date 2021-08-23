@@ -1985,7 +1985,7 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 	cv2.imwrite('generated/fig_tables.png', img) 
 
 
-def export_raw_paths(img, saved_paths_list, fn):
+def export_raw_paths(img, saved_paths_list, title, fn):
 	print("\tExporting raw diagrams")
 	all_paths_img = img.copy()
 
@@ -2010,6 +2010,11 @@ def export_raw_paths(img, saved_paths_list, fn):
 		# print("exported image of " + pkey)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
+
+	position = (10,50)
+	font_size = 1
+	cv2.putText(all_paths_img, title, position, cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
+
 	cv2.imwrite(fn + "_raw.png", all_paths_img) 
 	### END DISPLAY PATHS CODE
 
