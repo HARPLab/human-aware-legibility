@@ -2008,7 +2008,7 @@ def export_raw_paths(img, saved_paths_list, fn):
 		# print("exported image of " + pkey)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
-	cv2.imwrite(fn, all_paths_img) 
+	cv2.imwrite(fn + "raw_paths.png", all_paths_img) 
 	### END DISPLAY PATHS CODE
 
 
