@@ -311,15 +311,20 @@ def get_path_length(path):
 		
 	return output, total
 
-def get_min_path_length(resto, goal):
-	start = resto.get_start()
-	return get_path_length([start, goal])[1]
+def get_min_path(r, goal, exp_settings):
+	path_option = construct_single_path_with_angles(exp_settings, r.get_start(), goal, [], fn_export_from_exp_settings(exp_settings))
+	path_option = chunkify.chunkify_path(exp_settings, path_option)
+	return path_option
+
+def get_min_path_length(r, goal, exp_settings):
+	path_option = get_min_path(r, goal, exp_settings)
+	return get_path_length(path_option)[1]
 
 # Given a 
 def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
-	min_path_length = get_min_path_length(resto, goal)
+	min_path_length = exp_settings['min_path_length'][goal]
 	print(min_path_length)
-
+	
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
@@ -448,11 +453,6 @@ def generate_single_path_grid(restaurant, target, vis_type, n_control):
 	path 		= smoothed(path, restaurant)
 	return path
 
-def generate_single_path_with_angles(restaurant, target, vis_type, n_control):
-	sample_pts 	= restaurant.sample_points(n_control, target, vis_type)
-	path = construct_single_path_with_angles(restaurant.get_start(), target, sample_pts)
-	# path 		= smoothed(path, restaurant)
-	return path
 
 def generate_single_path(restaurant, target, vis_type, n_control):
 	valid_path = False
@@ -678,22 +678,6 @@ def construct_single_path_bezier(start, end, sample_pts):
 	points = [(int(px), int(py)) for px, py in points]
 
 	return points
-
-def generate_n_paths(restaurant, num_paths, target, n_control):
-	path_list = []
-	vis_type = resto.VIS_OMNI
-	print("Generating n paths ")
-
-	for i in range(num_paths):
-		valid_path = False
-		# while (not valid_path):
-		# path_option = generate_single_path_grid(restaurant, target, vis_type, n_control)
-		path_option = generate_single_path_with_angles(restaurant, target, vis_type, n_control)
-
-		path_list.append(path_option)
-		# print(path_option)
-
-	return path_list
 
 def create_path_options(num_paths, target, restaurant, vis_type):
 	path_list = []
@@ -993,10 +977,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		p4 = chunkify.chunkify_path(exp_settings, p4)
 		p5 = chunkify.chunkify_path(exp_settings, p5)
 		p6 = chunkify.chunkify_path(exp_settings, p6)
+		p7 = get_min_path(r, goal, exp_settings)
 
-
-
-		sample_sets = [p1, p2, p3, p4, p5, p6]
+		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
 	elif sampling_type == SAMPLE_TYPE_CENTRAL:
 		sx, sy, stheta = start
@@ -1187,11 +1170,16 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	fn = FILENAME_PATH_ASSESS + label + "_sample_path" + ".png"
 	goal_index = r.get_goal_index(goal)
 
+	title = title_from_exp_settings(exp_settings)
+
+	min_paths = [get_min_path(r, goal, exp_settings)]
+	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
+
 	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
-	resto.export_raw_paths(img, all_paths, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
+	resto.export_raw_paths(img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
 	trimmed_paths = trim_paths(r, all_paths, goal)
-	resto.export_raw_paths(img, trimmed_paths, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
+	resto.export_raw_paths(img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 
 	return all_paths
 
@@ -1707,12 +1695,21 @@ def main():
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 25
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
+	exp_settings['min_path_length'] = {}
 	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = resto.get_img()
 	empty_img = cv2.flip(img, 0)
 	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', empty_img)
+
+	for g in resto.get_goals_all():
+		min_path_length = get_min_path_length(resto, g, exp_settings)
+		exp_settings['min_path_length'][g] = min_path_length
+		print("MIN PATH LENGTH")
+		print(min_path_length)
+
+
 
 	paths_for_analysis = {}
 	# TODO add permutations of goals with some final-angle-wiggle
