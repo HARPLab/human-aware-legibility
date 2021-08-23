@@ -74,6 +74,13 @@ def tuples_to_lists(path):
 
     return new_list
 
+def lists_to_tuples(path):
+    new_list = []
+    for l in path:
+        new_list.append(tuple(l))
+
+    return new_list
+
 
 def export_path_for_unity(label, path):
     prefix = 'path_optimization/csv/'
@@ -86,6 +93,55 @@ def export_path_for_unity(label, path):
     file1 = open(prefix + label + ".csv","w")
     file1.write(txt)
     file1.close()
+
+CHUNKIFY_LINEAR = 'linear'
+CHUNKIFY_TRIANGULAR = 'triangular'
+CHUNKIFY_MINJERK = 'min-jerk'
+
+def chunkify_path(exp_settings, path):
+    path = tuples_to_lists(path)
+
+    schema = exp_settings['chunk_type']
+    num_chunks = exp_settings['num_chunks']
+
+    timing, velocities = None, None
+    if schema == CHUNKIFY_LINEAR:
+        # timing='sqrt-L2'
+        timing = 'limited'
+        velocities = 'auto'
+    
+    elif schema == CHUNKIFY_TRIANGULAR:
+        velocities='triangular'
+        timing='sqrt-L2'
+
+    elif schema == CHUNKIFY_MINJERK:
+        velocities='minimum-jerk'
+        timing='sqrt-L2'
+
+
+    traj = trajectory.path_to_trajectory(path, speed=1, timing=timing, velocities=velocities)
+    print(len(traj.milestones))
+
+    duration = traj.duration()
+
+    # traj.discretize(dt): makes milestones evenly spaced in time, with time dt apart. 
+    # This might slightly change the shape of the path.
+    if schema == CHUNKIFY_LINEAR or schema == CHUNKIFY_TRIANGULAR or schema == CHUNKIFY_MINJERK:
+        dt = (duration) * (1 / float(num_chunks - 1))
+
+    # print(dt)
+
+    traj = traj.discretize(dt)
+    path = traj.milestones
+    if len(path) != num_chunks:
+        print("Length of " + str(len(path)) + " != " + str(num_chunks))
+        exit()
+    # else:
+    #     print("Success")
+    path = lists_to_tuples(path)
+    path = [(round(x[0]), round(x[1])) for x in path]
+    return path
+
 
 
 if __name__ == "__main__":
