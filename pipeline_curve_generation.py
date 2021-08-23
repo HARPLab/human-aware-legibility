@@ -12,6 +12,7 @@ import random
 import os
 from pandas.plotting import table
 import matplotlib.gridspec as gridspec
+import klampt_smoothing as chunkify
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -64,12 +65,12 @@ def f_cost_old(t1, t2):
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
-
+	return a
 	return np.abs(a * a)
 
 def f_path_length(t1, t2):
 	a = resto.dist(t1, t2)
-
+	return a
 	return np.abs(a * a)
 
 def f_path_cost(path):
@@ -310,8 +311,15 @@ def get_path_length(path):
 		
 	return output, total
 
+def get_min_path_length(resto, goal):
+	start = resto.get_start()
+	return get_path_length([start, goal])[1]
+
 # Given a 
-def f_legibility(goal, goals, path, aud, f_function, exp_settings):
+def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
+	min_path_length = get_min_path_length(resto, goal)
+	print(min_path_length)
+
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
@@ -353,6 +361,7 @@ def f_legibility(goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
+	print(get_path_length(path)[1])
 	return overall
 
 def get_costs(path, target, obs_sets):
@@ -363,13 +372,13 @@ def get_costs(path, target, obs_sets):
 
 	return vals
 
-def get_legibilities(path, target, goals, obs_sets, f_vis, exp_settings):
+def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		# goal, goals, path, df_obs
-		new_val = f_legibility(target, goals, path, aud, f_exp_single, exp_settings)
+		new_val = f_legibility(resto, target, goals, path, aud, f_exp_single, exp_settings)
 
 		vals[key] = new_val
 
@@ -553,7 +562,7 @@ def path_formatted(xs, ys):
 	return list(zip(xs, ys))
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
-def construct_single_path_with_angles(start, goal, sample_pts, fn):
+def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn):
 	# print("WITH ANGLE")
 	xy_0 = start
 	xy_n = goal
@@ -978,6 +987,15 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		p5 = [(104, 477), (98, 509), (95, 540), (95, 569), (97, 596), (101, 620), (108, 643), (118, 663), (130, 682), (145, 698), (162, 712), (182, 725), (204, 735), (229, 743), (256, 749), (286, 753), (318, 755), (353, 755), (390, 753), (430, 749), (472, 742), (517, 734), (565, 724), (615, 711), (667, 697), (722, 680), (779, 662), (839, 641), (902, 618), (967, 593), (1035, 567)]
 		p6 = l1
 
+		p1 = chunkify.chunkify_path(exp_settings, p1)
+		p2 = chunkify.chunkify_path(exp_settings, p2)
+		p3 = chunkify.chunkify_path(exp_settings, p3)
+		p4 = chunkify.chunkify_path(exp_settings, p4)
+		p5 = chunkify.chunkify_path(exp_settings, p5)
+		p6 = chunkify.chunkify_path(exp_settings, p6)
+
+
+
 		sample_sets = [p1, p2, p3, p4, p5, p6]
 
 	elif sampling_type == SAMPLE_TYPE_CENTRAL:
@@ -1086,12 +1104,15 @@ def title_from_exp_settings(exp_settings):
 	sampling_type = exp_settings['sampling_type']
 	eps = exp_settings['epsilon']
 	lam = exp_settings['lambda']
+	n_chunks 		= exp_settings['num_chunks']
+	chunking_type 	= exp_settings['chunk_type']
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
 	cool_title = title + ": " + sampling_type
 	cool_title += "\n eps=" + eps + " lam=" + lam
+	cool_title += "\n n=" + str(n_chunks) + " distr=" + str(chunking_type)
 
 	return cool_title
 
@@ -1100,12 +1121,14 @@ def fn_export_from_exp_settings(exp_settings):
 	sampling_type = exp_settings['sampling_type']
 	eps = exp_settings['epsilon']
 	lam = exp_settings['lambda']
+	n_chunks 		= exp_settings['num_chunks']
+	chunking_type 	= exp_settings['chunk_type']
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
 	fn = FILENAME_PATH_ASSESS + title + "_" 
-	fn += sampling_type + "-eps" + eps + "-lam" + lam
+	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks)
 	return fn
 
 # Convert sample points into actual useful paths
@@ -1139,7 +1162,8 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 		print("\tAssembling set of paths")
 		# If I don't yet have a path
 		for point_set in sample_pts:
-			path_option = construct_single_path_with_angles(r.get_start(), target, point_set, fn)
+			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn)
+			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 	else:
 		all_paths = sample_pts
@@ -1164,15 +1188,10 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	goal_index = r.get_goal_index(goal)
 
 	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
-
-	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "all.png"
-	resto.export_raw_paths(img, all_paths, fn_export_from_exp_settings(exp_settings))
+	resto.export_raw_paths(img, all_paths, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
 	trimmed_paths = trim_paths(r, all_paths, goal)
-	fn = FILENAME_PATH_ASSESS + label + "_g" + str(goal_index) + "-pts=" + sampling_type + "-" + "trimmed.png"
-	resto.export_raw_paths(img, trimmed_paths, fn_export_from_exp_settings(exp_settings))
-
-	# print(all_paths)
+	resto.export_raw_paths(img, trimmed_paths, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 
 	return all_paths
 
@@ -1180,7 +1199,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 def experimental_scenario_single():
 	generate_type = resto.TYPE_EXP_SINGLE
 
-	# SETUP FROM SCRATCH AND SAVE
+	# SETUP FROM SCRATCH, AND SAVE OPTIONS
 	if FLAG_SAVE:
 		# Create the restaurant scene from our saved description of it
 		print("PLANNER: Creating layout of type " + str(generate_type))
@@ -1458,8 +1477,11 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			a = path[i]
 			b = path[i + 1]
 			
-			cv2.line(solo_img, a, b, color, thickness=6, lineType=8)
-			cv2.line(goal_img, a, b, color, thickness=6, lineType=8)
+			cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
+			cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
+
+			cv2.circle(solo_img, a, 4, color, 4)
+			cv2.circle(goal_img, a, 4, color, 4)
 		
 		solo_img = cv2.flip(solo_img, 0)
 		title = exp_settings['title']
@@ -1637,7 +1659,7 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 		for path in paths:
 			f_vis = f_vis_exp1
-			datum = get_legibilities(path, goal, goals, obs_sets, f_vis, exp_settings)
+			datum = get_legibilities(resto, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
 			datum['path_length'] = f_path_cost(path)
@@ -1683,11 +1705,14 @@ def main():
 	exp_settings['sampling_type'] 	= SAMPLE_TYPE_DEMO
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
+	exp_settings['num_chunks']		= 25
+	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
+	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = resto.get_img()
 	empty_img = cv2.flip(img, 0)
-	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + 'empty.png', empty_img)
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', empty_img)
 
 	paths_for_analysis = {}
 	# TODO add permutations of goals with some final-angle-wiggle
