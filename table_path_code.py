@@ -2001,14 +2001,16 @@ def export_raw_paths(img, saved_paths_list, fn):
 			b = path[i + 1]
 			
 			# cv2.line(path_img, a, b, color, thickness=6, lineType=8)
-			cv2.line(all_paths_img, a, b, color, thickness=6, lineType=8)
+			cv2.circle(all_paths_img, a, 4, color, 4)
+			cv2.line(all_paths_img, a, b, color, thickness=3, lineType=8)
+			
 
 		# path_img = cv2.flip(path_img, 0)
 		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
 		# print("exported image of " + pkey)
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
-	cv2.imwrite(fn + "raw_paths.png", all_paths_img) 
+	cv2.imwrite(fn + "_raw.png", all_paths_img) 
 	### END DISPLAY PATHS CODE
 
 
