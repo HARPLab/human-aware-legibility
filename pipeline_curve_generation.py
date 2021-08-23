@@ -1476,11 +1476,15 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 	# TODO: actually export pics for them
 
+def get_metric_columns(df):
+	columns = df.columns.tolist()
+	for col in non_metric_columns:
+		columns.remove(col)
+	return columns
+
 def dict_to_leg_df(r, data, exp_settings):
 	df = pd.DataFrame.from_dict(data)
-	columns = df.columns.tolist()
-	columns.remove("path")
-	columns.remove("goal")
+	columns = get_metric_columns(df)
 
 	for col in columns:
 		df = df.astype({col: float})
@@ -1501,9 +1505,7 @@ def export_legibility_df(r, df, exp_settings):
 
 	df.describe().to_csv(fn_export_from_exp_settings(exp_settings) + "_description.csv")
 
-	columns = df.columns.tolist()
-	columns.remove("path")
-	columns.remove("goal")
+	columns = get_metric_columns(df)
 
 	all_goals = df["goal"].unique().tolist()
 	df_array = []
@@ -1545,10 +1547,10 @@ def export_legibility_df(r, df, exp_settings):
 	contents_a.loc['count'] = contents_a.loc['count'].astype(int).astype(str)
 	contents_b.loc['count'] = contents_b.loc['count'].astype(int).astype(str)
 
-
+	fig_grid = plt.figure(figsize=(9, 6), constrained_layout=True)
 	gs = gridspec.GridSpec(ncols=2, nrows=2,
                          width_ratios=[1, 1], wspace=None,
-                         hspace=None, height_ratios=[1, 2])
+                         hspace=None, height_ratios=[1, 2], figure=fig_grid)
 
 	cool_title = title_from_exp_settings(exp_settings)
 	plt.suptitle(cool_title)
@@ -1597,9 +1599,7 @@ def get_best_paths_from_df(df):
 	# print(df)
 
 	goals = df['goal'].unique()
-	columns = df.columns.tolist()
-	columns.remove("path")
-	columns.remove("goal")
+	columns = get_metric_columns(df)
 
 	# print("GOALS")
 	# print(goals)
@@ -1640,6 +1640,7 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 			datum = get_legibilities(path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
+			datum['path_length'] = f_path_cost(path)
 			data.append(datum)
 			# datum = [goal_index] + []
 
