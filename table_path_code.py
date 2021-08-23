@@ -2011,9 +2011,12 @@ def export_raw_paths(img, saved_paths_list, title, fn):
 
 	all_paths_img = cv2.flip(all_paths_img, 0)
 
-	position = (10,50)
+	# position = (10,50)
 	font_size = 1
-	cv2.putText(all_paths_img, title, position, cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
+	y0, dy = 50, 50
+	for i, line in enumerate(title.split('\n')):
+	    y = y0 + i*dy
+	    cv2.putText(all_paths_img, line, (50, y), cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
 
 	cv2.imwrite(fn + "_raw.png", all_paths_img) 
 	### END DISPLAY PATHS CODE
