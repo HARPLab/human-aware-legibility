@@ -55,8 +55,9 @@ SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
 SAMPLE_TYPE_VISIBLE 	= 'visible'
 SAMPLE_TYPE_INZONE 		= 'in_zone'
+SAMPLE_TYPE_SHORTEST	= 'minpaths'
 
-premade_path_sampling_types = [SAMPLE_TYPE_DEMO]
+premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST]
 non_metric_columns = ["path", "goal", 'path_length']
 
 
@@ -981,6 +982,14 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
+	elif sampling_type == SAMPLE_TYPE_SHORTEST:
+		goals = r.get_goals_all()
+		sample_sets = []
+
+		for g in goals:
+			min_path = get_min_path(r, goal, exp_settings)
+			sample_sets.append(min_path)
+
 	elif sampling_type == SAMPLE_TYPE_CENTRAL:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1107,12 +1116,13 @@ def fn_export_from_exp_settings(exp_settings):
 	lam = exp_settings['lambda']
 	n_chunks 		= exp_settings['num_chunks']
 	chunking_type 	= exp_settings['chunk_type']
+	astr 				= exp_settings['angle_strength']
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
 	fn = FILENAME_PATH_ASSESS + title + "_" 
-	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks)
+	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr)
 	return fn
 
 # Convert sample points into actual useful paths
@@ -1667,10 +1677,10 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 def main():
 	# Run the scenario that aligns with our use case
-	resto = experimental_scenario_single()
+	restaurant = experimental_scenario_single()
 	unique_key = 'exp_single'
-	start = resto.get_start()
-	all_goals = resto.get_goals_all()
+	start = restaurant.get_start()
+	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
@@ -1696,36 +1706,43 @@ def main():
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 25
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
-	exp_settings['angle_strength']	= 800
+	exp_settings['angle_strength']	= 550
 	exp_settings['min_path_length'] = {}
 	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
-	img = resto.get_img()
+	img = restaurant.get_img()
 	empty_img = cv2.flip(img, 0)
 	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', empty_img)
 
-	for g in resto.get_goals_all():
-		min_path_length = get_min_path_length(resto, g, exp_settings)
+	min_paths = []
+	for g in restaurant.get_goals_all():
+		min_path_length = get_min_path_length(restaurant, g, exp_settings)
 		exp_settings['min_path_length'][g] = min_path_length
 		print("MIN PATH LENGTH")
 		print(min_path_length)
 
-
+		min_path = get_min_path(restaurant, g, exp_settings)
+		min_paths.append(min_path)
+	
+	title = title_from_exp_settings(exp_settings)
+	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
 
 	paths_for_analysis = {}
 	# TODO add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
-		paths = create_systematic_path_options_for_goal(resto, exp_settings, start, goal, img, num_paths=10)
+		paths = create_systematic_path_options_for_goal(restaurant, exp_settings, start, goal, img, num_paths=10)
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
 
 	print("~~~")
-	analyze_all_paths(resto, paths_for_analysis, exp_settings)
+	analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 
 	print("Done")
+
+
 
 if __name__ == "__main__":
 	main()
