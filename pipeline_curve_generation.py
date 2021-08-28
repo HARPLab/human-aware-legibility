@@ -45,6 +45,7 @@ FILENAME_PATH_ASSESS = 'path_assessment/'
 
 FLAG_PROB_HEADING = False
 FLAG_PROB_PATH = True
+FLAG_EXPORT_SPLINE_DEBUG = False
 
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
@@ -58,21 +59,18 @@ SAMPLE_TYPE_INZONE 		= 'in_zone'
 SAMPLE_TYPE_SHORTEST	= 'minpaths'
 
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST]
-non_metric_columns = ["path", "goal", 'path_length']
+non_metric_columns = ["path", "goal", 'path_length', 'path_cost']
 
-
-def f_cost_old(t1, t2):
-	return resto.dist(t1, t2)
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
-	return a
+	# return a
 	return np.abs(a * a)
 
 def f_path_length(t1, t2):
 	a = resto.dist(t1, t2)
 	return a
-	return np.abs(a * a)
+	# return np.abs(a * a)
 
 def f_path_cost(path):
 	cost = 0
@@ -299,18 +297,27 @@ def get_costs_along_path(path):
 
 # returns a list of the path length so far at each point
 def get_path_length(path):
-	output = []
-	ci = 0
-	csf = 0
 	total = 0
-	for pi in range(len(path)):
-		
-		cst = f_path_length(path[ci], path[pi])
-		total += cst
-		ci = pi
-		output.append(total) #log
-		
+	output = [0]
+
+	for i in range(len(path) - 1):
+		link_length = f_path_length(path[i], path[i + 1])
+		total = total + link_length
+		output.append(total)
+
 	return output, total
+
+	# output = []
+	# ci = 0
+	# csf = 0
+	# total = 0
+	# for pi in range(len(path)):
+	# 	cst = f_path_length(path[ci], path[pi])
+	# 	total += cst
+	# 	ci = pi
+	# 	output.append(total) #log
+		
+	# return output, total
 
 def get_min_path(r, goal, exp_settings):
 	path_option = construct_single_path_with_angles(exp_settings, r.get_start(), goal, [], fn_export_from_exp_settings(exp_settings))
@@ -323,8 +330,8 @@ def get_min_path_length(r, goal, exp_settings):
 
 # Given a 
 def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
-	min_path_length = exp_settings['min_path_length'][goal]
-	print(min_path_length)
+	min_realistic_path_length = exp_settings['min_path_length'][goal]
+	print("min_realistic_path_length -> " + str(min_realistic_path_length))
 	
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
@@ -367,6 +374,7 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
+	print("get_path_length output")
 	print(get_path_length(path)[1])
 	return overall
 
@@ -655,15 +663,17 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn)
 		x_all.extend(x_t)
 		y_all.extend(y_t)
 
-
-	plt.plot(x, y, 'ko', label='fit knots',markersize=15.0)
-	plt.plot(Qx, Qy, 'o--', label='control points',markersize=15.0)
-	plt.xlabel('x')
-	plt.ylabel('y')
-	plt.legend(loc='upper left', ncol=2)
-	plt.savefig(fn + 'sample-cubic_spline_imposed_tangent_direction.png')
-	# plt.show()
-	plt.clf()
+	if FLAG_EXPORT_SPLINE_DEBUG:
+		print("Saving the path I made lalalala")
+		plt.plot(x, y, 'ko', label='fit knots',markersize=15.0)
+		plt.plot(Qx, Qy, 'o--', label='control points',markersize=15.0)
+		plt.xlabel('x')
+		plt.ylabel('y')
+		plt.legend(loc='upper left', ncol=2)
+		fn_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
+		plt.savefig(fn_spline)
+		# plt.show()
+		plt.clf()
 
 	return path_formatted(x_all, y_all)
 
@@ -1088,8 +1098,9 @@ def eps_to_str(eps):
 
 def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	sampling_type = exp_settings['sampling_type']
-	fn = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
-	return fn
+	fn_pickle = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+	print("{" + fn_pickle + "}")
+	return fn_pickle
 
 def title_from_exp_settings(exp_settings):
 	title = exp_settings['title']
@@ -1134,15 +1145,15 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 
 	target = r.get_goals_all()[goal_index]
 	all_paths = []
-	fn = fn_pathpickle_from_exp_settings(exp_settings, goal_index)
+	fn_pickle = fn_pathpickle_from_exp_settings(exp_settings, goal_index)
 
-	print("\t Looking for import @ " + fn)
+	print("\t Looking for import @ " + fn_pickle)
 
 	FLAG_REDO_PATH_CREATION = True
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
 		print("\tImporting preassembled paths")
-		with open(fn, "rb") as f:
+		with open(fn_pickle, "rb") as f:
 			try:
 				all_paths = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
@@ -1153,16 +1164,16 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 				pass
 
 	if sampling_type not in premade_path_sampling_types:
-		print("\tAssembling set of paths")
+		print("\tDidn't import; assembling set of paths")
 		# If I don't yet have a path
 		for point_set in sample_pts:
-			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn)
+			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings))
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 	else:
 		all_paths = sample_pts
 
-	dbfile = open(fn, 'wb')
+	dbfile = open(fn_pickle, 'wb')
 	pickle.dump(all_paths, dbfile)
 	dbfile.close()
 	print("\tSaved paths for faster future run on combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
@@ -1661,7 +1672,8 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 			datum = get_legibilities(resto, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
-			datum['path_length'] = f_path_cost(path)
+			datum['path_length'] = get_path_length(path)[1]
+			datum['path_cost'] = f_path_cost(path)
 			data.append(datum)
 			# datum = [goal_index] + []
 
@@ -1671,9 +1683,8 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 	best_paths, best_index = get_best_paths_from_df(df)
 
-	# print(best_paths.keys())
-
 	export_path_options_for_each_goal(resto, best_paths, exp_settings)
+	return best_paths
 
 def main():
 	# Run the scenario that aligns with our use case
@@ -1701,12 +1712,12 @@ def main():
 
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
-	exp_settings['sampling_type'] 	= SAMPLE_TYPE_DEMO
+	exp_settings['sampling_type'] 	= SAMPLE_TYPE_CENTRAL
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
-	exp_settings['num_chunks']		= 25
+	exp_settings['num_chunks']		= 50
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
-	exp_settings['angle_strength']	= 550
+	exp_settings['angle_strength']	= 450
 	exp_settings['min_path_length'] = {}
 	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 
@@ -1719,9 +1730,7 @@ def main():
 	for g in restaurant.get_goals_all():
 		min_path_length = get_min_path_length(restaurant, g, exp_settings)
 		exp_settings['min_path_length'][g] = min_path_length
-		print("MIN PATH LENGTH")
-		print(min_path_length)
-
+		
 		min_path = get_min_path(restaurant, g, exp_settings)
 		min_paths.append(min_path)
 	
@@ -1738,7 +1747,19 @@ def main():
 
 
 	print("~~~")
-	analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
+	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
+		# print(best_paths.keys())
+
+	# Set of functions for exporting easy paths
+	title = "pts_" + str(exp_settings['num_chunks']) + "_" + str(exp_settings['angle_strength']) + "_" + str(exp_settings['chunk_type']) + " = "
+	path_a = best_paths[((1035, 307, 180), 'omniscient')]
+	path_b = best_paths[((1035, 567, 0), 'omniscient')]
+
+	path_a = str(path_a)
+	path_b = str(path_b)
+
+	print(title + path_a)
+	print(title + path_b)
 
 	print("Done")
 
