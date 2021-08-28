@@ -639,8 +639,8 @@ class Observer:
 	entity_radius = DIM_OBSERVER_RADIUS
 	draw_depth = 25000
 	cone_depth = 2000
-	focus_angle = 135 / 2.0
-	peripheral_angle = 160 / 2.0
+	focus_angle = 120 / 2.0
+	# peripheral_angle = 120 / 2.0
 	FOV_angle = 120
 
 	orientation = 0
@@ -648,7 +648,7 @@ class Observer:
 	color = COLOR_OBSERVER
 
 	field_focus = []
-	field_peripheral = []
+	# field_peripheral = []
 
 
 	def __init__(self, location, angle):
@@ -658,49 +658,49 @@ class Observer:
 		self.orientation = angle
 
 		focus_angle = self.focus_angle
-		peripheral_angle = self.peripheral_angle
+		# peripheral_angle = self.peripheral_angle
 		
 		# Add center of viewpoint
 		focus_a = (0, self.cone_depth)
 		focus_b = (0, self.cone_depth)
-		periph_a = (0, int(self.cone_depth*1.5))
-		periph_b = (0, int(self.cone_depth*1.5))
+		# periph_a = (0, int(self.cone_depth*1.5))
+		# periph_b = (0, int(self.cone_depth*1.5))
 
 		focus_a = rotate((0,0), focus_a, focus_angle + angle)
 		focus_b = rotate((0,0), focus_b, -focus_angle + angle)
 
-		periph_a = rotate((0,0), periph_a, peripheral_angle + angle)
-		periph_b = rotate((0,0), periph_b, -peripheral_angle + angle)
+		# periph_a = rotate((0,0), periph_a, peripheral_angle + angle)
+		# periph_b = rotate((0,0), periph_b, -peripheral_angle + angle)
 	
 		focus_a = tuple_plus(focus_a, location)
 		focus_b = tuple_plus(focus_b, location)
 
-		periph_a = tuple_plus(periph_a, location)
-		periph_b = tuple_plus(periph_b, location)
+		# periph_a = tuple_plus(periph_a, location)
+		# periph_b = tuple_plus(periph_b, location)
 
 		self.field_focus = [location, focus_a, focus_b]
-		self.field_peripheral = [location, periph_a, periph_b]
+		# self.field_peripheral = [location, periph_a, periph_b]
 
 		# Add center of viewpoint
 		draw_focus_a = (0, self.draw_depth)
 		draw_focus_b = (0, self.draw_depth)
-		draw_periph_a = (0, int(self.draw_depth*5))
-		draw_periph_b = (0, int(self.draw_depth*5))
+		# draw_periph_a = (0, int(self.draw_depth*5))
+		# draw_periph_b = (0, int(self.draw_depth*5))
 
 		draw_focus_a = rotate((0,0), draw_focus_a, focus_angle + angle)
 		draw_focus_b = rotate((0,0), draw_focus_b, -focus_angle + angle)
 
-		draw_periph_a = rotate((0,0), draw_periph_a, peripheral_angle + angle)
-		draw_periph_b = rotate((0,0), draw_periph_b, -peripheral_angle + angle)
+		# draw_periph_a = rotate((0,0), draw_periph_a, peripheral_angle + angle)
+		# draw_periph_b = rotate((0,0), draw_periph_b, -peripheral_angle + angle)
 	
 		draw_focus_a = tuple_plus(draw_focus_a, location)
 		draw_focus_b = tuple_plus(draw_focus_b, location)
 
-		draw_periph_a = tuple_plus(draw_periph_a, location)
-		draw_periph_b = tuple_plus(draw_periph_b, location)
+		# draw_periph_a = tuple_plus(draw_periph_a, location)
+		# draw_periph_b = tuple_plus(draw_periph_b, location)
 
 		self.draw_field_focus = [location, draw_focus_a, draw_focus_b]
-		self.draw_field_peripheral = [location, draw_periph_a, draw_periph_b]
+		# self.draw_field_peripheral = [location, draw_periph_a, draw_periph_b]
 
 	def set_color(self, c):
 		self.color = c
@@ -710,18 +710,21 @@ class Observer:
 		fancy_location = fancyPoint(location)
 
 		field_focus = fancyPolygon(self.field_focus)
-		field_peripheral = fancyPolygon(self.field_peripheral)
+		# field_peripheral = fancyPolygon(self.field_peripheral)
 
 		if fancy_location.within(field_focus):
 			return 1
-		elif fancy_location.within(field_peripheral):
-			return .5
+		# elif fancy_location.within(field_peripheral):
+		# 	return .5
 		return 0
 
 	def get_obs_of_pt(self, pt):
 		obs_orient 	= self.get_orientation()
 		obs_FOV 	= self.get_FOV()
 
+		# if a point is within the field of vision of a person,
+		# and within the viewing distance
+		# then this observer views the current point
 		angle 		= angle_between(pt, self.get_center())
 		distance 	= dist(pt, self.get_center())
 
@@ -740,14 +743,14 @@ class Observer:
 	def get_field_focus(self):
 		return np.int32([self.field_focus])
 
-	def get_field_peripheral(self):
-		return np.int32([self.field_peripheral])
+	# def get_field_peripheral(self):
+	# 	return np.int32([self.field_peripheral])
 
 	def get_draw_field_focus(self):
 		return np.int32([self.draw_field_focus])
 
-	def get_draw_field_peripheral(self):
-		return np.int32([self.draw_field_peripheral])
+	# def get_draw_field_peripheral(self):
+	# 	return np.int32([self.draw_field_peripheral])
 
 	def get_radius(self):
 		return int(self.entity_radius)
@@ -761,6 +764,13 @@ class Observer:
 	def get_color(self):
 		return self.color
 
+def unity_to_image_angle(theta):
+	ntheta = (theta - 90) % 360
+	return ntheta
+
+def image_to_unity_angle(theta):
+	ntheta = (theta + 90) % 360
+	return ntheta
 
 def unity_to_image(pt):
 	if len(pt) == 3:
@@ -772,6 +782,7 @@ def unity_to_image(pt):
 	ny = (y - UNITY_OFFSET_Y) * UNITY_SCALE_Y
 
 	if len(pt) == 3:
+		ntheta = unity_to_image_angle(theta)
 		return (int(ny), int(nx), theta)
 	return (int(ny), int(nx))
 
@@ -798,7 +809,11 @@ def image_to_unity(pt):
 	ny = (x / UNITY_SCALE_Y) + (UNITY_OFFSET_Y)
 	nx = (y / UNITY_SCALE_X) + (UNITY_OFFSET_X)
 	
+	# angle conversions (image 0 = 90 unity)
+	# (good range is from 30 to 150 in unity)
+	
 	if len(pt) == 3:
+		ntheta = image_to_unity_angle(theta)
 		return (nx, ny, theta)
 	return (nx, ny)
 
@@ -977,7 +992,7 @@ class Restaurant:
 			length = 1000
 			width = 1375
 
-			waypoint_kitchen_exit = (6.45477, 2.57, None)
+			waypoint_kitchen_exit = (6.45477, 2.57, DIR_EAST)
 			wpt = unity_to_image(waypoint_kitchen_exit)
 			# TODO verify units on this
 			self.waypoints.append(wpt)
@@ -1031,7 +1046,7 @@ class Restaurant:
 			obs1_pt = (table_x, table_y - customer_offset)
 			obs1_pt = unity_to_image(obs1_pt)
 
-			obs1_angle = 55
+			obs1_angle = unity_to_image_angle(150)
 			obs1 = Observer(obs1_pt, obs1_angle)
 			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
 			self.observers.append(obs1)
@@ -1040,7 +1055,7 @@ class Restaurant:
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
 			obs2_pt = unity_to_image(obs2_pt)
 			
-			obs2_angle = 27.5
+			obs2_angle = unity_to_image_angle(120)
 			obs2 = Observer(obs2_pt, obs2_angle)
 			obs2.set_color(PATH_COLORS[OBS_INDEX_B])
 			self.observers.append(obs2)
@@ -1049,7 +1064,7 @@ class Restaurant:
 			obs3_pt = (table_x - customer_offset, table_y)
 			obs3_pt = unity_to_image(obs3_pt)
 			
-			obs3_angle = 0
+			obs3_angle = unity_to_image_angle(90)
 			obs3 = Observer(obs3_pt, obs3_angle)
 			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
 			self.observers.append(obs3)
@@ -1058,7 +1073,7 @@ class Restaurant:
 			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
 			obs4_pt = unity_to_image(obs4_pt)
 			
-			obs4_angle = 332.5
+			obs4_angle = unity_to_image_angle(60)
 			obs4 = Observer(obs4_pt, obs4_angle)
 			obs4.set_color(PATH_COLORS[OBS_INDEX_D])
 			self.observers.append(obs4)
@@ -1067,7 +1082,7 @@ class Restaurant:
 			obs5_pt = (table_x, table_y + customer_offset)
 			obs5_pt = unity_to_image(obs5_pt)
 			
-			obs5_angle = 305
+			obs5_angle = unity_to_image_angle(30)
 			obs5 = Observer(obs5_pt, obs5_angle)
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			self.observers.append(obs5)
@@ -2065,7 +2080,7 @@ def export_paths_csv(saved_paths):
 			output_string += str(up[0]) + "," + str(up[1]) + "\r\n"
 
 
-		csv_file.write(output_string) 
+		csv_file.write(output_string)
 		csv_file.close()
 		print("exported csv path to " + csv_name)
 
