@@ -126,7 +126,6 @@ def chunkify_path(exp_settings, path):
         velocities='minimum-jerk'
         timing='sqrt-L2'
 
-
     traj = trajectory.path_to_trajectory(path, speed=1, timing=timing, velocities=velocities)
 
     duration = traj.duration()
@@ -152,8 +151,10 @@ def chunkify_path(exp_settings, path):
         exit()
 
     if chunk_by == CHUNK_BY_DURATION and len(path) < num_chunks:
-        print("Length of " + str(len(path)) + " < " + str(num_chunks) + "... which really shouldn't happen")
-        exit()
+        pass
+        # print("Length of " + str(len(path)) + " < " + str(num_chunks) + "... which really shouldn't happen")
+        # # print("unless this is ")
+        # exit()
 
 
     path = lists_to_tuples(path)
