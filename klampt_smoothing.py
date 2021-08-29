@@ -140,7 +140,7 @@ def chunkify_path(exp_settings, path):
     else:
         # this number is the duration of a minimal path to one of the goals
         min_path_magic_number = 1137.0217 # minimum path to a goal duration
-        dt = int(min_path_magic_number / num_chunks)
+        dt = int(min_path_magic_number / (num_chunks + 1))
         # note that this dt does not guarantee a certain number of chunks
         # rather, it guarantees AT LEAST this many timesteps
         # this is the unit we will use for calculating legibility, also
