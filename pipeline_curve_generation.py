@@ -161,11 +161,12 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
-def prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
+def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
+	start = r.get_start()
 	g_array = []
 	g_target = 0
 	for g in goals:
-		p_raw = unnormalized_prob_goal_given_path(start, p_n1, pt, g, goals, cost_path_to_here)
+		p_raw = unnormalized_prob_goal_given_path(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
 		g_array.append(p_raw)
 		if g is goal:
 			g_target = p_raw
@@ -176,12 +177,14 @@ def prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
 	return g_target / (sum(g_array))
 
 # Ada: final equation
-def unnormalized_prob_goal_given_path(start, p_n1, pt, goal, goals, cost_path_to_here):
+def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
 	decimal.getcontext().prec = 20
 
+	start = r.get_start()
+
 	c1 = decimal.Decimal(cost_path_to_here)
-	c2 = decimal.Decimal(f_cost(pt, goal))
-	c3 = decimal.Decimal(f_cost(start, goal))
+	c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
+	c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
 
 	a = np.exp((-c1 + -c2))
 	b = np.exp(-c3)
@@ -319,13 +322,26 @@ def get_path_length(path):
 		
 	# return output, total
 
-def get_min_path(r, goal, exp_settings):
+def get_min_viable_path(r, goal, exp_settings):
 	path_option = construct_single_path_with_angles(exp_settings, r.get_start(), goal, [], fn_export_from_exp_settings(exp_settings))
 	path_option = chunkify.chunkify_path(exp_settings, path_option)
 	return path_option
 
-def get_min_path_length(r, goal, exp_settings):
-	path_option = get_min_path(r, goal, exp_settings)
+def get_min_viable_path_length(r, goal, exp_settings):
+	path_option = get_min_viable_path(r, goal, exp_settings)
+	return get_path_length(path_option)[1]
+
+def get_min_direct_path(r, p0, p1, exp_settings):
+	path_option = [p0, p1]
+	path_option = chunkify.chunkify_path(exp_settings, path_option)
+	return path_option
+
+def get_min_direct_path_cost_between(r, p0, p1, exp_settings):
+	path_option = get_min_direct_path(r, p0, p1, exp_settings)
+	return f_path_cost(path_option)
+
+def get_min_direct_path_length(r, p0, p1, exp_settings):
+	path_option = get_min_direct_path(r, p0, p1, exp_settings)
 	return get_path_length(path_option)[1]
 
 # Given a 
@@ -356,7 +372,7 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	for pt, cost_to_here in aug_path:
 		f = decimal.Decimal(f_function(t, pt, aud, path))
 	
-		prob_goal_given = prob_goal_given_path(start, p_n, pt, goal, goals, cost_to_here)
+		prob_goal_given = prob_goal_given_path(resto, p_n, pt, goal, goals, cost_to_here, exp_settings)
 
 		numerator += ((prob_goal_given * f) * delta_x)
 		divisor += delta_x*f
@@ -988,7 +1004,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		p4 = chunkify.chunkify_path(exp_settings, p4)
 		p5 = chunkify.chunkify_path(exp_settings, p5)
 		p6 = chunkify.chunkify_path(exp_settings, p6)
-		p7 = get_min_path(r, goal, exp_settings)
+		p7 = get_min_viable_path(r, goal, exp_settings)
 
 		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
@@ -997,7 +1013,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		sample_sets = []
 
 		for g in goals:
-			min_path = get_min_path(r, goal, exp_settings)
+			min_path = get_min_viable_path(r, goal, exp_settings)
 			sample_sets.append(min_path)
 
 	elif sampling_type == SAMPLE_TYPE_CENTRAL:
@@ -1149,9 +1165,9 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 
 	print("\t Looking for import @ " + fn_pickle)
 
-	FLAG_REDO_PATH_CREATION = True
+	FLAG_REDO_PATH_CREATION = False
 
-	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn):
+	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn_pickle):
 		print("\tImporting preassembled paths")
 		with open(fn_pickle, "rb") as f:
 			try:
@@ -1194,7 +1210,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 
 	title = title_from_exp_settings(exp_settings)
 
-	min_paths = [get_min_path(r, goal, exp_settings)]
+	min_paths = [get_min_viable_path(r, goal, exp_settings)]
 	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
 
 	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
@@ -1730,10 +1746,10 @@ def main():
 	min_paths = []
 	for g in restaurant.get_goals_all():
 		print("Finding min path for goal " + str(g))
-		min_path_length = get_min_path_length(restaurant, g, exp_settings)
+		min_path_length = get_min_viable_path_length(restaurant, g, exp_settings)
 		exp_settings['min_path_length'][g] = min_path_length
 		
-		min_path = get_min_path(restaurant, g, exp_settings)
+		min_path = get_min_viable_path(restaurant, g, exp_settings)
 		min_paths.append(min_path)
 
 	print(exp_settings)
