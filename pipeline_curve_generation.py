@@ -1716,6 +1716,7 @@ def main():
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 50
+	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
 	exp_settings['angle_strength']	= 450
 	exp_settings['min_path_length'] = {}
@@ -1728,12 +1729,15 @@ def main():
 
 	min_paths = []
 	for g in restaurant.get_goals_all():
+		print("Finding min path for goal " + str(g))
 		min_path_length = get_min_path_length(restaurant, g, exp_settings)
 		exp_settings['min_path_length'][g] = min_path_length
 		
 		min_path = get_min_path(restaurant, g, exp_settings)
 		min_paths.append(min_path)
-	
+
+	print(exp_settings)
+
 	title = title_from_exp_settings(exp_settings)
 	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
 
