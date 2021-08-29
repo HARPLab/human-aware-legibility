@@ -102,9 +102,13 @@ CHUNKIFY_LINEAR = 'linear'
 CHUNKIFY_TRIANGULAR = 'triangular'
 CHUNKIFY_MINJERK = 'min-jerk'
 
+CHUNK_BY_DURATION = 'chunk-by-duration'
+CHUNK_BY_NUMSTEPS = 'chunk-by-num-steps'
+
 def chunkify_path(exp_settings, path):
     path = tuples_to_lists(path)
 
+    chunk_by = exp_settings['chunk-by-what']
     schema = exp_settings['chunk_type']
     num_chunks = exp_settings['num_chunks']
 
@@ -126,21 +130,32 @@ def chunkify_path(exp_settings, path):
     traj = trajectory.path_to_trajectory(path, speed=1, timing=timing, velocities=velocities)
 
     duration = traj.duration()
+    # print("duration: " + str(duration))
 
     # traj.discretize(dt): makes milestones evenly spaced in time, with time dt apart. 
     # This might slightly change the shape of the path.
-    if schema == CHUNKIFY_LINEAR or schema == CHUNKIFY_TRIANGULAR or schema == CHUNKIFY_MINJERK:
+    if chunk_by == CHUNK_BY_NUMSTEPS:
+        # schema == CHUNKIFY_LINEAR or schema == CHUNKIFY_TRIANGULAR or schema == CHUNKIFY_MINJERK
         dt = (duration) * (1 / float(num_chunks - 1))
-
-    # print(dt)
+    else:
+        # this number is the duration of a minimal path to one of the goals
+        min_path_magic_number = 1137.0217 # minimum path to a goal duration
+        dt = int(min_path_magic_number / num_chunks)
+        # note that this dt does not guarantee a certain number of chunks
+        # rather, it guarantees AT LEAST this many timesteps
+        # this is the unit we will use for calculating legibility, also
 
     traj = traj.discretize(dt)
     path = traj.milestones
-    if len(path) != num_chunks:
+    if chunk_by == CHUNK_BY_NUMSTEPS and len(path) != num_chunks:
         print("Length of " + str(len(path)) + " != " + str(num_chunks))
         exit()
-    # else:
-    #     print("Success")
+
+    if chunk_by == CHUNK_BY_DURATION and len(path) < num_chunks:
+        print("Length of " + str(len(path)) + " < " + str(num_chunks) + "... which really shouldn't happen")
+        exit()
+
+
     path = lists_to_tuples(path)
     path = [(round(x[0]), round(x[1])) for x in path]
     return path
