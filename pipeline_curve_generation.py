@@ -1198,6 +1198,8 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 
 	for i in range(r.get_width()):
 		print(str(i) + "... ", end='')
+		if i % 15 ==0:
+			print()
 		for j in range(r.get_length()):
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings)
@@ -1214,6 +1216,8 @@ def get_dict_cost_start_to_here(r, exp_settings):
 
 	for i in range(r.get_width()):
 		print(str(i) + "... ", end='')
+		if i % 15 ==0:
+			print()
 		for j in range(r.get_length()):
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
@@ -1232,6 +1236,8 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 		os_vis = np.zeros((r.get_width(), r.get_length()))
 		for i in range(r.get_width()):
 			print(str(i) + "... ", end='')
+			if i % 15 ==0:
+				print()
 			for j in range(r.get_length()):
 				# print(str(j) + "... ", end='')
 				# pt = (i, j)
