@@ -1137,11 +1137,25 @@ def fn_pathpickle_envir_cache(exp_settings):
 	# print("{" + fn_pickle + "}")
 	return fn_pickle
 
+def export_envir_cache_pic(data, label, g_index, exp_settings):
+	plt.imshow(data, interpolation='nearest')
+	plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-' + label + '-plot'  + '.png')
+	plt.clf()
+
 def get_envir_cache(r, exp_settings):
 	f_vis 		= exp_settings['f_vis']
 	f_vis_label	= exp_settings['f_vis_label']
 	
 	fn_pickle = fn_pathpickle_envir_cache(exp_settings)
+
+	if os.path.isfile(fn_pickle):
+		with open(fn_pickle, "rb") as f:
+			try:
+				envir_cache = pickle.load(f)		
+				print("\tImported pickle of envir cache @ " + f_pickle)
+
+			except Exception: # so many things could go wrong, can't be more specific.
+				pass
 
 	if FLAG_REDO_ENVIR_CACHE or not os.path.isfile(fn_pickle):
 		envir_cache = {}
@@ -1165,18 +1179,11 @@ def get_envir_cache(r, exp_settings):
 
 		print("Done with pickle")
 
-		dbfile = open(fn_pickle, 'wb')
-		pickle.dump(envir_cache, dbfile)
-		dbfile.close()
 
 
-	with open(fn_pickle, "rb") as f:
-		try:
-			envir_cache = pickle.load(f)		
-			print("\tImported pickle of envir cache @ " + f_pickle)
-
-		except Exception: # so many things could go wrong, can't be more specific.
-			pass
+	dbfile = open(fn_pickle, 'wb')
+	pickle.dump(envir_cache, dbfile)
+	dbfile.close()
 
 	return envir_cache
 
@@ -1184,8 +1191,10 @@ def get_dict_cost_here_to_goals_all(r, exp_settings):
 	goals = r.get_goals_all()
 	all_goals = {}
 
-	for g in goals:
+	for g_index in range(len(goals)):
+		g = goals[g_index]
 		all_goals[g] = get_dict_all_costs_here_to_goal(r, g, exp_settings)
+		export_envir_cache_pic(all_goals[g], 'here-to-goal', g_index, exp_settings)
 
 	return all_goals
 
@@ -1223,6 +1232,7 @@ def get_dict_cost_start_to_here(r, exp_settings):
 			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
 			dict_start_to_goal[i, j] = val
 	
+	export_envir_cache_pic(dict_start_to_goal, 'start-to-here', "-", exp_settings)
 	return dict_start_to_goal
 
 def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
@@ -1245,6 +1255,7 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 				os_vis[i, j] = val
 
 		all_vis_dict[ok] = os_vis
+		export_envir_cache_pic(os_vis, 'obs_vis', ok, exp_settings)
 
 	return all_vis_dict
 
