@@ -22,7 +22,6 @@ from shapely.geometry import LineString as fancyLineString
 
 # print(sys.path)
 
-import model_predictive_trajectory_generator as mptj
 from collections import defaultdict
 
 OPTION_SHOW_VISIBILITY = True
