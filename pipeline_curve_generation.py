@@ -124,10 +124,15 @@ def f_vis_single(p, observers):
 
 # Ada final equation
 def f_exp_single(t, pt, aud, path):
+	# if pure xy assessment, so no t or path
+	if path is None:
+		return 0
 	# if this is the omniscient case, return the original equation
-	if len(aud) == 0:
+	elif len(aud) == 0:
 		return len(path) - t
 
+	# if in the (x, y) OR (x, y, t) case we can totally 
+	# still run this equation
 	val = (f_vis_single(pt, aud))
 	return val
 
@@ -1728,7 +1733,8 @@ def main():
 
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
-	exp_settings['sampling_type'] 	= SAMPLE_TYPE_CENTRAL
+	exp_settings['sampling_type'] 	= SAMPLE_TYPE_DEMO
+	exp_settings['f_vis_label']		= 'f_cred_central'
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 50
