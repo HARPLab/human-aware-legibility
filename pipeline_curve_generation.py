@@ -7,6 +7,7 @@ import cv2
 import matplotlib.pylab as plt
 import math
 import copy
+import time
 import decimal
 import random
 import os
@@ -32,6 +33,8 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = False
+FLAG_REDO_ENVIR_CACHE 	= False
+
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
 
@@ -57,6 +60,10 @@ SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
 SAMPLE_TYPE_VISIBLE 	= 'visible'
 SAMPLE_TYPE_INZONE 		= 'in_zone'
 SAMPLE_TYPE_SHORTEST	= 'minpaths'
+
+ENV_START_TO_HERE 		= 'start_to_here'
+ENV_HERE_TO_GOALS 		= 'here_to_goals'
+ENV_VISIBILITY_PER_OBS 	= 'vis_per_obs'
 
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST]
 non_metric_columns = ["path", "goal", 'path_length', 'path_cost']
@@ -1123,6 +1130,121 @@ def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	print("{" + fn_pickle + "}")
 	return fn_pickle
 
+
+def fn_pathpickle_envir_cache(exp_settings):
+	sampling_type 	= exp_settings['sampling_type']
+	f_vis_label 	= exp_settings['f_vis_label']
+
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label + ".pickle"
+	# print("{" + fn_pickle + "}")
+	return fn_pickle
+
+def get_envir_cache(r, exp_settings):
+	f_vis 		= exp_settings['f_vis']
+	f_vis_label	= exp_settings['f_vis_label']
+	
+	fn_pickle = fn_pathpickle_envir_cache(exp_settings)
+
+	if FLAG_REDO_ENVIR_CACHE or not os.path.isfile(fn_pickle):
+		envir_cache = {}
+		tic = time.perf_counter()
+		print("Getting start to here dict")
+		envir_cache[ENV_START_TO_HERE] = get_dict_cost_start_to_here(r, exp_settings)
+		toc = time.perf_counter()
+		print(f"Calculated start to here in {toc - tic:0.4f} seconds")
+	
+		print("Getting here to goals dict")
+		tic = time.perf_counter()
+		envir_cache[ENV_HERE_TO_GOALS] = get_dict_cost_here_to_goals_all(r, exp_settings)
+		toc = time.perf_counter()
+		print(f"Calculated here to goals in {toc - tic:0.4f} seconds")
+
+		print("Getting visibility per obs dict")
+		tic = time.perf_counter()
+		envir_cache[ENV_VISIBILITY_PER_OBS] = get_dict_vis_per_obs_set(r, exp_settings, f_vis)
+		toc = time.perf_counter()
+		print(f"Calculated vis per obs in {toc - tic:0.4f} seconds")
+
+		print("Done with pickle")
+
+		dbfile = open(fn_pickle, 'wb')
+		pickle.dump(envir_cache, dbfile)
+		dbfile.close()
+
+
+	with open(fn_pickle, "rb") as f:
+		try:
+			envir_cache = pickle.load(f)		
+			print("\tImported pickle of envir cache @ " + f_pickle)
+
+		except Exception: # so many things could go wrong, can't be more specific.
+			pass
+
+	return envir_cache
+
+def get_dict_cost_here_to_goals_all(r, exp_settings):
+	goals = r.get_goals_all()
+	all_goals = {}
+
+	for g in goals:
+		all_goals[g] = get_dict_all_costs_here_to_goal(r, g, exp_settings)
+
+	return all_goals
+
+# Get pre-calculated cost from here to goal
+# returns (x,y) -> cost_here_to_goal
+# for the entire environment
+def get_dict_cost_here_to_goal(r, goal, exp_settings):
+	dict_start_to_goal = {}
+	pt_goal = resto.to_xy(goal)
+
+	for i in range(r.get_width()):
+		# print(str(j) + "... ", end='')
+		for j in range(r.get_length()):
+			pt = (i, j)
+			val = get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings)
+			dict_start_to_goal[pt] = val
+
+	return dict_start_to_goal
+
+# Get pre-calculated dict of cost from here to goal
+# returns (x,y) -> cost_start_to_here
+# for the entire environment
+def get_dict_cost_start_to_here(r, exp_settings):
+	dict_start_to_goal = {}
+	start = resto.to_xy(r.get_start())
+
+	for i in range(r.get_width()):
+		# print()
+		for j in range(r.get_length()):
+			# print(str(j) + "... ", end='')
+			pt = (i, j)
+			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
+			dict_start_to_goal[(i, j)] = val
+	
+	return dict_start_to_goal
+
+def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
+	# f_vis = f_exp_single(t, pt, aud, path)
+	
+	obs_sets = r.get_obs_sets()
+	all_vis_dict = {}
+
+	for ok in obs_sets.keys():
+		os = obs_sets[ok]
+		os_vis = {}
+		for i in range(r.get_width()):
+			# print()
+			for j in range(r.get_length()):
+				# print(str(j) + "... ", end='')
+				pt = (i, j)
+				val = f_vis(None, pt, os, None)
+				os_vis[pt] = val
+
+		all_vis_dict[ok] = os_vis
+
+	return all_vis_dict
+
 def title_from_exp_settings(exp_settings):
 	title = exp_settings['title']
 	sampling_type = exp_settings['sampling_type']
@@ -1169,8 +1291,6 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 	fn_pickle = fn_pathpickle_from_exp_settings(exp_settings, goal_index)
 
 	print("\t Looking for import @ " + fn_pickle)
-
-	FLAG_REDO_PATH_CREATION = False
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn_pickle):
 		print("\tImporting preassembled paths")
@@ -1239,21 +1359,22 @@ def experimental_scenario_single():
 
 		if FLAG_VIS_GRID:
 			# If we'd like to make a graph of what the visibility score is at different points
-			df_vis = r.get_visibility_of_pts_pandas(f_visibility)
+			# df_vis = r.get_visibility_of_pts_pandas(f_visibility)
 
-			dbfile = open(vis_pickle, 'ab') 
-			pickle.dump(df_vis, dbfile)					  
-			dbfile.close()
-			print("Saved visibility map")
+			# dbfile = open(vis_pickle, 'ab') 
+			# pickle.dump(df_vis, dbfile)					  
+			# dbfile.close()
+			# print("Saved visibility map")
 
-			df_vis.to_csv('visibility.csv')
-			print("Visibility point grid created")
+			# df_vis.to_csv('visibility.csv')
+			# print("Visibility point grid created")
+			pass
 		
 		# pickle the map for future use
 		dbfile = open(resto_pickle, 'ab') 
 		pickle.dump(r, dbfile)					  
 		dbfile.close()
-		print("Saved restaurant maps")
+		print("Saved restaurant pickle")
 
 	# OR LOAD FROM FILE
 	else:
@@ -1314,59 +1435,6 @@ def angle_between_points(p1, p2):
 	ang2 = np.arctan2(*p2[::-1])
 	return np.rad2deg((ang1 - ang2) % (2 * np.pi))
 
-
-# def lane_state_sampling_test1(resto, goal, i):
-# 	start = resto.get_start()
-# 	sx, sy, stheta = image_to_planner(resto, start)
-# 	gx, gy, gtheta = image_to_planner(resto, goal)
-# 	print("FINDING ROUTE TO GOAL " + str(goal))
-# 	show_animation = False
-
-# 	min_distance = np.sqrt((sx-gx)**2 + (sy-gy)**2)
-# 	target_states = [image_to_planner(resto, goal)]
-# 	# print(target_states)
-
-# 	label = 'lanes' + str(i)
-
-# 	k0 = 0.0
-
-# 	# :param l_center: lane lateral position
-# 	# :param l_heading:  lane heading
-# 	# :param l_width:  lane width
-# 	# :param v_width: vehicle width
-# 	# :param d: longitudinal position
-# 	# :param nxy: sampling number
-	
-# 	l_center = sx
-# 	l_heading = angle_between_points((sx, sy), (gx, gy)) #np.deg2rad(0.0)
-# 	l_width = 300
-# 	v_width = 1.0
-# 	d = min_distance
-# 	nxy = 5
-# 	states = slp.calc_lane_states(l_center, l_heading, l_width, v_width, d, nxy)
-# 	print_states(resto, states, label)
-# 	result = slp.generate_path(states, k0)
-
-# 	if show_animation:
-# 		plt.close("all")
-
-
-# 	for table in result:
-# 		xc, yc, yawc = slp.motion_model.generate_trajectory(
-# 			table[3], table[4], table[5], k0)
-
-# 		print_path(resto, xc, yc, yawc, label)
-
-
-# 		if show_animation:
-# 			print((xc, yc))
-# 			plt.plot(xc, yc, "-r")
-
-
-# 	if show_animation:
-# 		plt.grid(True)
-# 		plt.axis("equal")
-# 		plt.show()
 
 def print_states(resto, states, label):
 	img = resto.get_img()
@@ -1547,8 +1615,8 @@ def dict_to_leg_df(r, data, exp_settings):
 	return df
 
 def rgb_to_hex(red, green, blue):
-    """Return color as #rrggbb for the given color values."""
-    return '#%02x%02x%02x' % (red, green, blue)
+	"""Return color as #rrggbb for the given color values."""
+	return '#%02x%02x%02x' % (red, green, blue)
 
 def export_legibility_df(r, df, exp_settings):
 	title = exp_settings['title']
@@ -1602,8 +1670,8 @@ def export_legibility_df(r, df, exp_settings):
 
 	fig_grid = plt.figure(figsize=(9, 6), constrained_layout=True)
 	gs = gridspec.GridSpec(ncols=2, nrows=2,
-                         width_ratios=[1, 1], wspace=None,
-                         hspace=None, height_ratios=[1, 2], figure=fig_grid)
+						 width_ratios=[1, 1], wspace=None,
+						 hspace=None, height_ratios=[1, 2], figure=fig_grid)
 
 	cool_title = title_from_exp_settings(exp_settings)
 	plt.suptitle(cool_title)
@@ -1630,7 +1698,7 @@ def export_legibility_df(r, df, exp_settings):
 	key_cols = columns
 	key_cols.append('goal')
 	mdf = df[key_cols].melt(id_vars=['goal'])
-	ax3 = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)    
+	ax3 = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)	
 	ax3.set_ylabel('Legibility with regard to goal')
 	ax3.set_xlabel('Goal')
 
@@ -1689,7 +1757,7 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 
 		for path in paths:
-			f_vis = f_vis_exp1
+			f_vis = exp_settings['f_vis']
 			datum = get_legibilities(resto, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
@@ -1739,10 +1807,17 @@ def main():
 	exp_settings['lambda'] 			= .0000011
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
-	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR
+	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 	exp_settings['angle_strength']	= 450
 	exp_settings['min_path_length'] = {}
-	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings['f_vis']			= f_exp_single
+
+	# Preload envir cache for faster calculations
+	envir_cache = get_envir_cache(restaurant, exp_settings)
+	restaurant.set_envir_cache(envir_cache)
+
+	print("Prepped environment")
+	print(envir_cache)
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = restaurant.get_img()
