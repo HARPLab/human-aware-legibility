@@ -22,7 +22,6 @@ sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateL
 
 # print(sys.path)
 
-import state_lattice_planner as slp
 import model_predictive_trajectory_generator as mptj
 from collections import defaultdict
 

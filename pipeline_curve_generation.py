@@ -19,8 +19,6 @@ import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
 sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
 
-import state_lattice_planner as slp
-
 # start 		= r.get_start()
 # goals 		= r.get_goals_all()
 # goal 		= r.get_current_goal()
@@ -1195,7 +1193,7 @@ def get_dict_cost_here_to_goals_all(r, exp_settings):
 # returns (x,y) -> cost_here_to_goal
 # for the entire environment
 def get_dict_cost_here_to_goal(r, goal, exp_settings):
-	dict_start_to_goal = {}
+	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	pt_goal = resto.to_xy(goal)
 
 	for i in range(r.get_width()):
@@ -1203,7 +1201,7 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 		for j in range(r.get_length()):
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings)
-			dict_start_to_goal[pt] = val
+			dict_start_to_goal[i, j] = val
 
 	return dict_start_to_goal
 
@@ -1211,7 +1209,7 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 # returns (x,y) -> cost_start_to_here
 # for the entire environment
 def get_dict_cost_start_to_here(r, exp_settings):
-	dict_start_to_goal = {}
+	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	start = resto.to_xy(r.get_start())
 
 	for i in range(r.get_width()):
@@ -1220,7 +1218,7 @@ def get_dict_cost_start_to_here(r, exp_settings):
 			# print(str(j) + "... ", end='')
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
-			dict_start_to_goal[(i, j)] = val
+			dict_start_to_goal[i, j] = val
 	
 	return dict_start_to_goal
 
@@ -1232,14 +1230,14 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 
 	for ok in obs_sets.keys():
 		os = obs_sets[ok]
-		os_vis = {}
+		os_vis = np.zeros((r.get_width(), r.get_length()))
 		for i in range(r.get_width()):
 			# print()
 			for j in range(r.get_length()):
 				# print(str(j) + "... ", end='')
-				pt = (i, j)
+				# pt = (i, j)
 				val = f_vis(None, pt, os, None)
-				os_vis[pt] = val
+				os_vis[i, j] = val
 
 		all_vis_dict[ok] = os_vis
 
