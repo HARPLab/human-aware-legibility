@@ -1625,6 +1625,16 @@ class Restaurant:
 	def get_img(self):
 		return copy.copy(self.img)
 
+	def get_envir_cache(self):
+		if self.envir_cache is None:
+			print("Error: No envir cache set")
+			exit()
+
+		return self.envir_cache
+
+	def set_envir_cache(self, env_cac):
+		self.envir_cache = env_cac
+
 	def get_obstacle_map(self):
 		print("DEPRECATED")
 		return None
