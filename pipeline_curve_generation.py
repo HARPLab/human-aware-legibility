@@ -17,7 +17,7 @@ import klampt_smoothing as chunkify
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
-sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
+# sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
 
 # start 		= r.get_start()
 # goals 		= r.get_goals_all()

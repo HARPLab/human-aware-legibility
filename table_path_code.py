@@ -17,8 +17,8 @@ from shapely.geometry import Polygon as fancyPolygon
 from shapely.geometry import LineString as fancyLineString
 
 # import custom libraries from PythonRobotics
-sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
-sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
+# sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
+# sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/StateLatticePlanner/')
 
 # print(sys.path)
 
