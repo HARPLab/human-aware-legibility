@@ -58,6 +58,8 @@ SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
 SAMPLE_TYPE_VISIBLE 	= 'visible'
 SAMPLE_TYPE_INZONE 		= 'in_zone'
 SAMPLE_TYPE_SHORTEST	= 'minpaths'
+SAMPLE_TYPE_FUSION		= 'fusion'
+
 
 ENV_START_TO_HERE 		= 'start_to_here'
 ENV_HERE_TO_GOALS 		= 'here_to_goals'
@@ -166,10 +168,10 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		signed_angle_diff = (a + 180) % 360 - 180
 		angle_diff = abs(signed_angle_diff)
 
-		if (pt[0] % 100 == 0) and (pt[1] % 100 == 0):
-			print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
-			print("observer looking at... " + str(obs_orient))
-			print("angle diff = " + str(angle_diff))
+		# if (pt[0] % 100 == 0) and (pt[1] % 100 == 0):
+		# 	print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+		# 	print("observer looking at... " + str(obs_orient))
+		# 	print("angle diff = " + str(angle_diff))
 
 		# print(angle, distance)
 		# observation = (pt, angle, distance)
@@ -633,7 +635,7 @@ def path_formatted(xs, ys):
 	return list(zip(xs, ys))
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
-def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn):
+def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn, is_weak=False):
 	# print("WITH ANGLE")
 	xy_0 = start
 	xy_n = goal
@@ -1020,7 +1022,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 	sampling_type = exp_settings['sampling_type']
 
-	if sampling_type == SAMPLE_TYPE_SYSTEMATIC:
+	if sampling_type == SAMPLE_TYPE_SYSTEMATIC or sampling_type == 'SAMPLE_TYPE_FUSION':
 		width = r.get_width()
 		length = r.get_length()
 
@@ -1054,15 +1056,15 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
-	elif sampling_type == SAMPLE_TYPE_SHORTEST:
+	elif sampling_type == SAMPLE_TYPE_SHORTEST or sampling_type == 'SAMPLE_TYPE_FUSION':
 		goals = r.get_goals_all()
-		sample_sets = []
+		# sample_sets = []
 
 		for g in goals:
 			min_path = get_min_viable_path(r, goal, exp_settings)
 			sample_sets.append(min_path)
 
-	elif sampling_type == SAMPLE_TYPE_CENTRAL:
+	elif sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == 'SAMPLE_TYPE_FUSION':
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 		print("sampling central")
@@ -1403,6 +1405,10 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings))
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
+
+			path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+			path_option_2 = chunkify.chunkify_path(exp_settings, path_option)
+			all_paths.append(path_option_2)
 	else:
 		all_paths = sample_pts
 
@@ -1897,7 +1903,7 @@ def main():
 
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
-	exp_settings['sampling_type'] 	= SAMPLE_TYPE_DEMO
+	exp_settings['sampling_type'] 	= SAMPLE_TYPE_FUSION
 	exp_settings['f_vis_label']		= 'f_cred_central'
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
@@ -1913,7 +1919,7 @@ def main():
 	restaurant.set_envir_cache(envir_cache)
 
 	print("Prepped environment")
-	print(envir_cache)
+	# print(envir_cache)
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = restaurant.get_img()
