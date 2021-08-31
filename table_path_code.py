@@ -1620,6 +1620,31 @@ class Restaurant:
 	def get_width(self):
 		return self.width
 
+	# y values
+	def get_sampling_length(self):
+		start = self.get_start()
+		min_val = start[1]
+		max_val = start[1]
+		for goal in self.get_all_goals():
+			gy = goal[1]
+			min_val = min(min_val, gy)
+			max_val = max(max_val, gy)
+
+		return range(min_val, max_val)
+
+	# x values
+	def get_sampling_width(self):
+		start = self.get_start()
+		min_val = start[0]
+		max_val = start[0]
+
+		for goal in self.get_all_goals():
+			gx = goal[0]
+			min_val = min(min_val, gx)
+			max_val = max(max_val, gx)
+
+		return range(min_val, max_val)
+
 	def get_img(self):
 		return copy.copy(self.img)
 
