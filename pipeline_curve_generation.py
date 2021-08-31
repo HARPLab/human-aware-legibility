@@ -394,7 +394,7 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 # Given a 
 def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	min_realistic_path_length = exp_settings['min_path_length'][goal]
-	print("min_realistic_path_length -> " + str(min_realistic_path_length))
+	# print("min_realistic_path_length -> " + str(min_realistic_path_length))
 	
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
@@ -409,7 +409,10 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 
 	path_length_list, length_of_total_path = get_path_length(path)
 	length_of_total_path = decimal.Decimal(length_of_total_path)
-	delta_x = length_of_total_path / len(aug_path)
+
+	# Previously this was a variable, 
+	# now it's constant due to our constant-speed chunking
+	delta_x = decimal.Decimal(1.0) #length_of_total_path / len(aug_path)
 
 	t = 1
 	p_n = path[0]
@@ -428,7 +431,6 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 		total_cost += decimal.Decimal(f_cost(p_n, pt))
 		p_n = pt
 
-
 	if divisor == 0:
 		legibility = 0
 	else:
@@ -437,8 +439,6 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	print("get_path_length output")
-	print(get_path_length(path)[1])
 	return overall
 
 def get_costs(path, target, obs_sets):
@@ -664,11 +664,6 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn,
 
 	# Strength of how much we're enforcing the exit angle
 	k = exp_settings['angle_strength']
-	# print("x=")
-	# print(x)
-	# print("y=")
-	# print(y)
-
 	if is_weak:
 		k = 1.0
 
@@ -1410,6 +1405,7 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			all_paths.append(path_option)
 
 			# path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+			# print(len(path_option_2))
 			# path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
 			# all_paths.append(path_option_2)
 	else:
@@ -1891,8 +1887,9 @@ def main():
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
-	sampling_type = SAMPLE_TYPE_DEMO
+	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_DEMO
+	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
 	# sampling_type = SAMPLE_TYPE_HARDCODED
@@ -1909,7 +1906,7 @@ def main():
 
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
-	exp_settings['sampling_type'] 	= SAMPLE_TYPE_FUSION
+	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['f_vis_label']		= 'f_cred_central'
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000011
@@ -1947,7 +1944,7 @@ def main():
 	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
 
 	paths_for_analysis = {}
-	# TODO add permutations of goals with some final-angle-wiggle
+	#  add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
 		paths = create_systematic_path_options_for_goal(restaurant, exp_settings, start, goal, img, num_paths=10)

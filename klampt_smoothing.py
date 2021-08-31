@@ -117,6 +117,7 @@ def get_dt(exp_settings):
         dt = (duration) * (1 / float(num_chunks - 1))
     else:
         # this number is the duration of a minimal path to one of the goals
+        # MAGIC
         min_path_magic_number = 20.0 # minimum path to a goal duration
         dt = (min_path_magic_number / (num_chunks + 1))
         # note that this dt does not guarantee a certain number of chunks
