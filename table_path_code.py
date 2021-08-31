@@ -1013,9 +1013,9 @@ class Restaurant:
 
 			unity_goal_stop_options = []
 			# unity_goal_stop_options.append((4.3, -4.3))
-			unity_goal_stop_options.append((4.3, 	-7.3, 	DIR_SOUTH))
-			# unity_goal_stop_options.append((5.6, -9.3))
-			unity_goal_stop_options.append((6.9, 	-7.3, 	DIR_NORTH))
+			unity_goal_stop_options.append((4.3, 	-7.0, 	DIR_SOUTH))
+			# unity_goal_stop_options.append((5.6, -9.3)
+			unity_goal_stop_options.append((6.9, 	-7.0, 	DIR_NORTH))
 
 			unity_goal_options = []
 			# unity_goal_options.append((4.3, -4.0))
@@ -1026,8 +1026,11 @@ class Restaurant:
 			table_pts = []
 			for t in unity_table_pts:
 				pt = unity_to_image(t)
+				print(pt)
 				table = Table(pt, generate_type)
 				self.tables.append(table)
+
+			# print(unity_table_pts[0])
 
 			for g in unity_goal_stop_options:
 				goal_helper_pts.append(unity_to_image(g))
@@ -1091,6 +1094,10 @@ class Restaurant:
 			obs5 = Observer(obs5_pt, obs5_angle)
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			self.observers.append(obs5)
+
+
+			# for o in observers:
+			# 	print(observers)
 
 			# goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
 
