@@ -258,6 +258,7 @@ def unit_vector(vector):
     """ Returns the unit vector of the vector.  """
     return vector / np.linalg.norm(vector)
 
+# return angle_between in degrees
 def angle_between(v1, v2):
     """ Returns the angle in radians between vectors 'v1' and 'v2'::
 
@@ -270,7 +271,8 @@ def angle_between(v1, v2):
     """
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
-    return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    in_rad = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+    return np.degrees(in_rad)
 
 def in_bounds(point):
 	x, y = point
@@ -716,7 +718,7 @@ class Observer:
 		# 	return .5
 		return 0
 
-	def get_obs_of_pt(self, pt):
+	def get_obs_to_pt_relationship(self, pt):
 		obs_orient 	= self.get_orientation()
 		obs_FOV 	= self.get_FOV()
 
@@ -732,9 +734,14 @@ class Observer:
 	def get_center(self):
 		return self.location
 
+	def get_center_image(self):
+		return self.location[1], self.location[0]
+
+	# in degrees
 	def get_orientation(self):
 		return self.orientation
 
+	# in degrees
 	def get_FOV(self):
 		return self.FOV_angle
 
@@ -1625,11 +1632,12 @@ class Restaurant:
 		start = self.get_start()
 		min_val = start[1]
 		max_val = start[1]
-		for goal in self.get_all_goals():
+		for goal in self.get_goals_all():
 			gy = goal[1]
 			min_val = min(min_val, gy)
 			max_val = max(max_val, gy)
 
+		return range(0, self.get_length())
 		return range(min_val, max_val)
 
 	# x values
@@ -1638,11 +1646,12 @@ class Restaurant:
 		min_val = start[0]
 		max_val = start[0]
 
-		for goal in self.get_all_goals():
+		for goal in self.get_goals_all():
 			gx = goal[0]
 			min_val = min(min_val, gx)
 			max_val = max(max_val, gx)
 
+		return range(0, self.get_width())
 		return range(min_val, max_val)
 
 	def get_img(self):
