@@ -147,7 +147,6 @@ def chunkify_path(exp_settings, path):
         velocities='minimum-jerk'
         timing='sqrt-L2'
 
-    # print(path)
     traj = trajectory.path_to_trajectory(path, speed=1, timing=timing, velocities=velocities)
 
     duration = traj.duration()
