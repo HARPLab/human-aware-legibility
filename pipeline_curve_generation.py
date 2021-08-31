@@ -683,10 +683,12 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn,
 
 	# Strength of how much we're enforcing the exit angle
 	k = exp_settings['angle_strength']
+	
 	if is_weak:
-		k = 1.0
+		t1 = np.array(as_tangent(start_angle)) * k * .001
+	else:
+		t1 = np.array(as_tangent(start_angle)) * k
 
-	t1 = np.array(as_tangent(start_angle)) * k
 	tn = np.array(as_tangent(end_angle)) * k
 
 	# print(type(t1))
@@ -1419,14 +1421,17 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 		print("\tDidn't import; assembling set of paths")
 		# If I don't yet have a path
 		for point_set in sample_pts:
+			
 			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings))
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 
-			# path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
-			# print(len(path_option_2))
-			# path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
-			# all_paths.append(path_option_2)
+			try:
+				path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+				path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
+				all_paths.append(path_option_2)
+			except Exception:
+				pass
 	else:
 		all_paths = sample_pts
 
@@ -1471,7 +1476,7 @@ def experimental_scenario_single():
 		# Create the restaurant scene from our saved description of it
 		print("PLANNER: Creating layout of type " + str(generate_type))
 		r 	= resto.Restaurant(generate_type)
-		print("PLANNER: get visibility info")
+		# print("PLANNER: get visibility info")
 
 		if FLAG_VIS_GRID:
 			# If we'd like to make a graph of what the visibility score is at different points
@@ -1662,10 +1667,25 @@ def make_path_libs(resto, goal):
 def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
 	img = restaurant.get_img()
-	empty_img = img #cv2.flip(img, 0)
+	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
 	fn = FILENAME_PATH_ASSESS
+
+	title = title_from_exp_settings(exp_settings)
+
+	# flip required for orientation
+	img = cv2.flip(img, 0)
+	font_size = 1
+	y0, dy = 50, 50
+	for i, line in enumerate(title.split('\n')):
+	    y = y0 + i*dy
+	    cv2.putText(img, line, (50, y), cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
+	
+	img = cv2.flip(img, 0)
+	empty_img = img
+	all_img = img
+
 
 	color_dict = restaurant.get_obs_sets_colors()
 
@@ -1698,12 +1718,15 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			
 			cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
 			cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
+			cv2.line(all_img, a, b, color, thickness=3, lineType=8)
 
 			cv2.circle(solo_img, a, 4, color, 4)
 			cv2.circle(goal_img, a, 4, color, 4)
+			cv2.circle(all_img, a, 4, color, 4)
 		
 		solo_img = cv2.flip(solo_img, 0)
 		title = exp_settings['title']
+
 		sampling_type = exp_settings['sampling_type']
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
 		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
@@ -1715,18 +1738,18 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 		goal_img = cv2.flip(goal_img, 0)
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', goal_img) 
+
 	# TODO: actually export pics for them
 
 def get_metric_columns(df):
 	columns = df.columns.tolist()
-	print(columns)
 	for col in non_metric_columns:
 		if col in columns:
 			columns.remove(col)
 	return columns
 
 def dict_to_leg_df(r, data, exp_settings):
-	print(data)
 	df = pd.DataFrame.from_dict(data)
 	columns = get_metric_columns(df)
 
@@ -1905,8 +1928,8 @@ def main():
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
-	sampling_type = SAMPLE_TYPE_DEMO
+	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_DEMO
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -1927,7 +1950,7 @@ def main():
 	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['f_vis_label']		= 'f_cred_linear'
 	exp_settings['epsilon'] 		= .000000001
-	exp_settings['lambda'] 			= .00000000
+	exp_settings['lambda'] 			= .0000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
