@@ -105,6 +105,23 @@ CHUNKIFY_MINJERK = 'min-jerk'
 CHUNK_BY_DURATION = 'chunk-by-duration'
 CHUNK_BY_NUMSTEPS = 'chunk-by-num-steps'
 
+def get_dt(exp_settings, chunk_by, num_chunks):
+
+    # traj.discretize(dt): makes milestones evenly spaced in time, with time dt apart. 
+    # This might slightly change the shape of the path.
+    if chunk_by == CHUNK_BY_NUMSTEPS:
+        # schema == CHUNKIFY_LINEAR or schema == CHUNKIFY_TRIANGULAR or schema == CHUNKIFY_MINJERK
+        dt = (duration) * (1 / float(num_chunks - 1))
+    else:
+        # this number is the duration of a minimal path to one of the goals
+        min_path_magic_number = 1137.0217 # minimum path to a goal duration
+        dt = int(min_path_magic_number / (num_chunks + 1))
+        # note that this dt does not guarantee a certain number of chunks
+        # rather, it guarantees AT LEAST this many timesteps
+        # this is the unit we will use for calculating legibility, also
+
+    return dt
+
 def chunkify_path(exp_settings, path):
     path = tuples_to_lists(path)
 
@@ -131,18 +148,7 @@ def chunkify_path(exp_settings, path):
     duration = traj.duration()
     # print("duration: " + str(duration))
 
-    # traj.discretize(dt): makes milestones evenly spaced in time, with time dt apart. 
-    # This might slightly change the shape of the path.
-    if chunk_by == CHUNK_BY_NUMSTEPS:
-        # schema == CHUNKIFY_LINEAR or schema == CHUNKIFY_TRIANGULAR or schema == CHUNKIFY_MINJERK
-        dt = (duration) * (1 / float(num_chunks - 1))
-    else:
-        # this number is the duration of a minimal path to one of the goals
-        min_path_magic_number = 1137.0217 # minimum path to a goal duration
-        dt = int(min_path_magic_number / (num_chunks + 1))
-        # note that this dt does not guarantee a certain number of chunks
-        # rather, it guarantees AT LEAST this many timesteps
-        # this is the unit we will use for calculating legibility, also
+    dt = get_dt(exp_settings, chunk_by, num_chunks)
 
     traj = traj.discretize(dt)
     path = traj.milestones
