@@ -31,7 +31,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True
-FLAG_REDO_ENVIR_CACHE 	= True
+FLAG_REDO_ENVIR_CACHE 	= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -1423,10 +1423,10 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 
-			path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
-			print(len(path_option_2))
-			path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
-			all_paths.append(path_option_2)
+			# path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+			# print(len(path_option_2))
+			# path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
+			# all_paths.append(path_option_2)
 	else:
 		all_paths = sample_pts
 
@@ -1758,9 +1758,8 @@ def export_legibility_df(r, df, exp_settings):
 	for g in all_goals:
 		df_new = df[df['goal'] == g]
 		df_array.append(df_new)
-		# df.plot(ax=ax, ylim=(0, 2), legend=None);
-		# df.plot.hist(orientation="horizontal", cumulative=True);
-		
+
+
 		df_new.plot.box(vert=False) # , by=["goal"]
 		# bp = df.boxplot(by="goal") #, column=columns)
 		# bp = df.groupby('goal').boxplot()
@@ -1791,7 +1790,7 @@ def export_legibility_df(r, df, exp_settings):
 	contents_a.loc['count'] = contents_a.loc['count'].astype(int).astype(str)
 	contents_b.loc['count'] = contents_b.loc['count'].astype(int).astype(str)
 
-	fig_grid = plt.figure(figsize=(9, 6), constrained_layout=True)
+	fig_grid = plt.figure(figsize=(10, 6), constrained_layout=True)
 	gs = gridspec.GridSpec(ncols=2, nrows=2,
 						 width_ratios=[1, 1], wspace=None,
 						 hspace=None, height_ratios=[1, 2], figure=fig_grid)
@@ -1821,7 +1820,7 @@ def export_legibility_df(r, df, exp_settings):
 	key_cols = columns
 	key_cols.append('goal')
 	mdf = df[key_cols].melt(id_vars=['goal'])
-	ax3 = sns.boxplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette)	
+	ax3 = sns.stripplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette, split=True, linewidth=1, edgecolor='gray')	
 	ax3.set_ylabel('Legibility with regard to goal')
 	ax3.set_xlabel('Goal')
 
@@ -1926,9 +1925,9 @@ def main():
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['f_vis_label']		= 'f_cred_central'
+	exp_settings['f_vis_label']		= 'f_cred_linear'
 	exp_settings['epsilon'] 		= .000000001
-	exp_settings['lambda'] 			= .0000001
+	exp_settings['lambda'] 			= .00000000
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
