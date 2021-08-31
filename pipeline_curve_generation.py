@@ -1738,7 +1738,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 		goal_img = cv2.flip(goal_img, 0)
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
-	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', goal_img) 
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', all_img) 
 
 	# TODO: actually export pics for them
 
