@@ -1164,26 +1164,36 @@ def get_envir_cache(r, exp_settings):
 		envir_cache[ENV_START_TO_HERE] = get_dict_cost_start_to_here(r, exp_settings)
 		toc = time.perf_counter()
 		print(f"Calculated start to here in {toc - tic:0.4f} seconds")
-	
+		dbfile = open(fn_pickle, 'wb')
+		pickle.dump(envir_cache, dbfile)
+		dbfile.close()
+
+
 		print("Getting here to goals dict")
 		tic = time.perf_counter()
 		envir_cache[ENV_HERE_TO_GOALS] = get_dict_cost_here_to_goals_all(r, exp_settings)
 		toc = time.perf_counter()
 		print(f"Calculated here to goals in {toc - tic:0.4f} seconds")
+		dbfile = open(fn_pickle, 'wb')
+		pickle.dump(envir_cache, dbfile)
+		dbfile.close()
 
 		print("Getting visibility per obs dict")
 		tic = time.perf_counter()
 		envir_cache[ENV_VISIBILITY_PER_OBS] = get_dict_vis_per_obs_set(r, exp_settings, f_vis)
 		toc = time.perf_counter()
 		print(f"Calculated vis per obs in {toc - tic:0.4f} seconds")
+		dbfile = open(fn_pickle, 'wb')
+		pickle.dump(envir_cache, dbfile)
+		dbfile.close()
 
 		print("Done with pickle")
 
 
 
-	dbfile = open(fn_pickle, 'wb')
-	pickle.dump(envir_cache, dbfile)
-	dbfile.close()
+		dbfile = open(fn_pickle, 'wb')
+		pickle.dump(envir_cache, dbfile)
+		dbfile.close()
 
 	return envir_cache
 
@@ -1193,7 +1203,7 @@ def get_dict_cost_here_to_goals_all(r, exp_settings):
 
 	for g_index in range(len(goals)):
 		g = goals[g_index]
-		all_goals[g] = get_dict_all_costs_here_to_goal(r, g, exp_settings)
+		all_goals[g] = get_dict_cost_here_to_goal(r, g, exp_settings)
 		export_envir_cache_pic(all_goals[g], 'here-to-goal', g_index, exp_settings)
 
 	return all_goals
@@ -1205,11 +1215,11 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	pt_goal = resto.to_xy(goal)
 
-	for i in range(r.get_width()):
+	for i in r.get_sampling_width():
 		print(str(i) + "... ", end='')
 		if i % 15 ==0:
 			print()
-		for j in range(r.get_length()):
+		for j in r.get_sampling_length():
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings)
 			dict_start_to_goal[i, j] = val
@@ -1223,11 +1233,11 @@ def get_dict_cost_start_to_here(r, exp_settings):
 	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	start = resto.to_xy(r.get_start())
 
-	for i in range(r.get_width()):
+	for i in r.get_sampling_width():
 		print(str(i) + "... ", end='')
 		if i % 15 ==0:
 			print()
-		for j in range(r.get_length()):
+		for j in r.get_sampling_length():
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
 			dict_start_to_goal[i, j] = val
@@ -1244,11 +1254,12 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 		print("Getting obs vis for " + ok)
 		os = obs_sets[ok]
 		os_vis = np.zeros((r.get_width(), r.get_length()))
-		for i in range(r.get_width()):
+
+		for i in r.get_sampling_width():
 			print(str(i) + "... ", end='')
 			if i % 15 ==0:
 				print()
-			for j in range(r.get_length()):
+			for j in r.get_sampling_length():
 				# print(str(j) + "... ", end='')
 				# pt = (i, j)
 				val = f_vis(None, pt, os, None)
