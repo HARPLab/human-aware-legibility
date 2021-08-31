@@ -149,9 +149,12 @@ def get_visibility_of_pt_w_observers(pt, aud):
 	MAX_DISTANCE = 500
 	for observer in aud:
 		obs_orient 	= observer.get_orientation()
+		# if obs_orient != 300:
+		# 	print(obs_orient)
+		# 	exit()
 		obs_FOV 	= observer.get_FOV()
 
-		angle 		= resto.angle_between(pt, observer.get_center())
+		angle 		= angle_between_points(pt, observer.get_center())
 		distance 	= resto.dist(pt, observer.get_center())
 		# print("~~~")
 		# print(observer.get_center())
@@ -160,14 +163,21 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		
 		# print(ang)
 
-		angle_diff = (angle - obs_orient) % 360
+		angle_diff = abs(obs_orient + angle) % 360
+
+		# if (pt[0] % 50 == 0) and (pt[1] % 50 == 0):
+		# 	print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+		# 	print("observer looking at... " + str(obs_orient))
+		# 	print("angle diff = " + str(angle_diff))
 
 		# print(angle, distance)
 		# observation = (pt, angle, distance)
 		# observers.append(observation)
-		score =  distance
 
-		# if angle_diff < obs_FOV:
+		half_fov = (obs_FOV / 2.0)
+		if angle_diff < half_fov:
+			score += half_fov - angle_diff
+
 		# 	# full credit at the center of view
 		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
 
@@ -1322,7 +1332,7 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 
 		all_vis_dict[ok] = os_vis
 		print("\texporting " + ok)
-		export_envir_cache_pic(r, os_vis, 'obs_dist', ok, exp_settings)
+		export_envir_cache_pic(r, os_vis, 'obs_angle', ok, exp_settings)
 
 	return all_vis_dict
 
@@ -1512,9 +1522,13 @@ def planner_to_image(resto, pt):
 	return (int(ny), int(nx))
 
 def angle_between_points(p1, p2):
-	ang1 = np.arctan2(*p1[::-1])
-	ang2 = np.arctan2(*p2[::-1])
-	return np.rad2deg((ang1 - ang2) % (2 * np.pi))
+	x1, y1 = p1
+	x2, y2 = p2
+	angle = np.arctan2(y2 - y1, x2 - x1)
+
+	# ang1 = np.arctan2(*p1[::-1])
+	# ang2 = np.arctan2(*p2[::-1])
+	return np.rad2deg(angle)
 
 
 def print_states(resto, states, label):
