@@ -30,8 +30,8 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = False
-FLAG_REDO_ENVIR_CACHE 	= True
+FLAG_REDO_PATH_CREATION = True
+FLAG_REDO_ENVIR_CACHE 	= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -669,6 +669,9 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn,
 	# print("y=")
 	# print(y)
 
+	if is_weak:
+		k = 1.0
+
 	t1 = np.array(as_tangent(start_angle)) * k
 	tn = np.array(as_tangent(end_angle)) * k
 
@@ -1022,7 +1025,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 	sampling_type = exp_settings['sampling_type']
 
-	if sampling_type == SAMPLE_TYPE_SYSTEMATIC or sampling_type == 'SAMPLE_TYPE_FUSION':
+	if sampling_type == SAMPLE_TYPE_SYSTEMATIC or sampling_type == SAMPLE_TYPE_FUSION:
 		width = r.get_width()
 		length = r.get_length()
 
@@ -1034,7 +1037,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
 
-	elif sampling_type == SAMPLE_TYPE_DEMO:
+	if sampling_type == SAMPLE_TYPE_DEMO:
 		start = (104, 477)
 		end = (1035, 567)
 		l1 = construct_single_path_bezier(start, end, [(894, 265)])
@@ -1056,7 +1059,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
-	elif sampling_type == SAMPLE_TYPE_SHORTEST or sampling_type == 'SAMPLE_TYPE_FUSION':
+	if sampling_type == SAMPLE_TYPE_SHORTEST or sampling_type == SAMPLE_TYPE_FUSION:
 		goals = r.get_goals_all()
 		# sample_sets = []
 
@@ -1064,7 +1067,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 			min_path = get_min_viable_path(r, goal, exp_settings)
 			sample_sets.append(min_path)
 
-	elif sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == 'SAMPLE_TYPE_FUSION':
+	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 		print("sampling central")
@@ -1089,7 +1092,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		# print(point_set)
 
-	elif sampling_type == SAMPLE_TYPE_HARDCODED:
+	if sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 
@@ -1406,9 +1409,9 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 
-			path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
-			path_option_2 = chunkify.chunkify_path(exp_settings, path_option)
-			all_paths.append(path_option_2)
+			# path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+			# path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
+			# all_paths.append(path_option_2)
 	else:
 		all_paths = sample_pts
 
@@ -1701,11 +1704,14 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 def get_metric_columns(df):
 	columns = df.columns.tolist()
+	print(columns)
 	for col in non_metric_columns:
-		columns.remove(col)
+		if col in columns:
+			columns.remove(col)
 	return columns
 
 def dict_to_leg_df(r, data, exp_settings):
+	print(data)
 	df = pd.DataFrame.from_dict(data)
 	columns = get_metric_columns(df)
 
