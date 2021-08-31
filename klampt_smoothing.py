@@ -105,7 +105,10 @@ CHUNKIFY_MINJERK = 'min-jerk'
 CHUNK_BY_DURATION = 'chunk-by-duration'
 CHUNK_BY_NUMSTEPS = 'chunk-by-num-steps'
 
-def get_dt(exp_settings, chunk_by, num_chunks):
+def get_dt(exp_settings):
+    chunk_by = exp_settings['chunk-by-what']
+    # schema = exp_settings['chunk_type']
+    num_chunks = exp_settings['num_chunks']
 
     # traj.discretize(dt): makes milestones evenly spaced in time, with time dt apart. 
     # This might slightly change the shape of the path.
@@ -148,7 +151,7 @@ def chunkify_path(exp_settings, path):
     duration = traj.duration()
     # print("duration: " + str(duration))
 
-    dt = get_dt(exp_settings, chunk_by, num_chunks)
+    dt = get_dt(exp_settings)
 
     traj = traj.discretize(dt)
     path = traj.milestones
