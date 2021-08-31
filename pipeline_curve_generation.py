@@ -31,7 +31,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = False
-FLAG_REDO_ENVIR_CACHE 	= False
+FLAG_REDO_ENVIR_CACHE 	= True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -102,45 +102,45 @@ def f_og(t, path):
 def f_novis(t, obs):
 	return 1
 
-# Given the observers of a given location, in terms of distance and relative heading
-# Ada final equation TODO verify all correct
-def f_vis_single(p, observers):
-	# dist_units = 100
-	angle_cone = 135.0 / 2.
-	distance_cutoff = 2000
+# # Given the observers of a given location, in terms of distance and relative heading
+# # Ada final equation TODO verify all correct
+# def f_vis_single(p, observers):
+# 	# dist_units = 100
+# 	angle_cone = 120.0 / 2
+# 	distance_cutoff = 2000
 
-	# Given a list of entries in the format 
-	# ((obsx, obsy), angle, distance)
-	if len(observers) == 0:
-		return 1
+# 	# Given a list of entries in the format 
+# 	# ((obsx, obsy), angle, distance)
+# 	if len(observers) == 0:
+# 		return 1
 	
-	vis = 0
-	for obs in observers:	
-		if obs == None:
-			return 0
-		else:
-			angle, dist = obs.get_obs_of_pt(p)
+# 	vis = 0
+# 	for obs in observers:
+# 		if obs == None:
+# 			return 0
+# 		else:
+# 			angle, dist = obs.get_obs_to_pt_relationship(p)
+# 			# print((angle, dist))
 
-		if angle < angle_cone and dist < distance_cutoff:
-			vis += np.abs(angle_cone - angle)
+# 		if angle < angle_cone and dist < distance_cutoff:
+# 			vis += np.abs(angle_cone - angle)
 
-	# print(vis)
-	return vis
+# 	# print(vis)
+# 	return vis
 
 # Ada final equation
+# f_VIS TODO VERIFY
 def f_exp_single(t, pt, aud, path):
-	# if pure xy assessment, so no t or path
-	if path is None:
-		return 0
 	# if this is the omniscient case, return the original equation
-	elif len(aud) == 0:
+	if len(aud) == 0 and path is not None:
 		return len(path) - t
+	elif len(aud) == 0:
+		return 0
 
 	# if in the (x, y) OR (x, y, t) case we can totally 
 	# still run this equation
-	val = (f_vis_single(pt, aud))
+	val = get_visibility_of_pt_w_observers(pt, aud)
 	return val
-
 
 def get_visibility_of_pt_w_observers(pt, aud):
 	observers = []
@@ -153,19 +153,29 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 		angle 		= resto.angle_between(pt, observer.get_center())
 		distance 	= resto.dist(pt, observer.get_center())
+		# print("~~~")
+		# print(observer.get_center())
+		# print(distance)
+		# print(pt)
+		
+		# print(ang)
+
+		angle_diff = (angle - obs_orient) % 360
 
 		# print(angle, distance)
-		observation = (pt, angle, distance)
-		observers.append(observation)
+		# observation = (pt, angle, distance)
+		# observers.append(observation)
+		score =  distance
 
+		# if angle_diff < obs_FOV:
+		# 	# full credit at the center of view
+		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
 
-		if angle < obs_FOV:
-			# full credit at the center of view
-			offset_multiplier = np.abs(obs_FOV - angle) / obs_FOV
-
-			# 1 if very close
-			distance_bonus = (MAX_DISTANCE - distance) / MAX_DISTANCE
-			score += (distance_bonus*offset_multiplier)
+		# 	# # 1 if very close
+		# 	# distance_bonus = (MAX_DISTANCE - distance) / MAX_DISTANCE
+		# 	# score += (distance_bonus*offset_multiplier)
+		# 	score = offset_multiplier
+		# 	score = distance
 
 	return score
 
@@ -346,13 +356,27 @@ def get_min_direct_path(r, p0, p1, exp_settings):
 	path_option = chunkify.chunkify_path(exp_settings, path_option)
 	return path_option
 
+def get_dist(p0, p1):
+	p0_x, p0_y = p0
+	p1_x, p1_y = p1
+
+	min_distance = np.sqrt((p0_x-p1_x)**2 + (p0_y-p1_y)**2)
+	return min_distance
+
 def get_min_direct_path_cost_between(r, p0, p1, exp_settings):
-	path_option = get_min_direct_path(r, p0, p1, exp_settings)
-	return f_path_cost(path_option)
+	dist = get_dist(p0, p1)
+	dt = chunkify.get_dt(exp_settings)
+	cost_chunk = dt * dt
+	num_chunks = int()
+
+	leftover = dist - (dt*num_chunks)
+	cost = (num_chunks * cost_chunk) + (leftover*leftover)
+
+	return cost
+	# f_path_cost(path_option)
 
 def get_min_direct_path_length(r, p0, p1, exp_settings):
-	path_option = get_min_direct_path(r, p0, p1, exp_settings)
-	return get_path_length(path_option)[1]
+	return get_dist(p0, p1)
 
 # Given a 
 def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
@@ -414,11 +438,12 @@ def get_costs(path, target, obs_sets):
 
 def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
+	f_vis = exp_settings['f_vis']
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		# goal, goals, path, df_obs
-		new_val = f_legibility(resto, target, goals, path, aud, f_exp_single, exp_settings)
+		new_val = f_legibility(resto, target, goals, path, aud, f_vis, exp_settings)
 
 		vals[key] = new_val
 
@@ -1137,8 +1162,32 @@ def fn_pathpickle_envir_cache(exp_settings):
 	# print("{" + fn_pickle + "}")
 	return fn_pickle
 
-def export_envir_cache_pic(data, label, g_index, exp_settings):
-	plt.imshow(data, interpolation='nearest')
+def numpy_to_image(data):
+	pretty_data = copy.copy(data.T)
+	pretty_data = cv2.flip(pretty_data, 0)
+	return pretty_data
+
+
+def export_envir_cache_pic(r, data, label, g_index, exp_settings):
+	pretty_data = numpy_to_image(data)	
+
+	fig, ax = plt.subplots()
+	ax.imshow(pretty_data, interpolation='nearest')
+	obs_sets = r.get_obs_sets()
+	xs, ys = [], []
+
+	for ok in obs_sets.keys():
+		obs_xy = obs_sets[ok]
+		if len(obs_xy) > 0:
+			obs_xy = obs_xy[0].get_center()
+			x = obs_xy[0]
+			y = 1000 - obs_xy[1]
+			xs.append(x)
+			ys.append(y)
+	
+	ax.plot(xs, ys, 'ro')
+	plt.tight_layout()
+
 	plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-' + label + '-plot'  + '.png')
 	plt.clf()
 
@@ -1163,7 +1212,7 @@ def get_envir_cache(r, exp_settings):
 		print("Getting start to here dict")
 		envir_cache[ENV_START_TO_HERE] = get_dict_cost_start_to_here(r, exp_settings)
 		toc = time.perf_counter()
-		print(f"Calculated start to here in {toc - tic:0.4f} seconds")
+		print(f"\tCalculated start to here in {toc - tic:0.4f} seconds")
 		dbfile = open(fn_pickle, 'wb')
 		pickle.dump(envir_cache, dbfile)
 		dbfile.close()
@@ -1173,7 +1222,7 @@ def get_envir_cache(r, exp_settings):
 		tic = time.perf_counter()
 		envir_cache[ENV_HERE_TO_GOALS] = get_dict_cost_here_to_goals_all(r, exp_settings)
 		toc = time.perf_counter()
-		print(f"Calculated here to goals in {toc - tic:0.4f} seconds")
+		print(f"\tCalculated here to goals in {toc - tic:0.4f} seconds")
 		dbfile = open(fn_pickle, 'wb')
 		pickle.dump(envir_cache, dbfile)
 		dbfile.close()
@@ -1182,7 +1231,7 @@ def get_envir_cache(r, exp_settings):
 		tic = time.perf_counter()
 		envir_cache[ENV_VISIBILITY_PER_OBS] = get_dict_vis_per_obs_set(r, exp_settings, f_vis)
 		toc = time.perf_counter()
-		print(f"Calculated vis per obs in {toc - tic:0.4f} seconds")
+		print(f"\tCalculated vis per obs in {toc - tic:0.4f} seconds")
 		dbfile = open(fn_pickle, 'wb')
 		pickle.dump(envir_cache, dbfile)
 		dbfile.close()
@@ -1204,7 +1253,7 @@ def get_dict_cost_here_to_goals_all(r, exp_settings):
 	for g_index in range(len(goals)):
 		g = goals[g_index]
 		all_goals[g] = get_dict_cost_here_to_goal(r, g, exp_settings)
-		export_envir_cache_pic(all_goals[g], 'here-to-goal', g_index, exp_settings)
+		export_envir_cache_pic(r, all_goals[g], 'here-to-goal', g_index, exp_settings)
 
 	return all_goals
 
@@ -1215,11 +1264,11 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	pt_goal = resto.to_xy(goal)
 
-	for i in r.get_sampling_width():
-		print(str(i) + "... ", end='')
-		if i % 15 ==0:
-			print()
-		for j in r.get_sampling_length():
+	for i in range(r.get_width()): #r.get_sampling_width():
+		# print(str(i) + "... ", end='')
+		# if i % 15 ==0:
+		# 	print()
+		for j in range(r.get_length()): #r.get_sampling_length():
 			pt = (i, j)
 			val = get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings)
 			dict_start_to_goal[i, j] = val
@@ -1232,17 +1281,19 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 def get_dict_cost_start_to_here(r, exp_settings):
 	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	start = resto.to_xy(r.get_start())
+	print(dict_start_to_goal.shape)
 
-	for i in r.get_sampling_width():
-		print(str(i) + "... ", end='')
-		if i % 15 ==0:
-			print()
-		for j in r.get_sampling_length():
+	for i in range(r.get_width()):
+		# print(str(i) + "... ", end='')
+		# if i % 15 ==0:
+		# 	print()
+		for j in range(r.get_length()): #r.get_sampling_length():
 			pt = (i, j)
+			# print(pt)
 			val = get_min_direct_path_cost_between(r, start, resto.to_xy(pt), exp_settings)
 			dict_start_to_goal[i, j] = val
 	
-	export_envir_cache_pic(dict_start_to_goal, 'start-to-here', "-", exp_settings)
+	export_envir_cache_pic(r, dict_start_to_goal, 'start-to-here', "-", exp_settings)
 	return dict_start_to_goal
 
 def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
@@ -1254,19 +1305,24 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 		print("Getting obs vis for " + ok)
 		os = obs_sets[ok]
 		os_vis = np.zeros((r.get_width(), r.get_length()))
+		print(os_vis.shape)
 
-		for i in r.get_sampling_width():
-			print(str(i) + "... ", end='')
-			if i % 15 ==0:
-				print()
-			for j in r.get_sampling_length():
+		for i in range(r.get_width()): #r.get_sampling_length():
+			# print(str(i) + "... ", end='')
+			# if i % 15 ==0:
+			# 	print()
+			for j in range(r.get_length()): #r.get_sampling_width():
 				# print(str(j) + "... ", end='')
-				# pt = (i, j)
+				pt = (i, j)
 				val = f_vis(None, pt, os, None)
+				# if len(os) > 0:
+				# if len(os) > 0 and (i % 50 == 0) and (j % 50 == 0):
+				# 	print(str(pt) + " -> " + str(os[0].get_center()) + " = " + str(val))
 				os_vis[i, j] = val
 
 		all_vis_dict[ok] = os_vis
-		export_envir_cache_pic(os_vis, 'obs_vis', ok, exp_settings)
+		print("\texporting " + ok)
+		export_envir_cache_pic(r, os_vis, 'obs_dist', ok, exp_settings)
 
 	return all_vis_dict
 
@@ -1876,16 +1932,16 @@ def main():
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
 
-	# Set of functions for exporting easy paths
-	title = "pts_" + str(exp_settings['num_chunks']) + "_" + str(exp_settings['angle_strength']) + "_" + str(exp_settings['chunk_type']) + " = "
-	path_a = best_paths[((1035, 307, 180), 'omniscient')]
-	path_b = best_paths[((1035, 567, 0), 'omniscient')]
+	# # Set of functions for exporting easy paths
+	# title = "pts_" + str(exp_settings['num_chunks']) + "_" + str(exp_settings['angle_strength']) + "_" + str(exp_settings['chunk_type']) + " = "
+	# path_a = best_paths[((1035, 307, 180), 'omniscient')]
+	# path_b = best_paths[((1035, 567, 0), 'omniscient')]
 
-	path_a = str(path_a)
-	path_b = str(path_b)
+	# path_a = str(path_a)
+	# path_b = str(path_b)
 
-	print(title + path_a)
-	print(title + path_b)
+	# print(title + path_a)
+	# print(title + path_b)
 
 	print("Done")
 
