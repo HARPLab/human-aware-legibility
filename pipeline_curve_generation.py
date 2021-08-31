@@ -31,7 +31,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True
-FLAG_REDO_ENVIR_CACHE 	= False
+FLAG_REDO_ENVIR_CACHE 	= True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -146,7 +146,17 @@ def f_exp_single(t, pt, aud, path):
 
 def get_visibility_of_pt_w_observers(pt, aud):
 	observers = []
-	score = 0
+	score = []
+
+	reasonable_set_sizes = [0, 1, 5]
+	if len(aud) not in reasonable_set_sizes:
+		print(len(aud))
+		exit()
+
+	# section for alterating calculculation for a few 
+	# out of the whole set; mainly for different combination techniques
+	# if len(aud) == 5:
+	# 	aud = [aud[2], aud[4]]
 
 	MAX_DISTANCE = 500
 	for observer in aud:
@@ -179,7 +189,10 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 		half_fov = (obs_FOV / 2.0)
 		if angle_diff < half_fov:
-			score += half_fov - angle_diff
+			from_center = half_fov - angle_diff
+			score.append(from_center)
+		else:
+			score.append(0)
 
 		# 	# full credit at the center of view
 		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
@@ -190,6 +203,12 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		# 	score = offset_multiplier
 		# 	score = distance
 
+	# combination method for multiple viewers: minimum value
+	if len(score) > 0:
+		# score = min(score)
+		score = sum(score)
+	else:
+		score = 0
 	return score
 
 # Ada: Final equation
@@ -1404,10 +1423,10 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			path_option = chunkify.chunkify_path(exp_settings, path_option)
 			all_paths.append(path_option)
 
-			# path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
-			# print(len(path_option_2))
-			# path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
-			# all_paths.append(path_option_2)
+			path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+			print(len(path_option_2))
+			path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
+			all_paths.append(path_option_2)
 	else:
 		all_paths = sample_pts
 
@@ -1887,8 +1906,8 @@ def main():
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
-	# sampling_type = SAMPLE_TYPE_DEMO
+	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_DEMO
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -1909,7 +1928,7 @@ def main():
 	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['f_vis_label']		= 'f_cred_central'
 	exp_settings['epsilon'] 		= .000000001
-	exp_settings['lambda'] 			= .0000011
+	exp_settings['lambda'] 			= .0000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
