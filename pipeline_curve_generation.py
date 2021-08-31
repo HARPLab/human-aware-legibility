@@ -148,13 +148,13 @@ def get_visibility_of_pt_w_observers(pt, aud):
 
 	MAX_DISTANCE = 500
 	for observer in aud:
-		obs_orient 	= observer.get_orientation()
+		obs_orient 	= observer.get_orientation() + 90
 		# if obs_orient != 300:
 		# 	print(obs_orient)
 		# 	exit()
 		obs_FOV 	= observer.get_FOV()
 
-		angle 		= angle_between_points(pt, observer.get_center())
+		angle 		= angle_between_points(observer.get_center(), pt)
 		distance 	= resto.dist(pt, observer.get_center())
 		# print("~~~")
 		# print(observer.get_center())
@@ -162,13 +162,14 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		# print(pt)
 		
 		# print(ang)
+		a = angle - obs_orient
+		signed_angle_diff = (a + 180) % 360 - 180
+		angle_diff = abs(signed_angle_diff)
 
-		angle_diff = abs(obs_orient + angle) % 360
-
-		# if (pt[0] % 50 == 0) and (pt[1] % 50 == 0):
-		# 	print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
-		# 	print("observer looking at... " + str(obs_orient))
-		# 	print("angle diff = " + str(angle_diff))
+		if (pt[0] % 100 == 0) and (pt[1] % 100 == 0):
+			print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+			print("observer looking at... " + str(obs_orient))
+			print("angle diff = " + str(angle_diff))
 
 		# print(angle, distance)
 		# observation = (pt, angle, distance)
