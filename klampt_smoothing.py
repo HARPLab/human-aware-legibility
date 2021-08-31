@@ -117,8 +117,8 @@ def get_dt(exp_settings):
         dt = (duration) * (1 / float(num_chunks - 1))
     else:
         # this number is the duration of a minimal path to one of the goals
-        min_path_magic_number = 1137.0217 # minimum path to a goal duration
-        dt = int(min_path_magic_number / (num_chunks + 1))
+        min_path_magic_number = 20.0 # minimum path to a goal duration
+        dt = (min_path_magic_number / (num_chunks + 1))
         # note that this dt does not guarantee a certain number of chunks
         # rather, it guarantees AT LEAST this many timesteps
         # this is the unit we will use for calculating legibility, also
@@ -146,12 +146,16 @@ def chunkify_path(exp_settings, path):
         velocities='minimum-jerk'
         timing='sqrt-L2'
 
+    # print(path)
     traj = trajectory.path_to_trajectory(path, speed=1, timing=timing, velocities=velocities)
 
     duration = traj.duration()
     # print("duration: " + str(duration))
 
     dt = get_dt(exp_settings)
+    # print("dt=" + str(dt))
+    # print("duration=" + str(duration))
+    # print("num_chunks=" + str(exp_settings['num_chunks']))
 
     traj = traj.discretize(dt)
     path = traj.milestones
