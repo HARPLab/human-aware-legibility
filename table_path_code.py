@@ -1002,37 +1002,45 @@ class Restaurant:
 			# TODO verify units on this
 			self.waypoints.append(wpt)
 
+			# a = (.6, 0)
+			a = (0, 0)
+			t = (0, 0)
 
 			# unity_goal_pt = (4.43, -7.0)
 
 			unity_table_pts = []
 			# unity_table_pts.append((3.6, -4.0))
-			unity_table_pts.append((3.6, 	-7.0))
+			unity_table_pts.append((3.6, 	-7.0)) # 3.6, 	-7.5
 			# unity_table_pts.append((5.6, -10.0))
-			unity_table_pts.append((7.6, 	-7.0))
+			unity_table_pts.append((7.6 + a[0], 	-7.0  + a[1]))
 
 			unity_goal_stop_options = []
 			# unity_goal_stop_options.append((4.3, -4.3))
-			unity_goal_stop_options.append((4.3, 	-7.0, 	DIR_SOUTH))
+			unity_goal_stop_options.append((3.8, 	-7.0, 	DIR_SOUTH))
 			# unity_goal_stop_options.append((5.6, -9.3)
-			unity_goal_stop_options.append((6.9, 	-7.0, 	DIR_NORTH))
+			unity_goal_stop_options.append((7.4 + a[0], 	-7.0 + a[1], 	DIR_NORTH))
 
-			unity_goal_options = []
-			# unity_goal_options.append((4.3, -4.0))
-			unity_goal_options.append((4.429, 	-7.0, 	DIR_SOUTH)) #(4.3, -7.0)
-			# unity_goal_options.append((5.6, -9.3))
-			unity_goal_options.append((6.9, 	-7.0, 	DIR_NORTH))
+			# unity_goal_options = []
+			# # unity_goal_options.append((4.3, -4.0))
+			# unity_goal_options.append((4.429, 	-7.0, 	DIR_SOUTH)) #(4.3, -7.0)
+			# # unity_goal_options.append((5.6, -9.3))
+			# unity_goal_options.append((6.9, 	-7.0, 	DIR_NORTH))
 
 			table_pts = []
 			for t in unity_table_pts:
 				pt = unity_to_image(t)
-				print(pt)
+				print("TABLE:" + str(t))
+				print(unity_to_image(t))
+
+				# print(pt)
 				table = Table(pt, generate_type)
 				self.tables.append(table)
 
 			# print(unity_table_pts[0])
 
 			for g in unity_goal_stop_options:
+				print("GOAL:" + str(g))
+				print(unity_to_image(g))
 				goal_helper_pts.append(unity_to_image(g))
 				self.goals.append(unity_to_image(g))
 
@@ -1045,13 +1053,16 @@ class Restaurant:
 			# unity_table_pts.append((3.6, -7.0))
 			# unity_table_pts.append((7.6, -7.0))
 
-			table_x = 3.6
-			table_y = -7.0
 			customer_offset = 0.67
 			customer_offset_diag = customer_offset * 0.70710
 
+			observer_table = unity_table_pts[0]
+			table_x = observer_table[0]
+			table_y = observer_table[1]# + customer_offset
+
 			# person a
 			obs1_pt = (table_x, table_y - customer_offset)
+			print(obs1_pt)
 			obs1_pt = unity_to_image(obs1_pt)
 
 			obs1_angle = unity_to_image_angle(150)
@@ -1061,6 +1072,7 @@ class Restaurant:
 
 			# person b
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
+			print(obs2_pt)
 			obs2_pt = unity_to_image(obs2_pt)
 			
 			obs2_angle = unity_to_image_angle(120)
@@ -1088,6 +1100,7 @@ class Restaurant:
 
 			# person e
 			obs5_pt = (table_x, table_y + customer_offset)
+			print(obs5_pt)
 			obs5_pt = unity_to_image(obs5_pt)
 			
 			obs5_angle = unity_to_image_angle(30)
@@ -1096,9 +1109,11 @@ class Restaurant:
 			self.observers.append(obs5)
 
 
-			# for o in observers:
-			# 	print(observers)
+			for o in self.observers:
+				print("OBSERVER")
+				print(o.get_center())
 
+			# exit()
 			# goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
 
 		elif generate_type == TYPE_RANDOM:
@@ -1236,7 +1251,7 @@ class Restaurant:
 		else:
 			print("Incorrect generate_type")
 
-		self.generate_obstacle_map_and_img()
+		self.img = self.generate_obstacle_map_and_img(self.observers)
 		self.generate_visibility_maps()
 
 	def get_goal_index(self, goal):
@@ -1280,7 +1295,7 @@ class Restaurant:
 		dbfile.close() 
 
 
-	def generate_obstacle_map_and_img(self):
+	def generate_obstacle_map_and_img(self, observers):
 		obstacle_vis = np.zeros((self.length, self.width,3), np.uint8)
 
 		# DRAW the environment
@@ -1295,7 +1310,7 @@ class Restaurant:
 
 		overlay = img.copy()
 
-		for obs in self.observers:
+		for obs in observers:
 			if obs is not None:
 				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
 				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
@@ -1324,14 +1339,10 @@ class Restaurant:
 
 		cv2.circle(img, to_xy(self.start), start_radius, COLOR_START, start_radius)
 
-		# Export the images
-		self.img = copy.copy(img)
-		obs_i = cv2.flip(img, 0)
-		cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_o'+ '.png', obs_i) 
-		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'plain_' + path_title + '.png', path_img) 
-
 		if FLAG_MAKE_OBSTACLE_MAP:
 			self.make_obstacle_map(obstacle_vis, img)
+
+		return cv2.flip(img, 0)
 
 	def get_visibility_of_pt_raw(self, pt):
 		observations = []
@@ -1663,6 +1674,11 @@ class Restaurant:
 
 	def get_img(self):
 		return copy.copy(self.img)
+
+	def get_obs_img(self, obs_key):
+		target_obs = self.get_obs_sets()[obs_key]
+
+		return self.generate_obstacle_map_and_img(target_obs)
 
 	def get_envir_cache(self):
 		if self.envir_cache is None:
