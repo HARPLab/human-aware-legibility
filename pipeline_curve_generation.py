@@ -31,7 +31,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True
-FLAG_REDO_ENVIR_CACHE 	= False
+FLAG_REDO_ENVIR_CACHE 	= True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -1144,6 +1144,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
 
+		# print(sample_sets)
+		# print(start)
+		# exit()
+
 	if sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1265,6 +1269,15 @@ def export_envir_cache_pic(r, data, label, g_index, exp_settings):
 		ys.append(r_height - gy)
 
 	ax.plot(xs, ys, 'go')
+	xs, ys = [], []
+
+	for table in r.get_tables():
+		table = table.get_center()
+		tx, ty = table[0], table[1]
+		xs.append(tx)
+		ys.append(r_height - ty)
+
+	ax.plot(xs, ys, 'yo')
 	xs, ys = [], []
 
 	start = r.get_start()
