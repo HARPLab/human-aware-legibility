@@ -136,7 +136,7 @@ def f_novis(t, obs):
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0 and path is not None:
-		return len(path) - t
+		return float(len(path) - t)
 	elif len(aud) == 0:
 		return 0
 
@@ -192,7 +192,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		half_fov = (obs_FOV / 2.0)
 		if angle_diff < half_fov:
 			from_center = half_fov - angle_diff
-			from_center = from_center * from_center
+			# from_center = from_center * from_center
 			score.append(from_center)
 		else:
 			score.append(0)
@@ -241,8 +241,13 @@ def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_her
 	c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
 	c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
 
+	# print(c2)
+	# print(c3)
 	a = np.exp((-c1 + -c2))
 	b = np.exp(-c3)
+	# print(a)
+	# print(b)
+
 	ratio 		= a / b
 
 	if math.isnan(ratio):
@@ -446,8 +451,12 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	
 		prob_goal_given = prob_goal_given_path(resto, p_n, pt, goal, goals, cost_to_here, exp_settings)
 
-		numerator += ((prob_goal_given * f) * delta_x)
-		divisor += delta_x*f
+		if prob_goal_given > 1 or prob_goal_given < 0:
+			print(prob_goal_given)
+			print("!!!")
+
+		numerator += (prob_goal_given * f) # * delta_x)
+		divisor += f #* delta_x
 
 		t = t + 1
 		total_cost += decimal.Decimal(f_cost(p_n, pt))
@@ -460,6 +469,12 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
+
+	if (overall == 1):
+		print(prob_goal_given)
+		print(len(aug_path))
+		print((numerator, divisor))
+		print(len(aud))
 
 	return overall
 
@@ -618,7 +633,7 @@ def is_valid_path(r, path):
 	start = r.get_start()
 	for p in path:
 		if p[0] < start[0] - 1:
-			print(p)
+			# print(p)
 			return False
 
 	
@@ -1047,7 +1062,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 	# sampling_type = 'in_zone'
 
 	sample_sets = []
-	resolution = 10
+	resolution = 1
 
 	sampling_type = exp_settings['sampling_type']
 
@@ -1119,7 +1134,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# print(point_set)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
-		resolution_sparse = 100
+		resolution_sparse = 300
 
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1133,6 +1148,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		if sy > gy:
 			low_y, hi_y = gy, sy
+
+		hi_y += 100
+		low_y += -100
 
 		for xi in range(low_x, hi_x, resolution_sparse):
 			for yi in range(low_y, hi_y, resolution_sparse):
@@ -1441,8 +1459,9 @@ def title_from_exp_settings(exp_settings):
 	lam = lam_to_str(lam)
 
 	cool_title = title + ": " + sampling_type + " ang_str=" + str(angle_strength)
-	cool_title += "\n eps=" + eps + " lam=" + lam
-	cool_title += "\n n=" + str(n_chunks) + " distr=" + str(chunking_type)
+	cool_title += "\neps=" + eps 
+	cool_title += "\nlam=" + lam
+	cool_title += "\nn=" + str(n_chunks) + " distr=" + str(chunking_type)
 
 	return cool_title
 
@@ -1527,13 +1546,13 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	title = title_from_exp_settings(exp_settings)
 
 	min_paths = [get_min_viable_path(r, goal, exp_settings)]
-	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
+	resto.export_raw_paths(r, img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
 
 	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
-	resto.export_raw_paths(img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
+	resto.export_raw_paths(r, img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
 	trimmed_paths = trim_paths(r, all_paths, goal)
-	resto.export_raw_paths(img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
+	resto.export_raw_paths(r, img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 
 	return trimmed_paths
 
@@ -1987,7 +2006,7 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 	export_path_options_for_each_goal(resto, best_paths, exp_settings)
 	return best_paths
 
-def main():
+def do_exp(lam, eps):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
 	unique_key = 'exp_single'
@@ -1995,9 +2014,9 @@ def main():
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2016,9 +2035,9 @@ def main():
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['f_vis_label']		= 'f_cred_quad'
-	exp_settings['epsilon'] 		= .000000001
-	exp_settings['lambda'] 			= .0000000001
+	exp_settings['f_vis_label']		= 'f_cred_lin'
+	exp_settings['epsilon'] 		= eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
@@ -2049,7 +2068,7 @@ def main():
 	print(exp_settings)
 
 	title = title_from_exp_settings(exp_settings)
-	resto.export_raw_paths(img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
+	resto.export_raw_paths(restaurant, img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
 
 	paths_for_analysis = {}
 	#  add permutations of goals with some final-angle-wiggle
@@ -2083,11 +2102,37 @@ def main():
 	# print(title + path_a)
 	# print(title + path_b)
 
-	print("Done")
+	print("Done with experiment")
 
+	return None
+
+def main():
+	do_exp(1.0, 1.0)
+
+	# eps_start = decimal.Decimal(.000000000001)
+	# lam_start = decimal.Decimal(.00000000001)
+	eps_vals = [1.0]
+	lam_vals = [0.0]
+
+	for i in range(-8, -20):
+		new_val = 1.0 ** i
+		eps_vals.append(new_val)
+		lam_vals.append(new_val)
+
+
+	print("REMIX TIME")
+	for e in eps_vals:
+		for l in lam_vals:
+			do_exp(e, l)
+			exit()
 
 
 if __name__ == "__main__":
+
+	# con = decimal.getcontext()
+	# con.prec = 35
+	# con.Emax = 1000
+	# con.Emin = -1000
 	main()
 
 
