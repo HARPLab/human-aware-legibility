@@ -31,7 +31,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True
-FLAG_REDO_ENVIR_CACHE 	= True
+FLAG_REDO_ENVIR_CACHE 	= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -616,7 +616,6 @@ def is_valid_path(r, path):
 	# print(len(tables))
 
 	start = r.get_start()
-	print(start)
 	for p in path:
 		if p[0] < start[0] - 1:
 			print(p)
@@ -1634,7 +1633,6 @@ def angle_between_points(p1, p2):
 
 def print_states(resto, states, label):
 	img = resto.get_img()
-	img = cv2.flip(img, 0)
 
 	cv2.circle(img, planner_to_image(resto, (0,0)), 5, (138,43,226), 5)
 	for s in states:
@@ -1656,7 +1654,6 @@ def print_states(resto, states, label):
 
 def print_path(resto, xc, yc, yawc, label):
 	img = resto.get_img()
-	img = cv2.flip(img, 0)
 
 	cv2.circle(img, planner_to_image(resto, (0,0)), 5, (138,43,226), 5)
 	for i in range(len(xc)):
@@ -1735,6 +1732,7 @@ def make_path_libs(resto, goal):
 
 	print("Done")
 
+
 def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
 	img = restaurant.get_img()
@@ -1746,14 +1744,12 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	title = title_from_exp_settings(exp_settings)
 
 	# flip required for orientation
-	img = cv2.flip(img, 0)
 	font_size = 1
 	y0, dy = 50, 50
 	for i, line in enumerate(title.split('\n')):
 	    y = y0 + i*dy
 	    cv2.putText(img, line, (50, y), cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
 	
-	img = cv2.flip(img, 0)
 	empty_img = img
 	all_img = img
 
@@ -1771,6 +1767,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 	for pkey in best_paths.keys():
 		path = best_paths[pkey]
+		path = restaurant.path_to_printable_path(path)
 		path_img = img.copy()
 		
 		goal 		= pkey[0]
@@ -1778,7 +1775,8 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 		goal_index 	= restaurant.get_goal_index(goal)
 
 		goal_img = goal_imgs[goal_index]
-		solo_img = copy.copy(empty_img)
+		obs_key = pkey[1]
+		solo_img = restaurant.get_obs_img(obs_key)
 		
 		color = color_dict[audience]
 
@@ -1795,7 +1793,6 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			cv2.circle(goal_img, a, 4, color, 4)
 			cv2.circle(all_img, a, 4, color, 4)
 		
-		solo_img = cv2.flip(solo_img, 0)
 		title = exp_settings['title']
 
 		sampling_type = exp_settings['sampling_type']
@@ -1806,10 +1803,8 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	for goal_index in goal_imgs.keys():
 		goal_img = goal_imgs[goal_index]
 
-		goal_img = cv2.flip(goal_img, 0)
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
-	all_img = cv2.flip(all_img, 0)
 	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', all_img) 
 
 	# TODO: actually export pics for them
@@ -2040,8 +2035,7 @@ def main():
 
 	# SET UP THE IMAGES FOR FUTURE DRAWINGS
 	img = restaurant.get_img()
-	empty_img = cv2.flip(img, 0)
-	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', empty_img)
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', img)
 
 	min_paths = []
 	for g in restaurant.get_goals_all():

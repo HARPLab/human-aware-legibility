@@ -1574,6 +1574,14 @@ class Restaurant:
 	def get_observers(self):
 		return self.observers
 
+	def path_to_printable_path(self, path):
+		length = self.get_length()
+		new_path = []
+		for p in path:
+			new_path.append((p[0], length - p[1]))
+		return new_path
+
+
 	# observers[1] = TOWARDS
 	# observers[0] = BACK
 
