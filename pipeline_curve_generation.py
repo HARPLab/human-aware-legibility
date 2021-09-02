@@ -51,6 +51,7 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
 SAMPLE_TYPE_CENTRAL 	= 'central'
+SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparse'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
@@ -144,6 +145,7 @@ def f_exp_single(t, pt, aud, path):
 	val = get_visibility_of_pt_w_observers(pt, aud)
 	return val
 
+# ADA TODO MASTER VISIBILITY EQUATION
 def get_visibility_of_pt_w_observers(pt, aud):
 	observers = []
 	score = []
@@ -190,6 +192,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		half_fov = (obs_FOV / 2.0)
 		if angle_diff < half_fov:
 			from_center = half_fov - angle_diff
+			from_center = from_center * from_center
 			score.append(from_center)
 		else:
 			score.append(0)
@@ -608,11 +611,19 @@ def construct_single_path(start, end, sample_pts):
 	return points
 
 # TODO: add test methods for this
-def is_valid_path(restaurant, path):
-	# return True
-	tables = restaurant.get_tables()
+def is_valid_path(r, path):
+	tables = r.get_tables()
 	# print(len(tables))
 
+	start = r.get_start()
+	print(start)
+	for p in path:
+		if p[0] < start[0] - 1:
+			print(p)
+			return False
+
+	
+	return True
 	for t in tables:
 		# print("TABLE MID: " + str(t.get_center()))
 		for i in range(len(path) - 1):
@@ -1108,6 +1119,31 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		# print(point_set)
 
+	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
+		resolution_sparse = 100
+
+		sx, sy, stheta = start
+		gx, gy, gt = goal
+		print("sampling central")
+		
+		low_x, hi_x = sx, gx
+		low_y, hi_y = sy, gy
+
+		if sx > gx:
+			low_x, hi_x = gx, sx
+
+		if sy > gy:
+			low_y, hi_y = gy, sy
+
+		for xi in range(low_x, hi_x, resolution_sparse):
+			for yi in range(low_y, hi_y, resolution_sparse):
+				# print(xi, yi)
+				x = int(xi)
+				y = int(yi)
+
+				point_set = [(x, y)]
+				sample_sets.append(point_set)
+
 	if sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1203,6 +1239,9 @@ def numpy_to_image(data):
 def export_envir_cache_pic(r, data, label, g_index, exp_settings):
 	pretty_data = numpy_to_image(data)	
 
+	# We use this to flip vertically
+	r_height = 1000
+
 	fig, ax = plt.subplots()
 	ax.imshow(pretty_data, interpolation='nearest')
 	obs_sets = r.get_obs_sets()
@@ -1213,11 +1252,30 @@ def export_envir_cache_pic(r, data, label, g_index, exp_settings):
 		if len(obs_xy) > 0:
 			obs_xy = obs_xy[0].get_center()
 			x = obs_xy[0]
-			y = 1000 - obs_xy[1]
+			y = r_height - obs_xy[1]
 			xs.append(x)
 			ys.append(y)
 	
 	ax.plot(xs, ys, 'ro')
+	xs, ys = [], []
+
+	for goal in r.get_goals_all():
+		gx, gy = goal[0], goal[1]
+		xs.append(gx)
+		ys.append(r_height - gy)
+
+	ax.plot(xs, ys, 'go')
+	xs, ys = [], []
+
+	start = r.get_start()
+	sx = start[0]
+	sy = r_height - start[1]
+	xs.append(sx)
+	ys.append(sy)
+
+	ax.plot(xs, ys, 'bo')
+	xs, ys = [], []
+
 	plt.tight_layout()
 
 	plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-' + label + '-plot'  + '.png')
@@ -1313,7 +1371,7 @@ def get_dict_cost_here_to_goal(r, goal, exp_settings):
 def get_dict_cost_start_to_here(r, exp_settings):
 	dict_start_to_goal = np.zeros((r.get_width(), r.get_length()))
 	start = resto.to_xy(r.get_start())
-	print(dict_start_to_goal.shape)
+	# print(dict_start_to_goal.shape)
 
 	for i in range(r.get_width()):
 		# print(str(i) + "... ", end='')
@@ -1337,7 +1395,7 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 		print("Getting obs vis for " + ok)
 		os = obs_sets[ok]
 		os_vis = np.zeros((r.get_width(), r.get_length()))
-		print(os_vis.shape)
+		# print(os_vis.shape)
 
 		for i in range(r.get_width()): #r.get_sampling_length():
 			# print(str(i) + "... ", end='')
@@ -1465,7 +1523,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	trimmed_paths = trim_paths(r, all_paths, goal)
 	resto.export_raw_paths(img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 
-	return all_paths
+	return trimmed_paths
 
 
 def experimental_scenario_single():
@@ -1738,6 +1796,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 		goal_img = cv2.flip(goal_img, 0)
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
+	all_img = cv2.flip(all_img, 0)
 	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', all_img) 
 
 	# TODO: actually export pics for them
@@ -1928,8 +1987,9 @@ def main():
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -1948,13 +2008,13 @@ def main():
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['f_vis_label']		= 'f_cred_linear'
+	exp_settings['f_vis_label']		= 'f_cred_quad'
 	exp_settings['epsilon'] 		= .000000001
 	exp_settings['lambda'] 			= .0000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 450
+	exp_settings['angle_strength']	= 550
 	exp_settings['min_path_length'] = {}
 	exp_settings['f_vis']			= f_exp_single
 
@@ -1996,6 +2056,14 @@ def main():
 	print("~~~")
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
+
+	dbfile = open(fn_export_from_exp_settings(exp_settings) + "_BEST_PATHS.txt", 'wb')
+	pickle.dump(best_paths, dbfile)
+	dbfile.close()
+
+	print(best_paths)
+
+
 
 	# # Set of functions for exporting easy paths
 	# title = "pts_" + str(exp_settings['num_chunks']) + "_" + str(exp_settings['angle_strength']) + "_" + str(exp_settings['chunk_type']) + " = "
