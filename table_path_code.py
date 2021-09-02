@@ -113,7 +113,7 @@ OBS_COLOR_B = (0,228,171)
 OBS_COLOR_C = (0,201,87)
 OBS_COLOR_D = (128,106,50)
 OBS_COLOR_E = (255,10,10)
-OBS_COLOR_OMNISCIENT = (0,0,0)
+OBS_COLOR_OMNISCIENT = (255,255,255)
 OBS_COLOR_ALL = (138,43,226)
 
 OBS_HEX_A = '#00ffff'
@@ -2073,12 +2073,13 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 	cv2.imwrite('generated/fig_tables.png', img) 
 
 
-def export_raw_paths(img, saved_paths_list, title, fn):
+def export_raw_paths(r, img, saved_paths_list, title, fn):
 	print("\tExporting raw diagrams")
 	all_paths_img = img.copy()
 
 	for path in saved_paths_list:
 		path_img = img.copy()
+		path = r.path_to_printable_path(path)
 
 		color = (random.randrange(0, 255), random.randrange(0, 255), random.randrange(0, 255))
 
@@ -2097,7 +2098,6 @@ def export_raw_paths(img, saved_paths_list, title, fn):
 		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
 		# print("exported image of " + pkey)
 
-	all_paths_img = cv2.flip(all_paths_img, 0)
 
 	# position = (10,50)
 	font_size = 1
