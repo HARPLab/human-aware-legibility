@@ -603,7 +603,7 @@ class Table:
 	def intersects_line(self, pt1, pt2):
 		# TODO ADA
 		# print(DIM_TABLE_RADIUS)
-		table_radius = int(.3 * UNITY_SCALE_X)
+		table_radius = int(.1 * UNITY_SCALE_X)
 		table_radius = int(table_radius * 2)
 		# print(table_radius)
 		p = fancyPoint(self.get_center()).buffer(table_radius)
@@ -639,7 +639,7 @@ class Observer:
 	entity_radius = DIM_OBSERVER_RADIUS
 	draw_depth = 25000
 	cone_depth = 2000
-	focus_angle = 120 / 2.0
+	focus_angle = 120.0 / 2.0
 	# peripheral_angle = 120 / 2.0
 	FOV_angle = 120
 
@@ -991,16 +991,20 @@ class Restaurant:
 			# width = abs(x1 - x2)
 
 			# start = (7.4, 2.37)
-			start = (6.0, 2.0, DIR_EAST)
-			self.start = unity_to_image(start)
+			start = (5.6, 1.0, DIR_EAST)
+			self.set_start(unity_to_image(start))
+
+			print("START")
+			print(start)
+			print(unity_to_image(start))
 
 			length = 1000
 			width = 1375
 
-			waypoint_kitchen_exit = (6.45477, 2.57, DIR_EAST)
-			wpt = unity_to_image(waypoint_kitchen_exit)
-			# TODO verify units on this
-			self.waypoints.append(wpt)
+			# waypoint_kitchen_exit = (6.45477, 2.57, DIR_EAST)
+			# wpt = unity_to_image(waypoint_kitchen_exit)
+			# # TODO verify units on this
+			# self.waypoints.append(wpt)
 
 			# a = (.6, 0)
 			a = (0, 0)
@@ -1060,6 +1064,8 @@ class Restaurant:
 			table_x = observer_table[0]
 			table_y = observer_table[1]# + customer_offset
 
+			all_observers = []
+
 			# person a
 			obs1_pt = (table_x, table_y - customer_offset)
 			print(obs1_pt)
@@ -1068,7 +1074,7 @@ class Restaurant:
 			obs1_angle = unity_to_image_angle(150)
 			obs1 = Observer(obs1_pt, obs1_angle)
 			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
-			self.observers.append(obs1)
+			all_observers.append(obs1)
 
 			# person b
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
@@ -1078,25 +1084,27 @@ class Restaurant:
 			obs2_angle = unity_to_image_angle(120)
 			obs2 = Observer(obs2_pt, obs2_angle)
 			obs2.set_color(PATH_COLORS[OBS_INDEX_B])
-			self.observers.append(obs2)
+			all_observers.append(obs2)
 
 			# person c
 			obs3_pt = (table_x - customer_offset, table_y)
+			print(obs3_pt)
 			obs3_pt = unity_to_image(obs3_pt)
 			
 			obs3_angle = unity_to_image_angle(90)
 			obs3 = Observer(obs3_pt, obs3_angle)
 			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
-			self.observers.append(obs3)
+			all_observers.append(obs3)
 
 			# person d
 			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
+			print(obs4_pt)
 			obs4_pt = unity_to_image(obs4_pt)
 			
 			obs4_angle = unity_to_image_angle(60)
 			obs4 = Observer(obs4_pt, obs4_angle)
 			obs4.set_color(PATH_COLORS[OBS_INDEX_D])
-			self.observers.append(obs4)
+			all_observers.append(obs4)
 
 			# person e
 			obs5_pt = (table_x, table_y + customer_offset)
@@ -1106,12 +1114,17 @@ class Restaurant:
 			obs5_angle = unity_to_image_angle(30)
 			obs5 = Observer(obs5_pt, obs5_angle)
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
-			self.observers.append(obs5)
+			all_observers.append(obs5)
 
+
+			all_observers = all_observers[::-1]
+			self.observers = all_observers
 
 			for o in self.observers:
 				print("OBSERVER")
 				print(o.get_center())
+
+			# exit()
 
 			# exit()
 			# goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
@@ -1310,7 +1323,7 @@ class Restaurant:
 
 		overlay = img.copy()
 
-		for obs in observers:
+		for obs in observers[::-1]:
 			if obs is not None:
 				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
 				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
@@ -1337,7 +1350,7 @@ class Restaurant:
 			# Draw person
 			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
 
-		cv2.circle(img, to_xy(self.start), start_radius, COLOR_START, start_radius)
+		cv2.circle(img, to_xy(self.get_start()), start_radius, COLOR_START, start_radius)
 
 		if FLAG_MAKE_OBSTACLE_MAP:
 			self.make_obstacle_map(obstacle_vis, img)
@@ -1643,6 +1656,9 @@ class Restaurant:
 
 	def get_start(self):
 		return self.start
+
+	def set_start(self, s):
+		self.start = s
 
 	def get_waypoints(self):
 		return self.waypoints
