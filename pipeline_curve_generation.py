@@ -30,8 +30,8 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = True
-FLAG_REDO_ENVIR_CACHE 	= False
+FLAG_REDO_PATH_CREATION = True #True #False #True #False
+FLAG_REDO_ENVIR_CACHE 	= True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -136,8 +136,10 @@ def f_novis(t, obs):
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0 and path is not None:
-		return float(len(path) - t)
+		return float(200.0 - t)
+		# return float(len(path) - t)
 	elif len(aud) == 0:
+		# print('ping')
 		return 0
 
 	# if in the (x, y) OR (x, y, t) case we can totally 
@@ -227,13 +229,14 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 			g_target = p_raw
 
 	if(sum(g_array) == 0):
+		print("weird g_array")
 		return 0
 
 	return g_target / (sum(g_array))
 
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	decimal.getcontext().prec = 20
+	decimal.getcontext().prec = 30
 
 	start = r.get_start()
 
@@ -419,7 +422,7 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 	return get_dist(p0, p1)
 
 # Given a 
-def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
+def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	min_realistic_path_length = exp_settings['min_path_length'][goal]
 	# print("min_realistic_path_length -> " + str(min_realistic_path_length))
 	
@@ -443,13 +446,13 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 
 	t = 1
 	p_n = path[0]
-	divisor = epsilon
+	divisor = 0 #epsilon
 	numerator = decimal.Decimal(0.0)
 
 	for pt, cost_to_here in aug_path:
 		f = decimal.Decimal(f_function(t, pt, aud, path))
 	
-		prob_goal_given = prob_goal_given_path(resto, p_n, pt, goal, goals, cost_to_here, exp_settings)
+		prob_goal_given = prob_goal_given_path(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
 
 		if prob_goal_given > 1 or prob_goal_given < 0:
 			print(prob_goal_given)
@@ -470,11 +473,15 @@ def f_legibility(resto, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	if (overall == 1):
+	if (legibility == 1):
+		goal_index = r.get_goal_index(goal)
+		print("leg of 1 in calc for")
+		print(goal_index)
 		print(prob_goal_given)
-		print(len(aug_path))
+		# print(len(aug_path))
 		print((numerator, divisor))
-		print(len(aud))
+		# print(len(aud))
+		overall = 0.0
 
 	return overall
 
@@ -636,8 +643,19 @@ def is_valid_path(r, path):
 			# print(p)
 			return False
 
+	sx, sy, stheta = start
+	gx1, gy1, gt1 = r.get_goals_all()[0]
+	# print("sampling central")
 	
-	return True
+	low_x, hi_x = sx, gx1
+	low_y, hi_y = sy, gy1
+
+	if sx > gx1:
+		low_x, hi_x = gx1, sx
+
+	if sy > gy1:
+		low_y, hi_y = gy1, sy
+
 	for t in tables:
 		# print("TABLE MID: " + str(t.get_center()))
 		for i in range(len(path) - 1):
@@ -645,6 +663,11 @@ def is_valid_path(r, path):
 			pt2 = path[i + 1]
 			
 			# print((pt1, pt2))
+
+			px, py = pt1[0], pt1[1]
+			if px > hi_x + 2:
+				return False
+
 
 			if t.intersects_line(pt1, pt2):
 				# print("Intersection!")
@@ -1062,7 +1085,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 	# sampling_type = 'in_zone'
 
 	sample_sets = []
-	resolution = 1
+	resolution = 10
 
 	sampling_type = exp_settings['sampling_type']
 
@@ -1109,9 +1132,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 			sample_sets.append(min_path)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
+		resolution = 3
 		sx, sy, stheta = start
 		gx, gy, gt = goal
-		print("sampling central")
+		# print("sampling central")
 		
 		low_x, hi_x = sx, gx
 		low_y, hi_y = sy, gy
@@ -1121,6 +1145,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		if sy > gy:
 			low_y, hi_y = gy, sy
+
+		hi_y += 100
+		low_y += -100
 
 		for xi in range(low_x, hi_x, resolution):
 			for yi in range(low_y, hi_y, resolution):
@@ -1134,11 +1161,11 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# print(point_set)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
-		resolution_sparse = 300
+		resolution_sparse = 20
 
 		sx, sy, stheta = start
 		gx, gy, gt = goal
-		print("sampling central")
+		# print("sampling central")
 		
 		low_x, hi_x = sx, gx
 		low_y, hi_y = sy, gy
@@ -1511,9 +1538,9 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 		# If I don't yet have a path
 		for point_set in sample_pts:
 			
-			path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings))
-			path_option = chunkify.chunkify_path(exp_settings, path_option)
-			all_paths.append(path_option)
+			# path_option = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings))
+			# path_option = chunkify.chunkify_path(exp_settings, path_option)
+			# all_paths.append(path_option)
 
 			try:
 				path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
@@ -2014,9 +2041,9 @@ def do_exp(lam, eps):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2036,11 +2063,11 @@ def do_exp(lam, eps):
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['f_vis_label']		= 'f_cred_lin'
-	exp_settings['epsilon'] 		= eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['epsilon'] 		= 1e-14 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
-	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 	exp_settings['angle_strength']	= 550
 	exp_settings['min_path_length'] = {}
 	exp_settings['f_vis']			= f_exp_single
@@ -2083,9 +2110,10 @@ def do_exp(lam, eps):
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
 
-	dbfile = open(fn_export_from_exp_settings(exp_settings) + "_BEST_PATHS.txt", 'wb')
-	pickle.dump(best_paths, dbfile)
-	dbfile.close()
+	file1 = open(fn_export_from_exp_settings(exp_settings) + "_BEST_PATHS.txt","w+")
+  
+	file1.write(str(best_paths))
+	file1.close()
 
 	print(best_paths)
 
@@ -2103,28 +2131,27 @@ def do_exp(lam, eps):
 	# print(title + path_b)
 
 	print("Done with experiment")
+	exit()
 
 	return None
 
 def main():
-	do_exp(1.0, 1.0)
-
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	eps_vals = [1.0]
 	lam_vals = [0.0]
+	l = 1e-14
+	e = 0.0
+	do_exp(e, l)
 
-	for i in range(-8, -20):
-		new_val = 1.0 ** i
-		eps_vals.append(new_val)
-		lam_vals.append(new_val)
+	# for i in range(-8, -20):
+	# 	new_val = 1.0 ** i
+	# 	eps_vals.append(new_val)
+	# 	lam_vals.append(new_val)
 
 
-	print("REMIX TIME")
-	for e in eps_vals:
-		for l in lam_vals:
-			do_exp(e, l)
-			exit()
+	# print("REMIX TIME")
+	# for l in lam_vals:
+	# 	do_exp(e, l)
 
 
 if __name__ == "__main__":
