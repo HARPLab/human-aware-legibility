@@ -14,6 +14,7 @@ import os
 from pandas.plotting import table
 import matplotlib.gridspec as gridspec
 import klampt_smoothing as chunkify
+from collections import defaultdict
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -30,7 +31,7 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = True #True #False #True #False
+FLAG_REDO_PATH_CREATION = True #False #True #False
 FLAG_REDO_ENVIR_CACHE 	= True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -69,6 +70,7 @@ ENV_VISIBILITY_PER_OBS 	= 'vis_per_obs'
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST]
 non_metric_columns = ["path", "goal", 'path_length', 'path_cost']
 
+bug_counter = defaultdict(int)
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
@@ -131,6 +133,9 @@ def f_novis(t, obs):
 # 	# print(vis)
 # 	return vis
 
+def f_naked(t, pt, aud, path):
+	return decimal.Decimal(1.0)
+
 # Ada final equation
 # f_VIS TODO VERIFY
 def f_exp_single(t, pt, aud, path):
@@ -140,7 +145,7 @@ def f_exp_single(t, pt, aud, path):
 		# return float(len(path) - t)
 	elif len(aud) == 0:
 		# print('ping')
-		return 0
+		return 1.0
 
 	# if in the (x, y) OR (x, y, t) case we can totally 
 	# still run this equation
@@ -192,6 +197,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		# observers.append(observation)
 
 		half_fov = (obs_FOV / 2.0)
+		# print(half )
 		if angle_diff < half_fov:
 			from_center = half_fov - angle_diff
 			# from_center = from_center * from_center
@@ -236,7 +242,7 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	decimal.getcontext().prec = 30
+	decimal.getcontext().prec = 40
 
 	start = r.get_start()
 
@@ -473,17 +479,62 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	if (legibility == 1):
+	if legibility > 1.0 or legibility < 0:
+		# print("BAD L ==> " + str(legibility))
+		# r.get_obs_label(aud)
 		goal_index = r.get_goal_index(goal)
-		print("leg of 1 in calc for")
-		print(goal_index)
-		print(prob_goal_given)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+		# print("goal=" + str(goal_index))
+		# print("aud = " + category)
+
+	elif (legibility == 1):
+		goal_index = r.get_goal_index(goal)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+		# print("goal=" + str(goal_index))
+		# print("aud = " + category)
+
+		# print("leg of 1 in calc for")
+		# print("goal=" + str(goal_index))
+		# print("aud_length=" + str(len(aud)))
+		# print("aud = " + category)
+		# print(prob_goal_given)
 		# print(len(aug_path))
-		print((numerator, divisor))
+		# print((numerator, divisor))
+
 		# print(len(aud))
 		overall = 0.0
 
 	return overall
+
+# Given a 
+def f_env(r, goal, goals, path, aud, f_function, exp_settings):
+	count = 0
+	aug_path = get_costs_along_path(path)
+
+	path_length_list, length_of_total_path = get_path_length(path)
+	length_of_total_path = decimal.Decimal(length_of_total_path)
+
+	t = 1
+	p_n = path[0]
+	for pt, cost_to_here in aug_path:
+		f = decimal.Decimal(f_function(t, pt, aud, path))
+	
+		# if f is greater than 0, this indicates being in-view
+		if f > 0:
+			count += 1
+
+		# if it's not at least 0, then out of sight, not part of calc
+		else:
+			count = 0.0
+
+		t += 1
+
+	return count
+
 
 def get_costs(path, target, obs_sets):
 	vals = []
@@ -497,12 +548,16 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
 	f_vis = exp_settings['f_vis']
 
+	naked_prob = f_legibility(resto, target, goals, path, [], f_naked, exp_settings)
+	vals['naked'] = naked_prob
+
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
-		# goal, goals, path, df_obs
-		new_val = f_legibility(resto, target, goals, path, aud, f_vis, exp_settings)
+		new_leg = f_legibility(resto, target, goals, path, aud, f_vis, exp_settings)
+		new_env = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
 
-		vals[key] = new_val
+		vals[key] = new_leg
+		vals[key + "-env"] = new_env
 
 	return vals
 
@@ -638,23 +693,42 @@ def is_valid_path(r, path):
 	# print(len(tables))
 
 	start = r.get_start()
-	for p in path:
-		if p[0] < start[0] - 1:
-			# print(p)
-			return False
-
 	sx, sy, stheta = start
-	gx1, gy1, gt1 = r.get_goals_all()[0]
+	gx0, gy0, gt0 = r.get_goals_all()[0]
+	gx1, gy1, gt1 = r.get_goals_all()[1]
 	# print("sampling central")
 	
-	low_x, hi_x = sx, gx1
-	low_y, hi_y = sy, gy1
+	low_x, hi_x = sx, sx
+	low_y, hi_y = sy, sy
 
-	if sx > gx1:
-		low_x, hi_x = gx1, sx
+	if low_x > gx0:
+		low_x = gx0
 
-	if sy > gy1:
-		low_y, hi_y = gy1, sy
+	if low_y > gy0:
+		low_y = gy0
+
+	if hi_x < gx0:
+		hi_x = gx0
+
+	if hi_y < gy0:
+		hi_y = gy0
+
+	if low_x > gx1:
+		low_x = gx1
+
+	if low_y > gy1:
+		low_y = gy1
+
+	if hi_x < gx1:
+		hi_x = gx1
+
+	if hi_y < gy1:
+		hi_y = gy1
+
+	for p in path:
+		if p[0] < start[0] - 2:
+			# print(p)
+			return False
 
 	for t in tables:
 		# print("TABLE MID: " + str(t.get_center()))
@@ -665,17 +739,18 @@ def is_valid_path(r, path):
 			# print((pt1, pt2))
 
 			px, py = pt1[0], pt1[1]
-			if px > hi_x + 2:
+
+			if px > hi_x + 10:
 				return False
 
 
-			if t.intersects_line(pt1, pt2):
-				# print("Intersection!")
+			# if t.intersects_line(pt1, pt2):
+			# 	# print("Intersection!")
 
-				# print(t.get_center())
-				# print(path)
-				# print((pt1, pt2))
-				return False
+			# 	# print(t.get_center())
+			# 	# print(path)
+			# 	# print((pt1, pt2))
+			# 	return False
 
 	return True
 
@@ -1855,16 +1930,31 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 	# TODO: actually export pics for them
 
-def get_metric_columns(df):
+def get_columns_metric(r, df):
 	columns = df.columns.tolist()
 	for col in non_metric_columns:
 		if col in columns:
 			columns.remove(col)
 	return columns
 
+def get_columns_env(r, df):
+	columns = df.columns.tolist()
+	new_cols = []
+	for col in columns:
+		if 'env' in col:
+			new_cols.append(col)
+	return new_cols
+
+def get_columns_legibility(r, df):
+	columns = df.columns.tolist()
+	new_cols = ['naked']
+	for col in r.get_obs_sets().keys():
+		new_cols.append(col)
+	return new_cols
+
 def dict_to_leg_df(r, data, exp_settings):
 	df = pd.DataFrame.from_dict(data)
-	columns = get_metric_columns(df)
+	columns = get_columns_metric(r, df)
 
 	for col in columns:
 		df = df.astype({col: float})
@@ -1885,27 +1975,37 @@ def export_legibility_df(r, df, exp_settings):
 
 	df.describe().to_csv(fn_export_from_exp_settings(exp_settings) + "_description.csv")
 
-	columns = get_metric_columns(df)
+	print(get_columns_metric(r, df))
+	print(get_columns_env(r, df))
+	print(get_columns_legibility(r, df))
 
+	columns_env = get_columns_env(r, df)
+	make_overview_plot(r, df, exp_settings, columns_env, 'env')
+
+	columns_legi = get_columns_legibility(r, df)
+	make_overview_plot(r, df, exp_settings, columns_legi, 'legi')
+
+def make_overview_plot(r, df, exp_settings, columns, label):
 	all_goals = df["goal"].unique().tolist()
 	df_array = []
 
 	g_index = 0
-	for g in all_goals:
-		df_new = df[df['goal'] == g]
-		df_array.append(df_new)
+	if False:
+		for g in all_goals:
+			df_new = df[df['goal'] == g]
+			df_array.append(df_new)
 
 
-		df_new.plot.box(vert=False) # , by=["goal"]
-		# bp = df.boxplot(by="goal") #, column=columns)
-		# bp = df.groupby('goal').boxplot()
+			df_new.plot.box(vert=False) # , by=["goal"]
+			# bp = df.boxplot(by="goal") #, column=columns)
+			# bp = df.groupby('goal').boxplot()
 
-		plt.tight_layout()
-		#save the plot as a png file
-		plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-desc_plot'  + '.png')
-		plt.clf()
+			plt.tight_layout()
+			#save the plot as a png file
+			plt.savefig(fn_export_from_exp_settings(exp_settings) + "g="+ str(g_index) +  '-desc_plot_' + label  + '.png')
+			plt.clf()
 
-		g_index += 1
+			g_index += 1
 
 
 	obs_palette = r.get_obs_sets_hex()
@@ -1913,11 +2013,15 @@ def export_legibility_df(r, df, exp_settings):
 
 	goals_list = r.get_goals_all()
 
+
 	df_a = df[df['goal'] == goals_list[0]]
 	df_b = df[df['goal'] == goals_list[1]]
 
 	df_a.loc[:,"goal"] = df_a.loc[:, "goal"].map(goal_labels)
 	df_b.loc[:,"goal"] = df_b.loc[:, "goal"].map(goal_labels)
+
+	df_a = df_a[columns]
+	df_b = df_b[columns]
 
 	# make the total overview plot
 	contents_a = np.round(df_a.describe(), 2)
@@ -1957,7 +2061,10 @@ def export_legibility_df(r, df, exp_settings):
 	key_cols.append('goal')
 	mdf = df[key_cols].melt(id_vars=['goal'])
 	ax3 = sns.stripplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette, split=True, linewidth=1, edgecolor='gray')	
-	ax3.set_ylabel('Legibility with regard to goal')
+	if label == 'env':
+		ax3.set_ylabel('Size of maximum envelope of visibility')
+	else:
+		ax3.set_ylabel('Legibility with regard to goal')
 	ax3.set_xlabel('Goal')
 
 	ax3.legend(bbox_to_anchor=(1.02, 1), loc='upper left', borderaxespad=0)
@@ -1966,19 +2073,21 @@ def export_legibility_df(r, df, exp_settings):
 	plt.tight_layout()
 	# fig.tight_layout()
 	#save the plot as a png file
-	plt.savefig(fn_export_from_exp_settings(exp_settings) +  '-desc_plot'  + '.png')
+	plt.savefig(fn_export_from_exp_settings(exp_settings) +  '-desc_plot_' + label + '.png')
 	plt.clf()
+	
 
 # TODO: verify is indexing correctly and grabbing best overall, 
 # not best in short zone
-def get_best_paths_from_df(df):
-	best_paths = {}
+def get_best_paths_from_df(r, df):
 	best_index = {}
+	best_paths = {}
+	best_lookup = {}
 
 	# print(df)
 
 	goals = df['goal'].unique()
-	columns = get_metric_columns(df)
+	columns = get_columns_legibility(r, df)
 
 	# print("GOALS")
 	# print(goals)
@@ -1991,16 +2100,18 @@ def get_best_paths_from_df(df):
 			# print(column)
 			max_index 	= pd.to_numeric(column).idxmax()
 
-			best_paths[(goal, col)] = df.iloc[max_index]['path']
 			best_index[(goal, col)] = max_index
+			best_paths[(goal, col)] = df.iloc[max_index]['path']
+			best_lookup[(goal, col)] = df.iloc[max_index]
 
+	# export_best_env_overview(r, df, best_lookup)
 	# print(best_index)
 	return best_paths, best_index
 
-def analyze_all_paths(resto, paths_for_analysis, exp_settings):
+def analyze_all_paths(r, paths_for_analysis, exp_settings):
 	paths 		= None
-	goals 		= resto.get_goals_all()
-	obs_sets 	= resto.get_obs_sets()
+	goals 		= r.get_goals_all()
+	obs_sets 	= r.get_obs_sets()
 
 	all_entries = []
 	key_index 	= 0
@@ -2016,7 +2127,7 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 		for path in paths:
 			f_vis = exp_settings['f_vis']
-			datum = get_legibilities(resto, path, goal, goals, obs_sets, f_vis, exp_settings)
+			datum = get_legibilities(r, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
 			datum['path_length'] = get_path_length(path)[1]
@@ -2026,11 +2137,11 @@ def analyze_all_paths(resto, paths_for_analysis, exp_settings):
 
 
 	# data_frame of all paths overall
-	df = dict_to_leg_df(resto, data, exp_settings)
+	df = dict_to_leg_df(r, data, exp_settings)
 
-	best_paths, best_index = get_best_paths_from_df(df)
+	best_paths, best_index = get_best_paths_from_df(r, df)
 
-	export_path_options_for_each_goal(resto, best_paths, exp_settings)
+	export_path_options_for_each_goal(r, best_paths, exp_settings)
 	return best_paths
 
 def do_exp(lam, eps):
@@ -2115,7 +2226,7 @@ def do_exp(lam, eps):
 	file1.write(str(best_paths))
 	file1.close()
 
-	print(best_paths)
+	# print(best_paths)
 
 
 
@@ -2129,6 +2240,8 @@ def do_exp(lam, eps):
 
 	# print(title + path_a)
 	# print(title + path_b)
+	print("Number of bugs per calculation:")
+	print(bug_counter)
 
 	print("Done with experiment")
 	exit()
