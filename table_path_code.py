@@ -89,8 +89,15 @@ VIS_D = "VIS_D"
 VIS_E = "VIS_E"
 
 OBS_ALL = 'all'
-OBS_NONE = 'omniscient'
+OBS_NONE = 'omni'
+OBS_KEY_ALL = 'all'
+OBS_KEY_NONE = 'omni'
 OBS_KEYS = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+OBS_KEY_A = 'a'
+OBS_KEY_B = 'b'
+OBS_KEY_C = 'c'
+OBS_KEY_D = 'd'
+OBS_KEY_E = 'e'
 
 SUFFIX_RAW 	= "-raw"
 RAW_ALL 	= VIS_ALL 	+ SUFFIX_RAW
@@ -115,14 +122,16 @@ OBS_COLOR_D = (128,106,50)
 OBS_COLOR_E = (255,10,10)
 OBS_COLOR_OMNISCIENT = (255,255,255)
 OBS_COLOR_ALL = (138,43,226)
+OBS_COLOR_NAKED = (100,100,100)
 
-OBS_HEX_A = '#00ffff'
+OBS_HEX_A = '#00008B'
 OBS_HEX_B = '#00e4ab'
-OBS_HEX_C = '#00c957'
-OBS_HEX_D = '#7cd61c'
+OBS_HEX_C = '#00cc00'
+OBS_HEX_D = '#b2ff66'
 OBS_HEX_E = '#ffeb0a'
 OBS_HEX_OMNISCIENT = '#FFFFFF'
 OBS_HEX_ALL = '#ff2f0a'
+OBS_HEX_NAKED = '#222222'
 
 VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
 RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
@@ -1066,68 +1075,70 @@ class Restaurant:
 
 			all_observers = []
 
+			obs_sets = {}
+			obs_sets[OBS_KEY_NONE] = []
+
 			# person a
 			obs1_pt = (table_x, table_y - customer_offset)
-			print(obs1_pt)
+			# print(obs1_pt)
 			obs1_pt = unity_to_image(obs1_pt)
 
 			obs1_angle = unity_to_image_angle(150)
 			obs1 = Observer(obs1_pt, obs1_angle)
 			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
 			all_observers.append(obs1)
+			obs_sets[OBS_KEY_A] = [obs1]
 
 			# person b
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
-			print(obs2_pt)
+			# print(obs2_pt)
 			obs2_pt = unity_to_image(obs2_pt)
 			
 			obs2_angle = unity_to_image_angle(120)
 			obs2 = Observer(obs2_pt, obs2_angle)
 			obs2.set_color(PATH_COLORS[OBS_INDEX_B])
 			all_observers.append(obs2)
+			obs_sets[OBS_KEY_B] = [obs2]
 
 			# person c
 			obs3_pt = (table_x - customer_offset, table_y)
-			print(obs3_pt)
+			# print(obs3_pt)
 			obs3_pt = unity_to_image(obs3_pt)
 			
 			obs3_angle = unity_to_image_angle(90)
 			obs3 = Observer(obs3_pt, obs3_angle)
 			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
 			all_observers.append(obs3)
+			obs_sets[OBS_KEY_C] = [obs3]
 
 			# person d
 			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
-			print(obs4_pt)
+			# print(obs4_pt)
 			obs4_pt = unity_to_image(obs4_pt)
 			
 			obs4_angle = unity_to_image_angle(60)
 			obs4 = Observer(obs4_pt, obs4_angle)
 			obs4.set_color(PATH_COLORS[OBS_INDEX_D])
 			all_observers.append(obs4)
+			obs_sets[OBS_KEY_D] = [obs4]
 
 			# person e
 			obs5_pt = (table_x, table_y + customer_offset)
-			print(obs5_pt)
+			# print(obs5_pt)
 			obs5_pt = unity_to_image(obs5_pt)
 			
 			obs5_angle = unity_to_image_angle(30)
 			obs5 = Observer(obs5_pt, obs5_angle)
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			all_observers.append(obs5)
+			obs_sets[OBS_KEY_E] = [obs5]
 
+			# obs_sets[OBS_KEY_ALL] = all_observers
+			self.obs_sets = obs_sets
 
-			all_observers = all_observers[::-1]
-			self.observers = all_observers
-
-			for o in self.observers:
-				print("OBSERVER")
-				print(o.get_center())
-
-			# exit()
-
-			# exit()
-			# goal_observers[goal] = [obs1, obs2, obs3, obs4, obs5]
+			# for o in self.observers:
+			# 	print("OBSERVER")
+			# 	print(o.get_center())
 
 		elif generate_type == TYPE_RANDOM:
 			# random generation of locations and objects
@@ -1323,12 +1334,20 @@ class Restaurant:
 
 		overlay = img.copy()
 
-		for obs in observers[::-1]:
-			if obs is not None:
+		obs_sets = self.get_obs_sets()
+		obs_keys = obs_sets.keys()
+		for o_key in obs_keys:
+			# if it's a single audience member, then for each of those...
+			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
+				obs = obs_sets[o_key][0]
+
 				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
 				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
 				alpha = 0.3  # Transparency factor.
 				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+
+				cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
+
 
 		# Draw tables
 		for table in self.tables:
@@ -1339,11 +1358,6 @@ class Restaurant:
 			if FLAG_MAKE_OBSTACLE_MAP:
 				cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
 				cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
-
-
-		for obs in self.observers:
-			cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
-			# cv2.circle(img, obs.get_center(), obs_radius, COLOR_P_FACING, obs_radius)
 
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
@@ -1445,8 +1459,19 @@ class Restaurant:
 		color_lookup['c'] = OBS_COLOR_C
 		color_lookup['d'] = OBS_COLOR_D
 		color_lookup['e'] = OBS_COLOR_E
-		color_lookup['omniscient'] = OBS_COLOR_OMNISCIENT
+		color_lookup['omni'] = OBS_COLOR_OMNISCIENT
 		color_lookup['all'] = OBS_COLOR_ALL
+
+		color_lookup['naked'] = OBS_COLOR_NAKED
+		color_lookup['naked-env'] = OBS_COLOR_NAKED
+
+		color_lookup['a-env'] = OBS_COLOR_A
+		color_lookup['b-env'] = OBS_COLOR_B
+		color_lookup['c-env'] = OBS_COLOR_C
+		color_lookup['d-env'] = OBS_COLOR_D
+		color_lookup['e-env'] = OBS_COLOR_E
+		color_lookup['omni-env'] = OBS_COLOR_OMNISCIENT
+		color_lookup['all-env'] = OBS_COLOR_ALL
 
 		return color_lookup
 
@@ -1457,36 +1482,64 @@ class Restaurant:
 		color_lookup['c'] = OBS_HEX_C
 		color_lookup['d'] = OBS_HEX_D
 		color_lookup['e'] = OBS_HEX_E
-		color_lookup['omniscient'] = OBS_HEX_OMNISCIENT
+		color_lookup['omni'] = OBS_HEX_OMNISCIENT
 		color_lookup['all'] = OBS_HEX_ALL
+
+		color_lookup['naked'] = OBS_HEX_NAKED
+		color_lookup['naked-env'] = OBS_HEX_NAKED
+
+		color_lookup['a-env'] = OBS_HEX_A
+		color_lookup['b-env'] = OBS_HEX_B
+		color_lookup['c-env'] = OBS_HEX_C
+		color_lookup['d-env'] = OBS_HEX_D
+		color_lookup['e-env'] = OBS_HEX_E
+		color_lookup['omni-env'] = OBS_HEX_OMNISCIENT
+		color_lookup['all-env'] = OBS_HEX_ALL
 
 		return color_lookup
 
+	def get_obs_label(self, obs_set):
+		all_sets = self.get_obs_sets()
+
+		# if len(obs_set) == 0:
+		# 	return OBS_NONE
+		# if len(obs_set) > 1:
+		# 	return OBS_ALL
+
+		# for val in all_sets.values():
+
+		key_list = list(all_sets.keys())
+		val_list = list(all_sets.values())
+		 
+		position = val_list.index(obs_set)
+		return key_list[position]
+
 	def get_obs_sets(self):
-		obs_none 	= []
-		obs_all 	= self.get_observers()
+		return self.obs_sets
+		# obs_none 	= []
+		# obs_all 	= self.get_observers()
 
-		obs_sets = {}
-		obs_sets[OBS_NONE] = obs_none
+		# obs_sets = {}
+		# obs_sets[OBS_NONE] = obs_none
 
-		if self.generate_type == TYPE_UNITY_ALIGNED:	
-			obs_a 		= [self.get_observer_back()]
-			obs_b 		= [self.get_observer_towards()]
+		# if self.generate_type == TYPE_UNITY_ALIGNED:	
+		# 	obs_a 		= [self.get_observer_back()]
+		# 	obs_b 		= [self.get_observer_towards()]
 
-			obs_sets[OBS_A] = obs_a
-			obs_sets[OBS_B] = obs_b
+		# 	obs_sets[OBS_A] = obs_a
+		# 	obs_sets[OBS_B] = obs_b
 		
-		elif self.generate_type == TYPE_EXP_SINGLE:
-			for i in range(len(obs_all)):
-				key = OBS_KEYS[i]
-				obs_sets[key]  = [obs_all[i]]
+		# elif self.generate_type == TYPE_EXP_SINGLE:
+		# 	for i in range(len(obs_all)):
+		# 		key = OBS_KEYS[i]
+		# 		obs_sets[key]  = [obs_all[i]]
 
-		else:
-			print("TO DO: IMPLEMENT SUBGROUPING SCENARIOS")
-			exit()
+		# else:
+		# 	print("TO DO: IMPLEMENT SUBGROUPING SCENARIOS")
+		# 	exit()
 
-		obs_sets[OBS_ALL]  = obs_all
-		return obs_sets
+		# # obs_sets[OBS_ALL]  = obs_all
+		# return obs_sets
 
 
 	def generate_visibility_maps(self):
@@ -1700,7 +1753,10 @@ class Restaurant:
 		return copy.copy(self.img)
 
 	def get_obs_img(self, obs_key):
-		target_obs = self.get_obs_sets()[obs_key]
+		if obs_key is 'naked':
+			target_obs = []
+		else:
+			target_obs = self.get_obs_sets()[obs_key]
 
 		return self.generate_obstacle_map_and_img(target_obs)
 
@@ -1921,7 +1977,7 @@ def export_assessments_by_criteria(img, saved_paths, fn=None):
 	all_paths_img = img.copy()
 
 	l_lookup = {} #['lo', 'la', 'lb', 'lm']
-	l_lookup['omniscient'] = 0
+	l_lookup['omni'] = 0
 	l_lookup['all'] = 1
 	l_lookup['a'] = 2
 	l_lookup['b'] = 3
