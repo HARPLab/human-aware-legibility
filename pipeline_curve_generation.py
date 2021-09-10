@@ -15,6 +15,7 @@ from pandas.plotting import table
 import matplotlib.gridspec as gridspec
 import klampt_smoothing as chunkify
 from collections import defaultdict
+from shapely.geometry import LineString
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -203,7 +204,7 @@ def get_visibility_of_pt_w_observers(pt, aud):
 			# from_center = from_center * from_center
 			score.append(from_center)
 		else:
-			score.append(0)
+			score.append(1)
 
 		# 	# full credit at the center of view
 		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
@@ -731,27 +732,26 @@ def is_valid_path(r, path):
 			# print(p)
 			return False
 
+	line = LineString(path)
+	if not line.is_simple:
+		return False
+
+	# Checks for table intersection
 	for t in tables:
-		# print("TABLE MID: " + str(t.get_center()))
-		for i in range(len(path) - 1):
-			pt1 = path[i]
-			pt2 = path[i + 1]
-			
-			# print((pt1, pt2))
+		if t.intersects_path(path):
+			return False
 
-			px, py = pt1[0], pt1[1]
+	# Checks for remaining in bounds
+	for i in range(len(path) - 1):
+		pt1 = path[i]
+		pt2 = path[i + 1]
+		
+		# print((pt1, pt2))
 
-			if px > hi_x + 10:
-				return False
+		px, py = pt1[0], pt1[1]
 
-
-			# if t.intersects_line(pt1, pt2):
-			# 	# print("Intersection!")
-
-			# 	# print(t.get_center())
-			# 	# print(path)
-			# 	# print((pt1, pt2))
-			# 	return False
+		if px > hi_x + 30:
+			return False			
 
 	return True
 
@@ -1209,7 +1209,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 			sample_sets.append(min_path)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
-		resolution = 3
+		resolution = exp_settings['resolution']
 		sx, sy, stheta = start
 		gx, gy, gt = goal
 		# print("sampling central")
@@ -1238,7 +1238,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# print(point_set)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
-		resolution_sparse = 10
+		resolution_sparse = exp_settings['resolution'] * 3
 
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1342,16 +1342,26 @@ def eps_to_str(eps):
 
 def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	sampling_type = exp_settings['sampling_type']
-	fn_pickle = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-" + str(goal_index) + ".pickle"
+	n_chunks = exp_settings['num_chunks']
+	angle_str = exp_settings['angle_strength']
+	res = exp_settings['resolution']
+
+	fn_pickle = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-g" + str(goal_index)
+	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 	print("{" + fn_pickle + "}")
 	return fn_pickle
 
 
 def fn_pathpickle_envir_cache(exp_settings):
-	sampling_type 	= exp_settings['sampling_type']
+	sampling_type = exp_settings['sampling_type']
+	n_chunks = exp_settings['num_chunks']
+	angle_str = exp_settings['angle_strength']
+	res = exp_settings['resolution']
 	f_vis_label 	= exp_settings['f_vis_label']
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label + ".pickle"
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label
+	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
+
 	# print("{" + fn_pickle + "}")
 	return fn_pickle
 
@@ -2159,7 +2169,7 @@ def do_exp(lam, eps, km):
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2178,13 +2188,14 @@ def do_exp(lam, eps, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['f_vis_label']		= 'f_cred_lin'
+	exp_settings['resolution']		= 10
+	exp_settings['f_vis_label']		= 'f_no-zero'
 	exp_settings['epsilon'] 		= 1e-14 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 550
+	exp_settings['angle_strength']	= 600
 	exp_settings['min_path_length'] = {}
 	exp_settings['f_vis']			= f_exp_single
 	exp_settings['kill_1']			= km
@@ -2223,6 +2234,7 @@ def do_exp(lam, eps, km):
 		paths_for_analysis[goal] = paths
 
 
+	exit()
 	print("~~~")
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
@@ -2251,9 +2263,7 @@ def do_exp(lam, eps, km):
 
 	print("Done with experiment")
 
-def main():
-	# eps_start = decimal.Decimal(.000000000001)
-	# lam_start = decimal.Decimal(.00000000001)
+def exp_determine_lam_eps():
 	lam_vals = [0.0]
 	eps_vals = []
 	# exit()
@@ -2270,6 +2280,14 @@ def main():
 			for km in [True, False]:
 				do_exp(lam, eps, km)
 
+
+def main():
+	lam = 1e-16
+	eps = 0 #1e-16
+	kill_mode = True
+	# eps_start = decimal.Decimal(.000000000001)
+	# lam_start = decimal.Decimal(.00000000001)
+	do_exp(lam, eps, kill_mode)	
 
 if __name__ == "__main__":
 
