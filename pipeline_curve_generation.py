@@ -2233,8 +2233,6 @@ def do_exp(lam, eps, km):
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
-
-	exit()
 	print("~~~")
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
