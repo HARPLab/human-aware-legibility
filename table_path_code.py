@@ -13,6 +13,7 @@ from PIL import Image
 from PIL import ImageDraw
 
 from shapely.geometry import Point as fancyPoint
+from shapely.geometry import box as fancyBox
 from shapely.geometry import Polygon as fancyPolygon
 from shapely.geometry import LineString as fancyLineString
 
@@ -591,41 +592,83 @@ class Table:
 		if gen_type == TYPE_UNITY_ALIGNED or gen_type == TYPE_EXP_SINGLE:
 			self.radius = 1
 		
-		half_radius = self.radius / 2.0
+		table_radius = int(.4 * UNITY_SCALE_X)
+		table_radius = int(table_radius * 2)
+		# half_radius = self.radius / 2.0
 
-		pts = [pt, pt, pt, pt]
-		pts[0] = tuple_plus(pts[0], (- half_radius, - half_radius))
-		pts[1] = tuple_plus(pts[1], (- half_radius, + half_radius))
-		pts[2] = tuple_plus(pts[2], (+ half_radius, + half_radius))
-		pts[3] = tuple_plus(pts[3], (+ half_radius, - half_radius))
-		self.points = pts
+		USE_RECTANGLES = False
+		USE_CIRCLES = False
+		USE_POLYGON = True
 
-		polygon_set = []
-		for p in pts:
-			polygon_set.append(Point(p))
+		tp = pt
+		if USE_POLYGON:
+			tx, ty, ttheta = tp
+			dir_y = 0
+			if ttheta == DIR_SOUTH:
+				dir_y = -1
+			elif ttheta == DIR_NORTH:
+				dir_y = 1
+			else:
+				print("No def for table at this orientation")
+				exit()
 
-		self.shape = Polygon(polygon_set)
+			# width and height
+			tw = table_radius
+			th = table_radius # * .25
+
+			ow_diag = tw * 0.70710
+			oh_diag = th * 0.70710
+
+			pt_left = (tx - tw, ty)
+			pt_right = (tx + tw, ty)
+			pt_bot = (tx, ty + (dir_y * th))
+			pt_lbot = (tx - ow_diag, ty + (dir_y * oh_diag))
+			pt_rbot = (tx + ow_diag, ty + (dir_y * oh_diag))
+
+			tpts = [pt_left, pt_lbot, pt_bot, pt_rbot, pt_right]
+
+			print("oOoOo")
+			print(tpts)
+
+			t = fancyPolygon(tpts)
+			# t = fancyBox(tx - tw, ty - th, tx + tw, ty + th, ccw=True)
+
+		elif USE_RECTANGLES:
+			pts = [pt, pt, pt, pt]
+			pts[0] = tuple_plus(pts[0], (- half_radius, - half_radius))
+			pts[1] = tuple_plus(pts[1], (- half_radius, + half_radius))
+			pts[2] = tuple_plus(pts[2], (+ half_radius, + half_radius))
+			pts[3] = tuple_plus(pts[3], (+ half_radius, - half_radius))
+			self.points = pts
+
+			polygon_set = []
+			for p in pts:
+				polygon_set.append(Point(p))
+
+			t = fancyPolygon(polygon_set)
+
+		elif USE_CIRCLES:
+			t = fancyPoint(self.get_center()).buffer(table_radius)
+
+		self.shape = t
 
 	def is_within(self, point):
 		return Point(point).within(self.shape)
 
-	def intersects_line(self, pt1, pt2):
-		# TODO ADA
-		# print(DIM_TABLE_RADIUS)
-		table_radius = int(.1 * UNITY_SCALE_X)
-		table_radius = int(table_radius * 2)
-		# print(table_radius)
-		p = fancyPoint(self.get_center()).buffer(table_radius)
-		l = fancyLineString([pt1, pt2])
-		i = l.intersects(p)
+	def intersects_path(self, path):
+		t = self.get_shape()
+		for i in range(len(path) - 1):
+			pt1 = path[i]
+			pt2 = path[i + 1]
+			
+			l = fancyLineString([pt1, pt2])
+			i = l.intersects(t)
 
-		if i:
-			# print("intersection")
-			# print(p)
-			# print(l)
-			return True
+			if i:
+				return True
 
 		return False
+
 
 	def pt_top_left(self):
 		return self.points[0]
@@ -636,8 +679,15 @@ class Table:
 	def get_radius(self):
 		return int(self.radius)
 
+	def get_shape(self):
+		return self.shape
+
+	def get_shape_list(self):
+		pts =  list(self.get_shape().exterior.coords)[1:]
+		return [(int(x[0]), int(x[1])) for x in pts]
+
 	def get_center(self):
-		return self.location
+		return (self.location[0], self.location[1])
 
 	def get_JSON(self):
 		return (self.location, self.radius)
@@ -1003,9 +1053,9 @@ class Restaurant:
 			start = (5.6, 1.0, DIR_EAST)
 			self.set_start(unity_to_image(start))
 
-			print("START")
-			print(start)
-			print(unity_to_image(start))
+			# print("START")
+			# print(start)
+			# print(unity_to_image(start))
 
 			length = 1000
 			width = 1375
@@ -1023,9 +1073,9 @@ class Restaurant:
 
 			unity_table_pts = []
 			# unity_table_pts.append((3.6, -4.0))
-			unity_table_pts.append((3.6, 	-7.0)) # 3.6, 	-7.5
+			unity_table_pts.append((3.6, 	-7.0, DIR_SOUTH)) # 3.6, 	-7.5
 			# unity_table_pts.append((5.6, -10.0))
-			unity_table_pts.append((7.6 + a[0], 	-7.0  + a[1]))
+			unity_table_pts.append((7.6 + a[0], 	-7.0  + a[1], DIR_NORTH))
 
 			unity_goal_stop_options = []
 			# unity_goal_stop_options.append((4.3, -4.3))
@@ -1042,8 +1092,8 @@ class Restaurant:
 			table_pts = []
 			for t in unity_table_pts:
 				pt = unity_to_image(t)
-				print("TABLE:" + str(t))
-				print(unity_to_image(t))
+				# print("TABLE:" + str(t))
+				# print(unity_to_image(t))
 
 				# print(pt)
 				table = Table(pt, generate_type)
@@ -1052,8 +1102,8 @@ class Restaurant:
 			# print(unity_table_pts[0])
 
 			for g in unity_goal_stop_options:
-				print("GOAL:" + str(g))
-				print(unity_to_image(g))
+				# print("GOAL:" + str(g))
+				# print(unity_to_image(g))
 				goal_helper_pts.append(unity_to_image(g))
 				self.goals.append(unity_to_image(g))
 
@@ -1346,23 +1396,31 @@ class Restaurant:
 				alpha = 0.3  # Transparency factor.
 				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
-				cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
-
 
 		# Draw tables
 		for table in self.tables:
-			table_center = table.get_center()
-			# print(table_center)
-			cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
+			tpoly = table.get_shape_list()
+			tpoly = np.array([tpoly], np.int32)
+			cv2.fillPoly(img, np.asarray(tpoly), COLOR_TABLE, lineType=cv2.LINE_AA)
 
-			if FLAG_MAKE_OBSTACLE_MAP:
-				cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
-				cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
+			# table_center = table.get_center()
+			# # print(table_center)
+			# cv2.circle(img, table_center, table_radius, COLOR_TABLE, table_radius)
+
+			# if FLAG_MAKE_OBSTACLE_MAP:
+			# 	cv2.circle(obstacle_vis, table_center, table_radius + DIM_NAVIGATION_BUFFER, COLOR_OBSTACLE_BUFFER)
+			# 	cv2.circle(obstacle_vis, table_center, table_radius, COLOR_OBSTACLE_FULL)
 
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
 			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
+
+		obs_keys = obs_sets.keys()
+		for o_key in obs_keys:
+			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
+				obs = obs_sets[o_key][0]
+				cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
 
 		cv2.circle(img, to_xy(self.get_start()), start_radius, COLOR_START, start_radius)
 
