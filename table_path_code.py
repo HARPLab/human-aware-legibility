@@ -1637,9 +1637,6 @@ class Restaurant:
 			# Successfully dumped pickle
 		self.visibility_maps = visibility_maps
 
-	def get_observers(self):
-		return self.observers
-
 	def path_to_printable_path(self, path):
 		length = self.get_length()
 		new_path = []
@@ -2250,7 +2247,7 @@ def main():
 	start 		= r.get_start()
 	goals 		= r.get_goals_all()
 	goal 		= r.get_current_goal()
-	observers 	= r.get_observers()
+	observers 	= r.get_obs_sets()
 	tables 		= r.get_tables()
 	waypoints 	= r.get_waypoints()
 	SCENARIO_IDENTIFIER = r.get_scenario_identifier()
