@@ -31,8 +31,8 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = True #False #True #False
-FLAG_REDO_ENVIR_CACHE 	= True
+FLAG_REDO_PATH_CREATION = False #True #False #True #False
+FLAG_REDO_ENVIR_CACHE 	= False #True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -242,7 +242,7 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	decimal.getcontext().prec = 40
+	decimal.getcontext().prec = 60
 
 	start = r.get_start()
 
@@ -452,7 +452,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 	t = 1
 	p_n = path[0]
-	divisor = 0 #epsilon
+	divisor = epsilon
 	numerator = decimal.Decimal(0.0)
 
 	for pt, cost_to_here in aug_path:
@@ -506,7 +506,8 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 		# print((numerator, divisor))
 
 		# print(len(aud))
-		overall = 0.0
+		if exp_settings['kill_1'] == True:
+			overall = 0.0
 
 	return overall
 
@@ -1236,7 +1237,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# print(point_set)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
-		resolution_sparse = 20
+		resolution_sparse = 10
 
 		sx, sy, stheta = start
 		gx, gy, gt = goal
@@ -1576,11 +1577,13 @@ def fn_export_from_exp_settings(exp_settings):
 	chunking_type 	= exp_settings['chunk_type']
 	astr 				= exp_settings['angle_strength']
 
+	km = exp_settings['kill_1']
+
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
 	fn = FILENAME_PATH_ASSESS + title + "_" 
-	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr)
+	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr) + 'km=' + str(km)
 	return fn
 
 # Convert sample points into actual useful paths
@@ -1861,7 +1864,6 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
 	fn = FILENAME_PATH_ASSESS
-
 	title = title_from_exp_settings(exp_settings)
 
 	# flip required for orientation
@@ -1873,7 +1875,6 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	
 	empty_img = img
 	all_img = img
-
 
 	color_dict = restaurant.get_obs_sets_colors()
 
@@ -1926,7 +1927,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_goal_' + str(goal_index) + '.png', goal_img) 
 
-	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', all_img) 
+	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_overview_yay'+ '.png', all_img)
 
 	# TODO: actually export pics for them
 
@@ -1978,6 +1979,9 @@ def export_legibility_df(r, df, exp_settings):
 	print(get_columns_metric(r, df))
 	print(get_columns_env(r, df))
 	print(get_columns_legibility(r, df))
+
+	# columns_env = get_columns_pure_vis(r, df)
+	# make_overview_plot(r, df, exp_settings, columns_env, 'env')
 
 	columns_env = get_columns_env(r, df)
 	make_overview_plot(r, df, exp_settings, columns_env, 'env')
@@ -2144,7 +2148,7 @@ def analyze_all_paths(r, paths_for_analysis, exp_settings):
 	export_path_options_for_each_goal(r, best_paths, exp_settings)
 	return best_paths
 
-def do_exp(lam, eps):
+def do_exp(lam, eps, km):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
 	unique_key = 'exp_single'
@@ -2182,6 +2186,7 @@ def do_exp(lam, eps):
 	exp_settings['angle_strength']	= 550
 	exp_settings['min_path_length'] = {}
 	exp_settings['f_vis']			= f_exp_single
+	exp_settings['kill_1']			= km
 
 	# Preload envir cache for faster calculations
 	envir_cache = get_envir_cache(restaurant, exp_settings)
@@ -2244,27 +2249,25 @@ def do_exp(lam, eps):
 	print(bug_counter)
 
 	print("Done with experiment")
-	exit()
-
-	return None
 
 def main():
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
 	lam_vals = [0.0]
-	l = 1e-14
-	e = 0.0
-	do_exp(e, l)
+	eps_vals = []
+	# exit()
+	for i in range(-1, -30, -1):
+		new_val = 1.0 ** i
+		eps_vals.append(new_val)
+		lam_vals.append(new_val)
+		# lam_vals.append(new_val)
 
-	# for i in range(-8, -20):
-	# 	new_val = 1.0 ** i
-	# 	eps_vals.append(new_val)
-	# 	lam_vals.append(new_val)
 
-
-	# print("REMIX TIME")
-	# for l in lam_vals:
-	# 	do_exp(e, l)
+	print("REMIX TIME")
+	for eps in eps_vals:
+		for lam in lam_vals:
+			for km in [True, False]:
+				do_exp(lam, eps, km)
 
 
 if __name__ == "__main__":
