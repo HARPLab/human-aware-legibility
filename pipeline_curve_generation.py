@@ -865,12 +865,13 @@ def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn,
 	for k in range(0,n-1):
 		x_t = 1.0/6.0*(((1-t)**3)*Qx[k]+(3*t**3-6*t**2+4)*Qx[k+1]+(-3*t**3+3*t**2+3*t+1)*Qx[k+2]+(t**3)*Qx[k+3])
 		y_t = 1.0/6.0*(((1-t)**3)*Qy[k]+(3*t**3-6*t**2+4)*Qy[k+1]+(-3*t**3+3*t**2+3*t+1)*Qy[k+2]+(t**3)*Qy[k+3]) 
-		plt.plot(x_t,y_t,'k',linewidth=2.0,color='orange')
-
+		
 		x_all.extend(x_t)
 		y_all.extend(y_t)
 
 	if FLAG_EXPORT_SPLINE_DEBUG:
+		plt.plot(x_t,y_t,'k',linewidth=2.0,color='orange')
+
 		print("Saving the path I made lalalala")
 		plt.plot(x, y, 'ko', label='fit knots',markersize=15.0)
 		plt.plot(Qx, Qy, 'o--', label='control points',markersize=15.0)
