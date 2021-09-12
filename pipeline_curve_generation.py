@@ -32,7 +32,7 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = False #True #False #True #False
+FLAG_REDO_PATH_CREATION = False #True #False
 FLAG_REDO_ENVIR_CACHE 	= False #True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -55,6 +55,7 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 SAMPLE_TYPE_CENTRAL 	= 'central'
 SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparse'
 SAMPLE_TYPE_DEMO 		= 'demo'
+SAMPLE_TYPE_CURVE_TEST	= 'ctest'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
@@ -68,10 +69,13 @@ ENV_START_TO_HERE 		= 'start_to_here'
 ENV_HERE_TO_GOALS 		= 'here_to_goals'
 ENV_VISIBILITY_PER_OBS 	= 'vis_per_obs'
 
-premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST]
+premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST, SAMPLE_TYPE_CURVE_TEST]
 non_metric_columns = ["path", "goal", 'path_length', 'path_cost']
 
 bug_counter = defaultdict(int)
+curvatures = []
+max_curvatures = []
+
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
@@ -689,8 +693,76 @@ def construct_single_path(start, end, sample_pts):
 
 	return points
 
-# TODO: add test methods for this
-def is_valid_path(r, path):
+def get_max_turn_along_path(path):
+	angle_list = []
+	is_counting = False
+	for i in range(len(path) - 4):
+		p1, p2, p3 = path[i], path[i + 2], path[i + 4]
+		angle = angle_of_turn([p1, p2], [p2, p3])
+		print(str((p1, p2, p3)) + "->" + str(angle))
+
+		if resto.dist(p1,p2) > 2 or resto.dist(p2, p3) > 2:
+			angle_list.append(abs(angle))
+			curvatures.append(angle)
+		# else:
+		# 	print("too short, rejected")
+	
+	# print(angle_list)
+	max_curvature = max(angle_list)
+	# min_curvature = min(angle_list)
+	# print(max_curvature)
+	max_curvatures.append(max_curvature)
+	# print(angle_list.index(max_curvature))
+
+	return max_curvature
+
+# def check_curvature(path):
+# 	lx = [x for x,y in path]
+# 	ly = [y for x,y in path]
+
+# 	#first derivatives 
+# 	dx= np.gradient(lx)
+# 	dy = np.gradient(ly)
+
+# 	#second derivatives 
+# 	d2x = np.gradient(dx)
+# 	d2y = np.gradient(dy)
+
+# 	#calculation of curvature from the typical formula
+# 	curvature = np.abs(dx * d2y - d2x * dy) / (dx * dx + dy * dy)**1.5
+# 	# curvature = curvature[~np.isnan(curvature)]
+# 	curvature = curvature[2:-2]
+# 	print(curvature)
+# 	max_curvature = max(curvature)
+# 	print(max_curvature)
+
+# 	# curvatures.append(max_curvature)
+# 	return max_curvature
+
+def get_hi_low_of_pts(pt_list):
+	first = pt_list[0]
+	low_x, hi_x = first[0], first[0]
+	low_y, hi_y = first[1], first[1]
+
+	for pt in pt_list:
+		px, py = pt[0], pt[1]
+
+		if low_x > px:
+			low_x = px
+
+		if low_y > py:
+			low_y = py
+
+		if hi_x < px:
+			hi_x = px
+
+		if hi_y < py:
+			hi_y = py
+
+	return low_x, hi_x, low_y, hi_y
+
+
+def is_valid_path(r, path, exp_settings):
 	tables = r.get_tables()
 	# print(len(tables))
 
@@ -700,40 +772,21 @@ def is_valid_path(r, path):
 	gx1, gy1, gt1 = r.get_goals_all()[1]
 	# print("sampling central")
 	
-	low_x, hi_x = sx, sx
-	low_y, hi_y = sy, sy
+	all_pts = copy.copy(r.get_goals_all())
+	all_pts.append(start)
+	low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(all_pts)
 
-	if low_x > gx0:
-		low_x = gx0
-
-	if low_y > gy0:
-		low_y = gy0
-
-	if hi_x < gx0:
-		hi_x = gx0
-
-	if hi_y < gy0:
-		hi_y = gy0
-
-	if low_x > gx1:
-		low_x = gx1
-
-	if low_y > gy1:
-		low_y = gy1
-
-	if hi_x < gx1:
-		hi_x = gx1
-
-	if hi_y < gy1:
-		hi_y = gy1
-
-	for p in path:
-		if p[0] < start[0] - 2:
-			# print(p)
-			return False
+	# for p in path:
+	# 	if p[0] < start[0] - 2:
+	# 		# print(p)
+	# 		return False
 
 	line = LineString(path)
 	if not line.is_simple:
+		return False
+
+	max_turn = get_max_turn_along_path(path)
+	if max_turn >= exp_settings['angle_cutoff']:
 		return False
 
 	# Checks for table intersection
@@ -741,17 +794,20 @@ def is_valid_path(r, path):
 		if t.intersects_path(path):
 			return False
 
+	BOUND_CHECK_RIGHT = False
 	# Checks for remaining in bounds
-	for i in range(len(path) - 1):
-		pt1 = path[i]
-		pt2 = path[i + 1]
-		
-		# print((pt1, pt2))
+	if BOUND_CHECK_RIGHT:
+		for i in range(len(path) - 1):
+			pt1 = path[i]
+			pt2 = path[i + 1]
+			
+			# print((pt1, pt2))
 
-		px, py = pt1[0], pt1[1]
+			px, py = pt1[0], pt1[1]
 
-		if px > hi_x + 30:
-			return False			
+			if px > hi_x + 80:
+				return False
+
 
 	return True
 
@@ -1147,10 +1203,13 @@ def get_hardcoded():
 
 
 # remove invalid paths
-def trim_paths(r, all_paths, goal):
+def trim_paths(r, all_paths, goal, exp_settings, reverse=False):
 	trimmed_paths = []
 	for p in all_paths:
-		if is_valid_path(r, p):
+		is_valid = is_valid_path(r, p, exp_settings)
+		if is_valid and reverse == False:
+			trimmed_paths.append(p)
+		elif not is_valid and reverse == True:
 			trimmed_paths.append(p)
 
 	print("Paths trimmed: " + str(len(all_paths)) + " -> " + str(len(trimmed_paths)))
@@ -1162,7 +1221,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 	# sampling_type = 'in_zone'
 
 	sample_sets = []
-	resolution = 10
+	# resolution = 10
+	SAMPLE_BUFFER = 150
 
 	sampling_type = exp_settings['sampling_type']
 
@@ -1200,6 +1260,12 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		sample_sets = [p1, p2, p3, p4, p5, p6, p7]
 
+	if sampling_type == SAMPLE_TYPE_CURVE_TEST:
+		test_dict = {((1005, 257, 180), 'naked'): [(204, 437), (204, 436), (204, 436), (203, 435), (203, 433), (203, 430), (203, 425), (204, 420), (204, 413), (204, 404), (205, 394), (206, 382), (208, 369), (209, 354), (213, 338), (216, 320), (221, 301), (228, 281), (237, 259), (248, 238), (262, 217), (280, 197), (303, 180), (329, 166), (361, 159), (397, 157), (436, 162), (479, 170), (523, 184), (566, 199), (608, 216), (647, 231), (685, 247), (721, 262), (756, 276), (788, 289), (818, 300), (846, 309), (872, 317), (896, 321), (917, 325), (936, 326), (953, 325), (968, 321), (979, 316), (988, 308), (995, 300), (999, 291), (1001, 283), (1003, 275), (1004, 269), (1004, 264), (1004, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'omni'): [(204, 437), (204, 436), (204, 436), (203, 435), (203, 433), (203, 430), (203, 425), (204, 420), (204, 413), (204, 404), (205, 394), (206, 382), (208, 369), (209, 354), (213, 338), (216, 320), (221, 301), (228, 281), (237, 259), (248, 238), (262, 217), (280, 197), (303, 180), (329, 166), (361, 159), (397, 157), (436, 162), (479, 170), (523, 184), (566, 199), (608, 216), (647, 231), (685, 247), (721, 262), (756, 276), (788, 289), (818, 300), (846, 309), (872, 317), (896, 321), (917, 325), (936, 326), (953, 325), (968, 321), (979, 316), (988, 308), (995, 300), (999, 291), (1001, 283), (1003, 275), (1004, 269), (1004, 264), (1004, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'a'): [(204, 437), (204, 436), (204, 436), (206, 436), (208, 436), (211, 436), (215, 436), (220, 435), (227, 435), (235, 435), (245, 434), (256, 433), (269, 433), (285, 432), (301, 431), (320, 430), (341, 430), (363, 429), (387, 428), (414, 427), (443, 426), (473, 426), (505, 426), (539, 425), (574, 426), (611, 426), (650, 427), (688, 429), (724, 430), (758, 430), (790, 430), (820, 429), (848, 426), (874, 422), (897, 416), (918, 409), (936, 400), (951, 390), (965, 378), (975, 365), (983, 352), (990, 339), (995, 327), (998, 315), (1000, 303), (1003, 293), (1003, 284), (1004, 276), (1004, 269), (1004, 264), (1004, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'b'): [(204, 437), (204, 436), (204, 436), (206, 436), (208, 436), (211, 436), (216, 436), (222, 436), (230, 435), (239, 435), (250, 435), (263, 434), (278, 433), (295, 433), (314, 432), (335, 432), (358, 431), (384, 430), (411, 429), (440, 428), (472, 428), (505, 427), (540, 426), (577, 426), (615, 426), (655, 426), (695, 426), (734, 427), (771, 428), (805, 429), (836, 430), (863, 430), (889, 429), (911, 427), (931, 423), (949, 416), (963, 408), (974, 396), (983, 384), (989, 370), (994, 357), (997, 343), (1000, 330), (1001, 317), (1003, 306), (1003, 295), (1004, 286), (1004, 277), (1004, 270), (1004, 265), (1004, 260), (1005, 258), (1005, 257), (1005, 257)], ((1005, 257, 180), 'c'): [(204, 437), (204, 436), (204, 436), (206, 436), (208, 436), (212, 436), (217, 436), (224, 436), (233, 436), (244, 435), (257, 435), (272, 435), (289, 434), (309, 434), (330, 433), (355, 432), (381, 432), (411, 431), (443, 431), (476, 430), (513, 429), (552, 428), (592, 428), (635, 427), (679, 426), (725, 426), (772, 426), (818, 425), (861, 426), (899, 426), (934, 427), (964, 428), (989, 429), (1009, 430), (1025, 429), (1034, 423), (1033, 413), (1029, 400), (1024, 387), (1020, 374), (1016, 360), (1013, 346), (1010, 333), (1008, 320), (1007, 308), (1006, 297), (1006, 288), (1005, 279), (1005, 272), (1005, 266), (1005, 261), (1005, 259), (1005, 257), (1005, 257)], ((1005, 257, 180), 'd'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (218, 435), (225, 435), (235, 434), (246, 433), (259, 432), (275, 431), (293, 430), (313, 429), (336, 427), (361, 425), (389, 423), (420, 421), (453, 419), (488, 417), (527, 414), (567, 411), (610, 409), (655, 407), (701, 404), (750, 402), (799, 400), (848, 398), (894, 397), (936, 396), (973, 396), (1006, 397), (1034, 399), (1056, 402), (1072, 405), (1075, 406), (1065, 401), (1053, 392), (1043, 382), (1034, 371), (1027, 359), (1021, 346), (1016, 334), (1012, 321), (1009, 310), (1008, 299), (1006, 289), (1005, 280), (1005, 273), (1005, 267), (1005, 262), (1005, 259), (1004, 257), (1004, 257)], ((1005, 257, 180), 'e'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (218, 435), (225, 435), (235, 434), (246, 433), (259, 432), (275, 431), (293, 430), (313, 429), (336, 427), (361, 425), (389, 423), (420, 421), (453, 419), (488, 417), (527, 414), (567, 411), (610, 409), (655, 407), (701, 404), (750, 402), (799, 400), (848, 398), (894, 397), (936, 396), (973, 396), (1006, 397), (1034, 399), (1056, 402), (1072, 405), (1075, 406), (1065, 401), (1053, 392), (1043, 382), (1034, 371), (1027, 359), (1021, 346), (1016, 334), (1012, 321), (1009, 310), (1008, 299), (1006, 289), (1005, 280), (1005, 273), (1005, 267), (1005, 262), (1005, 259), (1004, 257), (1004, 257)], ((1005, 617, 0), 'naked'): [(204, 437), (203, 437), (203, 437), (202, 438), (202, 440), (200, 443), (198, 447), (196, 452), (193, 459), (189, 467), (185, 476), (180, 487), (175, 499), (170, 514), (165, 529), (160, 547), (155, 566), (152, 586), (150, 608), (150, 630), (155, 652), (166, 673), (183, 691), (208, 701), (240, 706), (277, 705), (319, 698), (365, 688), (414, 674), (463, 660), (511, 645), (558, 630), (603, 615), (646, 602), (686, 589), (725, 578), (761, 569), (795, 561), (827, 554), (856, 549), (882, 547), (906, 545), (927, 546), (946, 549), (962, 553), (975, 559), (985, 566), (992, 575), (998, 583), (1000, 591), (1003, 599), (1004, 605), (1004, 610), (1004, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'omni'): [(204, 437), (203, 437), (203, 437), (202, 438), (202, 440), (200, 443), (198, 447), (196, 452), (193, 459), (189, 467), (185, 476), (180, 487), (175, 499), (170, 514), (165, 529), (160, 547), (155, 566), (152, 586), (150, 608), (150, 630), (155, 652), (166, 673), (183, 691), (208, 701), (240, 706), (277, 705), (319, 698), (365, 688), (414, 674), (463, 660), (511, 645), (558, 630), (603, 615), (646, 602), (686, 589), (725, 578), (761, 569), (795, 561), (827, 554), (856, 549), (882, 547), (906, 545), (927, 546), (946, 549), (962, 553), (975, 559), (985, 566), (992, 575), (998, 583), (1000, 591), (1003, 599), (1004, 605), (1004, 610), (1004, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'a'): [(204, 437), (203, 437), (203, 437), (202, 438), (201, 440), (199, 443), (197, 446), (193, 451), (189, 458), (184, 465), (178, 474), (173, 485), (166, 497), (158, 510), (150, 525), (141, 542), (133, 560), (126, 580), (120, 601), (115, 623), (115, 647), (120, 669), (133, 688), (157, 700), (187, 706), (224, 705), (267, 699), (313, 689), (364, 676), (415, 661), (466, 647), (515, 632), (562, 618), (608, 605), (651, 592), (693, 581), (732, 571), (769, 562), (802, 556), (834, 551), (862, 548), (889, 546), (912, 546), (933, 548), (951, 551), (965, 556), (978, 562), (987, 570), (994, 578), (999, 587), (1002, 595), (1003, 602), (1004, 607), (1004, 612), (1004, 615), (1004, 617), (1004, 617)], ((1005, 617, 0), 'b'): [(203, 437), (204, 437), (204, 437), (205, 438), (207, 440), (210, 443), (214, 447), (218, 451), (224, 457), (231, 464), (239, 472), (249, 481), (260, 491), (274, 504), (288, 517), (305, 530), (323, 546), (344, 562), (366, 579), (390, 596), (416, 615), (444, 633), (475, 649), (507, 666), (542, 682), (579, 694), (618, 704), (658, 707), (696, 703), (732, 694), (764, 681), (794, 666), (821, 650), (846, 633), (869, 616), (889, 600), (908, 586), (925, 572), (940, 561), (955, 553), (967, 548), (978, 545), (988, 549), (994, 555), (999, 563), (1001, 573), (1002, 582), (1003, 590), (1004, 598), (1004, 604), (1004, 610), (1004, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'c'): [(203, 437), (204, 437), (204, 437), (206, 438), (208, 439), (211, 442), (215, 445), (220, 449), (227, 454), (235, 460), (245, 468), (256, 476), (270, 486), (285, 496), (302, 508), (321, 520), (342, 535), (365, 550), (390, 565), (418, 582), (447, 599), (479, 617), (513, 634), (548, 651), (585, 667), (625, 682), (666, 695), (707, 704), (746, 707), (783, 704), (815, 695), (844, 682), (870, 667), (892, 650), (911, 633), (928, 615), (942, 599), (955, 584), (966, 570), (975, 558), (983, 550), (991, 546), (997, 548), (1000, 556), (1002, 564), (1003, 574), (1004, 583), (1004, 591), (1004, 599), (1004, 605), (1004, 610), (1004, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'd'): [(203, 437), (204, 437), (204, 437), (206, 438), (208, 439), (211, 440), (216, 443), (222, 445), (229, 450), (239, 454), (250, 459), (264, 465), (279, 472), (296, 480), (315, 489), (337, 499), (361, 509), (387, 520), (415, 532), (446, 544), (479, 557), (514, 571), (551, 584), (590, 597), (631, 610), (673, 622), (717, 633), (759, 641), (799, 646), (835, 647), (868, 643), (897, 636), (922, 626), (943, 614), (959, 600), (973, 586), (984, 572), (992, 559), (998, 548), (1002, 538), (1006, 535), (1006, 543), (1006, 553), (1005, 563), (1005, 572), (1005, 582), (1005, 591), (1005, 598), (1005, 605), (1005, 610), (1005, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'e'): [(203, 437), (204, 437), (204, 437), (206, 438), (208, 439), (211, 440), (216, 443), (222, 445), (229, 450), (239, 454), (250, 459), (264, 465), (279, 472), (296, 480), (315, 489), (337, 499), (361, 509), (387, 520), (415, 532), (446, 544), (479, 557), (514, 571), (551, 584), (590, 597), (631, 610), (673, 622), (717, 633), (759, 641), (799, 646), (835, 647), (868, 643), (897, 636), (922, 626), (943, 614), (959, 600), (973, 586), (984, 572), (992, 559), (998, 548), (1002, 538), (1006, 535), (1006, 543), (1006, 553), (1005, 563), (1005, 572), (1005, 582), (1005, 591), (1005, 598), (1005, 605), (1005, 610), (1005, 614), (1004, 616), (1004, 617), (1004, 617)]}
+		sample_sets = list(test_dict.values())
+		sample_sets = [sample_sets[0]]
+
+
 	if sampling_type == SAMPLE_TYPE_SHORTEST or sampling_type == SAMPLE_TYPE_FUSION:
 		goals = r.get_goals_all()
 		# sample_sets = []
@@ -1223,8 +1289,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		if sy > gy:
 			low_y, hi_y = gy, sy
 
-		hi_y += 100
-		low_y += -100
+		hi_y += SAMPLE_BUFFER
+		low_y += -1 * SAMPLE_BUFFER
 
 		for xi in range(low_x, hi_x, resolution):
 			for yi in range(low_y, hi_y, resolution):
@@ -1253,8 +1319,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		if sy > gy:
 			low_y, hi_y = gy, sy
 
-		hi_y += 100
-		low_y += -100
+		hi_y += SAMPLE_BUFFER
+		low_y += -1 * SAMPLE_BUFFER
 
 		for xi in range(low_x, hi_x, resolution_sparse):
 			for yi in range(low_y, hi_y, resolution_sparse):
@@ -1667,7 +1733,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	all_paths = get_paths_from_sample_set(r, exp_settings, goal_index)
 	resto.export_raw_paths(r, img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
-	trimmed_paths = trim_paths(r, all_paths, goal)
+	trimmed_paths = trim_paths(r, all_paths, goal, exp_settings)
 	resto.export_raw_paths(r, img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 
 	return trimmed_paths
@@ -1765,6 +1831,26 @@ def angle_between_points(p1, p2):
 	# ang2 = np.arctan2(*p2[::-1])
 	return np.rad2deg(angle)
 
+def angle_between_lines(l1, l2):
+	# l1_x1, l1_y1 = l1[0]
+	# l1_x2, l1_y2 = l1[1]
+	# l2_x1, l2_y1 = l2[0]
+	# l2_x2, l2_y2 = l2[1]
+
+	p1a, p1b = l1
+	p2a, p2b = l2
+
+	a1 = angle_between_points(p1a, p1b)
+	a2 = angle_between_points(p2a, p2b)
+	angle = (a1 - a2)
+
+	# cosTh = np.dot(l1,l2)
+	# sinTh = np.cross(l1,l2)
+	# angle = np.rad2deg(np.arctan2(sinTh,cosTh))
+	return angle
+
+def angle_of_turn(l1, l2):
+	return (angle_between_lines(l1, l2))
 
 def print_states(resto, states, label):
 	img = resto.get_img()
@@ -2167,15 +2253,16 @@ def do_exp(lam, eps, km):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
-	# sampling_type = SAMPLE_TYPE_DEMO
 	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_DEMO
+	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
 	# sampling_type = SAMPLE_TYPE_HARDCODED
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
+	# sampling_type = SAMPLE_TYPE_CURVE_TEST
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2199,6 +2286,7 @@ def do_exp(lam, eps, km):
 	exp_settings['min_path_length'] = {}
 	exp_settings['f_vis']			= f_exp_single
 	exp_settings['kill_1']			= km
+	exp_settings['angle_cutoff']	= 70
 
 	# Preload envir cache for faster calculations
 	envir_cache = get_envir_cache(restaurant, exp_settings)
@@ -2233,6 +2321,23 @@ def do_exp(lam, eps, km):
 		print("Made paths")
 		paths_for_analysis[goal] = paths
 
+	# debug curvatures
+	# plt.clf()
+	# print(curvatures)
+	# sns.histplot(data=curvatures, bins=100)
+	# # plt.hist(curvatures, bins=1000) 
+	# plt.title("histogram of max angles")
+	# plt.tight_layout()
+	# plt.savefig("path_assessment/curvatures.png") 
+	# plt.clf()
+
+	# sns.histplot(data=max_curvatures, bins=100)
+	# # plt.hist(curvatures, bins=1000) 
+	# plt.title("histogram of max curvatures")
+	# plt.tight_layout()
+	# plt.savefig("path_assessment/max-curvatures.png") 
+	# # exit()
+
 	print("~~~")
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
@@ -2262,25 +2367,25 @@ def do_exp(lam, eps, km):
 	print("Done with experiment")
 
 def exp_determine_lam_eps():
-	lam_vals = [0.0]
-	eps_vals = []
-	# exit()
-	for i in range(-1, -30, -1):
-		new_val = 1.0 ** i
-		eps_vals.append(new_val)
-		lam_vals.append(new_val)
-		# lam_vals.append(new_val)
+	# lam_vals = [0.0]
+	# eps_vals = []
+	# # exit()
+	# for i in range(-1, -30, -1):
+	# 	new_val = 1.0 ** i
+	# 	eps_vals.append(new_val)
+	# 	lam_vals.append(new_val)
+	# 	# lam_vals.append(new_val)
 
 
-	print("REMIX TIME")
-	for eps in eps_vals:
-		for lam in lam_vals:
-			for km in [True, False]:
-				do_exp(lam, eps, km)
-
+	# print("REMIX TIME")
+	# for eps in eps_vals:
+	# 	for lam in lam_vals:
+	# 		for km in [True, False]:
+	# 			do_exp(lam, eps, km)
+	pass
 
 def main():
-	lam = 1e-16
+	lam = 1e-14
 	eps = 0 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
