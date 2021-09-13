@@ -616,7 +616,7 @@ class Table:
 			tw = table_radius
 			th = table_radius # * .25
 
-			up = -1 * dir_y * table_radius * .17
+			up = -1 * dir_y * table_radius * .16
 
 			ow_diag = tw * 0.70710
 			oh_diag = th * 0.70710
@@ -624,7 +624,7 @@ class Table:
 			# big_depth = table_radius *
 
 			pt_left = (tx - tw, ty + up)
-			pt_right = (tx + tw, ty + up)
+			pt_right = (tx + tw, ty + 1.2 * up)
 			pt_bot = (tx, ty + (dir_y * th))
 			pt_lbot = (tx - ow_diag, ty + (3  *(dir_y * oh_diag)))
 			pt_rbot = (tx + ow_diag, ty + (3 * (dir_y * oh_diag)))
