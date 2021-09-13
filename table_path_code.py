@@ -616,21 +616,23 @@ class Table:
 			tw = table_radius
 			th = table_radius # * .25
 
-			up = -1 * dir_y * table_radius * .15
+			up = -1 * dir_y * table_radius * .17
 
 			ow_diag = tw * 0.70710
 			oh_diag = th * 0.70710
 
+			# big_depth = table_radius *
+
 			pt_left = (tx - tw, ty + up)
 			pt_right = (tx + tw, ty + up)
 			pt_bot = (tx, ty + (dir_y * th))
-			pt_lbot = (tx - ow_diag, ty + (dir_y * oh_diag))
-			pt_rbot = (tx + ow_diag, ty + (dir_y * oh_diag))
+			pt_lbot = (tx - ow_diag, ty + (3  *(dir_y * oh_diag)))
+			pt_rbot = (tx + ow_diag, ty + (3 * (dir_y * oh_diag)))
 
 			tpts = [pt_left, pt_lbot, pt_bot, pt_rbot, pt_right]
 
-			print("oOoOo")
-			print(tpts)
+			# print("oOoOo")
+			# print(tpts)
 
 			t = fancyPolygon(tpts)
 			# t = fancyBox(tx - tw, ty - th, tx + tw, ty + th, ccw=True)
@@ -1052,6 +1054,7 @@ class Restaurant:
 			# width = abs(x1 - x2)
 
 			# start = (7.4, 2.37)
+			y_coord_start = 5.6
 			start = (5.6, 1.0, DIR_EAST)
 			self.set_start(unity_to_image(start))
 
@@ -1074,16 +1077,25 @@ class Restaurant:
 			# unity_goal_pt = (4.43, -7.0)
 
 			unity_table_pts = []
-			# unity_table_pts.append((3.6, -4.0))
-			unity_table_pts.append((3.6, 	-7.0, DIR_SOUTH)) # 3.6, 	-7.5
-			# unity_table_pts.append((5.6, -10.0))
-			unity_table_pts.append((7.6 + a[0], 	-7.0  + a[1], DIR_NORTH))
+			# # unity_table_pts.append((3.6, -4.0))
+			# unity_table_pts.append((3.6, 	-7.0, DIR_SOUTH)) # 3.6, 	-7.5
+			# # unity_table_pts.append((5.6, -10.0))
+			# unity_table_pts.append((7.6 + a[0], 	-7.0  + a[1], DIR_NORTH))
+
+			separation_table = 2.0
+			unity_table_pts.append((y_coord_start - separation_table, -7.0, DIR_SOUTH))
+			unity_table_pts.append((y_coord_start + separation_table + a[0], 	-7.0  + a[1], DIR_NORTH))
+
 
 			unity_goal_stop_options = []
-			# unity_goal_stop_options.append((4.3, -4.3))
-			unity_goal_stop_options.append((3.8, 	-7.0, 	DIR_SOUTH))
-			# unity_goal_stop_options.append((5.6, -9.3)
-			unity_goal_stop_options.append((7.4 + a[0], 	-7.0 + a[1], 	DIR_NORTH))
+			# # unity_goal_stop_options.append((4.3, -4.3))
+			# unity_goal_stop_options.append((3.8, 	-7.0, 	DIR_SOUTH))
+			# # unity_goal_stop_options.append((5.6, -9.3)
+			# unity_goal_stop_options.append((7.4 + a[0], 	-7.0 + a[1], 	DIR_NORTH))
+
+			separation = 1.8
+			unity_goal_stop_options.append((y_coord_start - separation, -7.0, DIR_SOUTH))
+			unity_goal_stop_options.append((y_coord_start + separation + a[0], 	-7.0  + a[1], DIR_NORTH))
 
 			# unity_goal_options = []
 			# # unity_goal_options.append((4.3, -4.0))
@@ -2202,11 +2214,13 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 	cv2.imwrite('generated/fig_tables.png', img) 
 
 
-def export_raw_paths(r, img, saved_paths_list, title, fn):
+def export_raw_paths(r, img, saved_paths_list, title, fn, sample_points_list=[]):
 	print("\tExporting raw diagrams")
 	all_paths_img = img.copy()
 
-	for path in saved_paths_list:
+	for pi in range(len(saved_paths_list)):
+		path = saved_paths_list[pi]
+		
 		path_img = img.copy()
 		path = r.path_to_printable_path(path)
 
@@ -2222,6 +2236,12 @@ def export_raw_paths(r, img, saved_paths_list, title, fn):
 			cv2.circle(all_paths_img, a, 4, color, 4)
 			cv2.line(all_paths_img, a, b, color, thickness=3, lineType=8)
 			
+
+		if sample_points_list is not None and len(sample_points_list) == len(saved_paths_list):
+			sample_points = sample_points_list[pi]
+			for i in range(len(sample_points)):
+				sp = sample_points[i]
+				cv2.circle(all_paths_img, sp, 8, (0,0,0), 8)
 
 		# path_img = cv2.flip(path_img, 0)
 		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
