@@ -33,8 +33,9 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = True #False #True #False
+FLAG_REDO_PATH_CREATION = False #True #False #True #False
 FLAG_REDO_ENVIR_CACHE 	= False #True
+FLAG_MIN_MODE			= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -71,7 +72,7 @@ ENV_HERE_TO_GOALS 		= 'here_to_goals'
 ENV_VISIBILITY_PER_OBS 	= 'vis_per_obs'
 
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST, SAMPLE_TYPE_CURVE_TEST]
-non_metric_columns = ["path", "goal", 'path_length', 'path_cost']
+non_metric_columns = ["path", "goal", 'path_length', 'path_cost', 'sample_points']
 
 bug_counter = defaultdict(int)
 curvatures = []
@@ -147,7 +148,7 @@ def f_naked(t, pt, aud, path):
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0 and path is not None:
-		return float(len(path) - t)
+		return float(len(path) - t + 1)
 		# return float(len(path) - t)
 	elif len(aud) == 0:
 		# print('ping')
@@ -464,11 +465,12 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	numerator = decimal.Decimal(0.0)
 
 	f_log = []
+	p_log = []
 	for pt, cost_to_here in aug_path:
 		f = decimal.Decimal(f_function(t, pt, aud, path))
-		f_log.append(float(f))
-	
 		prob_goal_given = prob_goal_given_path(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
+		f_log.append(float(f))
+		p_log.append(prob_goal_given)
 
 		if prob_goal_given > 1 or prob_goal_given < 0:
 			print(prob_goal_given)
@@ -493,6 +495,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 		print(numerator)
 		print(divisor)
 		print(f_log)
+		print(p_log)
 		print(legibility)
 		print(overall)
 		print()
@@ -559,6 +562,7 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
 	f_vis = exp_settings['f_vis']
 
+	print("manually: naked")
 	naked_prob = f_legibility(resto, target, goals, path, [], f_naked, exp_settings)
 	vals['naked'] = naked_prob
 
@@ -1289,15 +1293,26 @@ def get_hardcoded():
 
 
 # remove invalid paths
-def trim_paths(r, all_paths, goal, exp_settings, reverse=False):
+def trim_paths(r, all_paths_dict, goal, exp_settings, reverse=False):
 	trimmed_paths = []
+	trimmed_sp = []
 	removed_paths = []
-	for p in all_paths:
+
+	all_paths = all_paths_dict['path']
+	sp = all_paths_dict['sp']
+
+	print(len(all_paths))
+	print(len(sp))
+
+	for pi in range(len(all_paths)):
+		p = all_paths[pi]
 		is_valid = is_valid_path(r, p, exp_settings)
 		if is_valid and reverse == False:
 			trimmed_paths.append(p)
+			trimmed_sp.append(sp[pi])
 		elif not is_valid and reverse == True:
 			trimmed_paths.append(p)
+			trimmed_sp.append(sp[pi])
 
 		if not is_valid and reverse == False:
 			removed_paths.append(p)
@@ -1306,7 +1321,7 @@ def trim_paths(r, all_paths, goal, exp_settings, reverse=False):
 
 	if reverse == False:
 		print("Paths trimmed: " + str(len(all_paths)) + " -> " + str(len(trimmed_paths)))
-	return trimmed_paths, removed_paths
+	return trimmed_paths, removed_paths, trimmed_sp
 
 def get_mirrored(r, sample_sets):
 	start = r.get_start()
@@ -1377,9 +1392,12 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		test_dict = {((1005, 257, 180), 'naked'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (220, 436), (228, 436), (237, 436), (250, 436), (265, 436), (282, 435), (301, 435), (324, 435), (348, 435), (377, 434), (407, 434), (441, 433), (477, 433), (516, 433), (558, 432), (603, 432), (650, 431), (700, 431), (752, 430), (806, 430), (861, 430), (918, 429), (974, 429), (1029, 429), (1079, 430), (1124, 430), (1162, 431), (1191, 432), (1210, 434), (1198, 432), (1178, 428), (1157, 422), (1136, 415), (1115, 406), (1096, 397), (1078, 386), (1062, 375), (1049, 363), (1038, 351), (1028, 338), (1021, 326), (1016, 314), (1012, 303), (1008, 293), (1007, 283), (1005, 276), (1005, 269), (1005, 263), (1005, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'omni'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (220, 436), (228, 436), (237, 436), (250, 436), (265, 436), (282, 435), (301, 435), (324, 435), (348, 435), (377, 434), (407, 434), (441, 433), (477, 433), (516, 433), (558, 432), (603, 432), (650, 431), (700, 431), (752, 430), (806, 430), (861, 430), (918, 429), (974, 429), (1029, 429), (1079, 430), (1124, 430), (1162, 431), (1191, 432), (1210, 434), (1198, 432), (1178, 428), (1157, 422), (1136, 415), (1115, 406), (1096, 397), (1078, 386), (1062, 375), (1049, 363), (1038, 351), (1028, 338), (1021, 326), (1016, 314), (1012, 303), (1008, 293), (1007, 283), (1005, 276), (1005, 269), (1005, 263), (1005, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'a'): [(204, 437), (204, 436), (204, 436), (206, 436), (208, 436), (211, 436), (215, 436), (221, 436), (228, 436), (236, 435), (245, 435), (257, 435), (270, 434), (285, 434), (302, 434), (320, 433), (341, 433), (363, 433), (387, 432), (413, 432), (442, 432), (472, 432), (504, 432), (537, 432), (573, 433), (610, 433), (648, 434), (687, 435), (723, 436), (757, 436), (789, 435), (819, 433), (847, 430), (873, 425), (896, 418), (917, 410), (936, 401), (951, 390), (964, 378), (975, 365), (983, 352), (990, 339), (994, 326), (998, 314), (1001, 302), (1002, 292), (1003, 283), (1004, 275), (1004, 269), (1004, 263), (1004, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'b'): [(204, 437), (204, 436), (204, 436), (206, 436), (208, 436), (211, 436), (216, 436), (222, 436), (230, 436), (239, 436), (250, 435), (263, 435), (278, 435), (295, 435), (314, 434), (335, 434), (358, 434), (383, 433), (411, 433), (440, 433), (472, 432), (505, 432), (540, 432), (577, 432), (615, 432), (655, 432), (695, 433), (734, 434), (771, 435), (804, 436), (835, 436), (864, 436), (888, 434), (911, 432), (931, 426), (948, 419), (962, 410), (974, 399), (982, 386), (989, 372), (993, 358), (997, 344), (999, 331), (1001, 318), (1003, 306), (1003, 296), (1004, 286), (1004, 278), (1004, 271), (1004, 265), (1004, 261), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'c'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (212, 436), (218, 436), (225, 436), (235, 436), (246, 436), (259, 436), (274, 436), (292, 435), (312, 435), (335, 435), (360, 435), (388, 434), (418, 434), (451, 434), (486, 433), (524, 433), (564, 433), (607, 432), (651, 432), (697, 432), (744, 432), (794, 432), (842, 432), (888, 432), (929, 433), (966, 434), (999, 434), (1025, 436), (1047, 436), (1062, 435), (1064, 428), (1057, 418), (1048, 407), (1040, 394), (1032, 381), (1026, 367), (1020, 353), (1016, 340), (1013, 327), (1010, 314), (1007, 303), (1006, 292), (1006, 283), (1005, 275), (1005, 269), (1005, 263), (1005, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'd'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (220, 436), (228, 436), (238, 436), (250, 436), (265, 436), (282, 436), (301, 436), (324, 435), (349, 435), (377, 435), (407, 435), (441, 434), (478, 434), (517, 434), (559, 433), (604, 433), (651, 433), (701, 433), (752, 432), (806, 432), (862, 432), (919, 432), (976, 432), (1031, 432), (1081, 432), (1126, 433), (1163, 434), (1193, 435), (1213, 436), (1199, 434), (1178, 430), (1157, 423), (1135, 416), (1115, 407), (1095, 397), (1078, 387), (1063, 375), (1049, 363), (1038, 350), (1029, 338), (1021, 326), (1015, 314), (1011, 302), (1008, 292), (1007, 283), (1005, 275), (1005, 269), (1005, 263), (1005, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 257, 180), 'e'): [(204, 437), (204, 436), (204, 436), (206, 436), (209, 436), (213, 436), (220, 436), (228, 436), (238, 436), (250, 436), (265, 435), (282, 435), (301, 435), (324, 434), (349, 434), (377, 433), (407, 433), (441, 432), (478, 432), (516, 431), (559, 431), (604, 430), (651, 429), (700, 429), (752, 428), (806, 428), (862, 427), (919, 427), (976, 427), (1031, 426), (1081, 427), (1125, 427), (1163, 428), (1193, 429), (1213, 431), (1199, 429), (1179, 426), (1157, 420), (1135, 413), (1115, 405), (1096, 396), (1078, 385), (1062, 374), (1049, 362), (1037, 350), (1029, 337), (1021, 325), (1015, 314), (1011, 302), (1008, 292), (1007, 283), (1005, 275), (1005, 269), (1005, 263), (1005, 260), (1004, 258), (1004, 257), (1004, 257)], ((1005, 617, 0), 'naked'): [(203, 437), (204, 437), (204, 437), (203, 438), (203, 440), (203, 443), (203, 448), (204, 453), (204, 460), (204, 469), (205, 479), (206, 490), (207, 503), (210, 518), (212, 534), (216, 552), (222, 571), (229, 591), (238, 612), (249, 633), (263, 653), (282, 672), (305, 688), (332, 701), (364, 708), (400, 709), (440, 704), (483, 694), (527, 681), (570, 666), (611, 650), (651, 635), (688, 619), (725, 605), (759, 592), (791, 580), (821, 569), (849, 560), (875, 554), (898, 549), (920, 546), (939, 546), (956, 548), (970, 552), (981, 558), (989, 566), (995, 574), (999, 583), (1002, 591), (1003, 599), (1004, 605), (1004, 610), (1004, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'omni'): [(203, 437), (204, 437), (204, 437), (204, 439), (204, 441), (204, 444), (204, 448), (205, 454), (206, 461), (207, 469), (208, 480), (210, 491), (212, 505), (216, 520), (220, 536), (226, 554), (232, 573), (240, 594), (251, 614), (262, 636), (278, 657), (296, 677), (319, 695), (346, 709), (377, 718), (414, 722), (452, 718), (494, 709), (537, 696), (579, 680), (620, 664), (658, 647), (695, 631), (731, 616), (764, 601), (796, 588), (825, 576), (852, 567), (877, 559), (900, 553), (921, 549), (940, 548), (956, 549), (970, 552), (981, 559), (990, 566), (995, 574), (999, 583), (1002, 591), (1003, 599), (1004, 605), (1004, 610), (1004, 614), (1005, 616), (1005, 617), (1005, 617)], ((1005, 617, 0), 'a'): [(204, 437), (203, 437), (203, 437), (203, 439), (203, 441), (203, 444), (203, 449), (202, 455), (202, 462), (202, 471), (202, 482), (202, 494), (202, 509), (203, 525), (204, 542), (206, 561), (209, 582), (214, 604), (219, 628), (228, 652), (238, 677), (252, 701), (270, 722), (293, 741), (323, 754), (357, 760), (395, 758), (437, 750), (482, 736), (526, 719), (569, 702), (610, 683), (650, 664), (688, 646), (724, 629), (758, 614), (791, 600), (820, 587), (848, 576), (874, 567), (897, 560), (918, 556), (938, 554), (954, 554), (968, 557), (980, 562), (989, 568), (995, 576), (999, 584), (1001, 592), (1003, 600), (1004, 606), (1004, 611), (1004, 614), (1004, 616), (1004, 617)], ((1005, 617, 0), 'b'): [(203, 437), (204, 437), (204, 437), (204, 439), (204, 441), (204, 444), (205, 449), (205, 455), (206, 462), (208, 471), (209, 482), (211, 494), (214, 508), (218, 524), (222, 542), (227, 561), (234, 581), (241, 603), (251, 626), (262, 650), (276, 674), (293, 697), (314, 719), (338, 738), (367, 753), (401, 762), (439, 763), (480, 756), (523, 743), (565, 727), (606, 709), (644, 690), (682, 671), (717, 652), (750, 635), (782, 618), (811, 603), (839, 589), (865, 578), (888, 569), (910, 562), (929, 557), (947, 554), (962, 555), (975, 557), (985, 563), (993, 570), (998, 578), (1001, 586), (1003, 594), (1004, 601), (1004, 607), (1004, 612), (1004, 615), (1005, 617), (1005, 617)], ((1005, 617, 0), 'c'): [(203, 437), (204, 437), (204, 437), (206, 438), (208, 439), (211, 440), (216, 443), (222, 445), (229, 450), (239, 454), (250, 459), (263, 465), (279, 472), (296, 480), (315, 489), (337, 499), (361, 509), (387, 520), (415, 533), (446, 545), (479, 558), (513, 571), (550, 585), (589, 598), (630, 611), (672, 622), (716, 633), (758, 641), (798, 646), (834, 646), (867, 642), (896, 635), (920, 625), (941, 613), (958, 599), (971, 585), (982, 571), (990, 558), (997, 547), (1001, 538), (1005, 535), (1006, 542), (1005, 552), (1005, 562), (1005, 572), (1005, 582), (1005, 590), (1005, 598), (1005, 604), (1005, 610), (1005, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'd'): [(203, 437), (204, 437), (204, 437), (206, 437), (208, 438), (213, 439), (219, 441), (226, 443), (235, 445), (247, 449), (261, 453), (276, 457), (295, 462), (316, 467), (339, 474), (365, 481), (394, 489), (426, 497), (460, 506), (497, 515), (536, 526), (578, 536), (623, 546), (669, 557), (718, 569), (769, 580), (821, 590), (874, 600), (927, 609), (977, 617), (1023, 621), (1063, 623), (1096, 620), (1122, 613), (1139, 599), (1142, 582), (1135, 566), (1123, 552), (1109, 541), (1093, 533), (1077, 529), (1062, 528), (1048, 530), (1036, 535), (1027, 543), (1020, 552), (1014, 562), (1010, 572), (1008, 581), (1006, 590), (1005, 598), (1005, 604), (1005, 610), (1005, 614), (1004, 616), (1004, 617), (1004, 617)], ((1005, 617, 0), 'e'): [(203, 437), (204, 437), (204, 437), (206, 437), (208, 438), (213, 439), (219, 441), (226, 443), (235, 445), (247, 449), (261, 453), (276, 457), (295, 462), (316, 467), (339, 474), (365, 481), (394, 489), (426, 497), (460, 506), (497, 515), (536, 526), (578, 536), (623, 546), (669, 557), (718, 569), (769, 580), (821, 590), (874, 600), (927, 609), (977, 617), (1023, 621), (1063, 623), (1096, 620), (1122, 613), (1139, 599), (1142, 582), (1135, 566), (1123, 552), (1109, 541), (1093, 533), (1077, 529), (1062, 528), (1048, 530), (1036, 535), (1027, 543), (1020, 552), (1014, 562), (1010, 572), (1008, 581), (1006, 590), (1005, 598), (1005, 604), (1005, 610), (1005, 614), (1004, 616), (1004, 617), (1004, 617)]}
 
 		sample_sets = list(test_dict.values())
-		print(len(sample_sets))
-		mirror_sets = get_mirrored(r, sample_sets)
-		print(len(mirror_sets))
+		# print(len(sample_sets))
+		sample_sets = [sample_sets[3], sample_sets[6], sample_sets[8]]
+		sample_sets = [sample_sets[2]]
+
+		mirror_sets = [] #get_mirrored(r, sample_sets)
+		# print(len(mirror_sets))
 		for p in mirror_sets:
 			sample_sets.append(p)
 
@@ -1806,16 +1824,17 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 		print("\tImporting preassembled paths")
 		with open(fn_pickle, "rb") as f:
 			try:
-				all_paths = pickle.load(f)		
+				path_dict = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
 				print("imported " + str(len(all_paths)) + " paths")
-				return all_paths, None
+				return path_dict
 
 			except Exception: # so many things could go wrong, can't be more specific.
 				pass
 
 	if sampling_type not in premade_path_sampling_types:
 		print("\tDidn't import; assembling set of paths")
+		all_paths = []
 		# If I don't yet have a path
 		for point_set in sample_pts:
 			
@@ -1832,12 +1851,14 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 	else:
 		all_paths = sample_pts
 
+	path_dict = {'path': all_paths, 'sp': sample_pts}
+
 	dbfile = open(fn_pickle, 'wb')
-	pickle.dump(all_paths, dbfile)
+	pickle.dump(path_dict, dbfile)
 	dbfile.close()
 	print("\tSaved paths for faster future run on combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
 
-	return all_paths, sample_pts
+	return path_dict
 
 # TODO Ada
 def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, num_paths=500):
@@ -1856,14 +1877,14 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	min_paths = [get_min_viable_path(r, goal, exp_settings)]
 	resto.export_raw_paths(r, img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
 
-	all_paths, sp = get_paths_from_sample_set(r, exp_settings, goal_index)
-	resto.export_raw_paths(r, img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all", sample_points_list=sp)
+	all_paths_dict = get_paths_from_sample_set(r, exp_settings, goal_index)
+	resto.export_raw_paths(r, img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
-	trimmed_paths, removed_paths = trim_paths(r, all_paths, goal, exp_settings)
+	trimmed_paths, removed_paths, trimm_sp = trim_paths(r, all_paths_dict, goal, exp_settings)
 	resto.export_raw_paths(r, img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
 	resto.export_raw_paths(r, img, removed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-rmvd")
 
-	return trimmed_paths
+	return trimmed_paths, trimm_sp
 
 
 def experimental_scenario_single():
@@ -2241,6 +2262,12 @@ def make_overview_plot(r, df, exp_settings, columns, label):
 
 	goals_list = r.get_goals_all()
 
+	if FLAG_MIN_MODE:
+		if 'omni' in columns:
+			columns = ['omni', 'c']
+		if 'omni-env' in columns:
+			columns = ['omni-env', 'c-env']
+
 
 	df_a = df[df['goal'] == goals_list[0]]
 	df_b = df[df['goal'] == goals_list[1]]
@@ -2311,11 +2338,12 @@ def get_best_paths_from_df(r, df):
 	best_index = {}
 	best_paths = {}
 	best_lookup = {}
-
-	# print(df)
+	best_sample_points = {}
 
 	goals = df['goal'].unique()
 	columns = get_columns_legibility(r, df)
+	if FLAG_MIN_MODE:
+		columns = ['omni', 'c']
 
 	# print("GOALS")
 	# print(goals)
@@ -2331,34 +2359,45 @@ def get_best_paths_from_df(r, df):
 
 			best_index[(goal, col)] = max_index
 			best_paths[(goal, col)] = df.iloc[max_index]['path']
+			best_sample_points[(goal, col)] = df.iloc[max_index]['sample_points']
 			best_lookup[(goal, col)] = df.iloc[max_index]
 
 	# export_best_env_overview(r, df, best_lookup)
 	# print(best_index)
+
+	print("BEST SAMPLE POINTS")
+	print(best_sample_points)
 	return best_paths, best_index
 
-def analyze_all_paths(r, paths_for_analysis, exp_settings):
+def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 	paths 		= None
 	goals 		= r.get_goals_all()
-	obs_sets 	= r.get_obs_sets()
+	if FLAG_MIN_MODE:
+		obs_sets_old 	= r.get_obs_sets()
+		obs_sets 	= {}
+		obs_sets['omni'] 	= obs_sets_old['omni']
+		obs_sets['c'] 		= obs_sets_old['c']
+	else:
+		obs_sets 	= r.get_obs_sets()
 
 	all_entries = []
 	key_index 	= 0
 
 	df_all = []
-
 	data = []
 
-	for key in paths_for_analysis:
+	for key in paths_for_analysis_dict:
 		goal 	= key
-		paths 	= paths_for_analysis[key]
+		paths 	= paths_for_analysis_dict[key]['paths']
+		sp 	= paths_for_analysis_dict[key]['sp']
 
-
-		for path in paths:
+		for pi in range(len(paths)):
+			path = paths[pi]
 			f_vis = exp_settings['f_vis']
 			datum = get_legibilities(r, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
+			datum['sample_points'] = sp[pi]
 			datum['path_length'] = get_path_length(path)[1]
 			datum['path_cost'] = f_path_cost(path)
 			data.append(datum)
@@ -2383,14 +2422,14 @@ def do_exp(lam, eps, km):
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
 	# sampling_type = SAMPLE_TYPE_HARDCODED
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
-	sampling_type = SAMPLE_TYPE_CURVE_TEST
+	# sampling_type = SAMPLE_TYPE_CURVE_TEST
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2403,9 +2442,9 @@ def do_exp(lam, eps, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 3
+	exp_settings['resolution']		= 100
 	exp_settings['f_vis_label']		= 'f_no-zero'
-	exp_settings['epsilon'] 		= 1e-14 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['epsilon'] 		= 1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
@@ -2436,21 +2475,16 @@ def do_exp(lam, eps, km):
 		min_path = get_min_viable_path(restaurant, g, exp_settings)
 		min_paths.append(min_path)
 
-	print(exp_settings)
-
 	title = title_from_exp_settings(exp_settings)
 	resto.export_raw_paths(restaurant, img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
-
-	print(restaurant.get_goals_all())
-	print("~!~")
 
 	paths_for_analysis = {}
 	#  add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
 		print("Generating paths for goal " + str(goal))
-		paths = create_systematic_path_options_for_goal(restaurant, exp_settings, start, goal, img, num_paths=10)
+		paths, sample_pts_that_generated = create_systematic_path_options_for_goal(restaurant, exp_settings, start, goal, img, num_paths=10)
 		print("Made paths")
-		paths_for_analysis[goal] = paths
+		paths_for_analysis[goal] = {'paths':paths, 'sp': sample_pts_that_generated}
 
 	# debug curvatures
 	# plt.clf()
@@ -2516,7 +2550,7 @@ def exp_determine_lam_eps():
 	# pass
 
 def main():
-	lam = 1e-13
+	lam = 1e-12
 	eps = 0 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
