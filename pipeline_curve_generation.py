@@ -16,6 +16,7 @@ import matplotlib.gridspec as gridspec
 import klampt_smoothing as chunkify
 from collections import defaultdict
 from shapely.geometry import LineString
+import scipy.interpolate as interpolate
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -32,7 +33,7 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = False #True #False
+FLAG_REDO_PATH_CREATION = True #False #True #False
 FLAG_REDO_ENVIR_CACHE 	= False #True
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -785,9 +786,9 @@ def is_valid_path(r, path, exp_settings):
 	if not line.is_simple:
 		return False
 
-	max_turn = get_max_turn_along_path(path)
-	if max_turn >= exp_settings['angle_cutoff']:
-		return False
+	# max_turn = get_max_turn_along_path(path)
+	# if max_turn >= exp_settings['angle_cutoff']:
+	# 	return False
 
 	# Checks for table intersection
 	for t in tables:
@@ -829,9 +830,68 @@ def as_tangent_test(sa):
 	print(as_tangent(sa))
 
 def path_formatted(xs, ys):
+	# print(ys)
 	xs = [int(x) for x in xs]
 	ys = [int(y) for y in ys]
 	return list(zip(xs, ys))
+
+# https://hal.archives-ouvertes.fr/hal-03017566/document
+def construct_single_path_with_angles_bspline(exp_settings, start, goal, sample_pts, fn, is_weak=False):
+	if len(sample_pts) == 0:
+		return construct_single_path_with_angles_spline(exp_settings, start, goal, sample_pts, fn, is_weak=False)
+
+	x, y = [], []
+	xy_0 = start
+	xy_n = goal
+	xy_mid = sample_pts
+
+	x.append(xy_0[0])
+	y.append(xy_0[1])
+
+	for i in range(len(sample_pts)):
+		spt = sample_pts[i]
+		sx = spt[0]
+		sy = spt[1]
+		x.append(sx)
+		y.append(sy)
+
+	x.append(xy_n[0])
+	y.append(xy_n[1])
+
+	if len(x) == 2:
+		return path_formatted([], [])
+		# x.append(xy_n[0])
+		# y.append(xy_n[1])
+
+	# Subtract 90 to turn path angle into tangent
+	start_angle = xy_0[2] - 90
+	# Do the reverse for the ending point
+	end_angle 	= xy_n[2] + 90
+
+	# Strength of how much we're enforcing the exit angle
+	k = exp_settings['angle_strength']
+
+	x = np.array(x)
+	y = np.array(y)
+
+
+	print(len(x))
+
+	t, c, k = interpolate.splrep(x, y, s=0, k=2)
+	# print('''\
+	# t: {}
+	# c: {}
+	# k: {}
+	# '''.format(t, c, k))
+	N = 100
+	xmin, xmax = x.min(), x.max()
+	xx = np.linspace(xmin, xmax, N)
+	spline = interpolate.BSpline(t, c, k, extrapolate=False)
+	# print(spline)
+	# exit()
+
+	path_formatted(xx, spline(xx))
+	return spline
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
 def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn, is_weak=False):
@@ -1699,6 +1759,7 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 
 			try:
 				path_option_2 = construct_single_path_with_angles(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
+				print(path_option_2)
 				path_option_2 = chunkify.chunkify_path(exp_settings, path_option_2)
 				all_paths.append(path_option_2)
 			except Exception:
@@ -1735,6 +1796,9 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 
 	trimmed_paths = trim_paths(r, all_paths, goal, exp_settings)
 	resto.export_raw_paths(r, img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
+
+	removed_paths = trim_paths(r, all_paths, goal, exp_settings, reverse=True)
+	resto.export_raw_paths(r, img, removed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-rmvd")
 
 	return trimmed_paths
 
@@ -2253,9 +2317,9 @@ def do_exp(lam, eps, km):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2275,7 +2339,7 @@ def do_exp(lam, eps, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 10
+	exp_settings['resolution']		= 30
 	exp_settings['f_vis_label']		= 'f_no-zero'
 	exp_settings['epsilon'] 		= 1e-14 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
