@@ -34,7 +34,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True #False #True #False #True #False
-FLAG_REDO_ENVIR_CACHE 	= False #True
+FLAG_REDO_ENVIR_CACHE 	= True #False #True
 FLAG_MIN_MODE			= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -229,7 +229,10 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 			# from_center = from_center * from_center
 			score.append(from_center)
 		else:
-			score.append(1)
+			if normalized:
+				score.append(0)
+			else:
+				score.append(1)
 
 		# 	# full credit at the center of view
 		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
@@ -501,7 +504,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 			print(prob_goal_given)
 			print("!!!")
 
-		if FLAG_is_denominator:
+		if FLAG_is_denominator or len(aud) == 0:
 			numerator += (prob_goal_given * f) # * delta_x)
 			divisor += f #* delta_x
 		else:
@@ -550,8 +553,16 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 # Given a 
 def f_env(r, goal, goals, path, aud, f_function, exp_settings):
+	fov = exp_settings['fov']
+	FLAG_is_denominator = exp_settings['is_denominator']
 	if path is None or len(path) == 0:
 		return 0
+
+	if FLAG_is_denominator:
+		vis_cutoff = 1
+	else:
+		half_fov = fov / 2.0
+		vis_cutoff = 1.0 / half_fov
 
 	count = 0
 	aug_path = get_costs_along_path(path)
@@ -567,7 +578,7 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 		f = decimal.Decimal(f_function(t, pt, aud, path))
 	
 		# if f is greater than 0, this indicates being in-view
-		if f > 1:
+		if f > vis_cutoff:
 			count += 1
 
 		# if it's not at least 0, then out of sight, not part of calc
@@ -1427,6 +1438,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_res_2 = {((1005, 257, 180), 'naked'): [(1152, 431)], ((1005, 257, 180), 'omni'): [(1152, 431)], ((1005, 257, 180), 'a'): [(486, 431)], ((1005, 257, 180), 'b'): [(738, 431)], ((1005, 257, 180), 'c'): [(1044, 431)], ((1005, 257, 180), 'd'): [(1152, 431)], ((1005, 257, 180), 'e'): [(1152, 431)], ((1005, 617, 0), 'naked'): [(426, 725)], ((1005, 617, 0), 'omni'): [(426, 725)], ((1005, 617, 0), 'a'): [(372, 761)], ((1005, 617, 0), 'b'): [(426, 761)], ((1005, 617, 0), 'c'): [(426, 731)], ((1005, 617, 0), 'd'): [(426, 725)], ((1005, 617, 0), 'e'): [(1116, 449)]}
 		imported_res_3 = {((1005, 257, 180), 'naked'): [(545, 123)], ((1005, 257, 180), 'omni'): [(545, 123)], ((1005, 257, 180), 'a'): [(616, 434)], ((1005, 257, 180), 'b'): [(734, 434)], ((1005, 257, 180), 'c'): [(983, 426)], ((1005, 257, 180), 'd'): [(992, 413)], ((1005, 257, 180), 'e'): [(990, 409)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(375, 768)], ((1005, 617, 0), 'b'): [(429, 776)], ((1005, 617, 0), 'c'): [(832, 648)], ((1005, 617, 0), 'd'): [(832, 648)], ((1005, 617, 0), 'e'): [(824, 571)]}
 
+		imported_res_4 = {((1005, 257, 180), 'naked'): [(564, 107)], ((1005, 257, 180), 'omni'): [(564, 107)], ((1005, 257, 180), 'a'): [(384, 407)], ((1005, 257, 180), 'b'): [(744, 407)], ((1005, 257, 180), 'c'): [(924, 407)], ((1005, 257, 180), 'd'): [(1014, 407)], ((1005, 257, 180), 'e'): [(1014, 407)], ((1005, 617, 0), 'naked'): [(834, 557)], ((1005, 617, 0), 'omni'): [(834, 557)], ((1005, 617, 0), 'a'): [(834, 497)], ((1005, 617, 0), 'b'): [(834, 587)], ((1005, 617, 0), 'c'): [(1014, 467)], ((1005, 617, 0), 'd'): [(1014, 467)], ((1005, 617, 0), 'e'): [(1014, 467)]}
+
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
 		imported_2 = list(imported_2.values())
@@ -1436,6 +1449,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		imported_res_2 = list(imported_res_2.values())
 		imported_res_3 = list(imported_res_3.values())
+		imported_res_4 = list(imported_res_4.values())
 
 		imported = []
 		# imported.extend(imported_1)
@@ -1445,6 +1459,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported.extend(imported_5)
 		imported.extend(imported_res_2)
 		imported.extend(imported_res_3)
+		imported.extend(imported_res_4)
 
 		mirror_sets = get_mirrored(r, sample_sets)
 		# print(len(mirror_sets))
@@ -2561,6 +2576,7 @@ def do_exp(lam, eps, km):
 	exp_settings['f_vis']			= f_exp_single_normalized
 	exp_settings['kill_1']			= km
 	exp_settings['angle_cutoff']	= 70
+	exp_settings['fov']	= 120
 
 
 	# Preload envir cache for faster calculations
