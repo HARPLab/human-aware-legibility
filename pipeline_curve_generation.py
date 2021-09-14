@@ -157,11 +157,26 @@ def f_exp_single(t, pt, aud, path):
 
 	# if in the (x, y) OR (x, y, t) case we can totally 
 	# still run this equation
-	val = get_visibility_of_pt_w_observers(pt, aud)
+	val = get_visibility_of_pt_w_observers(pt, aud, normalized=False)
 	return val
 
+def f_exp_single_normalized(t, pt, aud, path):
+	# if this is the omniscient case, return the original equation
+	if len(aud) == 0 and path is not None:
+		return float(len(path) - t + 1)
+		# return float(len(path) - t)
+	elif len(aud) == 0:
+		# print('ping')
+		return 1.0
+
+	# if in the (x, y) OR (x, y, t) case we can totally 
+	# still run this equation
+	val = get_visibility_of_pt_w_observers(pt, aud, normalized=True)
+	return val
+
+
 # ADA TODO MASTER VISIBILITY EQUATION
-def get_visibility_of_pt_w_observers(pt, aud):
+def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 	observers = []
 	score = []
 
@@ -208,6 +223,9 @@ def get_visibility_of_pt_w_observers(pt, aud):
 		# print(half )
 		if angle_diff < half_fov:
 			from_center = half_fov - angle_diff
+			if normalized:
+				from_center = from_center / (half_fov)
+
 			# from_center = from_center * from_center
 			score.append(from_center)
 		else:
@@ -437,6 +455,12 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 
 # Given a 
 def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
+	FLAG_is_denominator = exp_settings['is_denominator']
+	if FLAG_is_denominator:
+		f_function = f_exp_single
+	else:
+		f_function = f_exp_single_normalized
+
 	if path is None or len(path) == 0:
 		return 0
 	min_realistic_path_length = exp_settings['min_path_length'][goal]
@@ -477,8 +501,12 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 			print(prob_goal_given)
 			print("!!!")
 
-		numerator += (prob_goal_given * f) # * delta_x)
-		divisor += f #* delta_x
+		if FLAG_is_denominator:
+			numerator += (prob_goal_given * f) # * delta_x)
+			divisor += f #* delta_x
+		else:
+			numerator += (prob_goal_given * f) # * delta_x)
+			divisor += decimal.Decimal(1.0) #* delta_x
 
 		t = t + 1
 		total_cost += decimal.Decimal(f_cost(p_n, pt))
@@ -492,14 +520,14 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	if len(aud) == 0:
-		print(numerator)
-		print(divisor)
-		print(f_log)
-		print(p_log)
-		print(legibility)
-		print(overall)
-		print()
+	# if len(aud) == 0:
+	# 	print(numerator)
+	# 	print(divisor)
+	# 	print(f_log)
+	# 	print(p_log)
+	# 	print(legibility)
+	# 	print(overall)
+	# 	print()
 
 
 	if legibility > 1.0 or legibility < 0:
@@ -563,13 +591,12 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
 	f_vis = exp_settings['f_vis']
 
-	print("manually: naked")
+	# print("manually: naked")
 	naked_prob = f_legibility(resto, target, goals, path, [], f_naked, exp_settings)
 	vals['naked'] = naked_prob
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
-		print(key)
 		new_leg = f_legibility(resto, target, goals, path, aud, f_vis, exp_settings)
 		new_env = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
 
@@ -1393,22 +1420,58 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_0 = {((1005, 257, 180), 'naked'): [(504, 107)], ((1005, 257, 180), 'omni'): [(504, 107)], ((1005, 257, 180), 'a'): [(504, 407)], ((1005, 257, 180), 'b'): [(804, 407)], ((1005, 257, 180), 'c'): [(804, 407)], ((1005, 257, 180), 'd'): [(804, 407)], ((1005, 257, 180), 'e'): [(804, 407)], ((1005, 617, 0), 'naked'): [(504, 407)], ((1005, 617, 0), 'omni'): [(504, 407)], ((1005, 617, 0), 'a'): [(504, 407)], ((1005, 617, 0), 'b'): [(504, 407)], ((1005, 617, 0), 'c'): [(504, 407)], ((1005, 617, 0), 'd'): [(504, 407)], ((1005, 617, 0), 'e'): [(504, 407)]}
 		imported_1 = {((1005, 257, 180), 'naked'): [(508, 111)], ((1005, 257, 180), 'omni'): [(508, 111)], ((1005, 257, 180), 'a'): [(503, 411)], ((1005, 257, 180), 'b'): [(800, 411)], ((1005, 257, 180), 'c'): [(807, 411)], ((1005, 257, 180), 'd'): [(807, 411)], ((1005, 257, 180), 'e'): [(807, 402)], ((1005, 617, 0), 'naked'): [(500, 411)], ((1005, 617, 0), 'omni'): [(500, 411)], ((1005, 617, 0), 'a'): [(500, 411)], ((1005, 617, 0), 'b'): [(499, 411)], ((1005, 617, 0), 'c'): [(499, 411)], ((1005, 617, 0), 'd'): [(499, 411)], ((1005, 617, 0), 'e'): [(500, 411)]}
 		imported_2 = {((1005, 257, 180), 'naked'): [(624, 107)], ((1005, 257, 180), 'omni'): [(624, 107)], ((1005, 257, 180), 'a'): [(474, 407)], ((1005, 257, 180), 'b'): [(774, 407)], ((1005, 257, 180), 'c'): [(924, 407)], ((1005, 257, 180), 'd'): [(984, 407)], ((1005, 257, 180), 'e'): [(984, 407)], ((1005, 617, 0), 'naked'): [(414, 737)], ((1005, 617, 0), 'omni'): [(414, 737)], ((1005, 617, 0), 'a'): [(414, 737)], ((1005, 617, 0), 'b'): [(414, 737)], ((1005, 617, 0), 'c'): [(804, 647)], ((1005, 617, 0), 'd'): [(804, 647)], ((1005, 617, 0), 'e'): [(804, 587)]}
+		imported_3 = {((1005, 257, 180), 'naked'): [(534, 122)], ((1005, 257, 180), 'omni'): [(534, 122)], ((1005, 257, 180), 'a'): [(624, 422)], ((1005, 257, 180), 'b'): [(744, 422)], ((1005, 257, 180), 'c'): [(909, 422)], ((1005, 257, 180), 'd'): [(984, 407)], ((1005, 257, 180), 'e'): [(984, 407)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(399, 752)], ((1005, 617, 0), 'b'): [(429, 752)], ((1005, 617, 0), 'c'): [(819, 647)], ((1005, 617, 0), 'd'): [(819, 647)], ((1005, 617, 0), 'e'): [(819, 572)]}
+		imported_4 = {((1005, 257, 180), 'naked'): [(533, 125)], ((1005, 257, 180), 'omni'): [(533, 125)], ((1005, 257, 180), 'a'): [(619, 423)], ((1005, 257, 180), 'b'): [(743, 425)], ((1005, 257, 180), 'c'): [(908, 425)], ((1005, 257, 180), 'd'): [(987, 402)], ((1005, 257, 180), 'e'): [(987, 402)], ((1005, 617, 0), 'naked'): [(426, 723)], ((1005, 617, 0), 'omni'): [(426, 723)], ((1005, 617, 0), 'a'): [(396, 755)], ((1005, 617, 0), 'b'): [(426, 755)], ((1005, 617, 0), 'c'): [(822, 650)], ((1005, 617, 0), 'd'): [(822, 650)], ((1005, 617, 0), 'e'): [(822, 573)]}
+		imported_5 = {((1005, 257, 180), 'naked'): [(540, 124)], ((1005, 257, 180), 'omni'): [(540, 124)], ((1005, 257, 180), 'a'): [(617, 429)], ((1005, 257, 180), 'b'): [(737, 433)], ((1005, 257, 180), 'c'): [(992, 413)], ((1005, 257, 180), 'd'): [(992, 413)], ((1005, 257, 180), 'e'): [(990, 409)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(390, 757)], ((1005, 617, 0), 'b'): [(426, 763)], ((1005, 617, 0), 'c'): [(830, 648)], ((1005, 617, 0), 'd'): [(830, 648)], ((1005, 617, 0), 'e'): [(824, 571)]}
+
+		imported_res_2 = {((1005, 257, 180), 'naked'): [(1152, 431)], ((1005, 257, 180), 'omni'): [(1152, 431)], ((1005, 257, 180), 'a'): [(486, 431)], ((1005, 257, 180), 'b'): [(738, 431)], ((1005, 257, 180), 'c'): [(1044, 431)], ((1005, 257, 180), 'd'): [(1152, 431)], ((1005, 257, 180), 'e'): [(1152, 431)], ((1005, 617, 0), 'naked'): [(426, 725)], ((1005, 617, 0), 'omni'): [(426, 725)], ((1005, 617, 0), 'a'): [(372, 761)], ((1005, 617, 0), 'b'): [(426, 761)], ((1005, 617, 0), 'c'): [(426, 731)], ((1005, 617, 0), 'd'): [(426, 725)], ((1005, 617, 0), 'e'): [(1116, 449)]}
+		imported_res_3 = {((1005, 257, 180), 'naked'): [(545, 123)], ((1005, 257, 180), 'omni'): [(545, 123)], ((1005, 257, 180), 'a'): [(616, 434)], ((1005, 257, 180), 'b'): [(734, 434)], ((1005, 257, 180), 'c'): [(983, 426)], ((1005, 257, 180), 'd'): [(992, 413)], ((1005, 257, 180), 'e'): [(990, 409)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(375, 768)], ((1005, 617, 0), 'b'): [(429, 776)], ((1005, 617, 0), 'c'): [(832, 648)], ((1005, 617, 0), 'd'): [(832, 648)], ((1005, 617, 0), 'e'): [(824, 571)]}
 
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
 		imported_2 = list(imported_2.values())
+		imported_3 = list(imported_3.values())
+		imported_4 = list(imported_4.values())
+		imported_5 = list(imported_5.values())
 
-		imported = imported_0.extend(imported_1)
-		imported = imported.extend(imported_2)
+		imported_res_2 = list(imported_res_2.values())
+		imported_res_3 = list(imported_res_3.values())
+
+		imported = []
+		# imported.extend(imported_1)
+		# imported.extend(imported_2)
+		# imported.extend(imported_3)
+		# imported.extend(imported_4)
+		imported.extend(imported_5)
+		imported.extend(imported_res_2)
+		imported.extend(imported_res_3)
+
+		mirror_sets = get_mirrored(r, sample_sets)
+		# print(len(mirror_sets))
+		for p in mirror_sets:
+			sample_sets.append(p)
+
+
+		new_imported = []
+		for imp in imported:
+			if imp not in new_imported:
+				new_imported.append(imp)
+
+		imported = new_imported
 
 		resolution = 2
 
 		augmented = []
-		for xi in range(-5, 5, resolution):
-			for yi in range(-5, 5, resolution):
+		search_hi = 15
+		search_lo = -1 * search_hi
+
+		for xi in range(search_lo, search_hi, resolution):
+			for yi in range(search_lo, search_hi, resolution):
 				for imp in imported:
 					new_set = []
 					for p in imp:
+						print(p)
+						print(xi, yi)
 						new_pt = (p[0] + xi, p[1] + yi)
 						new_set.append(new_pt)
 					augmented.append(new_set)
@@ -1495,6 +1558,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 				point_set = [(x, y)]
 				sample_sets.append(point_set)
+
+		mirror_sets = get_mirrored(r, sample_sets)
+		for p in mirror_sets:
+			sample_sets.append(p)
 
 		# print(sample_sets)
 		# print(start)
@@ -1596,8 +1663,13 @@ def fn_pathpickle_envir_cache(exp_settings):
 	angle_str = exp_settings['angle_strength']
 	res = exp_settings['resolution']
 	f_vis_label 	= exp_settings['f_vis_label']
+	FLAG_is_denominator = exp_settings['is_denominator']
+	is_denom = 0
+	if FLAG_is_denominator:
+		is_denom = 1
+	is_denom = str(is_denom)
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-isdn" + is_denom + "-" + f_vis_label
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 
 	# print("{" + fn_pickle + "}")
@@ -1825,13 +1897,18 @@ def fn_export_from_exp_settings(exp_settings):
 	n_chunks 		= exp_settings['num_chunks']
 	chunking_type 	= exp_settings['chunk_type']
 	astr 				= exp_settings['angle_strength']
+	FLAG_is_denominator = exp_settings['is_denominator']
+	is_denom = 0
+	if FLAG_is_denominator:
+		is_denom = 1
+	is_denom = str(is_denom)
 
 	km = exp_settings['kill_1']
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
-	fn = FILENAME_PATH_ASSESS + title + "_" 
+	fn = FILENAME_PATH_ASSESS + title + "_fnew=" + str(is_denom) + "_"
 	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr) + 'km=' + str(km)
 	return fn
 
@@ -2471,7 +2548,7 @@ def do_exp(lam, eps, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 5
+	exp_settings['resolution']		= 10
 	exp_settings['f_vis_label']		= 'f_no-zero'
 	exp_settings['epsilon'] 		= 1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -2480,9 +2557,11 @@ def do_exp(lam, eps, km):
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 	exp_settings['angle_strength']	= 600 #40
 	exp_settings['min_path_length'] = {}
-	exp_settings['f_vis']			= f_exp_single
+	exp_settings['is_denominator']	= False
+	exp_settings['f_vis']			= f_exp_single_normalized
 	exp_settings['kill_1']			= km
 	exp_settings['angle_cutoff']	= 70
+
 
 	# Preload envir cache for faster calculations
 	envir_cache = get_envir_cache(restaurant, exp_settings)
@@ -2579,7 +2658,7 @@ def exp_determine_lam_eps():
 	# pass
 
 def main():
-	lam = 1e-12
+	lam = 1e-11
 	eps = 0 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
