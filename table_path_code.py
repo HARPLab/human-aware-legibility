@@ -616,7 +616,7 @@ class Table:
 			tw = table_radius
 			th = table_radius # * .25
 
-			up = -1 * dir_y * table_radius * .16
+			up = -1 * dir_y * table_radius * .23
 
 			ow_diag = tw * 0.70710
 			oh_diag = th * 0.70710
@@ -624,7 +624,7 @@ class Table:
 			# big_depth = table_radius *
 
 			pt_left = (tx - tw, ty + up)
-			pt_right = (tx + tw, ty + 1.2 * up)
+			pt_right = (tx + tw, ty + up)
 			pt_bot = (tx, ty + (dir_y * th))
 			pt_lbot = (tx - ow_diag, ty + (3  *(dir_y * oh_diag)))
 			pt_rbot = (tx + ow_diag, ty + (3 * (dir_y * oh_diag)))
@@ -1151,7 +1151,6 @@ class Restaurant:
 			obs1 = Observer(obs1_pt, obs1_angle)
 			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
 			all_observers.append(obs1)
-			obs_sets[OBS_KEY_A] = [obs1]
 
 			# person b
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
@@ -1162,7 +1161,6 @@ class Restaurant:
 			obs2 = Observer(obs2_pt, obs2_angle)
 			obs2.set_color(PATH_COLORS[OBS_INDEX_B])
 			all_observers.append(obs2)
-			obs_sets[OBS_KEY_B] = [obs2]
 
 			# person c
 			obs3_pt = (table_x - customer_offset, table_y)
@@ -1173,8 +1171,7 @@ class Restaurant:
 			obs3 = Observer(obs3_pt, obs3_angle)
 			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
 			all_observers.append(obs3)
-			obs_sets[OBS_KEY_C] = [obs3]
-
+		
 			# person d
 			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
 			# print(obs4_pt)
@@ -1184,7 +1181,6 @@ class Restaurant:
 			obs4 = Observer(obs4_pt, obs4_angle)
 			obs4.set_color(PATH_COLORS[OBS_INDEX_D])
 			all_observers.append(obs4)
-			obs_sets[OBS_KEY_D] = [obs4]
 
 			# person e
 			obs5_pt = (table_x, table_y + customer_offset)
@@ -1195,7 +1191,12 @@ class Restaurant:
 			obs5 = Observer(obs5_pt, obs5_angle)
 			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
 			all_observers.append(obs5)
-			obs_sets[OBS_KEY_E] = [obs5]
+			obs_sets[OBS_KEY_A] = [obs5]
+			obs_sets[OBS_KEY_B] = [obs4]
+			obs_sets[OBS_KEY_C] = [obs3]
+			obs_sets[OBS_KEY_D] = [obs2]
+			obs_sets[OBS_KEY_E] = [obs1]
+			
 
 			# obs_sets[OBS_KEY_ALL] = all_observers
 			self.obs_sets = obs_sets
@@ -1526,22 +1527,22 @@ class Restaurant:
 
 	def get_obs_sets_colors(self):
 		color_lookup = {}
-		color_lookup['a'] = OBS_COLOR_A
-		color_lookup['b'] = OBS_COLOR_B
+		color_lookup['a'] = OBS_COLOR_E
+		color_lookup['b'] = OBS_COLOR_D
 		color_lookup['c'] = OBS_COLOR_C
-		color_lookup['d'] = OBS_COLOR_D
-		color_lookup['e'] = OBS_COLOR_E
+		color_lookup['d'] = OBS_COLOR_B
+		color_lookup['e'] = OBS_COLOR_A
 		color_lookup['omni'] = OBS_COLOR_OMNISCIENT
 		color_lookup['all'] = OBS_COLOR_ALL
 
 		color_lookup['naked'] = OBS_COLOR_NAKED
 		color_lookup['naked-env'] = OBS_COLOR_NAKED
 
-		color_lookup['a-env'] = OBS_COLOR_A
-		color_lookup['b-env'] = OBS_COLOR_B
+		color_lookup['a-env'] = OBS_COLOR_E
+		color_lookup['b-env'] = OBS_COLOR_D
 		color_lookup['c-env'] = OBS_COLOR_C
-		color_lookup['d-env'] = OBS_COLOR_D
-		color_lookup['e-env'] = OBS_COLOR_E
+		color_lookup['d-env'] = OBS_COLOR_B
+		color_lookup['e-env'] = OBS_COLOR_A
 		color_lookup['omni-env'] = OBS_COLOR_OMNISCIENT
 		color_lookup['all-env'] = OBS_COLOR_ALL
 
@@ -2241,7 +2242,7 @@ def export_raw_paths(r, img, saved_paths_list, title, fn, sample_points_list=[])
 			sample_points = sample_points_list[pi]
 			for i in range(len(sample_points)):
 				sp = sample_points[i]
-				cv2.circle(all_paths_img, sp, 8, (0,0,0), 8)
+				# cv2.circle(all_paths_img, sp, 8, (0,0,0), 8)
 
 		# path_img = cv2.flip(path_img, 0)
 		# cv2.imwrite(FILENAME_EXPORT_IMGS_PREFIX + 'fig_path_' + path_title + '.png', path_img) 
