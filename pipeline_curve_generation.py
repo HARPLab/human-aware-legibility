@@ -33,7 +33,7 @@ import sys
 FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
-FLAG_REDO_PATH_CREATION = True #False #True #False #True #False
+FLAG_REDO_PATH_CREATION = False #True #False #True #False
 FLAG_REDO_ENVIR_CACHE 	= False #True #False #True
 FLAG_MIN_MODE			= False
 
@@ -149,7 +149,7 @@ def f_naked(t, pt, aud, path):
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0 and path is not None:
-		return float(len(path) - t + 1)
+		return float(len(path) - t)
 		# return float(len(path) - t)
 	elif len(aud) == 0:
 		# print('ping')
@@ -459,9 +459,9 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 # Given a 
 def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	FLAG_is_denominator = exp_settings['is_denominator']
-	if FLAG_is_denominator:
+	if f_function is None and FLAG_is_denominator:
 		f_function = f_exp_single
-	else:
+	elif f_function is None:
 		f_function = f_exp_single_normalized
 
 	if path is None or len(path) == 0:
@@ -523,15 +523,14 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	if len(aud) == 0:
-		print(numerator)
-		print(divisor)
-		print(f_log)
-		print(p_log)
-		print(legibility)
-		print(overall)
-		print()
-
+	# if len(aud) == 0:
+	# 	print(numerator)
+	# 	print(divisor)
+	# 	print(f_log)
+	# 	print(p_log)
+	# 	print(legibility)
+	# 	print(overall)
+	# 	print()
 
 	if legibility > 1.0 or legibility < 0:
 		# print("BAD L ==> " + str(legibility))
@@ -557,6 +556,11 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 	FLAG_is_denominator = exp_settings['is_denominator']
 	if path is None or len(path) == 0:
 		return 0
+
+	if f_function is None and FLAG_is_denominator:
+		f_function = f_exp_single
+	elif f_function is None:
+		f_function = f_exp_single_normalized
 
 	if FLAG_is_denominator:
 		vis_cutoff = 1
@@ -608,7 +612,7 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
-		new_leg = f_legibility(resto, target, goals, path, aud, f_vis, exp_settings)
+		new_leg = f_legibility(resto, target, goals, path, aud, None, exp_settings)
 		new_env = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
 
 		vals[key] = new_leg
@@ -1378,6 +1382,17 @@ def get_mirrored(r, sample_sets):
 		mirror_sets.append(new_path)
 	return mirror_sets
 
+def get_mirrored_path(r, path):
+	start = r.get_start()
+	sx, sy, st = start
+	new_path = []
+	for p in path:
+		new_y_offset = (sy - p[1])
+		new_y = sy + new_y_offset
+		new_pt = (p[0], new_y)
+		new_path.append(new_pt)
+	return new_path
+
 def get_sample_points_sets(r, start, goal, exp_settings):
 	# sampling_type = 'systematic'
 	# sampling_type = 'visible'
@@ -1442,7 +1457,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_res_5 = {((1005, 257, 180), 'naked'): [(1114, 422)], ((1005, 257, 180), 'omni'): [(1114, 422)], ((1005, 257, 180), 'a'): [(384, 432)], ((1005, 257, 180), 'b'): [(734, 432)], ((1005, 257, 180), 'c'): [(969, 432)], ((1005, 257, 180), 'd'): [(1154, 432)], ((1005, 257, 180), 'e'): [(1154, 432)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(374, 642)], ((1005, 617, 0), 'b'): [(649, 762)], ((1005, 617, 0), 'c'): [(1009, 622)], ((1005, 617, 0), 'd'): [(1154, 442)], ((1005, 617, 0), 'e'): [(1154, 442)]}
 		imported_res_6 = {((1005, 257, 180), 'naked'): [(1149, 431)], ((1005, 257, 180), 'omni'): [(1149, 431)], ((1005, 257, 180), 'a'): [(387, 433)], ((1005, 257, 180), 'b'): [(731, 434)], ((1005, 257, 180), 'c'): [(958, 433)], ((1005, 257, 180), 'd'): [(1151, 434)], ((1005, 257, 180), 'e'): [(1167, 429)], ((1005, 617, 0), 'naked'): [(426, 789)], ((1005, 617, 0), 'omni'): [(426, 789)], ((1005, 617, 0), 'a'): [(371, 643)], ((1005, 617, 0), 'b'): [(640, 775)], ((1005, 617, 0), 'c'): [(1004, 623)], ((1005, 617, 0), 'd'): [(1163, 444)], ((1005, 617, 0), 'e'): [(1163, 443)]}
 
+		nexus_icon_3 = {((1005, 257, 180), 'naked'): [(644, 397)], ((1005, 257, 180), 'omni'): [(644, 397)], ((1005, 257, 180), 'a'): [(1134, 427)], ((1005, 257, 180), 'b'): [(1114, 427)], ((1005, 257, 180), 'c'): [(914, 427)], ((1005, 257, 180), 'd'): [(734, 427)], ((1005, 257, 180), 'e'): [(384, 427)], ((1005, 617, 0), 'naked'): [(664, 547)], ((1005, 617, 0), 'omni'): [(664, 547)], ((1005, 617, 0), 'a'): [(1124, 447)], ((1005, 617, 0), 'b'): [(1124, 447)], ((1005, 617, 0), 'c'): [(824, 647)], ((1005, 617, 0), 'd'): [(664, 757)], ((1005, 617, 0), 'e'): [(374, 637)]}
 		nexus_icon = {((1005, 257, 180), 'naked'): [(1150, 431)], ((1005, 257, 180), 'omni'): [(1150, 431)], ((1005, 257, 180), 'a'): [(1180, 430)], ((1005, 257, 180), 'b'): [(1152, 434)], ((1005, 257, 180), 'c'): [(971, 434)], ((1005, 257, 180), 'd'): [(734, 433)], ((1005, 257, 180), 'e'): [(386, 434)], ((1005, 617, 0), 'naked'): [(429, 790)], ((1005, 617, 0), 'omni'): [(429, 790)], ((1005, 617, 0), 'a'): [(1178, 442)], ((1005, 617, 0), 'b'): [(1172, 445)], ((1005, 617, 0), 'c'): [(971, 444)], ((1005, 617, 0), 'd'): [(643, 788)], ((1005, 617, 0), 'e'): [(372, 644)]}
+		nexus_icon_2 = {((1005, 257, 180), 'naked'): [(594, 197)], ((1005, 257, 180), 'omni'): [(594, 197)], ((1005, 257, 180), 'a'): [(1134, 427)], ((1005, 257, 180), 'b'): [(1114, 427)], ((1005, 257, 180), 'c'): [(914, 427)], ((1005, 257, 180), 'd'): [(734, 427)], ((1005, 257, 180), 'e'): [(384, 427)], ((1005, 617, 0), 'naked'): [(414, 727)], ((1005, 617, 0), 'omni'): [(414, 727)], ((1005, 617, 0), 'a'): [(1124, 447)], ((1005, 617, 0), 'b'): [(1124, 447)], ((1005, 617, 0), 'c'): [(824, 647)], ((1005, 617, 0), 'd'): [(664, 757)], ((1005, 617, 0), 'e'): [(374, 637)]}
 
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
@@ -1458,6 +1475,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_res_5 = list(imported_res_5.values())
 		imported_res_6 = list(imported_res_6.values())
 
+
+
 		# nexus_icon = list(nexus_icon.values())[7:9]
 		nexus_icon = [[(429, 790)], [(1150, 431)]]
 
@@ -1469,9 +1488,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# imported.extend(imported_5)
 		# imported.extend(imported_res_2)
 		# imported.extend(imported_res_3)
-		# imported.extend(imported_res_4)
-		# imported.extend(imported_res_5)
-		# imported.extend(imported_res_6)
+		imported.extend(imported_res_4)
+		imported.extend(imported_res_5)
+		imported.extend(imported_res_6)
 		imported.extend(nexus_icon)
 
 
@@ -1491,7 +1510,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		print(len(imported))
 
 
-		resolution = 5
+		resolution = 15
 
 		augmented = []
 		search_hi = 15
@@ -2470,9 +2489,122 @@ def make_overview_plot(r, df, exp_settings, columns, label):
 	plt.clf()
 	
 
+def export_table_all_viewers(r, best_paths, exp_settings):
+	# if stat_type == 'env':
+	# 	f_function = f_env
+	# elif stat_type == 'leg':
+	# 	f_function = f_legibility
+	# else:
+	# 	print("Problem")
+	# 	exit()
+
+	obs_sets = r.get_obs_sets()
+	obs_keys = list(obs_sets.keys())
+
+	# (target, observer) = value
+	data = []
+
+	for key in best_paths:
+		path = best_paths[key]
+		gkey, target_aud_key = key
+
+		for aud_key in obs_keys:
+			actual_audience = obs_sets[aud_key]
+		
+			f_leg_value = f_legibility(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
+			f_env_value = f_env(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
+
+			datum = {'goal':gkey, 'target_aud':target_aud_key, 'actual_aud':aud_key, 'legibility':f_leg_value, 'env':f_env_value}
+			data.append(datum)
+
+			if target_aud_key == 'omni' and aud_key == 'omni':
+				print(gkey)
+				print(f_leg_value)
+				print(f_env_value)
+
+	df = pd.DataFrame.from_dict(data)
+	# print(data)
+
+
+	fig_grid = plt.figure(figsize=(10, 6), constrained_layout=True)
+	gs = gridspec.GridSpec(ncols=2, nrows=2,
+						 width_ratios=[1, 1], wspace=None,
+						 hspace=None, height_ratios=[1, 1], figure=fig_grid)
+
+	cool_title = title_from_exp_settings(exp_settings)
+	plt.suptitle(cool_title)
+
+	goals_list = r.get_goals_all()
+
+	df['legibility'] = df['legibility'].astype(float)
+	df['env'] = df['env'].astype(int)
+
+	df_a = df[df['goal'] == goals_list[0]]
+	df_b = df[df['goal'] == goals_list[1]]
+
+	df_a_rounded = np.round(df_a, 3)
+	df_b_rounded = np.round(df_b, 3)
+
+	# df_c = df[df['goal'] == goals_list[0]]
+	# df_d = df[df['goal'] == goals_list[1]]
+
+	# df_a.loc[:,"goal"] = df_a.loc[:, "goal"].map(goal_labels)
+	# df_b.loc[:,"goal"] = df_b.loc[:, "goal"].map(goal_labels)
+
+	cols_env = get_columns_legibility(r, df)
+	cols_leg = get_columns_env(r, df)
+
+
+	# df_a = df_a[cols_leg]
+	# df_b = df_b[cols_leg]
+
+	# df_c = df_c[cols_env]
+	# df_d = df_d[cols_env]
+
+	# print(df.pivot(index='target_aud', columns='actual_aud'))
+
+	# gs.update(wspace=1)
+	ax1 = plt.subplot(gs[0, :1], )
+	ax2 = plt.subplot(gs[0, 1:])
+	ax3 = plt.subplot(gs[1, :1], )
+	ax4 = plt.subplot(gs[1, 1:])
+
+	ax1.set_title("Legibility for paths to goal 0")
+	ax2.set_title("Legibility for paths to goal 1")
+	ax3.set_title("Theoretical Max\n Envelope of Readiness for paths to goal 0")
+	ax4.set_title("Theoretical Max\n Envelope of Readiness for paths to goal 1")
+
+	ax1.axis('off')
+	ax2.axis('off')
+	ax3.axis('off')
+	ax4.axis('off')
+
+	# .pivot_table(values='value', index='label', columns='type')
+	pt_a = df_a_rounded.pivot_table(values='legibility', index='target_aud', columns='actual_aud', aggfunc='first')
+	pt_b = df_b_rounded.pivot_table(values='legibility', index='target_aud', columns='actual_aud', aggfunc='first')
+	pt_c = df_a.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
+	pt_d = df_b.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
+
+	table_a = table(ax1, pt_a, loc="center")
+	table_b = table(ax2, pt_b, loc="center")
+	table_c = table(ax3, pt_c, loc="center")
+	table_d = table(ax4, pt_d, loc="center")
+
+	# table_a.auto_set_font_size(False)
+	# table_b.auto_set_font_size(True)
+
+	# table_a.set_fontsize(6)
+	# table_b.set_fontsize(6)
+
+	plt.tight_layout()
+	plt.savefig(fn_export_from_exp_settings(exp_settings) +  '-desc_table_voila' + '.png')
+	plt.clf()
+
+	return None
+
 # TODO: verify is indexing correctly and grabbing best overall, 
 # not best in short zone
-def get_best_paths_from_df(r, df):
+def get_best_paths_from_df(r, df, exp_settings):
 	best_index = {}
 	best_paths = {}
 	best_lookup = {}
@@ -2503,6 +2635,17 @@ def get_best_paths_from_df(r, df):
 	# export_best_env_overview(r, df, best_lookup)
 	# print(best_index)
 
+	omni_case_goal_0 = best_lookup[(goals[0], 'omni')]
+	omni_case_goal_1 = best_lookup[(goals[1], 'omni')]
+
+	if omni_case_goal_0['omni'] > omni_case_goal_1['omni']:
+		best_paths[(goals[1], 'omni')] = get_mirrored_path(r, best_paths[(goals[0], 'omni')])
+	elif omni_case_goal_1['omni'] > omni_case_goal_0['omni']:
+		best_paths[(goals[0], 'omni')] = get_mirrored_path(r, best_paths[(goals[1], 'omni')])
+
+
+	export_table_all_viewers(r, best_paths, exp_settings)
+	
 	print("BEST SAMPLE POINTS")
 	print(best_sample_points)
 	return best_paths, best_index
@@ -2545,12 +2688,12 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 	# data_frame of all paths overall
 	df = dict_to_leg_df(r, data, exp_settings)
 
-	best_paths, best_index = get_best_paths_from_df(r, df)
+	best_paths, best_index = get_best_paths_from_df(r, df, exp_settings)
 
 	export_path_options_for_each_goal(r, best_paths, exp_settings)
 	return best_paths
 
-def do_exp(lam, eps, km):
+def do_exp(lam, km):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
 	unique_key = 'exp_single'
@@ -2558,7 +2701,7 @@ def do_exp(lam, eps, km):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
 	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
@@ -2568,7 +2711,7 @@ def do_exp(lam, eps, km):
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
-	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
+	sampling_type = SAMPLE_TYPE_NEXUS_POINTS
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2581,7 +2724,7 @@ def do_exp(lam, eps, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 5
+	exp_settings['resolution']		= 20
 	exp_settings['f_vis_label']		= 'f_new'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -2674,12 +2817,13 @@ def do_exp(lam, eps, km):
 	print("Done with experiment")
 
 def exp_determine_lam_eps():
-	lam_vals = [0.0]
-	eps = 1e-14
+	lam_vals = []
+	eps = 1e-7
 	# eps_vals = []
 	# # exit()
-	for i in range(-3, -10, -1):
-		new_val = 10 ** i
+	# for i in range(-5, -10, -1):
+	for i in np.arange(1.1, 2, .1):
+		new_val = i * 1e-6
 	# 	eps_vals.append(new_val)
 		lam_vals.append(new_val)
 	# 	# lam_vals.append(new_val)
@@ -2688,16 +2832,16 @@ def exp_determine_lam_eps():
 	# for eps in eps_vals:
 	
 	for lam in lam_vals:
-		do_exp(lam, eps, False)
+		do_exp(lam, False)
 	# pass
 
 def main():
 	# lam = 1e-6
-	eps = 0 #1e-16
+	lam = 0 #1.5e-8 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	# do_exp(lam, eps, kill_mode)	
+	# do_exp(lam, kill_mode)	
 	exp_determine_lam_eps()
 
 if __name__ == "__main__":
