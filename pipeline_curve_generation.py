@@ -34,7 +34,7 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = True #False #True #False #True #False
-FLAG_REDO_ENVIR_CACHE 	= True #False #True
+FLAG_REDO_ENVIR_CACHE 	= False #True #False #True
 FLAG_MIN_MODE			= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -58,7 +58,7 @@ SAMPLE_TYPE_CENTRAL 	= 'central'
 SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparse'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_CURVE_TEST	= 'ctest'
-SAMPLE_TYPE_NEXUS_POINTS= 'nexus'
+SAMPLE_TYPE_NEXUS_POINTS= 'nexusn'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
@@ -523,14 +523,14 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	total_cost =  - LAMBDA*total_cost
 	overall = legibility + total_cost
 
-	# if len(aud) == 0:
-	# 	print(numerator)
-	# 	print(divisor)
-	# 	print(f_log)
-	# 	print(p_log)
-	# 	print(legibility)
-	# 	print(overall)
-	# 	print()
+	if len(aud) == 0:
+		print(numerator)
+		print(divisor)
+		print(f_log)
+		print(p_log)
+		print(legibility)
+		print(overall)
+		print()
 
 
 	if legibility > 1.0 or legibility < 0:
@@ -1439,6 +1439,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_res_3 = {((1005, 257, 180), 'naked'): [(545, 123)], ((1005, 257, 180), 'omni'): [(545, 123)], ((1005, 257, 180), 'a'): [(616, 434)], ((1005, 257, 180), 'b'): [(734, 434)], ((1005, 257, 180), 'c'): [(983, 426)], ((1005, 257, 180), 'd'): [(992, 413)], ((1005, 257, 180), 'e'): [(990, 409)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(375, 768)], ((1005, 617, 0), 'b'): [(429, 776)], ((1005, 617, 0), 'c'): [(832, 648)], ((1005, 617, 0), 'd'): [(832, 648)], ((1005, 617, 0), 'e'): [(824, 571)]}
 
 		imported_res_4 = {((1005, 257, 180), 'naked'): [(564, 107)], ((1005, 257, 180), 'omni'): [(564, 107)], ((1005, 257, 180), 'a'): [(384, 407)], ((1005, 257, 180), 'b'): [(744, 407)], ((1005, 257, 180), 'c'): [(924, 407)], ((1005, 257, 180), 'd'): [(1014, 407)], ((1005, 257, 180), 'e'): [(1014, 407)], ((1005, 617, 0), 'naked'): [(834, 557)], ((1005, 617, 0), 'omni'): [(834, 557)], ((1005, 617, 0), 'a'): [(834, 497)], ((1005, 617, 0), 'b'): [(834, 587)], ((1005, 617, 0), 'c'): [(1014, 467)], ((1005, 617, 0), 'd'): [(1014, 467)], ((1005, 617, 0), 'e'): [(1014, 467)]}
+		imported_res_5 = {((1005, 257, 180), 'naked'): [(1114, 422)], ((1005, 257, 180), 'omni'): [(1114, 422)], ((1005, 257, 180), 'a'): [(384, 432)], ((1005, 257, 180), 'b'): [(734, 432)], ((1005, 257, 180), 'c'): [(969, 432)], ((1005, 257, 180), 'd'): [(1154, 432)], ((1005, 257, 180), 'e'): [(1154, 432)], ((1005, 617, 0), 'naked'): [(429, 722)], ((1005, 617, 0), 'omni'): [(429, 722)], ((1005, 617, 0), 'a'): [(374, 642)], ((1005, 617, 0), 'b'): [(649, 762)], ((1005, 617, 0), 'c'): [(1009, 622)], ((1005, 617, 0), 'd'): [(1154, 442)], ((1005, 617, 0), 'e'): [(1154, 442)]}
+		imported_res_6 = {((1005, 257, 180), 'naked'): [(1149, 431)], ((1005, 257, 180), 'omni'): [(1149, 431)], ((1005, 257, 180), 'a'): [(387, 433)], ((1005, 257, 180), 'b'): [(731, 434)], ((1005, 257, 180), 'c'): [(958, 433)], ((1005, 257, 180), 'd'): [(1151, 434)], ((1005, 257, 180), 'e'): [(1167, 429)], ((1005, 617, 0), 'naked'): [(426, 789)], ((1005, 617, 0), 'omni'): [(426, 789)], ((1005, 617, 0), 'a'): [(371, 643)], ((1005, 617, 0), 'b'): [(640, 775)], ((1005, 617, 0), 'c'): [(1004, 623)], ((1005, 617, 0), 'd'): [(1163, 444)], ((1005, 617, 0), 'e'): [(1163, 443)]}
+
+		nexus_icon = {((1005, 257, 180), 'naked'): [(1150, 431)], ((1005, 257, 180), 'omni'): [(1150, 431)], ((1005, 257, 180), 'a'): [(1180, 430)], ((1005, 257, 180), 'b'): [(1152, 434)], ((1005, 257, 180), 'c'): [(971, 434)], ((1005, 257, 180), 'd'): [(734, 433)], ((1005, 257, 180), 'e'): [(386, 434)], ((1005, 617, 0), 'naked'): [(429, 790)], ((1005, 617, 0), 'omni'): [(429, 790)], ((1005, 617, 0), 'a'): [(1178, 442)], ((1005, 617, 0), 'b'): [(1172, 445)], ((1005, 617, 0), 'c'): [(971, 444)], ((1005, 617, 0), 'd'): [(643, 788)], ((1005, 617, 0), 'e'): [(372, 644)]}
 
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
@@ -1446,35 +1450,48 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_3 = list(imported_3.values())
 		imported_4 = list(imported_4.values())
 		imported_5 = list(imported_5.values())
+		# imported_5 = list(imported_6.values())
 
 		imported_res_2 = list(imported_res_2.values())
 		imported_res_3 = list(imported_res_3.values())
 		imported_res_4 = list(imported_res_4.values())
+		imported_res_5 = list(imported_res_5.values())
+		imported_res_6 = list(imported_res_6.values())
+
+		# nexus_icon = list(nexus_icon.values())[7:9]
+		nexus_icon = [[(429, 790)], [(1150, 431)]]
 
 		imported = []
 		# imported.extend(imported_1)
 		# imported.extend(imported_2)
 		# imported.extend(imported_3)
 		# imported.extend(imported_4)
-		imported.extend(imported_5)
-		imported.extend(imported_res_2)
-		imported.extend(imported_res_3)
-		imported.extend(imported_res_4)
+		# imported.extend(imported_5)
+		# imported.extend(imported_res_2)
+		# imported.extend(imported_res_3)
+		# imported.extend(imported_res_4)
+		# imported.extend(imported_res_5)
+		# imported.extend(imported_res_6)
+		imported.extend(nexus_icon)
 
-		mirror_sets = get_mirrored(r, sample_sets)
-		# print(len(mirror_sets))
-		for p in mirror_sets:
-			sample_sets.append(p)
 
 
 		new_imported = []
 		for imp in imported:
 			if imp not in new_imported:
 				new_imported.append(imp)
-
 		imported = new_imported
 
-		resolution = 2
+		mirror_sets = get_mirrored(r, imported)
+		for p in mirror_sets:
+			if p not in imported:
+				imported.append(p)
+
+		print(imported)
+		print(len(imported))
+
+
+		resolution = 5
 
 		augmented = []
 		search_hi = 15
@@ -1485,12 +1502,13 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 				for imp in imported:
 					new_set = []
 					for p in imp:
-						print(p)
-						print(xi, yi)
+						# print(p)
+						# print(xi, yi)
 						new_pt = (p[0] + xi, p[1] + yi)
 						new_set.append(new_pt)
 					augmented.append(new_set)
 
+		print(augmented)
 		sample_sets.extend(augmented)
 
 	if sampling_type == SAMPLE_TYPE_CURVE_TEST:
@@ -2564,8 +2582,8 @@ def do_exp(lam, eps, km):
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['resolution']		= 5
-	exp_settings['f_vis_label']		= 'f_no-zero'
-	exp_settings['epsilon'] 		= 1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['f_vis_label']		= 'f_new'
+	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
@@ -2660,7 +2678,7 @@ def exp_determine_lam_eps():
 	eps = 1e-14
 	# eps_vals = []
 	# # exit()
-	for i in range(-14, -30, -1):
+	for i in range(-3, -10, -1):
 		new_val = 10 ** i
 	# 	eps_vals.append(new_val)
 		lam_vals.append(new_val)
@@ -2674,13 +2692,13 @@ def exp_determine_lam_eps():
 	# pass
 
 def main():
-	lam = 1e-11
+	# lam = 1e-6
 	eps = 0 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	do_exp(lam, eps, kill_mode)	
-	# exp_determine_lam_eps()
+	# do_exp(lam, eps, kill_mode)	
+	exp_determine_lam_eps()
 
 if __name__ == "__main__":
 
