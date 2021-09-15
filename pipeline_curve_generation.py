@@ -58,7 +58,7 @@ SAMPLE_TYPE_CENTRAL 	= 'central'
 SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparsy'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_CURVE_TEST	= 'ctest'
-SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin3'
+SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin4'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
@@ -1475,6 +1475,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		# central points with new method
 		central_15_points = {((1005, 257, 180), 'naked'): [(389, 107)], ((1005, 257, 180), 'omni'): [(389, 107)], ((1005, 257, 180), 'a'): [(954, 357)], ((1005, 257, 180), 'b'): [(949, 392)], ((1005, 257, 180), 'c'): [(904, 432)], ((1005, 257, 180), 'd'): [(764, 427)], ((1005, 257, 180), 'e'): [(399, 427)], ((1005, 617, 0), 'naked'): [(374, 732)], ((1005, 617, 0), 'omni'): [(374, 732)], ((1005, 617, 0), 'a'): [(949, 437)], ((1005, 617, 0), 'b'): [(949, 442)], ((1005, 617, 0), 'c'): [(844, 627)], ((1005, 617, 0), 'd'): [(649, 762)], ((1005, 617, 0), 'e'): [(374, 607)]}
+		central_15_points = {((1005, 257, 180), 'naked'): [(399, 107)], ((1005, 257, 180), 'omni'): [(399, 107)], ((1005, 257, 180), 'a'): [(924, 362)], ((1005, 257, 180), 'b'): [(924, 407)], ((1005, 257, 180), 'c'): [(894, 422)], ((1005, 257, 180), 'd'): [(759, 422)], ((1005, 257, 180), 'e'): [(399, 422)], ((1005, 617, 0), 'naked'): [(384, 737)], ((1005, 617, 0), 'omni'): [(384, 737)], ((1005, 617, 0), 'a'): [(924, 437)], ((1005, 617, 0), 'b'): [(924, 437)], ((1005, 617, 0), 'c'): [(879, 437)], ((1005, 617, 0), 'd'): [(384, 752)], ((1005, 617, 0), 'e'): [(384, 602)]}
+
+		# best with cutoff 20
+		central_15_points = {((1005, 257, 180), 'naked'): [(399, 107)], ((1005, 257, 180), 'omni'): [(399, 107)], ((1005, 257, 180), 'a'): [(894, 332)], ((1005, 257, 180), 'b'): [(894, 422)], ((1005, 257, 180), 'c'): [(894, 422)], ((1005, 257, 180), 'd'): [(759, 422)], ((1005, 257, 180), 'e'): [(399, 422)], ((1005, 617, 0), 'naked'): [(384, 722)], ((1005, 617, 0), 'omni'): [(384, 722)], ((1005, 617, 0), 'a'): [(894, 422)], ((1005, 617, 0), 'b'): [(804, 467)], ((1005, 617, 0), 'c'): [(789, 662)], ((1005, 617, 0), 'd'): [(384, 752)], ((1005, 617, 0), 'e'): [(384, 647)]}
 
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
@@ -1989,12 +1993,19 @@ def title_from_exp_settings(exp_settings):
 	chunking_type 	= exp_settings['chunk_type']
 	angle_strength = exp_settings['angle_strength']
 
+	FLAG_is_denominator = exp_settings['is_denominator']
+	rez 				= exp_settings['resolution']
+	f_label 			= exp_settings['f_vis_label']
+	fov 				= exp_settings['fov']
+	prob_og 			= exp_settings['prob_og']
+	right_bound 		= exp_settings['right-bound']
+
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
 	cool_title = title + ": " + sampling_type + " ang_str=" + str(angle_strength)
-	cool_title += "\neps=" + eps 
-	cool_title += "\nlam=" + lam
+	cool_title += "\nright_bound=" + str(right_bound) + " fov=" + str(fov)
+	cool_title += "\nlam=" + lam + "     prob_og=" + str(prob_og)
 	cool_title += "\nn=" + str(n_chunks) + " distr=" + str(chunking_type)
 
 	return cool_title
@@ -2758,7 +2769,7 @@ def do_exp(lam, km):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
 	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
@@ -2768,7 +2779,7 @@ def do_exp(lam, km):
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
-	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
+	sampling_type = SAMPLE_TYPE_NEXUS_POINTS
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2788,7 +2799,7 @@ def do_exp(lam, km):
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 450 #40
+	exp_settings['angle_strength']	= 550 #40
 	exp_settings['min_path_length'] = {}
 	exp_settings['is_denominator']	= False
 	exp_settings['f_vis']			= f_exp_single_normalized
@@ -2796,7 +2807,7 @@ def do_exp(lam, km):
 	exp_settings['angle_cutoff']	= 70
 	exp_settings['fov']	= 120
 	exp_settings['prob_og']			= False
-	exp_settings['right-bound']		= 40
+	exp_settings['right-bound']		= 20
 
 
 	# Preload envir cache for faster calculations
