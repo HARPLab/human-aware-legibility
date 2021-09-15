@@ -55,10 +55,10 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
 SAMPLE_TYPE_CENTRAL 	= 'central'
-SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparse'
+SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparsy'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_CURVE_TEST	= 'ctest'
-SAMPLE_TYPE_NEXUS_POINTS= 'nexusn'
+SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin3'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
@@ -149,7 +149,7 @@ def f_naked(t, pt, aud, path):
 def f_exp_single(t, pt, aud, path):
 	# if this is the omniscient case, return the original equation
 	if len(aud) == 0 and path is not None:
-		return float(len(path) - t)
+		return float(60 - t)
 		# return float(len(path) - t)
 	elif len(aud) == 0:
 		# print('ping')
@@ -421,7 +421,7 @@ def get_path_length(path):
 	# return output, total
 
 def get_min_viable_path(r, goal, exp_settings):
-	path_option = construct_single_path_with_angles(exp_settings, r.get_start(), goal, [], fn_export_from_exp_settings(exp_settings))
+	path_option = construct_single_path_with_angles_spline(exp_settings, r.get_start(), goal, [], fn_export_from_exp_settings(exp_settings))
 	path_option = chunkify.chunkify_path(exp_settings, path_option)
 	return path_option
 
@@ -566,7 +566,7 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 		vis_cutoff = 1
 	else:
 		half_fov = fov / 2.0
-		vis_cutoff = 1.0 / half_fov
+		vis_cutoff = 0
 
 	count = 0
 	aug_path = get_costs_along_path(path)
@@ -849,7 +849,7 @@ def is_valid_path(r, path, exp_settings):
 		if t.intersects_path(path):
 			return False
 
-	BOUND_CHECK_RIGHT = False
+	BOUND_CHECK_RIGHT = True
 	# Checks for remaining in bounds
 	
 	for i in range(len(path) - 1):
@@ -861,7 +861,7 @@ def is_valid_path(r, path, exp_settings):
 		px, py = pt1[0], pt1[1]
 
 		if BOUND_CHECK_RIGHT:
-			if px > hi_x + 80:
+			if px > hi_x + 30:
 				return False
 
 		if px < 0:
@@ -918,7 +918,7 @@ def get_pre_goal_pt(goal, exp_settings):
 	return (x, y, theta)
 
 # https://hal.archives-ouvertes.fr/hal-03017566/document
-def construct_single_path_with_angles(exp_settings, start, goal, sample_pts, fn, is_weak=False):
+def construct_single_path_with_angles_bspline(exp_settings, start, goal, sample_pts, fn, is_weak=False):
 	if len(sample_pts) == 0:
 		return [start, goal]
 		# return construct_single_path_with_angles_spline(exp_settings, start, goal, sample_pts, fn, is_weak=False)
@@ -1461,6 +1461,11 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		nexus_icon = {((1005, 257, 180), 'naked'): [(1150, 431)], ((1005, 257, 180), 'omni'): [(1150, 431)], ((1005, 257, 180), 'a'): [(1180, 430)], ((1005, 257, 180), 'b'): [(1152, 434)], ((1005, 257, 180), 'c'): [(971, 434)], ((1005, 257, 180), 'd'): [(734, 433)], ((1005, 257, 180), 'e'): [(386, 434)], ((1005, 617, 0), 'naked'): [(429, 790)], ((1005, 617, 0), 'omni'): [(429, 790)], ((1005, 617, 0), 'a'): [(1178, 442)], ((1005, 617, 0), 'b'): [(1172, 445)], ((1005, 617, 0), 'c'): [(971, 444)], ((1005, 617, 0), 'd'): [(643, 788)], ((1005, 617, 0), 'e'): [(372, 644)]}
 		nexus_icon_2 = {((1005, 257, 180), 'naked'): [(594, 197)], ((1005, 257, 180), 'omni'): [(594, 197)], ((1005, 257, 180), 'a'): [(1134, 427)], ((1005, 257, 180), 'b'): [(1114, 427)], ((1005, 257, 180), 'c'): [(914, 427)], ((1005, 257, 180), 'd'): [(734, 427)], ((1005, 257, 180), 'e'): [(384, 427)], ((1005, 617, 0), 'naked'): [(414, 727)], ((1005, 617, 0), 'omni'): [(414, 727)], ((1005, 617, 0), 'a'): [(1124, 447)], ((1005, 617, 0), 'b'): [(1124, 447)], ((1005, 617, 0), 'c'): [(824, 647)], ((1005, 617, 0), 'd'): [(664, 757)], ((1005, 617, 0), 'e'): [(374, 637)]}
 
+		central_20_points = {((1005, 257, 180), 'naked'): [(384, 107)], ((1005, 257, 180), 'omni'): [(384, 107)], ((1005, 257, 180), 'a'): [(1124, 427)], ((1005, 257, 180), 'b'): [(1124, 427)], ((1005, 257, 180), 'c'): [(904, 427)], ((1005, 257, 180), 'd'): [(764, 427)], ((1005, 257, 180), 'e'): [(384, 427)], ((1005, 617, 0), 'naked'): [(664, 707)], ((1005, 617, 0), 'omni'): [(664, 707)], ((1005, 617, 0), 'a'): [(1124, 447)], ((1005, 617, 0), 'b'): [(1124, 447)], ((1005, 617, 0), 'c'): [(824, 647)], ((1005, 617, 0), 'd'): [(664, 747)], ((1005, 617, 0), 'e'): [(664, 507)]}
+		central_15_points = {((1005, 257, 180), 'naked'): [(384, 107)], ((1005, 257, 180), 'omni'): [(384, 107)], ((1005, 257, 180), 'a'): [(1119, 422)], ((1005, 257, 180), 'b'): [(1119, 422)], ((1005, 257, 180), 'c'): [(909, 422)], ((1005, 257, 180), 'd'): [(744, 422)], ((1005, 257, 180), 'e'): [(384, 422)], ((1005, 617, 0), 'naked'): [(399, 722)], ((1005, 617, 0), 'omni'): [(399, 722)], ((1005, 617, 0), 'a'): [(1059, 452)], ((1005, 617, 0), 'b'): [(1059, 452)], ((1005, 617, 0), 'c'): [(819, 647)], ((1005, 617, 0), 'd'): [(429, 752)], ((1005, 617, 0), 'e'): [(399, 587)]}
+
+		central_15_points = {((1005, 257, 180), 'naked'): [(384, 107)], ((1005, 257, 180), 'omni'): [(384, 107)], ((1005, 257, 180), 'a'): [(1104, 422)], ((1005, 257, 180), 'b'): [(1104, 422)], ((1005, 257, 180), 'c'): [(924, 422)], ((1005, 257, 180), 'd'): [(744, 422)], ((1005, 257, 180), 'e'): [(384, 422)], ((1005, 617, 0), 'naked'): [(429, 737)], ((1005, 617, 0), 'omni'): [(429, 737)], ((1005, 617, 0), 'a'): [(1059, 452)], ((1005, 617, 0), 'b'): [(1059, 452)], ((1005, 617, 0), 'c'): [(834, 632)], ((1005, 617, 0), 'd'): [(429, 767)], ((1005, 617, 0), 'e'): [(429, 587)]}
+
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
 		imported_2 = list(imported_2.values())
@@ -1476,6 +1481,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		imported_res_6 = list(imported_res_6.values())
 
 
+		# central_20_points = list(central_20_points.values())
+		central_15_points = list(central_15_points.values())
+
 
 		# nexus_icon = list(nexus_icon.values())[7:9]
 		nexus_icon = [[(429, 790)], [(1150, 431)]]
@@ -1488,10 +1496,12 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# imported.extend(imported_5)
 		# imported.extend(imported_res_2)
 		# imported.extend(imported_res_3)
-		imported.extend(imported_res_4)
-		imported.extend(imported_res_5)
-		imported.extend(imported_res_6)
-		imported.extend(nexus_icon)
+		# imported.extend(imported_res_4)
+		# imported.extend(imported_res_5)
+		# imported.extend(imported_res_6)
+		# imported.extend(nexus_icon)
+		# imported.extend(central_20_points)
+		imported.extend(central_15_points)
 
 
 
@@ -1501,19 +1511,16 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 				new_imported.append(imp)
 		imported = new_imported
 
-		mirror_sets = get_mirrored(r, imported)
-		for p in mirror_sets:
-			if p not in imported:
-				imported.append(p)
-
-		print(imported)
-		print(len(imported))
+		# mirror_sets = get_mirrored(r, imported)
+		# for p in mirror_sets:
+		# 	if p not in imported:
+		# 		imported.append(p)
 
 
-		resolution = 15
+		resolution = 5
 
 		augmented = []
-		search_hi = 15
+		search_hi = 30
 		search_lo = -1 * search_hi
 
 		for xi in range(search_lo, search_hi, resolution):
@@ -1527,7 +1534,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 						new_set.append(new_pt)
 					augmented.append(new_set)
 
-		print(augmented)
+		# print(augmented)
 		sample_sets.extend(augmented)
 
 	if sampling_type == SAMPLE_TYPE_CURVE_TEST:
@@ -2035,7 +2042,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	resto.export_raw_paths(r, img, min_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-min")
 
 	all_paths_dict = get_paths_from_sample_set(r, exp_settings, goal_index)
-	resto.export_raw_paths(r, img, all_paths, title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
+	resto.export_raw_paths(r, img, all_paths_dict['path'], title, fn_export_from_exp_settings(exp_settings)+ "_g" + str(goal_index) + "-all")
 
 	trimmed_paths, removed_paths, trimm_sp = trim_paths(r, all_paths_dict, goal, exp_settings)
 	resto.export_raw_paths(r, img, trimmed_paths, title, fn_export_from_exp_settings(exp_settings) + "_g" + str(goal_index) + "-trimmed")
@@ -2310,12 +2317,13 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			b = path[i + 1]
 			
 			cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
-			cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
-			cv2.line(all_img, a, b, color, thickness=3, lineType=8)
-
 			cv2.circle(solo_img, a, 4, color, 4)
-			cv2.circle(goal_img, a, 4, color, 4)
-			cv2.circle(all_img, a, 4, color, 4)
+
+			if audience is not 'naked':
+				cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
+				cv2.line(all_img, a, b, color, thickness=3, lineType=8)
+				cv2.circle(goal_img, a, 4, color, 4)
+				cv2.circle(all_img, a, 4, color, 4)
 		
 		title = exp_settings['title']
 
@@ -2574,6 +2582,16 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 	ax3.set_title("Theoretical Max\n Envelope of Readiness for paths to goal 0")
 	ax4.set_title("Theoretical Max\n Envelope of Readiness for paths to goal 1")
 
+	ax1.set_xlabel("Target Audience")
+	ax2.set_xlabel("Target Audience")
+	ax3.set_xlabel("Target Audience")
+	ax4.set_xlabel("Target Audience")
+
+	ax1.set_ylabel("Optimized for Audience")
+	ax2.set_ylabel("Optimized for Audience")
+	ax3.set_ylabel("Optimized for Audience")
+	ax4.set_ylabel("Optimized for Audience")
+
 	ax1.axis('off')
 	ax2.axis('off')
 	ax3.axis('off')
@@ -2610,6 +2628,10 @@ def get_best_paths_from_df(r, df, exp_settings):
 	best_lookup = {}
 	best_sample_points = {}
 
+	# symmetry check
+	cached_omni_bottom = [(204, 437), (204, 436), (204, 436), (203, 435), (203, 433), (203, 430), (203, 425), (203, 420), (203, 412), (203, 403), (203, 393), (204, 380), (205, 365), (206, 350), (207, 332), (210, 313), (214, 292), (219, 270), (225, 246), (233, 221), (244, 197), (258, 172), (276, 150), (299, 130), (328, 115), (362, 107), (400, 107), (441, 115), (485, 129), (529, 145), (572, 163), (613, 182), (652, 201), (690, 219), (725, 237), (759, 254), (791, 268), (820, 282), (848, 293), (873, 303), (897, 310), (918, 316), (937, 318), (954, 319), (968, 317), (980, 312), (988, 305), (995, 298), (999, 290), (1002, 282), (1003, 274), (1004, 268), (1004, 263), (1004, 260), (1004, 258), (1004, 257)]
+	cached_omni_top = get_mirrored_path(r, cached_omni_bottom)
+
 	goals = df['goal'].unique()
 	columns = get_columns_legibility(r, df)
 	if FLAG_MIN_MODE:
@@ -2627,13 +2649,19 @@ def get_best_paths_from_df(r, df, exp_settings):
 			# print(column)
 			max_index 	= pd.to_numeric(column).idxmax()
 
+			if column is 'omni':
+				if goal is goals[0]:
+					df.index[df['path'] == cached_omni_top].tolist()[0]
+				elif goal is goals[0]:
+					df.index[df['path'] == cached_omni_bottom].tolist()[0]
+				else:
+					print("sad")
+					exit()
+
 			best_index[(goal, col)] = max_index
 			best_paths[(goal, col)] = df.iloc[max_index]['path']
 			best_sample_points[(goal, col)] = df.iloc[max_index]['sample_points']
 			best_lookup[(goal, col)] = df.iloc[max_index]
-
-	# export_best_env_overview(r, df, best_lookup)
-	# print(best_index)
 
 	omni_case_goal_0 = best_lookup[(goals[0], 'omni')]
 	omni_case_goal_1 = best_lookup[(goals[1], 'omni')]
@@ -2701,7 +2729,7 @@ def do_exp(lam, km):
 	all_goals = restaurant.get_goals_all()
 
 	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
 	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
@@ -2711,7 +2739,7 @@ def do_exp(lam, km):
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
-	sampling_type = SAMPLE_TYPE_NEXUS_POINTS
+	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2724,14 +2752,14 @@ def do_exp(lam, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 20
-	exp_settings['f_vis_label']		= 'f_new'
+	exp_settings['resolution']		= 15
+	exp_settings['f_vis_label']		= 'fcut30'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 600 #40
+	exp_settings['angle_strength']	= 450 #40
 	exp_settings['min_path_length'] = {}
 	exp_settings['is_denominator']	= False
 	exp_settings['f_vis']			= f_exp_single_normalized
@@ -2837,12 +2865,12 @@ def exp_determine_lam_eps():
 
 def main():
 	# lam = 1e-6
-	lam = 0 #1.5e-8 #1e-16
+	lam = 0 #(10.0 / 23610)#1e-6 #0 #1.5e-8 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	# do_exp(lam, kill_mode)	
-	exp_determine_lam_eps()
+	do_exp(lam, kill_mode)	
+	# exp_determine_lam_eps()
 
 if __name__ == "__main__":
 
