@@ -272,10 +272,16 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
 	decimal.getcontext().prec = 60
+	is_og = exp_settings['prob_og']
 
 	start = r.get_start()
 
-	c1 = decimal.Decimal(cost_path_to_here)
+	if is_og:
+		c1 = decimal.Decimal(cost_path_to_here)
+	else:
+		c1 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(r.get_start()), resto.to_xy(pt), exp_settings))	
+
+	
 	c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
 	c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
 
@@ -861,7 +867,7 @@ def is_valid_path(r, path, exp_settings):
 		px, py = pt1[0], pt1[1]
 
 		if BOUND_CHECK_RIGHT:
-			if px > hi_x + 30:
+			if px > hi_x + 50:
 				return False
 
 		if px < 0:
@@ -1466,6 +1472,9 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		central_15_points = {((1005, 257, 180), 'naked'): [(384, 107)], ((1005, 257, 180), 'omni'): [(384, 107)], ((1005, 257, 180), 'a'): [(1104, 422)], ((1005, 257, 180), 'b'): [(1104, 422)], ((1005, 257, 180), 'c'): [(924, 422)], ((1005, 257, 180), 'd'): [(744, 422)], ((1005, 257, 180), 'e'): [(384, 422)], ((1005, 617, 0), 'naked'): [(429, 737)], ((1005, 617, 0), 'omni'): [(429, 737)], ((1005, 617, 0), 'a'): [(1059, 452)], ((1005, 617, 0), 'b'): [(1059, 452)], ((1005, 617, 0), 'c'): [(834, 632)], ((1005, 617, 0), 'd'): [(429, 767)], ((1005, 617, 0), 'e'): [(429, 587)]}
 
+		# central points with new method
+		central_15_points = {((1005, 257, 180), 'naked'): [(389, 107)], ((1005, 257, 180), 'omni'): [(389, 107)], ((1005, 257, 180), 'a'): [(954, 357)], ((1005, 257, 180), 'b'): [(949, 392)], ((1005, 257, 180), 'c'): [(904, 432)], ((1005, 257, 180), 'd'): [(764, 427)], ((1005, 257, 180), 'e'): [(399, 427)], ((1005, 617, 0), 'naked'): [(374, 732)], ((1005, 617, 0), 'omni'): [(374, 732)], ((1005, 617, 0), 'a'): [(949, 437)], ((1005, 617, 0), 'b'): [(949, 442)], ((1005, 617, 0), 'c'): [(844, 627)], ((1005, 617, 0), 'd'): [(649, 762)], ((1005, 617, 0), 'e'): [(374, 607)]}
+
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
 		imported_2 = list(imported_2.values())
@@ -1517,10 +1526,10 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# 		imported.append(p)
 
 
-		resolution = 5
+		resolution = 1
 
 		augmented = []
-		search_hi = 30
+		search_hi = 15
 		search_lo = -1 * search_hi
 
 		for xi in range(search_lo, search_hi, resolution):
@@ -1704,6 +1713,44 @@ def lam_to_str(lam):
 def eps_to_str(eps):
 	return str(eps)#.replace('.', ',')
 
+def fn_export_from_exp_settings(exp_settings):
+	title 				= exp_settings['title']
+	sampling_type 		= exp_settings['sampling_type']
+	eps 				= exp_settings['epsilon']
+	lam 				= exp_settings['lambda']
+	n_chunks 			= exp_settings['num_chunks']
+	chunking_type 		= exp_settings['chunk_type']
+	astr 				= exp_settings['angle_strength']
+	FLAG_is_denominator = exp_settings['is_denominator']
+	rez 				= exp_settings['resolution']
+	f_label 			= exp_settings['f_vis_label']
+	fov 				= exp_settings['fov']
+	prob_og 			= exp_settings['prob_og']
+	# exp_settings['f_vis']			= f_exp_single_normalized
+	# exp_settings['angle_cutoff']	= 70
+
+	is_denom = 0
+	if FLAG_is_denominator:
+		is_denom = 1
+
+	is_denom 	= str(is_denom)
+	eps 		= eps_to_str(eps)
+	lam 		= lam_to_str(lam)
+	prob_og 	= str(int(prob_og))
+
+	unique_title = title + "_fnew=" + str(is_denom) + "_"
+	unique_title += sampling_type + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr) + 'fov=' + str(fov)
+	unique_title += 'pog=' + prob_og
+
+	fn = FILENAME_PATH_ASSESS + unique_title + "/"
+
+	if not os.path.exists(fn):
+		os.mkdir(fn)
+
+	fn += unique_title
+	return fn
+
+
 def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	sampling_type = exp_settings['sampling_type']
 	n_chunks = exp_settings['num_chunks']
@@ -1728,7 +1775,7 @@ def fn_pathpickle_envir_cache(exp_settings):
 		is_denom = 1
 	is_denom = str(is_denom)
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-isdn" + is_denom + "-" + f_vis_label
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 
 	# print("{" + fn_pickle + "}")
@@ -1947,29 +1994,6 @@ def title_from_exp_settings(exp_settings):
 	cool_title += "\nn=" + str(n_chunks) + " distr=" + str(chunking_type)
 
 	return cool_title
-
-def fn_export_from_exp_settings(exp_settings):
-	title = exp_settings['title']
-	sampling_type = exp_settings['sampling_type']
-	eps = exp_settings['epsilon']
-	lam = exp_settings['lambda']
-	n_chunks 		= exp_settings['num_chunks']
-	chunking_type 	= exp_settings['chunk_type']
-	astr 				= exp_settings['angle_strength']
-	FLAG_is_denominator = exp_settings['is_denominator']
-	is_denom = 0
-	if FLAG_is_denominator:
-		is_denom = 1
-	is_denom = str(is_denom)
-
-	km = exp_settings['kill_1']
-
-	eps = eps_to_str(eps)
-	lam = lam_to_str(lam)
-
-	fn = FILENAME_PATH_ASSESS + title + "_fnew=" + str(is_denom) + "_"
-	fn += sampling_type + "-ep" + eps + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr) + 'km=' + str(km)
-	return fn
 
 # Convert sample points into actual useful paths
 def get_paths_from_sample_set(r, exp_settings, goal_index):
@@ -2639,7 +2663,8 @@ def get_best_paths_from_df(r, df, exp_settings):
 
 	# print("GOALS")
 	# print(goals)
-	print(columns)
+	# print(columns)
+	FLAG_USE_CACHED = False
 
 	for goal in goals:
 		is_goal =  df['goal']==goal
@@ -2649,7 +2674,7 @@ def get_best_paths_from_df(r, df, exp_settings):
 			# print(column)
 			max_index 	= pd.to_numeric(column).idxmax()
 
-			if column is 'omni':
+			if column is 'omni' and FLAG_USE_CACHED:
 				if goal is goals[0]:
 					df.index[df['path'] == cached_omni_top].tolist()[0]
 				elif goal is goals[0]:
@@ -2753,7 +2778,7 @@ def do_exp(lam, km):
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
 	exp_settings['resolution']		= 15
-	exp_settings['f_vis_label']		= 'fcut30'
+	exp_settings['f_vis_label']		= 'fcut'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
@@ -2766,6 +2791,7 @@ def do_exp(lam, km):
 	exp_settings['kill_1']			= km
 	exp_settings['angle_cutoff']	= 70
 	exp_settings['fov']	= 120
+	exp_settings['prob_og']			= False
 
 
 	# Preload envir cache for faster calculations
