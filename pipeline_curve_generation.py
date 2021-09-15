@@ -856,6 +856,7 @@ def is_valid_path(r, path, exp_settings):
 			return False
 
 	BOUND_CHECK_RIGHT = True
+	right_buffer = exp_settings['right-bound']
 	# Checks for remaining in bounds
 	
 	for i in range(len(path) - 1):
@@ -867,7 +868,7 @@ def is_valid_path(r, path, exp_settings):
 		px, py = pt1[0], pt1[1]
 
 		if BOUND_CHECK_RIGHT:
-			if px > hi_x + 50:
+			if px > hi_x + right_buffer:
 				return False
 
 		if px < 0:
@@ -1726,6 +1727,7 @@ def fn_export_from_exp_settings(exp_settings):
 	f_label 			= exp_settings['f_vis_label']
 	fov 				= exp_settings['fov']
 	prob_og 			= exp_settings['prob_og']
+	right_bound 		= exp_settings['right-bound']
 	# exp_settings['f_vis']			= f_exp_single_normalized
 	# exp_settings['angle_cutoff']	= 70
 
@@ -1739,7 +1741,9 @@ def fn_export_from_exp_settings(exp_settings):
 	prob_og 	= str(int(prob_og))
 
 	unique_title = title + "_fnew=" + str(is_denom) + "_"
-	unique_title += sampling_type + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) + "-as-" + str(astr) + 'fov=' + str(fov)
+	unique_title += sampling_type + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
+	unique_title += "-as-" + str(astr) + 'fov=' + str(fov)
+	unique_title += "-rb" + str(right_bound)
 	unique_title += 'pog=' + prob_og
 
 	fn = FILENAME_PATH_ASSESS + unique_title + "/"
@@ -2792,6 +2796,7 @@ def do_exp(lam, km):
 	exp_settings['angle_cutoff']	= 70
 	exp_settings['fov']	= 120
 	exp_settings['prob_og']			= False
+	exp_settings['right-bound']		= 40
 
 
 	# Preload envir cache for faster calculations
