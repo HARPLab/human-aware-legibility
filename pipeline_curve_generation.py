@@ -2719,6 +2719,10 @@ def get_best_paths_from_df(r, df, exp_settings):
 	
 	print("BEST SAMPLE POINTS")
 	print(best_sample_points)
+	file1 = open(fn_export_from_exp_settings(exp_settings) + "_SAMPLE_POINTS.txt","w+")
+	file1.write(str(best_sample_points))
+	file1.close()
+
 	return best_paths, best_index
 
 def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
@@ -2866,7 +2870,6 @@ def do_exp(lam, astr, rb, km):
 		# print(best_paths.keys())
 
 	file1 = open(fn_export_from_exp_settings(exp_settings) + "_BEST_PATHS.txt","w+")
-  
 	file1.write(str(best_paths))
 	file1.close()
 
