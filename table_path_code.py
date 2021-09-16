@@ -1086,6 +1086,7 @@ class Restaurant:
 			unity_table_pts.append((y_coord_start - separation_table, -7.0, DIR_SOUTH))
 			unity_table_pts.append((y_coord_start + separation_table + a[0], 	-7.0  + a[1], DIR_NORTH))
 
+			# print(unity_table_pts)
 
 			unity_goal_stop_options = []
 			# # unity_goal_stop_options.append((4.3, -4.3))
@@ -1198,12 +1199,23 @@ class Restaurant:
 			obs_sets[OBS_KEY_E] = [obs1]
 			
 
+
+
 			# obs_sets[OBS_KEY_ALL] = all_observers
 			self.obs_sets = obs_sets
 
-			# for o in self.observers:
-			# 	print("OBSERVER")
-			# 	print(o.get_center())
+			# for o in self.obs_sets:
+			# 	print("OBSERVER A")
+			# 	print(image_to_unity(obs_sets[OBS_KEY_A][0].get_center()))
+			# 	print("OBSERVER B")
+			# 	print(image_to_unity(obs_sets[OBS_KEY_B][0].get_center()))
+			# 	print("OBSERVER C")
+			# 	print(image_to_unity(obs_sets[OBS_KEY_C][0].get_center()))
+			# 	print("OBSERVER D")
+			# 	print(image_to_unity(obs_sets[OBS_KEY_D][0].get_center()))
+			# 	print("OBSERVER E")
+			# 	print(image_to_unity(obs_sets[OBS_KEY_E][0].get_center()))
+			# exit()
 
 		elif generate_type == TYPE_RANDOM:
 			# random generation of locations and objects
