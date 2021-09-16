@@ -58,7 +58,7 @@ SAMPLE_TYPE_CENTRAL 	= 'central'
 SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparsy'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_CURVE_TEST	= 'ctest'
-SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin4'
+SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin5'
 SAMPLE_TYPE_SPARSE		= 'sparse'
 SAMPLE_TYPE_SYSTEMATIC 	= 'systematic'
 SAMPLE_TYPE_HARDCODED 	= 'hardcoded'
@@ -1480,6 +1480,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# best with cutoff 20
 		central_15_points = {((1005, 257, 180), 'naked'): [(399, 107)], ((1005, 257, 180), 'omni'): [(399, 107)], ((1005, 257, 180), 'a'): [(894, 332)], ((1005, 257, 180), 'b'): [(894, 422)], ((1005, 257, 180), 'c'): [(894, 422)], ((1005, 257, 180), 'd'): [(759, 422)], ((1005, 257, 180), 'e'): [(399, 422)], ((1005, 617, 0), 'naked'): [(384, 722)], ((1005, 617, 0), 'omni'): [(384, 722)], ((1005, 617, 0), 'a'): [(894, 422)], ((1005, 617, 0), 'b'): [(804, 467)], ((1005, 617, 0), 'c'): [(789, 662)], ((1005, 617, 0), 'd'): [(384, 752)], ((1005, 617, 0), 'e'): [(384, 647)]}
 
+		best_with_cutoff_20 = {((1005, 257, 180), 'naked'): [(387, 107)], ((1005, 257, 180), 'omni'): [(387, 107)], ((1005, 257, 180), 'a'): [(855, 248)], ((1005, 257, 180), 'b'): [(894, 425)], ((1005, 257, 180), 'c'): [(894, 434)], ((1005, 257, 180), 'd'): [(738, 434)], ((1005, 257, 180), 'e'): [(387, 434)], ((1005, 617, 0), 'naked'): [(372, 716)], ((1005, 617, 0), 'omni'): [(372, 716)], ((1005, 617, 0), 'a'): [(885, 434)], ((1005, 617, 0), 'b'): [(861, 434)], ((1005, 617, 0), 'c'): [(384, 719)], ((1005, 617, 0), 'd'): [(384, 764)], ((1005, 617, 0), 'e'): [(372, 650)]}
+
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
 		imported_2 = list(imported_2.values())
@@ -1497,6 +1499,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		# central_20_points = list(central_20_points.values())
 		central_15_points = list(central_15_points.values())
+		best_with_cutoff_20 = list(best_with_cutoff_20.values())
 
 
 		# nexus_icon = list(nexus_icon.values())[7:9]
@@ -1515,7 +1518,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# imported.extend(imported_res_6)
 		# imported.extend(nexus_icon)
 		# imported.extend(central_20_points)
-		imported.extend(central_15_points)
+		imported.extend(best_with_cutoff_20)
 
 
 
@@ -1534,7 +1537,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		resolution = 1
 
 		augmented = []
-		search_hi = 15
+		search_hi = 20
 		search_lo = -1 * search_hi
 
 		for xi in range(search_lo, search_hi, resolution):
@@ -2029,7 +2032,7 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			try:
 				path_dict = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
-				print("imported " + str(len(all_paths)) + " paths")
+				print("imported " + str(len(all_paths['paths'])) + " paths")
 				return path_dict
 
 			except Exception: # so many things could go wrong, can't be more specific.
@@ -2761,7 +2764,7 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 	export_path_options_for_each_goal(r, best_paths, exp_settings)
 	return best_paths
 
-def do_exp(lam, km):
+def do_exp(lam, astr, rb, km):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
 	unique_key = 'exp_single'
@@ -2771,7 +2774,7 @@ def do_exp(lam, km):
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2779,7 +2782,7 @@ def do_exp(lam, km):
 	# sampling_type = SAMPLE_TYPE_VISIBLE
 	# sampling_type = SAMPLE_TYPE_INZONE
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
-	sampling_type = SAMPLE_TYPE_NEXUS_POINTS
+	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -2792,14 +2795,14 @@ def do_exp(lam, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 15
+	exp_settings['resolution']		= 5
 	exp_settings['f_vis_label']		= 'fcut'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
 	exp_settings['num_chunks']		= 50
 	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
 	exp_settings['chunk_type']		= chunkify.CHUNKIFY_TRIANGULAR #LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 550 #40
+	exp_settings['angle_strength']	= astr #40
 	exp_settings['min_path_length'] = {}
 	exp_settings['is_denominator']	= False
 	exp_settings['f_vis']			= f_exp_single_normalized
@@ -2807,7 +2810,7 @@ def do_exp(lam, km):
 	exp_settings['angle_cutoff']	= 70
 	exp_settings['fov']	= 120
 	exp_settings['prob_og']			= False
-	exp_settings['right-bound']		= 20
+	exp_settings['right-bound']		= rb
 
 
 	# Preload envir cache for faster calculations
@@ -2891,28 +2894,33 @@ def exp_determine_lam_eps():
 	eps = 1e-7
 	# eps_vals = []
 	# # exit()
-	# for i in range(-5, -10, -1):
-	for i in np.arange(1.1, 2, .1):
-		new_val = i * 1e-6
+	# * 1e-6
+	for i in range(-5, -10, -1):
+	# for i in np.arange(1.1, 2, .1):
+		new_val = 10 ** i 
 	# 	eps_vals.append(new_val)
 		lam_vals.append(new_val)
 	# 	# lam_vals.append(new_val)
 
 	# print("REMIX TIME")
 	# for eps in eps_vals:
+	lam = 0
+	angle_strs = [100, 200, 300, 400, 450, 500, 550, 600, 650]
+	rbs = [10, 15, 20, 25, 30, 35, 40]
 	
-	for lam in lam_vals:
-		do_exp(lam, False)
+	for astr in angle_strs:
+		for rb in rbs:
+			do_exp(lam, astr, rb, False)
 	# pass
 
 def main():
 	# lam = 1e-6
-	lam = 0 #(10.0 / 23610)#1e-6 #0 #1.5e-8 #1e-16
+	lam = 0 #1e-6 #(10.0 / 23610)#1e-6 #0 #1.5e-8 #1e-16
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	do_exp(lam, kill_mode)	
-	# exp_determine_lam_eps()
+	# do_exp(lam, kill_mode)	
+	exp_determine_lam_eps()
 
 if __name__ == "__main__":
 
