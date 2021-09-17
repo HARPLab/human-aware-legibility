@@ -17,6 +17,7 @@ import klampt_smoothing as chunkify
 from collections import defaultdict
 from shapely.geometry import LineString
 import scipy.interpolate as interpolate
+import pprint
 
 import sys
 # sys.path.append('/Users/AdaTaylor/Development/PythonRobotics/PathPlanning/ModelPredictiveTrajectoryGenerator/')
@@ -40,9 +41,8 @@ FLAG_MIN_MODE			= False
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
 
-NUMBER_STEPS = 30
-
-PATH_TIMESTEPS = 15
+NUMBER_STEPS 		= 30
+PATH_TIMESTEPS 		= 15
 
 resto_pickle = 'pickle_vis'
 vis_pickle = 'pickle_resto'
@@ -54,8 +54,8 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
-SAMPLE_TYPE_CENTRAL 	= 'central'
-SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sparsy'
+SAMPLE_TYPE_CENTRAL 	= 'central-new'
+SAMPLE_TYPE_CENTRAL_SPARSE 	= 'central-sprs-new'
 SAMPLE_TYPE_DEMO 		= 'demo'
 SAMPLE_TYPE_CURVE_TEST	= 'ctest'
 SAMPLE_TYPE_NEXUS_POINTS= 'nn_fin5'
@@ -71,6 +71,7 @@ SAMPLE_TYPE_FUSION		= 'fusion'
 ENV_START_TO_HERE 		= 'start_to_here'
 ENV_HERE_TO_GOALS 		= 'here_to_goals'
 ENV_VISIBILITY_PER_OBS 	= 'vis_per_obs'
+ENV_PROB_G_HERE			= 'prob_to_here'
 
 premade_path_sampling_types = [SAMPLE_TYPE_DEMO, SAMPLE_TYPE_SHORTEST, SAMPLE_TYPE_CURVE_TEST]
 non_metric_columns = ["path", "goal", 'path_length', 'path_cost', 'sample_points']
@@ -973,6 +974,18 @@ def construct_single_path_with_angles_bspline(exp_settings, start, goal, sample_
 	path = path_formatted(out[0], out[1])
 	return path
 
+def get_pre_goal_pt_xy(pt, exp_settings):
+	new_x = pt[0]
+	new_y = pt[1]
+
+	offset = exp_settings['waypoint_offset']
+	if pt[2] == resto.DIR_NORTH:
+		new_y -= offset
+	elif pt[2] == resto.DIR_SOUTH:
+		new_y += offset
+
+	return (new_x, new_y)
+
 # https://hal.archives-ouvertes.fr/hal-03017566/document
 def construct_single_path_with_angles_spline(exp_settings, start, goal, sample_pts, fn, is_weak=False):
 	# print("WITH ANGLE")
@@ -993,8 +1006,16 @@ def construct_single_path_with_angles_spline(exp_settings, start, goal, sample_p
 		x.append(sx)
 		y.append(sy)
 
+	# xy_pre_goal = get_pre_goal_pt_xy(goal, exp_settings)
+	# x.append(xy_pre_goal[0])
+	# y.append(xy_pre_goal[1])
+
 	x.append(xy_n[0])
 	y.append(xy_n[1])
+
+	# print(x)
+	# print(y)
+	# exit()
 
 	# Subtract 90 to turn path angle into tangent
 	start_angle = xy_0[2] - 90
@@ -1480,7 +1501,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		# best with cutoff 20
 		central_15_points = {((1005, 257, 180), 'naked'): [(399, 107)], ((1005, 257, 180), 'omni'): [(399, 107)], ((1005, 257, 180), 'a'): [(894, 332)], ((1005, 257, 180), 'b'): [(894, 422)], ((1005, 257, 180), 'c'): [(894, 422)], ((1005, 257, 180), 'd'): [(759, 422)], ((1005, 257, 180), 'e'): [(399, 422)], ((1005, 617, 0), 'naked'): [(384, 722)], ((1005, 617, 0), 'omni'): [(384, 722)], ((1005, 617, 0), 'a'): [(894, 422)], ((1005, 617, 0), 'b'): [(804, 467)], ((1005, 617, 0), 'c'): [(789, 662)], ((1005, 617, 0), 'd'): [(384, 752)], ((1005, 617, 0), 'e'): [(384, 647)]}
 
-		best_with_cutoff_20 = {((1005, 257, 180), 'naked'): [(387, 107)], ((1005, 257, 180), 'omni'): [(387, 107)], ((1005, 257, 180), 'a'): [(855, 248)], ((1005, 257, 180), 'b'): [(894, 425)], ((1005, 257, 180), 'c'): [(894, 434)], ((1005, 257, 180), 'd'): [(738, 434)], ((1005, 257, 180), 'e'): [(387, 434)], ((1005, 617, 0), 'naked'): [(372, 716)], ((1005, 617, 0), 'omni'): [(372, 716)], ((1005, 617, 0), 'a'): [(885, 434)], ((1005, 617, 0), 'b'): [(861, 434)], ((1005, 617, 0), 'c'): [(384, 719)], ((1005, 617, 0), 'd'): [(384, 764)], ((1005, 617, 0), 'e'): [(372, 650)]}
+		best_with_cutoff_20 	= {((1005, 257, 180), 'naked'): [(387, 107)], ((1005, 257, 180), 'omni'): [(387, 107)], ((1005, 257, 180), 'a'): [(855, 248)], ((1005, 257, 180), 'b'): [(894, 425)], ((1005, 257, 180), 'c'): [(894, 434)], ((1005, 257, 180), 'd'): [(738, 434)], ((1005, 257, 180), 'e'): [(387, 434)], ((1005, 617, 0), 'naked'): [(372, 716)], ((1005, 617, 0), 'omni'): [(372, 716)], ((1005, 617, 0), 'a'): [(885, 434)], ((1005, 617, 0), 'b'): [(861, 434)], ((1005, 617, 0), 'c'): [(384, 719)], ((1005, 617, 0), 'd'): [(384, 764)], ((1005, 617, 0), 'e'): [(372, 650)]}
+		nexus_icon4 			= {((1005, 257, 180), 'naked'): [(399, 107)], ((1005, 257, 180), 'omni'): [(399, 107)], ((1005, 257, 180), 'a'): [(1014, 347)], ((1005, 257, 180), 'b'): [(1014, 407)], ((1005, 257, 180), 'c'): [(894, 422)], ((1005, 257, 180), 'd'): [(759, 407)], ((1005, 257, 180), 'e'): [(534, 407)], ((1005, 617, 0), 'naked'): [(384, 752)], ((1005, 617, 0), 'omni'): [(384, 752)], ((1005, 617, 0), 'a'): [(1014, 452)], ((1005, 617, 0), 'b'): [(1014, 452)], ((1005, 617, 0), 'c'): [(984, 497)], ((1005, 617, 0), 'd'): [(384, 767)], ((1005, 617, 0), 'e'): [(384, 617)]}
 
 		imported_0 = list(imported_0.values())
 		imported_1 = list(imported_1.values())
@@ -1748,7 +1770,7 @@ def fn_export_from_exp_settings(exp_settings):
 	prob_og 	= str(int(prob_og))
 
 	unique_title = title + "_fnew=" + str(is_denom) + "_"
-	unique_title += sampling_type + "-lam" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
+	unique_title += sampling_type + "-rez" + str(rez) + "-la" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov)
 	unique_title += "-rb" + str(right_bound)
 	unique_title += 'pog=' + prob_og
@@ -2097,7 +2119,7 @@ def experimental_scenario_single():
 	generate_type = resto.TYPE_EXP_SINGLE
 
 	# SETUP FROM SCRATCH, AND SAVE OPTIONS
-	if FLAG_SAVE:
+	if True:
 		# Create the restaurant scene from our saved description of it
 		print("PLANNER: Creating layout of type " + str(generate_type))
 		r 	= resto.Restaurant(generate_type)
@@ -2815,11 +2837,15 @@ def do_exp(lam, astr, rb, km):
 	exp_settings['fov']	= 120
 	exp_settings['prob_og']			= False
 	exp_settings['right-bound']		= rb
+	exp_settings['waypoint_offset']	= 20
 
+
+	pprint.pprint(exp_settings)
+	print("---!!!---")
 
 	# Preload envir cache for faster calculations
-	envir_cache = get_envir_cache(restaurant, exp_settings)
-	restaurant.set_envir_cache(envir_cache)
+	# envir_cache = get_envir_cache(restaurant, exp_settings)
+	# restaurant.set_envir_cache(envir_cache)
 
 	print("Prepped environment")
 	# print(envir_cache)
@@ -2908,9 +2934,10 @@ def exp_determine_lam_eps():
 	# print("REMIX TIME")
 	# for eps in eps_vals:
 	lam = 0
-	angle_strs = [100, 200, 300, 400, 450, 500, 550, 600, 650]
-	rbs = [10, 15, 20, 25, 30, 35, 40]
+	angle_strs = [330, 350, 380, 400]
+	rbs = [80, 100, 110, 120, 150]
 	
+	print("WILDIN")
 	for astr in angle_strs:
 		for rb in rbs:
 			do_exp(lam, astr, rb, False)
@@ -2922,7 +2949,13 @@ def main():
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
-	# do_exp(lam, kill_mode)	
+	astr = 350
+	rb = 100
+
+	# print("Doing main")
+	# do_exp(lam, astr, rb, False)
+	# print("Done with main")
+
 	exp_determine_lam_eps()
 
 if __name__ == "__main__":
