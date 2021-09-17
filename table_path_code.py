@@ -613,8 +613,8 @@ class Table:
 				exit()
 
 			# width and height
-			tw = table_radius
-			th = table_radius # * .25
+			tw = table_radius * 1.2
+			th = table_radius * 1.2 # * .25
 
 			up = -1 * dir_y * table_radius * .23
 
@@ -623,13 +623,16 @@ class Table:
 
 			# big_depth = table_radius *
 
+			pt_top = (tx, ty + .5*up)
+			pt_top_left = (tx - (.25*tw), ty + 1.5*up)
+			pt_top_right = (tx + (.25*tw), ty + 1.5*up)
 			pt_left = (tx - tw, ty + up)
 			pt_right = (tx + tw, ty + up)
 			pt_bot = (tx, ty + (dir_y * th))
 			pt_lbot = (tx - ow_diag, ty + (3  *(dir_y * oh_diag)))
 			pt_rbot = (tx + ow_diag, ty + (3 * (dir_y * oh_diag)))
 
-			tpts = [pt_left, pt_lbot, pt_bot, pt_rbot, pt_right]
+			tpts = [pt_top, pt_top_left, pt_left, pt_lbot, pt_bot, pt_rbot, pt_right, pt_top_right]
 
 			# print("oOoOo")
 			# print(tpts)
