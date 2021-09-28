@@ -585,6 +585,8 @@ class Polygon:
 
 class Table:
 	radius = DIM_TABLE_RADIUS
+	shape = None
+	pretty_shape = None
 
 	def __init__(self, pt, gen_type):
 		self.location = pt
@@ -594,6 +596,7 @@ class Table:
 		
 		table_radius = int(.4 * UNITY_SCALE_X)
 		table_radius = int(table_radius * 2)
+		self.table_radius = table_radius
 		# half_radius = self.radius / 2.0
 
 		USE_RECTANGLES = False
@@ -631,13 +634,30 @@ class Table:
 			pt_bot = (tx, ty + (dir_y * th))
 			pt_lbot = (tx - ow_diag, ty + (3  *(dir_y * oh_diag)))
 			pt_rbot = (tx + ow_diag, ty + (3 * (dir_y * oh_diag)))
-
 			tpts = [pt_top, pt_top_left, pt_left, pt_lbot, pt_bot, pt_rbot, pt_right, pt_top_right]
 
-			# print("oOoOo")
-			# print(tpts)
+
+			tw = table_radius * .5
+			th = table_radius * .5
+			tan22 = 0.557851739
+
+			ppt_left_top = (tx - tw*tan22, ty - (dir_y * tw*tan22))
+			ppt_right_top = (tx + tw*tan22, ty - (dir_y * tw*tan22))
+
+			ppt_left = (tx - tw, ty - (dir_y * tw*tan22))
+			ppt_right = (tx + tw, ty - (dir_y * tw*tan22))
+
+			ppt_lbot = (tx - tw, ty + (dir_y * tw*tan22))
+			ppt_rbot = (tx + tw, ty + (dir_y * tw*tan22))
+
+			ppt_lbot2 = (tx - tw*tan22, ty + (dir_y * th))
+			ppt_rbot2 = (tx + tw*tan22, ty + (dir_y * th))
+
+			tpts_pretty = [ppt_left_top, ppt_left, ppt_lbot, ppt_lbot2, ppt_rbot2, ppt_rbot, ppt_right, ppt_right_top]
 
 			t = fancyPolygon(tpts)
+			t_pretty = fancyPolygon(tpts_pretty)
+
 			# t = fancyBox(tx - tw, ty - th, tx + tw, ty + th, ccw=True)
 
 		elif USE_RECTANGLES:
@@ -653,11 +673,14 @@ class Table:
 				polygon_set.append(Point(p))
 
 			t = fancyPolygon(polygon_set)
+			t_pretty = t
 
 		elif USE_CIRCLES:
 			t = fancyPoint(self.get_center()).buffer(table_radius)
+			t_pretty = t
 
 		self.shape = t
+		self.pretty_shape = t_pretty
 
 	def is_within(self, point):
 		return Point(point).within(self.shape)
@@ -689,12 +712,18 @@ class Table:
 	def get_shape(self):
 		return self.shape
 
+	def get_pretty_shape(self):
+		return self.pretty_shape
+
 	def get_shape_list(self):
-		pts =  list(self.get_shape().exterior.coords)[1:]
+		pts =  list(self.get_pretty_shape().exterior.coords)[1:]
 		return [(int(x[0]), int(x[1])) for x in pts]
 
 	def get_center(self):
 		return (self.location[0], self.location[1])
+
+	def get_orientation(self):
+		return self.location[2]
 
 	def get_JSON(self):
 		return (self.location, self.radius)
@@ -861,7 +890,12 @@ def image_to_unity_list(path):
 	new_path = []
 	for pt in path:
 		new_path.append(image_to_unity(pt))
+	return new_path
 
+def unity_to_image_list(path):
+	new_path = []
+	for pt in path:
+		new_path.append(unity_to_image(pt))
 	return new_path
 
 def image_to_unity(pt):
@@ -1107,6 +1141,9 @@ class Restaurant:
 			# # unity_goal_options.append((5.6, -9.3))
 			# unity_goal_options.append((6.9, 	-7.0, 	DIR_NORTH))
 
+			print(unity_goal_stop_options)
+			print(unity_table_pts)
+
 			table_pts = []
 			for t in unity_table_pts:
 				pt = unity_to_image(t)
@@ -1207,17 +1244,18 @@ class Restaurant:
 			# obs_sets[OBS_KEY_ALL] = all_observers
 			self.obs_sets = obs_sets
 
-			# for o in self.obs_sets:
-			# 	print("OBSERVER A")
-			# 	print(image_to_unity(obs_sets[OBS_KEY_A][0].get_center()))
-			# 	print("OBSERVER B")
-			# 	print(image_to_unity(obs_sets[OBS_KEY_B][0].get_center()))
-			# 	print("OBSERVER C")
-			# 	print(image_to_unity(obs_sets[OBS_KEY_C][0].get_center()))
-			# 	print("OBSERVER D")
-			# 	print(image_to_unity(obs_sets[OBS_KEY_D][0].get_center()))
-			# 	print("OBSERVER E")
-			# 	print(image_to_unity(obs_sets[OBS_KEY_E][0].get_center()))
+			for o in self.obs_sets:
+				# print("OBSERVER A")
+				# print(image_to_unity(obs_sets[OBS_KEY_A][0].get_center()))
+				# print("OBSERVER B")
+				# print(image_to_unity(obs_sets[OBS_KEY_B][0].get_center()))
+				# print("OBSERVER C")
+				# print(image_to_unity(obs_sets[OBS_KEY_C][0].get_center()))
+				# print("OBSERVER D")
+				# print(image_to_unity(obs_sets[OBS_KEY_D][0].get_center()))
+				# print("OBSERVER E")
+				# print(image_to_unity(obs_sets[OBS_KEY_E][0].get_center()))
+				pass
 			# exit()
 
 		elif generate_type == TYPE_RANDOM:
@@ -1419,19 +1457,46 @@ class Restaurant:
 		for o_key in obs_keys:
 			# if it's a single audience member, then for each of those...
 			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
-				obs = obs_sets[o_key][0]
+				obs = obs_sets[o_key]
+				if obs is not None:
+					obs = obs[0]
 
-				# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-				cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
-				alpha = 0.3  # Transparency factor.
-				img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+					cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
+					alpha = 0.25  # Transparency factor.
+					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 
 		# Draw tables
 		for table in self.tables:
-			tpoly = table.get_shape_list()
-			tpoly = np.array([tpoly], np.int32)
+			tx, ty = table.get_center()
+			center_pt = (tx, ty)
+			ttheta = table.get_orientation()
+			radius = int(table.table_radius * .6)
+			
+			dir_y = 0
+			if ttheta == DIR_SOUTH:
+				dir_y = -1
+			elif ttheta == DIR_NORTH:
+				dir_y = 1
+
+			axes = (radius,radius)
+			angle = 0
+			startAngle = 0
+			endAngle = 180 * dir_y
+			t_up = int(dir_y * table_radius * .5)
+
+			cv2.ellipse(img, center_pt, axes, angle, startAngle, endAngle, COLOR_TABLE, -1)
+			
+			table_list = [(tx + radius, ty), (tx + radius, ty - t_up), (tx - radius, ty - t_up), (tx - radius, ty)]
+			tpoly = np.array([table_list], np.int32)
 			cv2.fillPoly(img, np.asarray(tpoly), COLOR_TABLE, lineType=cv2.LINE_AA)
+
+
+			# POLYGON VIEW
+			# tpoly = table.get_shape_list()
+			# tpoly = np.array([tpoly], np.int32)
+			# cv2.fillPoly(img, np.asarray(tpoly), COLOR_TABLE, lineType=cv2.LINE_AA)
 
 			# table_center = table.get_center()
 			# # print(table_center)
@@ -1449,10 +1514,19 @@ class Restaurant:
 		obs_keys = obs_sets.keys()
 		for o_key in obs_keys:
 			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
-				obs = obs_sets[o_key][0]
-				cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
+				obs = obs_sets[o_key]
+				if obs is not None:
+					obs = obs[0]
+					cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
 
-		cv2.circle(img, to_xy(self.get_start()), start_radius, COLOR_START, start_radius)
+		sx, sy, st = self.get_start()
+		s_radius = int(obs_radius * 1.5)
+		# cv2.circle(img, to_xy(self.get_start()), start_radius, COLOR_START, start_radius)
+		start_list = [(sx + s_radius, sy + s_radius), (sx + s_radius, sy - s_radius), (sx - s_radius, sy - s_radius), (sx - s_radius, sy + s_radius)]
+		spoly = np.array([start_list], np.int32)
+		cv2.fillPoly(img, np.asarray(spoly), COLOR_START, lineType=cv2.LINE_AA)
+		cv2.polylines(img, np.asarray(spoly), True, (255,255,255), lineType=cv2.LINE_AA)
+
 
 		if FLAG_MAKE_OBSTACLE_MAP:
 			self.make_obstacle_map(obstacle_vis, img)
