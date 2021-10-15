@@ -1873,8 +1873,8 @@ def export_envir_cache_pic(r, data, label, g_index, obs_label, exp_settings):
 			y = r_height - obs_xy[1]
 			xs.append(x)
 			ys.append(y)
-			ax.plot([x], [y], 'o', markersize=10, color='black')
-			ax.plot([x], [y], 'o', markersize=8, color=color)
+			ax.plot([x], [y], 'o', markersize=15, color='white')
+			ax.plot([x], [y], 'o', markersize=12, color=color)
 	
 	
 	xs, ys = [], []
@@ -1884,7 +1884,8 @@ def export_envir_cache_pic(r, data, label, g_index, obs_label, exp_settings):
 		xs.append(gx)
 		ys.append(r_height - gy)
 
-	ax.plot(xs, ys, 'o', color='white')
+	ax.plot(xs, xs, 'o', markersize=12, color='black')
+	ax.plot(xs, ys, 'o', markersize=10, color='white')
 	xs, ys = [], []
 
 	for table in r.get_tables():
