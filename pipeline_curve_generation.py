@@ -476,15 +476,23 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 	if path is None or len(path) == 0:
 		return 0
-	min_realistic_path_length = exp_settings['min_path_length'][goal]
+	# min_realistic_path_length = exp_settings['min_path_length'][goal]
 	# print("min_realistic_path_length -> " + str(min_realistic_path_length))
 	
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
 
-	LAMBDA = decimal.Decimal(exp_settings['lambda'])
-	epsilon = decimal.Decimal(exp_settings['epsilon'])
+	if 'lambda' in exp_settings and exp_settings['lambda'] != '':
+		print("!" + str(exp_settings['lambda']) + "!")
+		print(exp_settings['epsilon'])
+
+		LAMBDA = decimal.Decimal(exp_settings['lambda'])
+		epsilon = decimal.Decimal(exp_settings['epsilon'])
+	else:
+		# TODO verify this
+		LAMBDA = 1.0
+		epsilon = 1.0
 
 	start = path[0]
 	total_cost = decimal.Decimal(0)
@@ -601,7 +609,7 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 
 		t += 1
 
-	return count
+	return count, len(aug_path)
 
 
 def get_costs(path, target, obs_sets):
@@ -623,7 +631,7 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		new_leg = f_legibility(resto, target, goals, path, aud, None, exp_settings)
-		new_env = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
+		new_env, x = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
 
 		vals[key] = new_leg
 		vals[key + "-env"] = new_env
@@ -1799,11 +1807,11 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = title + "_fnew=" + str(is_denom) + "_"
-	unique_title += sampling_type + "-rez" + str(rez) + "-la" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
+	unique_title = str(title) + "_fnew=" + str(is_denom) + "_"
+	unique_title += str(sampling_type) + "-rez" + str(rez) + "-la" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov)
 	unique_title += "-rb" + str(right_bound)
-	unique_title += 'pog=' + prob_og
+	unique_title += 'pog=' + str(prob_og)
 
 	fn = FILENAME_PATH_ASSESS + unique_title + "/"
 
@@ -1838,7 +1846,7 @@ def fn_pathpickle_envir_cache(exp_settings):
 		is_denom = 1
 	is_denom = str(is_denom)
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + sampling_type + "-" + f_vis_label
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + str(sampling_type) + "-" + str(f_vis_label)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 
 	# print("{" + fn_pickle + "}")
@@ -2039,7 +2047,7 @@ def get_dict_cost_start_to_here(r, exp_settings):
 def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 	# f_vis = f_exp_single(t, pt, aud, path)
 	
-	if f_vis == "":
+	if f_vis == "" or True:
 		f_vis = f_exp_single_normalized
 
 	obs_sets = r.get_obs_sets()
@@ -2088,7 +2096,7 @@ def title_from_exp_settings(exp_settings):
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
 
-	cool_title = title + ": " + sampling_type + " ang_str=" + str(angle_strength)
+	cool_title = str(title) + ": " + str(sampling_type) + " ang_str=" + str(angle_strength)
 	cool_title += "\nright_bound=" + str(right_bound) + " fov=" + str(fov)
 	cool_title += "\nlam=" + lam + "     prob_og=" + str(prob_og)
 	cool_title += "\nn=" + str(n_chunks) + " distr=" + str(chunking_type)
@@ -2646,9 +2654,10 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 			actual_audience = obs_sets[aud_key]
 		
 			f_leg_value = f_legibility(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
-			f_env_value = f_env(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
+			f_env_value, f_env_max = f_env(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
+			f_env_percent = (f_env_value / f_env_max) * 100.0
 
-			datum = {'goal':gkey, 'target_aud':target_aud_key, 'actual_aud':aud_key, 'legibility':f_leg_value, 'env':f_env_value}
+			datum = {'goal':gkey, 'target_aud':target_aud_key, 'actual_aud':aud_key, 'legibility':f_leg_value, 'env':f_env_value, 'env_pct':f_env_percent}
 			data.append(datum)
 
 			if target_aud_key == 'omni' and aud_key == 'omni':
@@ -2743,6 +2752,23 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 	plt.tight_layout()
 	plt.savefig(fn_export_from_exp_settings(exp_settings) +  '-desc_table_voila' + '.png')
 	plt.clf()
+
+	print("LATEX EXPORT")
+	latex_c = df_a.pivot_table(values='env_pct', index='target_aud', columns='actual_aud', aggfunc='first')
+	latex_d = df_b.pivot_table(values='env_pct', index='target_aud', columns='actual_aud', aggfunc='first')
+
+	print(latex_c.to_latex(index=True, index_names=True))
+	print(latex_d.to_latex(index=True, index_names=True))
+
+	print("RAW")
+	latex_c = df_a.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
+	latex_d = df_b.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
+
+	print(latex_c.to_latex(index=True, index_names=True))
+	print(latex_d.to_latex(index=True, index_names=True))
+
+	# df.to_csv(FILENAME_PATH_ASSESS + target_type + "-" + goal + "-" + analysis_label + ".csv")
+
 
 	return None
 
@@ -2860,7 +2886,7 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 def export_best_options():
 
 	r = experimental_scenario_single()
-	exp_settings = defaultdict(str)
+	exp_settings = defaultdict(float)
 	exp_settings['prob_og'] = False
 	exp_settings['sampling_type'] = 'custom'
 
@@ -2908,6 +2934,8 @@ def export_best_options():
 	get_envir_cache(r, exp_settings)
 
 	# print(fn_export_from_exp_settings(exp_settings))
+
+	export_table_all_viewers(r, best_paths, exp_settings)
 
 
 	# print(best_paths)
