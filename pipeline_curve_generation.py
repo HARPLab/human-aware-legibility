@@ -484,9 +484,6 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	total_dist = decimal.Decimal(0)
 
 	if 'lambda' in exp_settings and exp_settings['lambda'] != '':
-		print("!" + str(exp_settings['lambda']) + "!")
-		print(exp_settings['epsilon'])
-
 		LAMBDA = decimal.Decimal(exp_settings['lambda'])
 		epsilon = decimal.Decimal(exp_settings['epsilon'])
 	else:
@@ -594,6 +591,7 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 
 	epsilon = exp_settings['epsilon']
 
+	env_readiness = -1
 	t = 1
 	p_n = path[0]
 	for pt, cost_to_here in aug_path:
@@ -602,6 +600,8 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 		# if f is greater than 0, this indicates being in-view
 		if f > vis_cutoff:
 			count += 1
+			if env_readiness == -1:
+				env_readiness = (len(aug_path) - t + 1)
 
 		# if it's not at least 0, then out of sight, not part of calc
 		else:
@@ -609,7 +609,7 @@ def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 
 		t += 1
 
-	return count, len(aug_path)
+	return count, env_readiness, len(aug_path)
 
 
 def get_costs(path, target, obs_sets):
@@ -2443,6 +2443,10 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 		goal_img = goal_imgs[goal_index]
 		obs_key = pkey[1]
+
+		if obs_key == 'shortest':
+			break
+
 		solo_img = restaurant.get_obs_img(obs_key)
 		
 		color = color_dict[audience]
@@ -2654,10 +2658,11 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 			actual_audience = obs_sets[aud_key]
 		
 			f_leg_value = f_legibility(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
-			f_env_value, f_env_max = f_env(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
+			f_env_value, f_env_first, f_env_max = f_env(r, gkey, r.get_goals_all(), path, actual_audience, None, exp_settings)
 			f_env_percent = (f_env_value / f_env_max) * 100.0
+			f_env_earliest_percent = (f_env_first / f_env_max) * 100.0
 
-			datum = {'goal':gkey, 'target_aud':target_aud_key, 'actual_aud':aud_key, 'legibility':f_leg_value, 'env':f_env_value, 'env_pct':f_env_percent}
+			datum = {'goal':gkey, 'target_aud':target_aud_key, 'actual_aud':aud_key, 'legibility':f_leg_value, 'env':f_env_value, 'env_pct':f_env_percent, 'env_first':f_env_earliest_percent}
 			data.append(datum)
 
 			if target_aud_key == 'omni' and aud_key == 'omni':
@@ -2763,6 +2768,13 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 	print("RAW")
 	latex_c = df_a.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
 	latex_d = df_b.pivot_table(values='env', index='target_aud', columns='actual_aud', aggfunc='first')
+
+	print(latex_c.to_latex(index=True, index_names=True))
+	print(latex_d.to_latex(index=True, index_names=True))
+
+	print("EARLIEST SEEN F_ENV")
+	latex_c = df_a.pivot_table(values='env_first', index='target_aud', columns='actual_aud', aggfunc='first')
+	latex_d = df_b.pivot_table(values='env_first', index='target_aud', columns='actual_aud', aggfunc='first')
 
 	print(latex_c.to_latex(index=True, index_names=True))
 	print(latex_d.to_latex(index=True, index_names=True))
@@ -2889,6 +2901,27 @@ def export_best_options():
 	exp_settings = defaultdict(float)
 	exp_settings['prob_og'] = False
 	exp_settings['sampling_type'] = 'custom'
+	rb = 40
+	km = False
+	exp_settings['title'] 			= 'fall2021'
+	exp_settings['resolution']		= 15
+	exp_settings['f_vis_label']		= 'fall2021'
+	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['lambda'] 			= 0 #lam #decimal.Decimal(1e-12) #lam #.000000000001
+	exp_settings['num_chunks']		= 50
+	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
+	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings['angle_strength']	= 500 # is what was used  astr #40
+	exp_settings['min_path_length'] = {}
+	exp_settings['is_denominator']	= False
+	exp_settings['f_vis']			= f_exp_single_normalized
+	exp_settings['kill_1']			= km
+	exp_settings['angle_cutoff']	= 70
+	exp_settings['fov']	= 120
+	exp_settings['prob_og']			= False
+	exp_settings['right-bound']		= rb
+	exp_settings['waypoint_offset']	= 20
+
 
 	img = r.get_img()
 	cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_empty.png', img)
@@ -2928,6 +2961,9 @@ def export_best_options():
 	# best_paths[((1005, 617, 0), 'omni')] = yay[((1005, 617, 0), 'omni')]
 	# best_paths[((1005, 617, 0), 'a')] = yay[((1005, 617, 0), 'a')]
 	# best_paths[((1005, 617, 0), 'e')] = yay[((1005, 617, 0), 'e')]
+
+	best_paths[((1005, 617, 0), 'shortest')]	= get_min_viable_path(r, (1005, 617, 0), exp_settings)
+	best_paths[((1005, 257, 180), 'shortest')]	= get_min_viable_path(r, (1005, 257, 180), exp_settings)
 
 
 	export_path_options_for_each_goal(r, best_paths, exp_settings)
