@@ -2499,7 +2499,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 
 def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, exp_settings):
 	img = restaurant.get_img()
-	stepsize = .185 * 1000
+	stepsize = 185 # .185 * 1000ms/s
 	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
@@ -2540,6 +2540,7 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 		t_goal = goals_dict[goal]
 		t_path = path_dict[audience]
 		# then iterate through all the possible viewers to mark them
+		t_obs = 'a'
 		stamp_key = (t_goal, t_path, None)
 		stamp_list = stamps[stamp_key]
 		# print(stamp_list)
@@ -2550,7 +2551,7 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 			stamp_timesteps[i] = 0
 		
 		for stamp in stamp_list:
-			timestep = int(float(stamp) / stepsize)
+			timestep = int(float(stamp) / stepsize) + 1
 			stamp_timesteps[timestep] += 1
 
 		if obs_key == 'shortest':
@@ -2558,6 +2559,10 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 
 		solo_img = restaurant.get_obs_img(obs_key)
 		color = color_dict[audience]
+		if t_obs != None:
+			obs_color = color_dict[t_obs]
+		else:
+			obs_color = (255, 255, 255)
 
 		# Draw the path  
 		for i in range(len(path) - 1):
@@ -2569,7 +2574,7 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 			num_issues = stamp_timesteps[i]
 			size_dot = num_issues
 
-			cv2.circle(solo_img, a, size_dot, (255, 255, 255), size_dot)
+			cv2.circle(solo_img, a, size_dot, obs_color, size_dot)
 
 			if audience is not 'naked':
 				cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
@@ -2581,7 +2586,7 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 
 		sampling_type = exp_settings['sampling_type']
 		# fn = fn_export_from_exp_settings(exp_settings)
-		fn = "path_assessment/spring2022_v1/" + 'mocon_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png'
+		fn = "path_assessment/spring2022_v1/" + 'mocon_solo_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + "-obs-" + t_obs + '.png'
 		cv2.imwrite(fn, solo_img) 
 		print(fn)
 		print("exported mocon image of " + str(pkey) + " for goal " + str(goal_index))
