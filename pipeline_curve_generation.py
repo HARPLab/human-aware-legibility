@@ -2579,12 +2579,9 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 				obs_color = (255, 255, 255)
 				t_obs = "all"
 
-			# Draw the path  
 			for i in range(len(path) - 1):
 				a = path[i]
 				b = path[i + 1]
-				
-				cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
 				
 				k = 3.0 # scale factor for viewing
 				num_issues = stamp_timesteps[i]
@@ -2598,6 +2595,15 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 
 					cv2.circle(all_obs_img, a, size_dot + 1, (0,0,0), size_dot + 1)
 					cv2.circle(all_obs_img, a, size_dot, obs_color, size_dot)
+
+			# Draw the path  
+			for i in range(len(path) - 1):
+				a = path[i]
+				b = path[i + 1]
+				
+				OVERTONE_FILL = (255,255,255)
+
+				cv2.line(solo_img, a, b, OVERTONE_FILL, thickness=3, lineType=8)
 
 				if audience is not 'naked':
 					# cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
