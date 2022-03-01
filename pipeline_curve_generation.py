@@ -2501,11 +2501,13 @@ def stamps_to_steps(stamp_list):
 	stepsize = 185 # .185 * 1000ms/s
 	stamp_timesteps = {}
 
-	for i in range(60):
+	for i in range(-5, 60):
 		stamp_timesteps[i] = 0
+
+	start_offset = stepsize * 4
 	
 	for stamp in stamp_list:
-		timestep = int(float(stamp) / stepsize) + 1
+		timestep = int(float(stamp - start_offset) / stepsize) + 1
 		stamp_timesteps[timestep] += 1
 
 	all_steps = list(stamp_timesteps.values())
@@ -2608,13 +2610,13 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 
 			sampling_type = exp_settings['sampling_type']
 			# fn = fn_export_from_exp_settings(exp_settings)
-			fn = "path_assessment/spring2022_v1/" + 'mocon_solo_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + "-obs-" + t_obs + '.png'
+			fn = "path_assessment/spring2022_v2/" + 'mocon_solo_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + "-obs-" + t_obs + '.png'
 			cv2.imwrite(fn, solo_img) 
 			print(fn)
 			print("exported mocon image of " + str(pkey) + " for goal " + str(goal_index) + "-xi=" + str(t_path) + "-obs-" + t_obs)
 
 
-		fn = "path_assessment/spring2022_v1/" + 'mocon_all_obs_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + '.png'
+		fn = "path_assessment/spring2022_v2/" + 'mocon_all_obs_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + '.png'
 		cv2.imwrite(fn, all_obs_img) 
 		print("exported mocon image of " + str(pkey) + " for goal " + str(goal_index))
 
@@ -3041,8 +3043,8 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 # Function for when I've found the best path using the main code
 # but want to iterate a bunch of times for denser analytics, more sampling, etc.
 def export_best_options():
-	FLAG_EXPORT_JUST_TEASER 	= True
-	FLAG_EXPORT_MOCON 			= False
+	FLAG_EXPORT_JUST_TEASER 	= False #True
+	FLAG_EXPORT_MOCON 			= True
 
 
 	r = experimental_scenario_single()
