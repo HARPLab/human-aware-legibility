@@ -11,6 +11,7 @@ import matplotlib.pylab as plt
 import sys
 from PIL import Image
 from PIL import ImageDraw
+import matplotlib.colors as mc
 
 from shapely.geometry import Point as fancyPoint
 from shapely.geometry import box as fancyBox
@@ -110,17 +111,19 @@ RAW_C 		= VIS_C 	+ SUFFIX_RAW
 RAW_D 		= VIS_D 	+ SUFFIX_RAW
 RAW_E 		= VIS_E 	+ SUFFIX_RAW
 
+OBS_INDEX_NONE = 0
+OBS_INDEX_OMNI = 1
 OBS_INDEX_A = 2
 OBS_INDEX_B = 3
 OBS_INDEX_C = 4
 OBS_INDEX_D = 5
 OBS_INDEX_E = 6
 
-OBS_COLOR_A = (0,255,255)
+OBS_COLOR_A = (0, 0, 255) # (0,255,255)
 OBS_COLOR_B = (0,228,171)
 OBS_COLOR_C = (0,201,87)
 OBS_COLOR_D = (128,106,50)
-OBS_COLOR_E = (255,10,10)
+OBS_COLOR_E = (255, 0, 0) #(255, 0, 0) #(255,10,10)
 OBS_COLOR_OMNISCIENT = (255,255,255)
 OBS_COLOR_ALL = (138,43,226)
 OBS_COLOR_NAKED = (100,100,100)
@@ -138,7 +141,20 @@ VIS_CHECKLIST = [VIS_OMNI, VIS_ALL, VIS_A, VIS_B, VIS_C, VIS_D, VIS_E]
 RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 
 # 				red 		green 		yellow 			light yellow	green 		light blue		blue			
-PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,228,171), (0,201,87), (128,106,50), (255,10,10)]
+# PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,228,171), (0,201,87), (128,106,50), (255,10,10)]
+PATH_COLORS = [OBS_COLOR_NAKED, OBS_COLOR_OMNISCIENT, 	OBS_COLOR_A, 	OBS_COLOR_B, 	OBS_COLOR_C, 	OBS_COLOR_D, 	OBS_COLOR_E]
+PATH_COLORS = [(0,0,0),			(0,0,0),				(120, 94, 240),	(100, 143, 255), (220, 38, 127),	(255, 176, 0), (254, 97, 0)]
+PATH_COLORS = [(0,0,0),			(0,0,0), mc.to_rgb('#c3f73a'),	mc.to_rgb('#95e06c'), mc.to_rgb('#68b684'),	mc.to_rgb('#5da9e9'), mc.to_rgb('#094d92')]
+
+
+OBS_COLOR_A = PATH_COLORS[OBS_INDEX_A]
+OBS_COLOR_B = PATH_COLORS[OBS_INDEX_B]
+OBS_COLOR_C = PATH_COLORS[OBS_INDEX_C]
+OBS_COLOR_D = PATH_COLORS[OBS_INDEX_D]
+OBS_COLOR_E = PATH_COLORS[OBS_INDEX_E]
+
+
+
 PATH_LABELS = ['red', 'yellow', 'blue', 'green']
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 # PATH_COLORS = [(130, 95, 135), (254, 179, 8), (55, 120, 191), (123, 178, 116)]
@@ -1437,8 +1453,10 @@ class Restaurant:
 		dbfile.close() 
 
 
-	def generate_obstacle_map_and_img(self, observers):
-		obstacle_vis = np.zeros((self.length, self.width,3), np.uint8)
+	def generate_obstacle_map_and_img(self, observers, obs_set=None):
+		obstacle_vis = np.ones((self.length, self.width,3), np.uint8)
+		if obs_set == None:
+			obs_set = [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]
 
 		# DRAW the environment
 
@@ -1449,6 +1467,7 @@ class Restaurant:
 		start_radius = int(.125 * UNITY_SCALE_X)
 
 		img = np.zeros((self.length, self.width,3), np.uint8)
+		img.fill(255)
 
 		overlay = img.copy()
 
@@ -1456,14 +1475,14 @@ class Restaurant:
 		obs_keys = obs_sets.keys()
 		for o_key in obs_keys:
 			# if it's a single audience member, then for each of those...
-			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
+			if o_key in obs_set: #[OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]
 				obs = obs_sets[o_key]
 				if obs is not None:
 					obs = obs[0]
 
 					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
 					cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
-					alpha = 0.25  # Transparency factor.
+					alpha = 0.6  # Transparency factor.
 					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 
@@ -1513,7 +1532,7 @@ class Restaurant:
 
 		obs_keys = obs_sets.keys()
 		for o_key in obs_keys:
-			if o_key in [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
+			if o_key in obs_set: #[OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]:
 				obs = obs_sets[o_key]
 				if obs is not None:
 					obs = obs[0]
@@ -1908,8 +1927,8 @@ class Restaurant:
 		return range(0, self.get_width())
 		return range(min_val, max_val)
 
-	def get_img(self):
-		return copy.copy(self.img)
+	def get_img(self, obs_set=None):
+		return self.generate_obstacle_map_and_img(self.observers, obs_set)
 
 	def get_obs_img(self, obs_key):
 		if obs_key is 'naked':
