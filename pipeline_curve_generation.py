@@ -37,9 +37,12 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = False #True #False #True #False
-FLAG_REDO_ENVIR_CACHE 	= False #True
+FLAG_REDO_ENVIR_CACHE 	= True
 FLAG_MIN_MODE			= False
 FLAG_EXPORT_LATEX_MAXES = False
+
+FLAG_EXPORT_JUST_TEASER 	= True
+FLAG_EXPORT_MOCON 			= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 		= 3
@@ -1882,8 +1885,8 @@ def export_envir_cache_pic(r, data, label, g_index, obs_label, exp_settings):
 			y = r_height - obs_xy[1]
 			xs.append(x)
 			ys.append(y)
-			ax.plot([x], [y], 'o', markersize=15, color='white')
-			ax.plot([x], [y], 'o', markersize=12, color=color)
+			ax.plot([x], [y], 'o', markersize=19, color='white')
+			ax.plot([x], [y], 'o', markersize=18, color=color)
 	
 	
 	xs, ys = [], []
@@ -1919,18 +1922,19 @@ def export_envir_cache_pic(r, data, label, g_index, obs_label, exp_settings):
 	xs.append(sx)
 	ys.append(sy)
 
-	ax.plot(xs, ys, 's', color='white', markersize=16)
-	ax.plot(xs, ys, 's', color='gray', markersize=15)
+	ax.plot(xs, ys, 's', color='white', markersize=18)
+	ax.plot(xs, ys, 's', color='gray', markersize=17)
 	xs, ys = [], []
 
 	print("*** {" + obs_label + "}")
 	title = ""
 	if obs_label in ['a', 'b', 'c', 'd', 'e']:
-		title = "$V_{" + obs_label + "}$"
+		obs_label = obs_label.upper()
+		title = "$\\mathbf{V_{" + obs_label + "}}$"
 	elif obs_label == 'omni':
-		title = "$V_{o}$"
+		title = "$\\mathbf{V_{o}}$"
 
-	plt.text(150, 380, title, fontsize=46, color='#FFFFFF')
+	plt.text(150, 430, title, fontsize=80, color='#FFFFFF', fontweight='bold') # weight='bold'
 	plt.axis('off')
 
 	plt.tight_layout()
@@ -1984,7 +1988,6 @@ def get_envir_cache(r, exp_settings):
 		dbfile = open(fn_pickle, 'wb')
 		pickle.dump(envir_cache, dbfile)
 		dbfile.close()
-
 		print("Done with pickle")
 
 
@@ -2406,7 +2409,7 @@ def make_path_libs(resto, goal):
 
 def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
-	img = restaurant.get_img()
+	img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E])
 	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
@@ -2451,6 +2454,7 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 		solo_img = restaurant.get_obs_img(obs_key)
 		
 		color = color_dict[audience]
+		COLOR_OUTLINE = (0,0,0)
 
 		# Draw the path  
 		for i in range(len(path) - 1):
@@ -2461,10 +2465,15 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			cv2.circle(solo_img, a, 4, color, 4)
 
 			if audience is not 'naked':
+				cv2.line(goal_img, a, b, COLOR_OUTLINE, thickness=7, lineType=8)
+				cv2.line(all_img, a, b, COLOR_OUTLINE, thickness=7, lineType=8)
 				cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
 				cv2.line(all_img, a, b, color, thickness=3, lineType=8)
-				cv2.circle(goal_img, a, 4, color, 4)
-				cv2.circle(all_img, a, 4, color, 4)
+
+				cv2.circle(goal_img, a, 5, COLOR_OUTLINE, 5)
+				cv2.circle(all_img, a, 5, COLOR_OUTLINE, 5)
+				cv2.circle(goal_img, a, 5, color, -1)
+				cv2.circle(all_img, a, 5, color, -1)
 		
 		title = exp_settings['title']
 
@@ -2561,7 +2570,7 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 		if obs_key == 'shortest':
 			break
 
-		solo_img = restaurant.get_obs_img(obs_key)
+		solo_img = restaurant.get_obs_img(obs_key, [OBS_KEY_A, OBS_KEY_E])
 		all_obs_img = copy.copy(solo_img)
 
 		for obs in ['a', 'b', 'c', 'd', 'e', None]:
@@ -2798,6 +2807,9 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 
 	obs_sets = r.get_obs_sets()
 	obs_keys = list(obs_sets.keys())
+
+	# if FLAG_EXPORT_JUST_TEASER:
+	# 	obs_keys = [obs_keys[0], obs_keys[-1]]
 
 	# (target, observer) = value
 	data = []
@@ -3049,10 +3061,6 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 # Function for when I've found the best path using the main code
 # but want to iterate a bunch of times for denser analytics, more sampling, etc.
 def export_best_options():
-	FLAG_EXPORT_JUST_TEASER 	= False #True
-	FLAG_EXPORT_MOCON 			= True
-
-
 	r = experimental_scenario_single()
 	exp_settings = defaultdict(float)
 	exp_settings['prob_og'] = False
@@ -3130,6 +3138,7 @@ def export_best_options():
 		new_best_paths[((1005, 257, 180), 'a')] = best_paths[((1005, 257, 180), 'a')]
 		new_best_paths[((1005, 257, 180), 'e')] = best_paths[((1005, 257, 180), 'e')]
 		new_best_paths[((1005, 257, 180), 'omni')] = best_paths[((1005, 257, 180), 'omni')]
+		best_paths = new_best_paths
 
 
 	if FLAG_EXPORT_MOCON:
