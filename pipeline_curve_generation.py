@@ -37,11 +37,11 @@ FLAG_SAVE 				= True
 FLAG_VIS_GRID 			= False
 FLAG_EXPORT_HARDCODED 	= False
 FLAG_REDO_PATH_CREATION = False #True #False #True #False
-FLAG_REDO_ENVIR_CACHE 	= True
+FLAG_REDO_ENVIR_CACHE 	= False
 FLAG_MIN_MODE			= False
 FLAG_EXPORT_LATEX_MAXES = False
 
-FLAG_EXPORT_JUST_TEASER 	= True
+FLAG_EXPORT_JUST_TEASER 	= False
 FLAG_EXPORT_MOCON 			= False
 
 VISIBILITY_TYPES 		= resto.VIS_CHECKLIST
@@ -2409,8 +2409,8 @@ def make_path_libs(resto, goal):
 
 def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
-	# img = restaurant.get_img(show_cones=False)
-	img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E], show_cones=True)
+	img = restaurant.get_img(show_cones=False)
+	# img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E], show_cones=True)
 	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
@@ -2462,19 +2462,19 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 			a = path[i]
 			b = path[i + 1]
 			
-			cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
 			cv2.circle(solo_img, a, 4, color, 4)
-
+			cv2.line(solo_img, a, b, color, thickness=3, lineType=8)
+			
 			if audience is not 'naked':
 				cv2.line(goal_img, a, b, COLOR_OUTLINE, thickness=7, lineType=8)
 				cv2.line(all_img, a, b, COLOR_OUTLINE, thickness=7, lineType=8)
 				cv2.line(goal_img, a, b, color, thickness=3, lineType=8)
 				cv2.line(all_img, a, b, color, thickness=3, lineType=8)
 
-				cv2.circle(goal_img, a, 5, COLOR_OUTLINE, 5)
-				cv2.circle(all_img, a, 5, COLOR_OUTLINE, 5)
-				cv2.circle(goal_img, a, 5, color, -1)
-				cv2.circle(all_img, a, 5, color, -1)
+				# cv2.circle(goal_img, a, 5, COLOR_OUTLINE, 5)
+				# cv2.circle(all_img, a, 5, COLOR_OUTLINE, 5)
+				# cv2.circle(goal_img, a, 5, color, -1)
+				# cv2.circle(all_img, a, 5, color, -1)
 		
 		title = exp_settings['title']
 
