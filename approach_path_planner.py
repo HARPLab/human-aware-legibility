@@ -21,7 +21,7 @@ import random
 # SCENARIO_IDENTIFIER = r.get_scenario_identifier()
 
 FLAG_SAVE 			= True
-FLAG_VIS_GRID 		= False
+FLAG_VIS_GRID 		= True
 VISIBILITY_TYPES 	= resto.VIS_CHECKLIST
 NUM_CONTROL_PTS 	= 3
 

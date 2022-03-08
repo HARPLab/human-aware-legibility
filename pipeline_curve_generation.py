@@ -2409,7 +2409,8 @@ def make_path_libs(resto, goal):
 
 def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
-	img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E])
+	# img = restaurant.get_img(show_cones=False)
+	img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E], show_cones=True)
 	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 

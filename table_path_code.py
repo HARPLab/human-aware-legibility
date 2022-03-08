@@ -144,7 +144,9 @@ RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 # PATH_COLORS = [(138,43,226), (0,201,87), (0,255,255), (0,228,171), (0,201,87), (128,106,50), (255,10,10)]
 PATH_COLORS = [OBS_COLOR_NAKED, OBS_COLOR_OMNISCIENT, 	OBS_COLOR_A, 	OBS_COLOR_B, 	OBS_COLOR_C, 	OBS_COLOR_D, 	OBS_COLOR_E]
 PATH_COLORS = [(0,0,0),			(0,0,0),				(120, 94, 240),	(100, 143, 255), (220, 38, 127),	(255, 176, 0), (254, 97, 0)]
-PATH_COLORS = [(0,0,0),			(0,0,0), mc.to_rgb('#c3f73a'),	mc.to_rgb('#95e06c'), mc.to_rgb('#68b684'),	mc.to_rgb('#5da9e9'), mc.to_rgb('#094d92')]
+PATH_COLORS = [(0,0,0),			(0,0,0), 				(195,247,58)[::-1],	(149,224,108)[::-1],	(104,182,132)[::-1],	(93,169,233)[::-1],	(9,77,146)[::-1]]
+PATH_COLORS = [(0,0,0),			(0,0,0), 	(81, 113, 165)[::-1],	(0, 145, 110)[::-1],	(255, 207, 0)[::-1],	(238, 97, 35)[::-1],	(250, 0, 63)[::-1]]
+PATH_COLORS = [(0,0,0),	(0,0,0),	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1]]
 
 
 OBS_COLOR_A = PATH_COLORS[OBS_INDEX_A]
@@ -1453,7 +1455,7 @@ class Restaurant:
 		dbfile.close() 
 
 
-	def generate_obstacle_map_and_img(self, observers, obs_set=None):
+	def generate_obstacle_map_and_img(self, observers, obs_set=None, show_cones=True):
 		obstacle_vis = np.ones((self.length, self.width,3), np.uint8)
 		if obs_set == None:
 			obs_set = [OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]
@@ -1473,17 +1475,18 @@ class Restaurant:
 
 		obs_sets = self.get_obs_sets()
 		obs_keys = obs_sets.keys()
-		for o_key in obs_keys:
-			# if it's a single audience member, then for each of those...
-			if o_key in obs_set: #[OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]
-				obs = obs_sets[o_key]
-				if obs is not None:
-					obs = obs[0]
+		if show_cones:
+			for o_key in obs_keys:
+				# if it's a single audience member, then for each of those...
+				if o_key in obs_set: #[OBS_KEY_A, OBS_KEY_B, OBS_KEY_C, OBS_KEY_D, OBS_KEY_E]
+					obs = obs_sets[o_key]
+					if obs is not None:
+						obs = obs[0]
 
-					# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
-					cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
-					alpha = 0.6  # Transparency factor.
-					img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
+						# cv2.fillPoly(overlay, obs.get_draw_field_peripheral(), COLOR_PERIPHERAL_AWAY)
+						cv2.fillPoly(overlay, obs.get_draw_field_focus(), obs.get_color())
+						alpha = 0.6  # Transparency factor.
+						img = cv2.addWeighted(overlay, alpha, img, 1 - alpha, 0)
 
 
 		# Draw tables
@@ -1528,6 +1531,7 @@ class Restaurant:
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
+			cv2.circle(img, to_xy(goal), goal_radius + 1, (0,0,0), goal_radius + 1)
 			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
 
 		obs_keys = obs_sets.keys()
@@ -1927,8 +1931,8 @@ class Restaurant:
 		return range(0, self.get_width())
 		return range(min_val, max_val)
 
-	def get_img(self, obs_set=None):
-		return self.generate_obstacle_map_and_img(self.observers, obs_set)
+	def get_img(self, obs_set=None, show_cones=True):
+		return self.generate_obstacle_map_and_img(self.observers, obs_set, show_cones)
 
 	def get_obs_img(self, obs_key):
 		if obs_key is 'naked':
