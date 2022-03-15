@@ -145,7 +145,7 @@ RAW_CHECKLIST = [RAW_OMNI, RAW_ALL, RAW_A, RAW_B, RAW_C, RAW_D, RAW_E]
 PATH_COLORS = [OBS_COLOR_NAKED, OBS_COLOR_OMNISCIENT, 	OBS_COLOR_A, 	OBS_COLOR_B, 	OBS_COLOR_C, 	OBS_COLOR_D, 	OBS_COLOR_E]
 PATH_COLORS = [(0,0,0),			(0,0,0),				(120, 94, 240),	(100, 143, 255), (220, 38, 127),	(255, 176, 0), (254, 97, 0)]
 PATH_COLORS = [(0,0,0),			(0,0,0), 				(195,247,58)[::-1],	(149,224,108)[::-1],	(104,182,132)[::-1],	(93,169,233)[::-1],	(9,77,146)[::-1]]
-PATH_COLORS = [(0,0,0),			(0,0,0), 	(81, 113, 165)[::-1],	(0, 145, 110)[::-1],	(255, 207, 0)[::-1],	(238, 97, 35)[::-1],	(250, 0, 63)[::-1]]
+# PATH_COLORS = [(0,0,0),			(0,0,0), 	(81, 113, 165)[::-1],	(0, 145, 110)[::-1],	(255, 207, 0)[::-1],	(238, 97, 35)[::-1],	(250, 0, 63)[::-1]]
 # PATH_COLORS = [(0,0,0),	(0,0,0),	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1],	(0,0,0)[::-1]]
 
 
@@ -1490,7 +1490,7 @@ class Restaurant:
 
 
 		# Draw tables
-		for table in self.tables:
+		for table in []: #self.tables:
 			tx, ty = table.get_center()
 			center_pt = (tx, ty)
 			ttheta = table.get_orientation()
