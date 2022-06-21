@@ -1490,7 +1490,7 @@ class Restaurant:
 
 
 		# Draw tables
-		for table in []: #self.tables:
+		for table in self.tables:
 			tx, ty = table.get_center()
 			center_pt = (tx, ty)
 			ttheta = table.get_orientation()

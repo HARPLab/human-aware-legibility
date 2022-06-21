@@ -2411,7 +2411,9 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 	# print(best_paths)
 	img = restaurant.get_img(show_cones=False)
 	if FLAG_EXPORT_JUST_TEASER:
-		img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_E], show_cones=True)
+		img = restaurant.get_img([resto.OBS_KEY_A], show_cones=True) #, resto.OBS_KEY_E
+
+	img = restaurant.get_img([resto.OBS_KEY_A, resto.OBS_KEY_B, resto.OBS_KEY_C, resto.OBS_KEY_D, resto.OBS_KEY_E], show_cones=False)
 	 #cv2.flip(img, 0)
 	# cv2.imwrite(FILENAME_PATH_ASSESS + unique_key + 'empty.png', empty_img)
 
@@ -3133,13 +3135,13 @@ def export_best_options():
 	if FLAG_EXPORT_JUST_TEASER:
 		new_best_paths = {}
 
-		new_best_paths[((1005, 617, 0), 'a')] = best_paths[((1005, 617, 0), 'a')]
-		new_best_paths[((1005, 617, 0), 'e')] = best_paths[((1005, 617, 0), 'e')]
-		new_best_paths[((1005, 617, 0), 'omni')] = best_paths[((1005, 617, 0), 'omni')]
+		# new_best_paths[((1005, 617, 0), 'a')] = best_paths[((1005, 617, 0), 'a')]
+		# new_best_paths[((1005, 617, 0), 'e')] = best_paths[((1005, 617, 0), 'e')]
+		# new_best_paths[((1005, 617, 0), 'omni')] = best_paths[((1005, 617, 0), 'omni')]
 
-		new_best_paths[((1005, 257, 180), 'a')] = best_paths[((1005, 257, 180), 'a')]
-		new_best_paths[((1005, 257, 180), 'e')] = best_paths[((1005, 257, 180), 'e')]
-		new_best_paths[((1005, 257, 180), 'omni')] = best_paths[((1005, 257, 180), 'omni')]
+		# new_best_paths[((1005, 257, 180), 'a')] = best_paths[((1005, 257, 180), 'a')]
+		# new_best_paths[((1005, 257, 180), 'e')] = best_paths[((1005, 257, 180), 'e')]
+		# new_best_paths[((1005, 257, 180), 'omni')] = best_paths[((1005, 257, 180), 'omni')]
 		best_paths = new_best_paths
 
 
