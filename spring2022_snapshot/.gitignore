@@ -1,0 +1,11 @@
+demo/
+import pingouin
+local-relics/
+mega_run.txt
+pass_assessment_sept_19/
+path_assessment/
+path_assessment_klampt/
+path_optimization/
+pickle_vis
+staging.py
+table_path_code.pyc
