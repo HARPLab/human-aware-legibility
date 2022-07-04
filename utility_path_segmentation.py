@@ -1,6 +1,7 @@
-import table_path_code as resto
 import math
 import numpy as np
+
+import utility_environ_descrip as resto
 
 try:
     import OpenGL as ogl
