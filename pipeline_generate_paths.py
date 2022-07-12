@@ -262,33 +262,37 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 
 # Ada: Heading-aware version of legibility
 def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	decimal.getcontext().prec = 60
-	is_og = exp_settings['prob_og']
 
-	start = r.get_start()
+	prob_val = prob_goal_given_heading(r.get_start(), p_n1, pt, goal, goals, cost_path_to_here)
+	return decimal.Decimal(prob_val)
 
-	if is_og:
-		c1 = decimal.Decimal(cost_path_to_here)
-	else:
-		c1 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(r.get_start()), resto.to_xy(pt), exp_settings))	
+	# decimal.getcontext().prec = 60
+	# is_og = exp_settings['prob_og']
+
+	# start = r.get_start()
+
+	# if is_og:
+	# 	c1 = decimal.Decimal(cost_path_to_here)
+	# else:
+	# 	c1 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(r.get_start()), resto.to_xy(pt), exp_settings))	
 
 	
-	c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
-	c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
+	# c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
+	# c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
 
-	# print(c2)
-	# print(c3)
-	a = np.exp((-c1 + -c2))
-	b = np.exp(-c3)
-	# print(a)
-	# print(b)
+	# # print(c2)
+	# # print(c3)
+	# a = np.exp((-c1 + -c2))
+	# b = np.exp(-c3)
+	# # print(a)
+	# # print(b)
 
-	ratio 		= a / b
+	# ratio 		= a / b
 
-	if math.isnan(ratio):
-		ratio = 0
+	# if math.isnan(ratio):
+	# 	ratio = 0
 
-	return ratio
+	# return ratio
 
 
 
@@ -356,7 +360,8 @@ def prob_goals_given_heading(p0, p1, goals):
 		# 0 or 360 	= 1
 		# divide by other options, 
 		# so if 2 in same dir, 50/50 odds
-		goal_theta = resto.angle_between(p0, goal)
+
+		goal_theta = resto.angle_between(p0, goal[:2])
 		prob = f_angle_prob(heading, goal_theta)
 		probs.append(prob)
 
@@ -470,6 +475,14 @@ def get_dist(p0, p1):
 	min_distance = np.sqrt((p0_x-p1_x)**2 + (p0_y-p1_y)**2)
 	return min_distance
 
+def get_min_direct_path_cost_angle_between(r, p0, p1, exp_settings):
+	# TODO CURRENT ADA
+
+	cost = (num_chunks * cost_chunk) + (leftover*leftover)
+
+	return cost
+
+	
 def get_min_direct_path_cost_between(r, p0, p1, exp_settings):
 	dist = get_dist(p0, p1)
 	dt = chunkify.get_dt(exp_settings)
@@ -584,12 +597,12 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 	return overall
 
-# Given a 
+# Given a path, count how long it's in sight
 def f_env(r, goal, goals, path, aud, f_function, exp_settings):
 	fov = exp_settings['fov']
 	FLAG_is_denominator = exp_settings['is_denominator']
 	if path is None or len(path) == 0:
-		return 0
+		return 0, 0, 0
 
 	if f_function is None and FLAG_is_denominator:
 		f_function = f_exp_single
@@ -650,6 +663,8 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		new_leg = f_legibility(resto, target, goals, path, aud, None, exp_settings)
+		print(new_leg)
+
 		count, new_env, x = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
 		# count, env_readiness, len(aug_path)
 
@@ -1549,8 +1564,6 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
 		resolution = exp_settings['resolution']
-		print(resolution)
-		exit()
 		low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(r)
 		
 		SAMPLE_BUFFER = 150
@@ -1966,6 +1979,8 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			try:
 				path_dict = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
+				# print(path_dict.keys())
+				# print(path_dict['path'])
 				print("imported " + str(len(path_dict['path'])) + " paths")
 				return path_dict
 
@@ -2909,7 +2924,7 @@ def export_best_options():
 	rb = 40
 	km = False
 	exp_settings['title'] 			= 'fall2021'
-	exp_settings['resolution']		= 50
+	exp_settings['resolution']		= 15
 	exp_settings['f_vis_label']		= 'fall2021'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= 0 #lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -3102,7 +3117,7 @@ def do_exp(lam, astr, rb, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 50
+	exp_settings['resolution']		= 15
 	exp_settings['f_vis_label']		= 'no-chunk'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -3156,23 +3171,6 @@ def do_exp(lam, astr, rb, km):
 		paths, sample_pts_that_generated = create_systematic_path_options_for_goal(restaurant, exp_settings, start, goal, img, num_paths=10)
 		print("Made paths")
 		paths_for_analysis[goal] = {'paths':paths, 'sp': sample_pts_that_generated}
-
-	# debug curvatures
-	# plt.clf()
-	# print(curvatures)
-	# sns.histplot(data=curvatures, bins=100)
-	# # plt.hist(curvatures, bins=1000) 
-	# plt.title("histogram of max angles")
-	# plt.tight_layout()
-	# plt.savefig("path_assessment/curvatures.png") 
-	# plt.clf()
-
-	# sns.histplot(data=max_curvatures, bins=100)
-	# # plt.hist(curvatures, bins=1000) 
-	# plt.title("histogram of max curvatures")
-	# plt.tight_layout()
-	# plt.savefig("path_assessment/max-curvatures.png") 
-	# exit()
 
 	print("~~~")
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
