@@ -240,11 +240,14 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
 def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
+	unnorm_prob_function = exp_settings['prob_method']
+
 	start = r.get_start()
 	g_array = []
 	g_target = 0
 	for g in goals:
-		p_raw = unnormalized_prob_goal_given_path(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
+		p_raw = unnorm_prob_function(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings) 
+		#p_raw = unnormalized_prob_goal_given_path(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
 		g_array.append(p_raw)
 		if g is goal:
 			g_target = p_raw
@@ -254,6 +257,40 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 		return 0
 
 	return g_target / (sum(g_array))
+
+
+
+# Ada: Heading-aware version of legibility
+def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
+	decimal.getcontext().prec = 60
+	is_og = exp_settings['prob_og']
+
+	start = r.get_start()
+
+	if is_og:
+		c1 = decimal.Decimal(cost_path_to_here)
+	else:
+		c1 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(r.get_start()), resto.to_xy(pt), exp_settings))	
+
+	
+	c2 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(pt), resto.to_xy(goal), exp_settings))
+	c3 = decimal.Decimal(get_min_direct_path_cost_between(r, resto.to_xy(start), resto.to_xy(goal), exp_settings))
+
+	# print(c2)
+	# print(c3)
+	a = np.exp((-c1 + -c2))
+	b = np.exp(-c3)
+	# print(a)
+	# print(b)
+
+	ratio 		= a / b
+
+	if math.isnan(ratio):
+		ratio = 0
+
+	return ratio
+
+
 
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
@@ -613,7 +650,8 @@ def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	for key in obs_sets.keys():
 		aud = obs_sets[key]
 		new_leg = f_legibility(resto, target, goals, path, aud, None, exp_settings)
-		new_env, x = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
+		count, new_env, x = f_env(resto, target, goals, path, aud, f_vis, exp_settings)
+		# count, env_readiness, len(aug_path)
 
 		vals[key] = new_leg
 		vals[key + "-env"] = new_env
@@ -1420,6 +1458,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 	SAMPLE_BUFFER = 150
 
 	sampling_type = exp_settings['sampling_type']
+	print(sampling_type)
 
 	if sampling_type == SAMPLE_TYPE_SYSTEMATIC or sampling_type == SAMPLE_TYPE_FUSION:
 		width = r.get_width()
@@ -1510,6 +1549,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
 		resolution = exp_settings['resolution']
+		print(resolution)
+		exit()
 		low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(r)
 		
 		SAMPLE_BUFFER = 150
@@ -1531,6 +1572,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
 		resolution_sparse = exp_settings['resolution'] * 3
+		print("Central sparse sampling")
 
 		low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(r)
 		
@@ -1542,6 +1584,8 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 
 		xi_range = range(low_x, hi_x, resolution_sparse)
 		yi_range = range(low_y, hi_y, resolution_sparse)
+
+		print(xi_range)
 
 		count = 0
 		for xi in xi_range:
@@ -1556,6 +1600,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 		mirror_sets = get_mirrored(r, sample_sets)
 		for p in mirror_sets:
 			sample_sets.append(p)
+		print(sample_sets)
 
 	if sampling_type == SAMPLE_TYPE_HARDCODED:
 		sx, sy, stheta = start
@@ -1921,10 +1966,12 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			try:
 				path_dict = pickle.load(f)		
 				print("\tImported pickle of combo (goal=" + str(goal_index) + ", sampling=" + str(sampling_type) + ")")
-				print("imported " + str(len(all_paths['path'])) + " paths")
+				print("imported " + str(len(path_dict['path'])) + " paths")
 				return path_dict
 
-			except Exception: # so many things could go wrong, can't be more specific.
+			except Exception as e: # so many things could go wrong, can't be more specific.
+				print("PROBLEM EXCEPTION")
+				print(e)
 				pass
 	else:
 		if sampling_type not in premade_path_sampling_types:
@@ -1945,6 +1992,7 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 					path_option_2 = construct_single_path_with_angles_spline(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
 					path_option_2 = chunkify.chunkify_path(r, exp_settings, path_option_2)
 					all_paths.append(path_option_2)
+					print("Success")
 				except Exception:
 					print("RIP")
 					all_paths.append([])
@@ -1952,6 +2000,8 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 			all_paths = sample_pts
 
 	path_dict = {'path': all_paths, 'sp': sample_pts}
+
+	print(path_dict)
 
 	dbfile = open(fn_pickle, 'wb')
 	pickle.dump(path_dict, dbfile)
@@ -1962,12 +2012,12 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 
 # TODO Ada
 def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, num_paths=500):
+	print("Creating systematic path options for goal")
 	all_paths = []
 	target = goal
 
 	label = exp_settings['title']
 	sampling_type = exp_settings['sampling_type']
-
 
 	fn = FILENAME_PATH_ASSESS + label + "_best_path" + ".png"
 	goal_index = r.get_goal_index(goal)
@@ -2859,7 +2909,7 @@ def export_best_options():
 	rb = 40
 	km = False
 	exp_settings['title'] 			= 'fall2021'
-	exp_settings['resolution']		= 15
+	exp_settings['resolution']		= 50
 	exp_settings['f_vis_label']		= 'fall2021'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= 0 #lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -2872,7 +2922,7 @@ def export_best_options():
 	exp_settings['f_vis']			= f_exp_single_normalized
 	exp_settings['kill_1']			= km
 	exp_settings['angle_cutoff']	= 70
-	exp_settings['fov']	= 120
+	exp_settings['fov']				= 120
 	exp_settings['prob_og']			= False
 	exp_settings['right-bound']		= rb
 	exp_settings['waypoint_offset']	= 20
@@ -3030,7 +3080,7 @@ def do_exp(lam, astr, rb, km):
 	sample_pts = []
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -3039,7 +3089,7 @@ def do_exp(lam, astr, rb, km):
 	# sampling_type = SAMPLE_TYPE_INZONE
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
 	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
-	sampling_type = SAMPLE_TYPE_NEXUS_POINTS_ONLY
+	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS_ONLY
 
 
 	OPTION_DOING_STATE_LATTICE = False
@@ -3052,7 +3102,7 @@ def do_exp(lam, astr, rb, km):
 	exp_settings = {}
 	exp_settings['title'] 			= unique_key
 	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 15
+	exp_settings['resolution']		= 50
 	exp_settings['f_vis_label']		= 'no-chunk'
 	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
@@ -3069,6 +3119,9 @@ def do_exp(lam, astr, rb, km):
 	exp_settings['prob_og']			= False
 	exp_settings['right-bound']		= rb
 	exp_settings['waypoint_offset']	= 20
+	# exp_settings['prob_method']		= prob_goal_given_path
+	exp_settings['prob_method']		= unnormalized_prob_goal_given_path_use_heading
+
 
 	pprint.pprint(exp_settings)
 	print("---!!!---")
@@ -3174,11 +3227,11 @@ def exp_determine_lam_eps():
 	# pass
 
 def main():
-	export_best_options()
-	exit()
+	# export_best_options()
+	# exit()
 
 	# lam = 1e-6
-	lam = 0 #1e-6 #(10.0 / 23610)#1e-6 #0 #1.5e-8 #1e-16
+	lam = 0
 	kill_mode = True
 	# eps_start = decimal.Decimal(.000000000001)
 	# lam_start = decimal.Decimal(.00000000001)
@@ -3186,34 +3239,12 @@ def main():
 	rb = 40
 
 	# print("Doing main")
+	# Get the best path for the given scenario
 	do_exp(lam, astr, rb, False)
 	# print("Done with main")
 	# export_best_options()
 	# exp_determine_lam_eps()
 
 if __name__ == "__main__":
-
-	# con = decimal.getcontext()
-	# con.prec = 35
-	# con.Emax = 1000
-	# con.Emin = -1000
 	main()
 
-
-
-
-
-
-# result = df_vis.pivot(index='x', columns='y', values=resto.VIS_MULTI)
-# inspect_heatmap(df_vis)
-
-# print("pivoted")
-# heatmap = sns.heatmap(result, annot=True, fmt="g", cmap='viridis')
-# print("made heatmap")
-
-# fig = heatmap.get_figure()
-# fig.savefig("multi-vis.png")
-# print("Graphs")
-
-# resto.draw_paths(r, paths_dict)
-# resto.export(r, paths_dict)
