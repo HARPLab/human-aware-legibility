@@ -551,4 +551,18 @@ def angle_of_turn(l1, l2):
 	return (angle_between_lines(l1, l2))
 
 
+def get_legibility_options():
+	options = [unnormalized_prob_goal_given_path, unnormalized_prob_goal_given_path_use_heading]
+
+	return options
+
+def lookup_legibility_label(f):
+	if f == unnormalized_prob_goal_given_path:
+		return "JPATH"
+	elif f == unnormalized_prob_goal_given_path_use_heading:
+		return "JHEADING"
+
+	return "LABELERR"
+
+
 

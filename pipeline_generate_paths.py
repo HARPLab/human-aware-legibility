@@ -1141,6 +1141,10 @@ def fn_export_from_exp_settings(exp_settings):
 	prob_og 			= exp_settings['prob_og']
 	right_bound 		= exp_settings['right-bound']
 
+	f_legibility		= exp_settings['prob_method']
+	f_label 			= legib.lookup_legibility_label(f_legibility)
+
+
 	is_denom = 0
 	if FLAG_is_denominator:
 		is_denom = 1
@@ -1150,11 +1154,11 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = str(title) + "_fnew=" + str(is_denom) + "_"
-	unique_title += str(sampling_type) + "-rez" + str(rez) + "-la" + lam + "_" + str(chunking_type) + "-" + str(n_chunks) 
-	unique_title += "-as-" + str(astr) + 'fov=' + str(fov)
+	unique_title = str(title) + "-" + f_label + "_"
+	unique_title += str(sampling_type) + "-rez" + str(rez) + "_" + str(chunking_type) + "-" + str(n_chunks) 
+	unique_title += "-as-" + str(astr) + 'fov=' + str(fov) +  "-la" + lam
 	unique_title += "-rb" + str(right_bound)
-	unique_title += 'pog=' + str(prob_og)
+	# unique_title += 'pog=' + str(prob_og)
 
 	fn = FILENAME_PATH_ASSESS + unique_title + "/"
 
@@ -1171,7 +1175,7 @@ def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	angle_str = exp_settings['angle_strength']
 	res = exp_settings['resolution']
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-" + sampling_type + "-g" + str(goal_index)
+	fn_pickle = FILENAME_PATH_ASSESS + "pickle/export-" + sampling_type + "-g" + str(goal_index)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 	print("{" + fn_pickle + "}")
 	return fn_pickle
@@ -2548,7 +2552,7 @@ def export_best_options():
 def do_exp(lam, astr, rb, km):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
-	unique_key = 'exp_single'
+	unique_key = 'jul15'
 	start = restaurant.get_start()
 	all_goals = restaurant.get_goals_all()
 
