@@ -1175,7 +1175,7 @@ def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	angle_str = exp_settings['angle_strength']
 	res = exp_settings['resolution']
 
-	fn_pickle = FILENAME_PATH_ASSESS + "pickle/export-" + sampling_type + "-g" + str(goal_index)
+	fn_pickle = FILENAME_PATH_ASSESS + "pickles/export-" + sampling_type + "-g" + str(goal_index)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 	print("{" + fn_pickle + "}")
 	return fn_pickle
@@ -1493,9 +1493,9 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 					path_option_2 = construct_single_path_with_angles_spline(exp_settings, r.get_start(), target, point_set, fn_export_from_exp_settings(exp_settings), is_weak=True)
 					path_option_2 = chunkify.chunkify_path(r, exp_settings, path_option_2)
 					all_paths.append(path_option_2)
-					print("Success")
+					# print("Success")
 				except Exception:
-					print("RIP")
+					# print("RIP")
 					all_paths.append([])
 		else:
 			all_paths = sample_pts
@@ -2549,27 +2549,11 @@ def export_best_options():
 	# print(best_paths)
 
 
-def do_exp(lam, astr, rb, km):
+def do_exp(exp_settings):
 	# Run the scenario that aligns with our use case
 	restaurant = experimental_scenario_single()
-	unique_key = 'jul15'
 	start = restaurant.get_start()
 	all_goals = restaurant.get_goals_all()
-
-	sample_pts = []
-	# sampling_type = SAMPLE_TYPE_CENTRAL
-	# sampling_type = SAMPLE_TYPE_DEMO
-	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
-	# sampling_type = SAMPLE_TYPE_FUSION
-	# sampling_type = SAMPLE_TYPE_SPARSE
-	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
-	# sampling_type = SAMPLE_TYPE_HARDCODED
-	# sampling_type = SAMPLE_TYPE_VISIBLE
-	# sampling_type = SAMPLE_TYPE_INZONE
-	# sampling_type = SAMPLE_TYPE_CURVE_TEST
-	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
-	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS_ONLY
-
 
 	OPTION_DOING_STATE_LATTICE = False
 	if OPTION_DOING_STATE_LATTICE:
@@ -2578,29 +2562,7 @@ def do_exp(lam, astr, rb, km):
 			# lane_state_sampling_test1(resto, goal, i)
 			make_path_libs(resto, goal)
 
-	exp_settings = {}
-	exp_settings['title'] 			= unique_key
-	exp_settings['sampling_type'] 	= sampling_type
-	exp_settings['resolution']		= 50 #15
-	exp_settings['f_vis_label']		= 'no-chunk'
-	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
-	exp_settings['lambda'] 			= lam #decimal.Decimal(1e-12) #lam #.000000000001
-	exp_settings['num_chunks']		= 50
-	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
-	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= astr #40
-	exp_settings['min_path_length'] = {}
-	exp_settings['is_denominator']	= False
-	exp_settings['f_vis']			= legib.f_exp_single_normalized
-	exp_settings['kill_1']			= km
-	exp_settings['angle_cutoff']	= 70
-	exp_settings['fov']	= 120
-	exp_settings['prob_og']			= False
-	exp_settings['right-bound']		= rb
-	exp_settings['waypoint_offset']	= 20
-	# exp_settings['prob_method']		= prob_goal_given_path
-	exp_settings['prob_method']		= legib.unnormalized_prob_goal_given_path #_use_heading
-
+	exp_settings = get_default_exp_settings()
 
 	pprint.pprint(exp_settings)
 	print("---!!!---")
@@ -2644,24 +2606,63 @@ def do_exp(lam, astr, rb, km):
 	file1.write(str(best_paths))
 	file1.close()
 
-	# print(best_paths)
-
-
-
-	# # Set of functions for exporting easy paths
-	# title = "pts_" + str(exp_settings['num_chunks']) + "_" + str(exp_settings['angle_strength']) + "_" + str(exp_settings['chunk_type']) + " = "
-	# path_a = best_paths[((1035, 307, 180), 'omniscient')]
-	# path_b = best_paths[((1035, 567, 0), 'omniscient')]
-
-	# path_a = str(path_a)
-	# path_b = str(path_b)
-
-	# print(title + path_a)
-	# print(title + path_b)
-	print("Number of bugs per calculation:")
-	print(bug_counter)
-
 	print("Done with experiment")
+
+def get_default_exp_settings(unique_key = ""):
+
+	exp_settings = {}
+	exp_settings['title'] 			= unique_key
+	exp_settings['resolution']		= 50 #15
+	exp_settings['f_vis_label']		= 'no-chunk'
+	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings['lambda'] 			= 0 #decimal.Decimal(1e-12) #lam #.000000000001
+	exp_settings['num_chunks']		= 50
+	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
+	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings['angle_strength']	= 500 #40
+	exp_settings['min_path_length'] = {}
+	exp_settings['is_denominator']	= False
+	exp_settings['f_vis']			= legib.f_exp_single_normalized
+	exp_settings['kill_1']			= True
+	exp_settings['angle_cutoff']	= 70
+	exp_settings['fov']	= 120
+	exp_settings['prob_og']			= False
+	exp_settings['right-bound']		= 40
+	exp_settings['waypoint_offset']	= 20
+	# exp_settings['prob_method']		= prob_goal_given_path
+	exp_settings['prob_method']		= legib.unnormalized_prob_goal_given_path #_use_heading
+
+	# sampling_type = SAMPLE_TYPE_CENTRAL
+	# sampling_type = SAMPLE_TYPE_DEMO
+	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	# sampling_type = SAMPLE_TYPE_FUSION
+	# sampling_type = SAMPLE_TYPE_SPARSE
+	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
+	# sampling_type = SAMPLE_TYPE_HARDCODED
+	# sampling_type = SAMPLE_TYPE_VISIBLE
+	# sampling_type = SAMPLE_TYPE_INZONE
+	# sampling_type = SAMPLE_TYPE_CURVE_TEST
+	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
+	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS_ONLY
+	exp_settings['sampling_type'] 	= sampling_type
+
+
+	return exp_settings
+
+def exp_diff_legibilities():
+	legib_options = legib.get_legibility_options()
+
+	for f in legib_options:
+		exp_settings 				= get_default_exp_settings()
+		exp_settings['prob_method']	= f
+
+		print("Testing label " + legib.lookup_legibility_label(f))
+		do_exp(exp_settings)
+		print("Done")
+		print()
+	
+	print("Done with experiment")
+
 
 def exp_determine_lam_eps():
 	lam_vals = []
@@ -2685,27 +2686,37 @@ def exp_determine_lam_eps():
 	print("WILDIN")
 	for astr in angle_strs:
 		for rb in rbs:
-			do_exp(lam, astr, rb, False)
-	# pass
+			exp_settings = get_default_exp_settings()
+			exp_settings['lambda'] = lam
+			exp_settings['angle_strength'] = astr
+			exp_settings['right-bound'] = rb
 
-def main():
-	# export_best_options()
-	# exit()
-
-	# lam = 1e-6
+			do_exp(exp_settings)
+	
+def exp_observer_aware():
 	lam = 0
 	kill_mode = True
-	# eps_start = decimal.Decimal(.000000000001)
-	# lam_start = decimal.Decimal(.00000000001)
 	astr = 500
 	rb = 40
 
 	# print("Doing main")
 	# Get the best path for the given scenario
-	do_exp(lam, astr, rb, False)
-	# print("Done with main")
+	exp_settings = get_default_exp_settings('jul15')
+	exp_settings['lambda'] 			= lam
+	exp_settings['angle_strength'] 	= astr
+	exp_settings['right-bound'] 	= rb
+	exp_settings['kill_1']			= kill_mode
+
+	do_exp(exp_settings)
+
+
+
+def main():
 	# export_best_options()
-	# exp_determine_lam_eps()
+	# exit()
+
+	exp_diff_legibilities()
+
 
 if __name__ == "__main__":
 	main()
