@@ -785,60 +785,6 @@ def get_vis_graph_info(path, restaurant, exp_settings):
 	return vals_dict
 	# return vo, va, vb, vm
 
-# TODO ada update
-def inspect_legibility(options, restaurant, exp_settings, fn):
-	# options = options[0]
-
-	for pkey in options.keys():
-		print(pkey)
-		path = options[pkey][0]
-		# print('saving fig')
-
-
-		t = range(len(path))
-		v = get_legib_graph_info(path, restaurant, exp_settings)
-		# vo, va, vb, vm = v
-
-		fig = plt.figure()
-		ax1 = fig.add_subplot(111)
-
-		for key in v.keys():
-			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
-
-		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
-		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
-		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
-
-		ax1.set_title('visibility of ' + pkey)
-		plt.legend(loc='upper left');
-		
-		plt.savefig(fn + "-" + str(ti) + "-" + pkey + '-vis' + '.png')
-		plt.clf()
-			
-def get_legib_graph_info(path, restaurant, exp_settings):
-	vals_dict = {}
-
-	obs_sets = restaurant.get_obs_sets()
-
-	for aud_i in obs_sets.keys():
-		vals = []
-		for t in range(1, len(path)):
-
-			# goal, goals, path, df_obs
-			# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
-			new_val = prob_goal_given_path(r, path[t - 1], path[t], goal, goals, cost_path_to_here, exp_settings)
-			# new_val = f_legibi(t, path[t], obs_sets[aud_i], path)
-			# print(new_val)
-			# exit()
-
-			vals.append(new_val)
-
-		vals_dict[aud_i] = vals
-
-	return vals_dict
-	# return vo, va, vb, vm
-
-
 
 def inspect_details(detail_dict, fn):
 	if FLAG_PROB_HEADING:
@@ -2656,7 +2602,7 @@ def do_exp(exp_settings):
 	best_paths = analyze_all_paths(restaurant, paths_for_analysis, exp_settings)
 		# print(best_paths.keys())
 
-	inspect_legibility(best_paths, restaurant, exp_settings, fn_export_from_exp_settings(exp_settings))
+	legib.inspect_legibility_of_paths(best_paths, restaurant, exp_settings, fn_export_from_exp_settings(exp_settings))
 
 	file1 = open(fn_export_from_exp_settings(exp_settings) + "_BEST_PATHS.txt","w+")
 	file1.write(str(best_paths))

@@ -174,7 +174,7 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
 def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	unnorm_prob_function = exp_settings['prob_method']
+	unnorm_prob_function = exp_settings['f_method']
 
 	start = r.get_start()
 	g_array = []
@@ -260,7 +260,6 @@ def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_her
 	return ratio
 
 def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here):
-
 	g_probs = prob_goals_given_heading(pn, pt, goals)
 	g_index = goals.index(goal)
 
@@ -376,6 +375,7 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 # Given a 
 def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	FLAG_is_denominator = exp_settings['is_denominator']
+	
 	if f_function is None and FLAG_is_denominator:
 		f_function = f_exp_single
 	elif f_function is None:
@@ -550,6 +550,60 @@ def angle_between_lines(l1, l2):
 def angle_of_turn(l1, l2):
 	return (angle_between_lines(l1, l2))
 
+# TODO ada update
+def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
+	# options = options[0]
+
+	for pkey in options.keys():
+		print(pkey)
+		path = options[pkey][0]
+		# print('saving fig')
+
+
+		t = range(len(path))
+		v = get_legib_graph_info(path, restaurant, exp_settings)
+		# vo, va, vb, vm = v
+
+		fig = plt.figure()
+		ax1 = fig.add_subplot(111)
+
+		for key in v.keys():
+			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
+
+		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
+		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
+		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
+
+		ax1.set_title('visibility of ' + pkey)
+		plt.legend(loc='upper left');
+		
+		plt.savefig(fn + "-" + str(ti) + "-" + pkey + '-vis' + '.png')
+		plt.clf()
+			
+def get_legib_graph_info(path, restaurant, exp_settings):
+	vals_dict = {}
+
+	obs_sets = restaurant.get_obs_sets()
+
+	for aud_i in obs_sets.keys():
+		vals = []
+		for t in range(1, len(path)):
+
+			# goal, goals, path, df_obs
+			# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
+			new_val = prob_goal_given_path(restaurant, path[t - 1], path[t], goal, goals, cost_path_to_here, exp_settings)
+			# new_val = f_legibi(t, path[t], obs_sets[aud_i], path)
+			# print(new_val)
+			# exit()
+
+			vals.append(new_val)
+
+		vals_dict[aud_i] = vals
+
+	return vals_dict
+	# return vo, va, vb, vm
+
+
 
 def get_legibility_options():
 	options = [unnormalized_prob_goal_given_path, unnormalized_prob_goal_given_path_use_heading]
@@ -563,6 +617,5 @@ def lookup_legibility_label(f):
 		return "JHEADING"
 
 	return "LABELERR"
-
 
 
