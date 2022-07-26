@@ -11,6 +11,10 @@ import utility_path_segmentation 	as chunkify
 # FUNCTIONS FOR CALCULATING FEATURES OF PATHS
 # SUCH AS VISIBLIITY, LEGIBILITY, PATH_LENGTH, and ENVELOPE
 
+F_JHEADING 	= 'JHEADING'
+F_JDIST 	= 'JDIST'
+
+
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
 	# return a
@@ -174,7 +178,7 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
 def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	unnorm_prob_function = exp_settings['f_method']
+	unnorm_prob_function = lookup_legibility_unnormalized_function(exp_settings)
 
 	start = r.get_start()
 	g_array = []
@@ -568,6 +572,8 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 		ax1 = fig.add_subplot(111)
 
 		for key in v.keys():
+			print("key combo is")
+			print(key)
 			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
 
 		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
@@ -586,19 +592,21 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 	obs_sets = restaurant.get_obs_sets()
 
 	for aud_i in obs_sets.keys():
-		vals = []
-		for t in range(1, len(path)):
+		for goal in restaurant.get_goals_all():
+			vals = []
+			for t in range(1, len(path)):
+				# with reference to which goal?
 
-			# goal, goals, path, df_obs
-			# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
-			new_val = prob_goal_given_path(restaurant, path[t - 1], path[t], goal, goals, cost_path_to_here, exp_settings)
-			# new_val = f_legibi(t, path[t], obs_sets[aud_i], path)
-			# print(new_val)
-			# exit()
+				# goal, goals, path, df_obs
+				# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
+				new_val = prob_goal_given_path(restaurant, path[t - 1], path[t], goal, restaurant.get_goals_all(), cost_path_to_here, exp_settings)
+				# new_val = f_legibi(t, path[t], obs_sets[aud_i], path)
+				# print(new_val)
+				# exit()
 
-			vals.append(new_val)
+				vals.append(new_val)
 
-		vals_dict[aud_i] = vals
+			vals_dict[aud_i, goal] = vals
 
 	return vals_dict
 	# return vo, va, vb, vm
@@ -606,16 +614,26 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 
 
 def get_legibility_options():
-	options = [unnormalized_prob_goal_given_path, unnormalized_prob_goal_given_path_use_heading]
+	options = [F_JDIST, F_JHEADING]
 
 	return options
 
 def lookup_legibility_label(f):
 	if f == unnormalized_prob_goal_given_path:
-		return "JPATH"
+		return F_JDIST
 	elif f == unnormalized_prob_goal_given_path_use_heading:
-		return "JHEADING"
+		return F_JHEADING
 
+	return "LABELERR"
+
+def lookup_legibility_unnormalized_function(exp_settings):
+	l = exp_settings['l_method']
+	if l == F_JDIST:
+		return unnormalized_prob_goal_given_path
+	elif l == F_JHEADING:
+		return unnormalized_prob_goal_given_path_use_heading
+
+	print("ERR, label not found")
 	return "LABELERR"
 
 

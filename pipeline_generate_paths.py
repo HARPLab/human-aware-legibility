@@ -1141,7 +1141,7 @@ def fn_export_from_exp_settings(exp_settings):
 	prob_og 			= exp_settings['prob_og']
 	right_bound 		= exp_settings['right-bound']
 
-	f_legibility		= exp_settings['f_method']
+	f_legibility		= exp_settings['l_method']
 	f_label 			= legib.lookup_legibility_label(f_legibility)
 
 
@@ -2630,8 +2630,8 @@ def get_default_exp_settings(unique_key = ""):
 	exp_settings['prob_og']			= False
 	exp_settings['right-bound']		= 40
 	exp_settings['waypoint_offset']	= 20
-	# exp_settings['f_method']		= prob_goal_given_path
-	exp_settings['f_method']		= legib.unnormalized_prob_goal_given_path #_use_heading
+	# exp_settings['l_method']		= prob_goal_given_path
+	exp_settings['l_method']		= legib.get_legibility_options()[0] #_use_heading
 
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
@@ -2653,11 +2653,11 @@ def get_default_exp_settings(unique_key = ""):
 def exp_diff_legibilities():
 	legib_options = legib.get_legibility_options()
 
-	for f in legib_options:
+	for l in legib_options:
 		exp_settings 				= get_default_exp_settings()
-		exp_settings['f_method']	= f
+		exp_settings['l_method']	= l
 
-		print("Testing label " + legib.lookup_legibility_label(f))
+		print("Testing label " + legib.lookup_legibility_label(l))
 		do_exp(exp_settings)
 		print("Done")
 		print()
