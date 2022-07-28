@@ -741,7 +741,7 @@ def inspect_visibility(options, restaurant, ti, fn):
 		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
 		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
 
-		ax1.set_title('visibility of ' + pkey)
+		ax1.set_title('visibility of ' + str(pkey))
 		plt.legend(loc='upper left');
 		
 		plt.savefig(fn + "-" + str(ti) + "-" + pkey + '-vis' + '.png')
@@ -1142,9 +1142,7 @@ def fn_export_from_exp_settings(exp_settings):
 	right_bound 		= exp_settings['right-bound']
 
 	f_legibility		= exp_settings['l_method']
-	f_label 			= legib.lookup_legibility_label(f_legibility)
-
-
+	
 	is_denom = 0
 	if FLAG_is_denominator:
 		is_denom = 1
@@ -1154,7 +1152,7 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = str(title) + "-" + f_label + "_"
+	unique_title = str(title) + "" + f_legibility + "_"
 	unique_title += str(sampling_type) + "-rez" + str(rez) + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov) +  "-la" + lam
 	unique_title += "-rb" + str(right_bound)
@@ -2657,7 +2655,7 @@ def exp_diff_legibilities():
 		exp_settings 				= get_default_exp_settings()
 		exp_settings['l_method']	= l
 
-		print("Testing label " + legib.lookup_legibility_label(l))
+		print("Testing label " + l)
 		do_exp(exp_settings)
 		print("Done")
 		print()
