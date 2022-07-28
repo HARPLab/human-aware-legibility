@@ -3,6 +3,7 @@ import decimal
 import numpy as np
 import math
 import pandas as pd
+import matplotlib.pylab as plt
 
 import utility_environ_descrip 		as resto
 import utility_path_segmentation 	as chunkify
@@ -314,6 +315,8 @@ def get_costs_along_path(path):
 	ci = 0
 	csf = 0
 	for pi in range(len(path)):
+		# print(pi, ci)
+		# print(path[ci], path[pi])
 		
 		cst = f_cost(path[ci], path[pi])
 		csf = csf + cst
@@ -560,7 +563,7 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 
 	for pkey in options.keys():
 		print(pkey)
-		path = options[pkey][0]
+		path = options[pkey]
 		# print('saving fig')
 
 
@@ -574,16 +577,22 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 		for key in v.keys():
 			print("key combo is")
 			print(key)
+			# print(len(t))
+			print(len(v[key]))
+			t = range(len(v[key]))
+
 			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
 
 		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
 		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
 		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
 
-		ax1.set_title('visibility of ' + pkey)
+		pkey_label = str(pkey)
+		pkey_label.replace(" ", "")
+		ax1.set_title('visibility of ' + str(pkey_label))
 		plt.legend(loc='upper left');
 		
-		plt.savefig(fn + "-" + str(ti) + "-" + pkey + '-vis' + '.png')
+		plt.savefig(fn + "-" + pkey_label + '-vis' + '.png')
 		plt.clf()
 			
 def get_legib_graph_info(path, restaurant, exp_settings):
@@ -591,12 +600,15 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 
 	obs_sets = restaurant.get_obs_sets()
 
+	print(path)
+	costs_along = get_costs_along_path(path)
+
 	for aud_i in obs_sets.keys():
 		for goal in restaurant.get_goals_all():
 			vals = []
 			for t in range(1, len(path)):
 				# with reference to which goal?
-
+				cost_path_to_here = costs_along[t]
 				# goal, goals, path, df_obs
 				# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
 				new_val = prob_goal_given_path(restaurant, path[t - 1], path[t], goal, restaurant.get_goals_all(), cost_path_to_here, exp_settings)
@@ -618,7 +630,8 @@ def get_legibility_options():
 
 	return options
 
-def lookup_legibility_label(f):
+def lookup_legibility_label_of(f):
+
 	if f == unnormalized_prob_goal_given_path:
 		return F_JDIST
 	elif f == unnormalized_prob_goal_given_path_use_heading:
