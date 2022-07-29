@@ -51,6 +51,30 @@ FLAG_PROB_HEADING = False
 FLAG_PROB_PATH = True
 FLAG_EXPORT_SPLINE_DEBUG = False
 
+# EXP SETTINGS VARIABLES
+SETTING_EXPORT_TITLE 			= 'title'
+SETTING_RESOLUTION				= 'resolution'
+SETTING_SAMPLING_TYPE			= 'sampling_type'
+
+SETTING_F_VIS_LABEL				= 'f_vis_label'
+SETTING_EPSILON 				= 'epsilon'
+SETTING_LAMBDA 					= 'lambda' 
+
+SETTING_NUM_CHUNKS				= 'num_chunks'
+SETTING_CHUNK_BY_WHAT			= 'chunk-by-what'
+SETTING_CHUNK_METHOD			= 'chunk_type'	# method for chunking paths for navigation, ie CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+
+SETTING_ANGLE_STRENGTH			= 'angle_strength' # How strongly the final approach is enforced
+SETTING_MIN_PATH_LENGTH 		= 'min_path_length'
+SETTING_IS_DENOMINATOR			= 'is_denominator'
+SETTING_F_VISIBILITY_FUNCTION	= 'f_vis'
+SETTING_ANGLE_CUTOFF			= 'angle_cutoff'
+SETTING_FOV						= 'fov' # field of view of observers
+SETTING_PROB_OG					= 'prob_og'
+SETTING_RIGHT_BOUND				= 'right-bound'
+SETTING_WAYPOINT_OFFSET			= 'waypoint_offset'
+SETTING_LEGIBILITY_METHOD		= 'l_method'
+
 # PATH_COLORS = [(138,43,226), (0,255,255), (255,64,64), (0,201,87)]
 
 SAMPLE_TYPE_CENTRAL 			= 'central-new'
@@ -139,7 +163,7 @@ def get_min_direct_path(r, p0, p1, exp_settings):
 
 def get_legibilities(resto, path, target, goals, obs_sets, f_vis, exp_settings):
 	vals = {}
-	f_vis = exp_settings['f_vis']
+	f_vis = exp_settings[SETTING_F_VISIBILITY_FUNCTION]
 
 	# print("manually: naked")
 	naked_prob = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
@@ -389,7 +413,7 @@ def is_valid_path(r, path, exp_settings):
 			return False
 
 	BOUND_CHECK_RIGHT = True
-	right_buffer = exp_settings['right-bound']
+	right_buffer = exp_settings[SETTING_RIGHT_BOUND]
 	# Checks for remaining in bounds
 	
 	for i in range(len(path) - 1):
@@ -443,7 +467,7 @@ def path_formatted(xs, ys):
 
 def get_pre_goal_pt(goal, exp_settings):
 	x, y, theta = goal
-	k = exp_settings['angle_strength']
+	k = exp_settings[SETTING_ANGLE_STRENGTH]
 	# print(k)
 
 	if theta == resto.DIR_NORTH:
@@ -492,7 +516,7 @@ def construct_single_path_with_angles_bspline(exp_settings, start, goal, sample_
 	end_angle 	= xy_n[2] + 90
 
 	# Strength of how much we're enforcing the exit angle
-	k = exp_settings['angle_strength']
+	k = exp_settings[SETTING_ANGLE_STRENGTH]
 
 	x = np.array(x)
 	y = np.array(y)
@@ -510,7 +534,7 @@ def get_pre_goal_pt_xy(pt, exp_settings):
 	new_x = pt[0]
 	new_y = pt[1]
 
-	offset = exp_settings['waypoint_offset']
+	offset = exp_settings[SETTING_WAYPOINT_OFFSET]
 	if pt[2] == resto.DIR_NORTH:
 		new_y -= offset
 	elif pt[2] == resto.DIR_SOUTH:
@@ -555,7 +579,7 @@ def construct_single_path_with_angles_spline(exp_settings, start, goal, sample_p
 	end_angle 	= xy_n[2] + 90
 
 	# Strength of how much we're enforcing the exit angle
-	k = exp_settings['angle_strength']
+	k = exp_settings[SETTING_ANGLE_STRENGTH]
 	
 	if is_weak:
 		t1 = np.array(as_tangent(start_angle)) * k * .001
@@ -954,7 +978,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 	sample_sets = []
 	SAMPLE_BUFFER = 150
 
-	sampling_type = exp_settings['sampling_type']
+	sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 	print(sampling_type)
 
 	if sampling_type == SAMPLE_TYPE_SYSTEMATIC or sampling_type == SAMPLE_TYPE_FUSION:
@@ -1045,7 +1069,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 			sample_sets.append(min_path)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL or sampling_type == SAMPLE_TYPE_FUSION:
-		resolution = exp_settings['resolution']
+		resolution = exp_settings[SETTING_RESOLUTION]
 		low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(r)
 		
 		SAMPLE_BUFFER = 150
@@ -1066,7 +1090,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 				sample_sets.append(point_set)
 
 	if sampling_type == SAMPLE_TYPE_CENTRAL_SPARSE:
-		resolution_sparse = exp_settings['resolution'] * 3
+		resolution_sparse = exp_settings[SETTING_RESOLUTION] * 3
 		print("Central sparse sampling")
 
 		low_x, hi_x, low_y, hi_y = get_hi_low_of_pts(r)
@@ -1127,21 +1151,22 @@ def eps_to_str(eps):
 
 def fn_export_from_exp_settings(exp_settings):
 	fn = ""
-	title 				= exp_settings['title']
-	sampling_type 		= exp_settings['sampling_type']
-	eps 				= exp_settings['epsilon']
-	lam 				= exp_settings['lambda']
-	n_chunks 			= exp_settings['num_chunks']
-	chunking_type 		= exp_settings['chunk_type']
-	astr 				= exp_settings['angle_strength']
-	FLAG_is_denominator = exp_settings['is_denominator']
-	rez 				= exp_settings['resolution']
-	f_label 			= exp_settings['f_vis_label']
-	fov 				= exp_settings['fov']
-	prob_og 			= exp_settings['prob_og']
-	right_bound 		= exp_settings['right-bound']
+	title 				= exp_settings[SETTING_EXPORT_TITLE]
+	sampling_type 		= exp_settings[SETTING_SAMPLING_TYPE]
+	eps 				= exp_settings[SETTING_EPSILON]
+	lam 				= exp_settings[SETTING_LAMBDA]
 
-	f_legibility		= exp_settings['l_method']
+	n_chunks 			= exp_settings[SETTING_NUM_CHUNKS]
+	chunking_type 		= exp_settings[SETTING_CHUNK_METHOD]
+	astr 				= exp_settings[SETTING_ANGLE_STRENGTH]
+	FLAG_is_denominator = exp_settings[SETTING_IS_DENOMINATOR]
+	rez 				= exp_settings[SETTING_RESOLUTION]
+	f_label 			= exp_settings[SETTING_F_VIS_LABEL]
+	fov 				= exp_settings[SETTING_FOV]
+	prob_og 			= exp_settings[SETTING_PROB_OG]
+	right_bound 		= exp_settings[SETTING_RIGHT_BOUND]
+
+	f_legibility		= exp_settings[SETTING_LEGIBILITY_METHOD]
 	
 	is_denom = 0
 	if FLAG_is_denominator:
@@ -1168,10 +1193,10 @@ def fn_export_from_exp_settings(exp_settings):
 
 
 def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
-	sampling_type = exp_settings['sampling_type']
-	n_chunks = exp_settings['num_chunks']
-	angle_str = exp_settings['angle_strength']
-	res = exp_settings['resolution']
+	sampling_type 	= exp_settings[SETTING_SAMPLING_TYPE]
+	n_chunks 		= exp_settings[SETTING_NUM_CHUNKS]
+	angle_str 		= exp_settings[SETTING_ANGLE_STRENGTH]
+	res 			= exp_settings[SETTING_RESOLUTION]
 
 	fn_pickle = FILENAME_PATH_ASSESS + "pickles/export-" + sampling_type + "-g" + str(goal_index)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
@@ -1180,13 +1205,13 @@ def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 
 
 def fn_pathpickle_envir_cache(exp_settings):
-	sampling_type = exp_settings['sampling_type']
-	n_chunks = exp_settings['num_chunks']
-	angle_str = exp_settings['angle_strength']
-	res = exp_settings['resolution']
-	f_vis_label 	= exp_settings['f_vis_label']
-	FLAG_is_denominator = exp_settings['is_denominator']
-	is_denom = 0
+	sampling_type 			= exp_settings[SETTING_SAMPLING_TYPE]
+	n_chunks 				= exp_settings[SETTING_NUM_CHUNKS]
+	angle_str 				= exp_settings[SETTING_ANGLE_STRENGTH]
+	res 					= exp_settings[SETTING_RESOLUTION]
+	f_vis_label 			= exp_settings[SETTING_F_VIS_LABEL]
+	FLAG_is_denominator 	= exp_settings[SETTING_IS_DENOMINATOR]
+	is_denom 				= 0
 	if FLAG_is_denominator:
 		is_denom = 1
 	is_denom = str(is_denom)
@@ -1282,8 +1307,8 @@ def export_envir_cache_pic(r, data, label, g_index, obs_label, exp_settings):
 	plt.clf()
 
 def get_envir_cache(r, exp_settings):
-	f_vis 		= exp_settings['f_vis']
-	f_vis_label	= exp_settings['f_vis_label']
+	f_vis 		= exp_settings[SETTING_F_VISIBILITY_FUNCTION]
+	f_vis_label	= exp_settings[SETTING_F_VIS_LABEL]
 	
 	fn_pickle = fn_pathpickle_envir_cache(exp_settings)
 
@@ -1419,20 +1444,20 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 	return all_vis_dict
 
 def title_from_exp_settings(exp_settings):
-	title = exp_settings['title']
-	sampling_type = exp_settings['sampling_type']
-	eps = exp_settings['epsilon']
-	lam = exp_settings['lambda']
-	n_chunks 		= exp_settings['num_chunks']
-	chunking_type 	= exp_settings['chunk_type']
-	angle_strength = exp_settings['angle_strength']
+	title 				= exp_settings[SETTING_EXPORT_TITLE]
+	sampling_type 		= exp_settings[SETTING_SAMPLING_TYPE]
+	eps 				= exp_settings[SETTING_EPSILON]
+	lam 				= exp_settings[SETTING_LAMBDA]
+	n_chunks 			= exp_settings[SETTING_NUM_CHUNKS]
+	chunking_type 		= exp_settings[SETTING_CHUNK_METHOD]
+	angle_strength 		= exp_settings[SETTING_ANGLE_STRENGTH]
 
-	FLAG_is_denominator = exp_settings['is_denominator']
-	rez 				= exp_settings['resolution']
-	f_label 			= exp_settings['f_vis_label']
-	fov 				= exp_settings['fov']
-	prob_og 			= exp_settings['prob_og']
-	right_bound 		= exp_settings['right-bound']
+	FLAG_is_denominator = exp_settings[SETTING_IS_DENOMINATOR]
+	rez 				= exp_settings[SETTING_RESOLUTION]
+	f_label 			= exp_settings[SETTING_F_VIS_LABEL]
+	fov 				= exp_settings[SETTING_FOV]
+	prob_og 			= exp_settings[SETTING_PROB_OG]
+	right_bound 		= exp_settings[SETTING_RIGHT_BOUND]
 
 	eps = eps_to_str(eps)
 	lam = lam_to_str(lam)
@@ -1446,7 +1471,7 @@ def title_from_exp_settings(exp_settings):
 
 # Convert sample points into actual useful paths
 def get_paths_from_sample_set(r, exp_settings, goal_index):
-	sampling_type = exp_settings['sampling_type']
+	sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 
 	sample_pts = get_sample_points_sets(r, r.get_start(), r.get_goals_all()[goal_index], exp_settings)
 	print("\tSampled " + str(len(sample_pts)) + " points using the sampling type {" + sampling_type + "}")
@@ -1515,8 +1540,8 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	all_paths = []
 	target = goal
 
-	label = exp_settings['title']
-	sampling_type = exp_settings['sampling_type']
+	label = exp_settings[SETTING_EXPORT_TITLE]
+	sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 
 	fn = FILENAME_PATH_ASSESS + label + "_best_path" + ".png"
 	goal_index = r.get_goal_index(goal)
@@ -1794,9 +1819,9 @@ def export_path_options_for_each_goal(restaurant, best_paths, exp_settings):
 				# cv2.circle(goal_img, a, 5, color, -1)
 				# cv2.circle(all_img, a, 5, color, -1)
 		
-		title = exp_settings['title']
+		title = exp_settings[SETTING_EXPORT_TITLE]
 
-		sampling_type = exp_settings['sampling_type']
+		sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 		cv2.imwrite(fn_export_from_exp_settings(exp_settings) + '_solo_path-g=' + str(goal_index)+ "-aud=" + str(audience) + '.png', solo_img) 
 		print("exported image of " + str(pkey) + " for goal " + str(goal_index))
 
@@ -1940,9 +1965,9 @@ def export_path_moments_confusion_for_each_goal(restaurant, best_paths, stamps, 
 					# cv2.circle(goal_img, a, 4, color, 4)
 					# cv2.circle(all_img, a, 4, color, 4)
 			
-			title = exp_settings['title']
+			title = exp_settings[SETTING_EXPORT_TITLE]
 
-			sampling_type = exp_settings['sampling_type']
+			sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 			# fn = fn_export_from_exp_settings(exp_settings)
 			fn = "path_assessment/spring2022_v2/" + 'mocon_solo_path-g=' + str(t_goal)+ "-xi=" + str(t_path) + "-obs-" + t_obs + '.png'
 			cv2.imwrite(fn, solo_img) 
@@ -1997,8 +2022,8 @@ def rgb_to_hex(red, green, blue):
 	return '#%02x%02x%02x' % (red, green, blue)
 
 def export_legibility_df(r, df, exp_settings):
-	title = exp_settings['title']
-	sampling_type = exp_settings['sampling_type']
+	title = exp_settings[SETTING_EXPORT_TITLE]
+	sampling_type = exp_settings[SETTING_SAMPLING_TYPE]
 
 	df.to_csv(fn_export_from_exp_settings(exp_settings) + "_legibilities.csv")
 
@@ -2355,7 +2380,7 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 
 		for pi in range(len(paths)):
 			path = paths[pi]
-			f_vis = exp_settings['f_vis']
+			f_vis = exp_settings[SETTING_F_VISIBILITY_FUNCTION]
 			datum = get_legibilities(r, path, goal, goals, obs_sets, f_vis, exp_settings)
 			datum['path'] = path
 			datum['goal'] = goal
@@ -2382,27 +2407,27 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 def export_best_options():
 	r = experimental_scenario_single()
 	exp_settings = defaultdict(float)
-	exp_settings['prob_og'] = False
-	exp_settings['sampling_type'] = 'custom'
+	exp_settings[SETTING_PROB_OG] = False
+	exp_settings[SETTING_SAMPLING_TYPE] = 'custom'
 	rb = 40
 	km = False
-	exp_settings['title'] 			= 'fall2021'
-	exp_settings['resolution']		= 15
-	exp_settings['f_vis_label']		= 'fall2021'
-	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
-	exp_settings['lambda'] 			= 0 #lam #decimal.Decimal(1e-12) #lam #.000000000001
-	exp_settings['num_chunks']		= 50
-	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
-	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 500 # is what was used  astr #40
-	exp_settings['min_path_length'] = {}
-	exp_settings['is_denominator']	= False
-	exp_settings['f_vis']			= legib.f_exp_single_normalized
-	exp_settings['angle_cutoff']	= 70
-	exp_settings['fov']				= 120
-	exp_settings['prob_og']			= False
-	exp_settings['right-bound']		= rb
-	exp_settings['waypoint_offset']	= 20
+	exp_settings[SETTING_EXPORT_TITLE] 			= 'fall2021'
+	exp_settings[SETTING_RESOLUTION]			= 15
+	exp_settings[SETTING_F_VIS_LABEL]			= 'fall2021'
+	exp_settings[SETTING_EPSILON]	 			= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings[SETTING_LAMBDA] 				= 0 #lam #decimal.Decimal(1e-12) #lam #.000000000001
+	exp_settings[SETTING_NUM_CHUNKS]			= 50
+	exp_settings[SETTING_CHUNK_BY_WHAT]			= chunkify.CHUNK_BY_DURATION
+	exp_settings[SETTING_CHUNK_METHOD]			= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings[SETTING_ANGLE_STRENGTH]		= 500 # is what was used  astr #40
+	exp_settings[SETTING_MIN_PATH_LENGTH] 		= {}
+	exp_settings[SETTING_IS_DENOMINATOR]		= False
+	exp_settings[SETTING_F_VISIBILITY_FUNCTION]	= legib.f_exp_single_normalized
+	exp_settings[SETTING_ANGLE_CUTOFF]			= 70
+	exp_settings[SETTING_FOV]					= 120
+	exp_settings[SETTING_PROB_OG]				= False
+	exp_settings[SETTING_RIGHT_BOUND]			= rb
+	exp_settings[SETTING_WAYPOINT_OFFSET]		= 20
 
 
 	img = r.get_img()
@@ -2580,7 +2605,7 @@ def do_exp(exp_settings):
 	for g in restaurant.get_goals_all():
 		print("Finding min path for goal " + str(g))
 		min_path_length = get_min_viable_path_length(restaurant, g, exp_settings)
-		exp_settings['min_path_length'][g] = min_path_length
+		exp_settings[SETTING_MIN_PATH_LENGTH][g] = min_path_length
 		
 		min_path = get_min_viable_path(restaurant, g, exp_settings)
 		min_paths.append(min_path)
@@ -2611,25 +2636,25 @@ def do_exp(exp_settings):
 def get_default_exp_settings(unique_key = ""):
 
 	exp_settings = {}
-	exp_settings['title'] 			= unique_key
-	exp_settings['resolution']		= 150 #15
-	exp_settings['f_vis_label']		= 'no-chunk'
-	exp_settings['epsilon'] 		= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
-	exp_settings['lambda'] 			= 0 #decimal.Decimal(1e-12) #lam #.000000000001
-	exp_settings['num_chunks']		= 50
-	exp_settings['chunk-by-what']	= chunkify.CHUNK_BY_DURATION
-	exp_settings['chunk_type']		= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
-	exp_settings['angle_strength']	= 500 #40
-	exp_settings['min_path_length'] = {}
-	exp_settings['is_denominator']	= False
-	exp_settings['f_vis']			= legib.f_exp_single_normalized
-	exp_settings['angle_cutoff']	= 70
-	exp_settings['fov']	= 120
-	exp_settings['prob_og']			= False
-	exp_settings['right-bound']		= 40
-	exp_settings['waypoint_offset']	= 20
+	exp_settings[SETTING_EXPORT_TITLE] 				= unique_key
+	exp_settings[SETTING_RESOLUTION]				= 150 #15
+	exp_settings[SETTING_F_VIS_LABEL]				= 'no-chunk'
+	exp_settings[SETTING_EPSILON] 					= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
+	exp_settings[SETTING_LAMBDA] 					= 0 #decimal.Decimal(1e-12) #lam #.000000000001
+	exp_settings[SETTING_NUM_CHUNKS]				= 50
+	exp_settings[SETTING_CHUNK_BY_WHAT]				= chunkify.CHUNK_BY_DURATION
+	exp_settings[SETTING_CHUNK_METHOD]				= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
+	exp_settings[SETTING_ANGLE_STRENGTH]			= 500 #40
+	exp_settings[SETTING_MIN_PATH_LENGTH]			= {}
+	exp_settings[SETTING_IS_DENOMINATOR]			= False
+	exp_settings[SETTING_F_VISIBILITY_FUNCTION]		= legib.f_exp_single_normalized
+	exp_settings[SETTING_ANGLE_CUTOFF]				= 70
+	exp_settings[SETTING_FOV]						= 120
+	exp_settings[SETTING_PROB_OG]					= False
+	exp_settings[SETTING_RIGHT_BOUND]				= 40
+	exp_settings[SETTING_WAYPOINT_OFFSET]			= 20
 	# exp_settings['l_method']		= prob_goal_given_path
-	exp_settings['l_method']		= legib.get_legibility_options()[0] #_use_heading
+	exp_settings[SETTING_LEGIBILITY_METHOD]			= legib.get_legibility_options()[0] #_use_heading
 
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
@@ -2643,7 +2668,7 @@ def get_default_exp_settings(unique_key = ""):
 	# sampling_type = SAMPLE_TYPE_CURVE_TEST
 	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS
 	# sampling_type = SAMPLE_TYPE_NEXUS_POINTS_ONLY
-	exp_settings['sampling_type'] 	= sampling_type
+	exp_settings[SETTING_SAMPLING_TYPE] 	= sampling_type
 
 
 	return exp_settings
@@ -2653,7 +2678,7 @@ def exp_diff_legibilities():
 
 	for l in legib_options:
 		exp_settings 				= get_default_exp_settings()
-		exp_settings['l_method']	= l
+		exp_settings[SETTING_LEGIBILITY_METHOD]
 
 		print("Testing label " + l)
 		do_exp(exp_settings)
@@ -2686,9 +2711,9 @@ def exp_determine_lam_eps():
 	for astr in angle_strs:
 		for rb in rbs:
 			exp_settings = get_default_exp_settings()
-			exp_settings['lambda'] = lam
-			exp_settings['angle_strength'] = astr
-			exp_settings['right-bound'] = rb
+			exp_settings[SETTING_LAMBDA] = lam
+			exp_settings[SETTING_ANGLE_STRENGTH] = astr
+			exp_settings[SETTING_RIGHT_BOUND] = rb
 
 			do_exp(exp_settings)
 	
@@ -2700,10 +2725,10 @@ def exp_observer_aware():
 
 	# print("Doing main")
 	# Get the best path for the given scenario
-	exp_settings = get_default_exp_settings('jul15')
-	exp_settings['lambda'] 			= lam
-	exp_settings['angle_strength'] 	= astr
-	exp_settings['right-bound'] 	= rb
+	exp_settings 							= get_default_exp_settings('jul15')
+	exp_settings[SETTING_LAMBDA] 			= lam
+	exp_settings[SETTING_ANGLE_STRENGTH] 	= astr
+	exp_settings[SETTING_RIGHT_BOUND] 		= rb
 
 	do_exp(exp_settings)
 
