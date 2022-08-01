@@ -12,8 +12,12 @@ import utility_path_segmentation 	as chunkify
 # FUNCTIONS FOR CALCULATING FEATURES OF PATHS
 # SUCH AS VISIBLIITY, LEGIBILITY, PATH_LENGTH, and ENVELOPE
 
-F_JHEADING 	= 'JHEADING'
-F_JDIST 	= 'JDIST'
+F_JDIST 				= 'JDIST'
+F_JHEADING_EXPONENTIAL 	= 'JHEAD_EXPON'
+F_JHEADING_QUADRATIC 	= 'JHEAD_QUADR'
+F_JHEADING 				= 'JHEAD'
+
+LEGIBILITY_METHOD		= 'l_method'
 
 
 def f_cost(t1, t2):
@@ -201,8 +205,12 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 # Ada: Heading-aware version of legibility
 def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
 
-	prob_val = prob_goal_given_heading(r.get_start(), p_n1, pt, goal, goals, cost_path_to_here)
-	return decimal.Decimal(prob_val)
+	prob_val = prob_goal_given_heading(r.get_start(), p_n1, pt, goal, goals, cost_path_to_here, exp_settings)
+
+	prob_val = decimal.Decimal(prob_val)
+	if prob_val.is_nan():
+		prob_val = decimal.Decimal(0.0)
+	return prob_val
 
 	# decimal.getcontext().prec = 60
 	# is_og = exp_settings['prob_og']
@@ -264,19 +272,30 @@ def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_her
 
 	return ratio
 
-def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here):
-	g_probs = prob_goals_given_heading(pn, pt, goals)
+def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here, exp_settings):
+	g_probs = prob_goals_given_heading(pn, pt, goals, exp_settings)
 	g_index = goals.index(goal)
 
 	return g_probs[g_index]
 
 
-def f_angle_prob(heading, goal_theta):
-	diff = (np.abs(np.abs(heading - goal_theta) - 180))
-	return diff * diff
+def f_angle_prob(heading, goal_theta, exp_settings):
+	diff = np.abs(1.0 / (heading - goal_theta))
+
+	if exp_settings[LEGIBILITY_METHOD] == F_JHEADING_QUADRATIC:
+		return diff * diff
+
+	if exp_settings[LEGIBILITY_METHOD] == F_JHEADING_EXPONENTIAL:
+		return np.exp(diff)
+
+	if exp_settings[LEGIBILITY_METHOD] in [F_JDIST]:
+		print("ERR, wrong legibility function consulting with angle probability function")
+		return 0
+
+	return diff
 
 
-def prob_goals_given_heading(p0, p1, goals):
+def prob_goals_given_heading(p0, p1, goals, exp_settings):
 	# works with
 	# diff = (np.abs(np.abs(heading - goal_theta) - 180))
 
@@ -289,8 +308,6 @@ def prob_goals_given_heading(p0, p1, goals):
 	# return an array of the normalized prob of each goal from this current heading
 	# for each goal, find the probability this angle is pointing to it
 
-
-
 	probs = []
 	for goal in goals:
 		# 180 		= 0
@@ -298,8 +315,8 @@ def prob_goals_given_heading(p0, p1, goals):
 		# divide by other options, 
 		# so if 2 in same dir, 50/50 odds
 
-		goal_theta = resto.angle_between(p0, goal[:2])
-		prob = f_angle_prob(heading, goal_theta)
+		goal_theta = resto.angle_between(p1, goal[:2])
+		prob = f_angle_prob(heading, goal_theta, exp_settings)
 		probs.append(prob)
 
 
@@ -428,6 +445,8 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 		prob_goal_given = prob_goal_given_path(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
 		f_log.append(float(f))
 		p_log.append(prob_goal_given)
+
+		print(prob_goal_given)
 
 		if prob_goal_given > 1 or prob_goal_given < 0:
 			print(prob_goal_given)
@@ -626,12 +645,11 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 
 
 def get_legibility_options():
-	options = [F_JDIST, F_JHEADING]
+	options = [F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
 
 	return options
 
 def lookup_legibility_label_of(f):
-
 	if f == unnormalized_prob_goal_given_path:
 		return F_JDIST
 	elif f == unnormalized_prob_goal_given_path_use_heading:
@@ -640,10 +658,11 @@ def lookup_legibility_label_of(f):
 	return "LABELERR"
 
 def lookup_legibility_unnormalized_function(exp_settings):
-	l = exp_settings['l_method']
-	if l == F_JDIST:
+	l = exp_settings[LEGIBILITY_METHOD] # l_method defined in pipeline_generate_path
+
+	if l in [F_JDIST]:
 		return unnormalized_prob_goal_given_path
-	elif l == F_JHEADING:
+	elif l in [F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL]:
 		return unnormalized_prob_goal_given_path_use_heading
 
 	print("ERR, label not found")
