@@ -280,20 +280,30 @@ def iLQR(x0,U,Xref,Uref, start, goal1, all_goals, nongoal_scale, atol=1e-5, max_
     X = make_array_copying(x0, N)
     # Control sequence to be tested
     U = Matrix(copy.deepcopy(U))
+
+
     K = make_array_copying(zeros(nu,nx), N-1)
-    P = make_array_copying(zeros(nx,nx), N)
-    iterator = -1
     
-    while iterator < max_iters:
+
+    P = make_array_copying(zeros(nx,nx), N)
+    
+    # We keep going
+    iterator = -1
+    is_complete = False
+
+    while iterator < max_iters and not is_complete:
         iterator += 1
         print("Doing backward pass")
         d, K, P, del_J = backward_pass(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale)
     
         print("Doing forward pass")
-        X, U, J, α = forward_pass(X,U,Xref,Uref,K,d,del_J, start, goal1, all_goals, nongoal_scale)
+        X, U, J, α = forward_pass(X, U, Xref, Uref, K, d, del_J, start, goal1, all_goals, nongoal_scale)
 
         if max(norm(d)) < atol:
-            break
+            is_complete = True
+        else:
+            print(norm(d))
+            print(max(norm(d)))
 
     return X,U,K,P,iterator
 
