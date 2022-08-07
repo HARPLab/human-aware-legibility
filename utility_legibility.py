@@ -112,7 +112,6 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 	reasonable_set_sizes = [0, 1, 5]
 	if len(aud) not in reasonable_set_sizes:
 		print(len(aud))
-		exit()
 
 	# section for alterating calculculation for a few 
 	# out of the whole set; mainly for different combination techniques
@@ -197,7 +196,7 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 
 	if(sum(g_array) == 0):
 		print("weird g_array")
-		return 0
+		return 1.0
 
 	return g_target / (sum(g_array))
 
@@ -209,7 +208,7 @@ def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost
 
 	prob_val = decimal.Decimal(prob_val)
 	if prob_val.is_nan():
-		prob_val = decimal.Decimal(0.0)
+		prob_val = decimal.Decimal(1.0)
 	return prob_val
 
 	# decimal.getcontext().prec = 60
@@ -579,6 +578,7 @@ def angle_of_turn(l1, l2):
 # TODO ada update
 def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 	# options = options[0]
+	print("Inspecting overall legibility")
 
 	for pkey in options.keys():
 		print(pkey)
@@ -592,7 +592,7 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 
 		fig = plt.figure()
 		ax1 = fig.add_subplot(111)
-
+		
 		for key in v.keys():
 			print("key combo is")
 			print(key)
@@ -600,7 +600,7 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 			print(len(v[key]))
 			t = range(len(v[key]))
 
-			ax1.scatter(t, v[key], s=10, c='r', marker="o", label=key)
+			ax1.scatter(t, v[key], s=10, marker="o", label=key)
 
 		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
 		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
@@ -608,10 +608,11 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 
 		pkey_label = str(pkey)
 		pkey_label.replace(" ", "")
-		ax1.set_title('visibility of ' + str(pkey_label))
-		plt.legend(loc='upper left');
+		ax1.set_title('legibility of ' + str(pkey_label))
+		# plt.get_legend().remove()
+		# plt.legend(loc='upper left');
 		
-		plt.savefig(fn + "-" + pkey_label + '-vis' + '.png')
+		plt.savefig(fn + "-" + pkey_label + '-legib' + '.png')
 		plt.clf()
 			
 def get_legib_graph_info(path, restaurant, exp_settings):
@@ -619,7 +620,6 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 
 	obs_sets = restaurant.get_obs_sets()
 
-	print(path)
 	costs_along = get_costs_along_path(path)
 
 	for aud_i in obs_sets.keys():
