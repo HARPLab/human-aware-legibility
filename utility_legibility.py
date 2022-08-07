@@ -19,6 +19,9 @@ F_JHEADING 				= 'JHEAD'
 
 LEGIBILITY_METHOD		= 'l_method'
 
+PROB_INDEX_DIST = 0
+PROB_INDEX_HEADING = 1
+
 
 def f_cost(t1, t2):
 	a = resto.dist(t1, t2)
@@ -179,26 +182,34 @@ def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 		score = 0
 	return score
 
+
+
+def prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, goals, cost_to_here, exp_settings):
+	COMPONENT_DIST 			= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_DIST])
+	COMPONENT_HEADING 		= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_HEADING])
+
+	return COMPONENT_DIST + COMPONENT_HEADING
+
+
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
-def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
-	unnorm_prob_function = lookup_legibility_unnormalized_function(exp_settings)
+def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnorm_prob_function):
+	entry = []
 
 	start = r.get_start()
 	g_array = []
 	g_target = 0
 	for g in goals:
-		p_raw = unnorm_prob_function(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings) 
-		#p_raw = unnormalized_prob_goal_given_path(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
+		p_raw = unnorm_prob_function(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
 		g_array.append(p_raw)
 		if g is goal:
 			g_target = p_raw
 
 	if(sum(g_array) == 0):
 		print("weird g_array")
-		return 1.0
+		return decimal.Decimal(1.0)
 
-	return g_target / (sum(g_array))
+	return decimal.Decimal(g_target / (sum(g_array)))
 
 
 # Ada: Heading-aware version of legibility
@@ -209,6 +220,7 @@ def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost
 	prob_val = decimal.Decimal(prob_val)
 	if prob_val.is_nan():
 		prob_val = decimal.Decimal(1.0)
+
 	return prob_val
 
 	# decimal.getcontext().prec = 60
@@ -271,6 +283,20 @@ def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_her
 
 	return ratio
 
+# Ada: Final equation
+# TODO Cache this result for a given path so far and set of goals
+def prob_array_goal_given_signals(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
+	val_0, val_1 = 0.0, 0.0
+
+	# only add the value to the array if it's going to be relevant
+	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_dist():
+		val_0 = prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path)
+	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_heading():
+		val_1 = prob_goal_given_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path_use_heading)
+
+	return [val_0, val_1]
+
+
 def prob_goal_given_heading(start, pn, pt, goal, goals, cost_path_to_here, exp_settings):
 	g_probs = prob_goals_given_heading(pn, pt, goals, exp_settings)
 	g_index = goals.index(goal)
@@ -322,7 +348,7 @@ def prob_goals_given_heading(p0, p1, goals, exp_settings):
 	divisor = sum(probs)
 	# divisor = 1.0
 
-	return np.true_divide(probs, divisor)
+	return decimal.Decimal(np.true_divide(probs, divisor))
 	# return ratio
 
 
@@ -406,8 +432,6 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 	if path is None or len(path) == 0:
 		return 0
-	# min_realistic_path_length = exp_settings['min_path_length'][goal]
-	# print("min_realistic_path_length -> " + str(min_realistic_path_length))
 	
 	legibility = decimal.Decimal(0)
 	divisor = decimal.Decimal(0)
@@ -428,8 +452,101 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	path_length_list, length_of_total_path = get_path_length(path)
 	length_of_total_path = decimal.Decimal(length_of_total_path)
 
-	# Previously this was a variable, 
-	# now it's constant due to our constant-speed chunking
+	delta_x = decimal.Decimal(1.0) #length_of_total_path / len(aug_path)
+
+	t = 1
+	p_n = path[0]
+	divisor = epsilon
+	numerator = decimal.Decimal(0.0)
+
+	f_log = []
+	p_log = []
+	for pt, cost_to_here in aug_path:
+		f = decimal.Decimal(f_function(t, pt, aud, path))
+
+		# Get this probability from all the available signals
+		probs_array_goal_given_signals = prob_array_goal_given_signals(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
+
+		# combine them according to the exp settings
+		prob_goal_signals_fused = prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, goals, cost_to_here, exp_settings)
+
+
+		# Then do the normal methods of combining them
+		f_log.append(float(f))
+		p_log.append(prob_goal_signals_fused)
+
+
+		if len(aud) == 0: # FLAG_is_denominator or 
+			numerator += (prob_goal_signals_fused * f) # * delta_x)
+			divisor += f #* delta_x
+		else:
+			numerator += (prob_goal_signals_fused * f) # * delta_x)
+			divisor += decimal.Decimal(1.0) #* delta_x
+
+		t = t + 1
+		total_cost += decimal.Decimal(f_cost(p_n, pt))
+		p_n = pt
+
+	if divisor == 0:
+		legibility = 0
+	else:
+		legibility = (numerator / divisor)
+
+	total_cost =  - LAMBDA*total_cost
+	overall = legibility + total_cost
+
+	# if len(aud) == 0:
+	# 	print(numerator)
+	# 	print(divisor)
+	# 	print(f_log)
+	# 	print(p_log)
+	# 	print(legibility)
+	# 	print(overall)
+	# 	print()
+
+	if legibility > 1.0 or legibility < 0:
+		# print("BAD L ==> " + str(legibility))
+		# r.get_obs_label(aud)
+		goal_index = r.get_goal_index(goal)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+	elif (legibility == 1):
+		goal_index = r.get_goal_index(goal)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+		# print(len(aud))
+		if exp_settings['kill_1'] == True:
+			overall = 0.0
+
+	return overall
+
+# Old version used for RO-MAN paper 2022
+def f_legibility_single_input(r, goal, goals, path, aud, f_function, exp_settings):
+
+	if path is None or len(path) == 0:
+		return 0
+	
+	legibility = decimal.Decimal(0)
+	divisor = decimal.Decimal(0)
+	total_dist = decimal.Decimal(0)
+
+	if 'lambda' in exp_settings and exp_settings['lambda'] != '':
+		LAMBDA = decimal.Decimal(exp_settings['lambda'])
+		epsilon = decimal.Decimal(exp_settings['epsilon'])
+	else:
+		# TODO verify this
+		LAMBDA = 1.0
+		epsilon = 1.0
+
+	start = path[0]
+	total_cost = decimal.Decimal(0)
+	aug_path = get_costs_along_path(path)
+
+	path_length_list, length_of_total_path = get_path_length(path)
+	length_of_total_path = decimal.Decimal(length_of_total_path)
+
 	delta_x = decimal.Decimal(1.0) #length_of_total_path / len(aug_path)
 
 	t = 1
@@ -445,13 +562,12 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 		f_log.append(float(f))
 		p_log.append(prob_goal_given)
 
-		print(prob_goal_given)
 
 		if prob_goal_given > 1 or prob_goal_given < 0:
 			print(prob_goal_given)
 			print("!!!")
 
-		if FLAG_is_denominator or len(aud) == 0:
+		if len(aud) == 0: # FLAG_is_denominator or 
 			numerator += (prob_goal_given * f) # * delta_x)
 			divisor += f #* delta_x
 		else:
@@ -643,9 +759,15 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 	# return vo, va, vb, vm
 
 
+def get_set_legibility_method_uses_heading():
+	return [F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL]
+
+def get_set_legibility_method_uses_dist():
+	return [F_JDIST]
+
 
 def get_legibility_options():
-	options = [F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
+	options = [F_JDIST, F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
 
 	return options
 
