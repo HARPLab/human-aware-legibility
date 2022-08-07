@@ -60,6 +60,7 @@ TYPE_UNITY_ALIGNED = 2
 TYPE_CUSTOM = 3
 TYPE_EXP_SINGLE = 4
 TYPE_EXP_THREE_GOALS = 5
+TYPE_EXP_THREE_GOALS_RANDOMIZED = 6
 
 # Color options for visualization
 COLOR_TABLE = (32, 85, 230) #(235, 64, 52) 		# dark blue
@@ -1609,11 +1610,168 @@ class Restaurant:
 				pass
 				# exit()
 
+		elif generate_type == TYPE_EXP_THREE_GOALS_RANDOMIZED:
+			# Unity scenario created specifically for parameters of Unity restaurant
+			# This experiment 
+
+			self.SCENARIO_IDENTIFIER = "_exp_3goals_"
+
+			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
+			ux1, uy1 = UNITY_CORNERS[0]
+			ux2, uy2 = UNITY_CORNERS[1]
+
+			IMG_CORNERS = [(0,0), (1000, 1375)]
+			ix1, iy1 = IMG_CORNERS[0]
+			ix2, iy2 = IMG_CORNERS[1]
+
+			UNITY_OFFSET_X = (ux1 - ix1)
+			UNITY_OFFSET_Y = (uy1 - iy1)
+			UNITY_SCALE_X = (ix2 - ix1) / (ux2 - ux1)
+			UNITY_SCALE_Y = (iy2 - iy1) / (uy2 - uy1)
+
+			self.length = ix2
+			self.width = iy2
+
+			UNITY_TO_IRL_SCALE = 3
+			
+			# images will be made at the scale of
+			
+			# x1 = 3.05
+			# x2 = -10.7
+			# y1 = 11.22
+			# y2 = 1.23
+
+			# length = abs(y1 - y2)
+			# width = abs(x1 - x2)
+
+			# start = (7.4, 2.37)
+			y_coord_start = 5.6
+			start = (5.6, 1.0, DIR_EAST)
+			self.set_start(unity_to_image(start))
+
+			# print("START")
+			# print(start)
+			# print(unity_to_image(start))
+
+			length = 1000
+			width = 1375
+
+			# waypoint_kitchen_exit = (6.45477, 2.57, DIR_EAST)
+			# wpt = unity_to_image(waypoint_kitchen_exit)
+			# # TODO verify units on this
+			# self.waypoints.append(wpt)
+
+			# a = (.6, 0)
+			# Offset between top tables
+			a = (0, 0)
+			b = (0, 0)
+
+			# does not currently check for collisions
+			a = (random.uniform(-3.0, 3.0), random.uniform(-3.0, 3.0))
+			b = (random.uniform(-3.0, 3.0), random.uniform(-3.0, 3.0))
+
+			# Constraints on upper tables: non intersecting, 
+			# currently, entry is on the bottom
+			# move to side of table closest to the kitchen?
+			# TODO ADA 
+
+			unity_table_pts = []
+			separation_table = 2.0
+			unity_table_pts.append((y_coord_start - separation_table, -7.0, DIR_SOUTH))
+			unity_table_pts.append((y_coord_start + separation_table + a[0], 	-7.0  + a[1], DIR_NORTH))
+			unity_table_pts.append((y_coord_start + separation_table + b[0], 	-7.0  + b[1], DIR_NORTH))
+
+			unity_goal_stop_options = []
+
+			separation = 1.8
+			unity_goal_stop_options.append((y_coord_start - separation, -7.0, DIR_SOUTH))
+			unity_goal_stop_options.append((y_coord_start + separation, 	-7.0  + a[1], DIR_NORTH))
+			unity_goal_stop_options.append((y_coord_start + separation, 	-7.0  - b[1], DIR_NORTH))
+
+			table_pts = []
+			for t in unity_table_pts:
+				pt = unity_to_image(t)
+
+				table = Table(pt, generate_type)
+				self.tables.append(table)
+
+			for g in unity_goal_stop_options:
+				goal_helper_pts.append(unity_to_image(g))
+				self.goals.append(unity_to_image(g))
+
+			customer_offset = 0.67
+			customer_offset_diag = customer_offset * 0.70710
+
+			observer_table = unity_table_pts[0]
+			table_x = observer_table[0]
+			table_y = observer_table[1]# + customer_offset
+
+			all_observers = []
+
+			obs_sets = {}
+			obs_sets[OBS_KEY_NONE] = []
+
+			# # person a
+			obs1_pt = (table_x, table_y - customer_offset)
+			obs1_pt = unity_to_image(obs1_pt)
+
+			obs1_angle = unity_to_image_angle(150)
+			obs1 = Observer(obs1_pt, obs1_angle)
+			obs1.set_color(PATH_COLORS[OBS_INDEX_A])
+			all_observers.append(obs1)
+
+			# person c
+			obs3_pt = (table_x - customer_offset, table_y)
+			obs3_pt = unity_to_image(obs3_pt)
+			
+			obs3_angle = unity_to_image_angle(90)
+			obs3 = Observer(obs3_pt, obs3_angle)
+			obs3.set_color(PATH_COLORS[OBS_INDEX_C])
+			all_observers.append(obs3)
+		
+			# person e
+			obs5_pt = (table_x, table_y + customer_offset)
+			obs5_pt = unity_to_image(obs5_pt)
+			
+			obs5_angle = unity_to_image_angle(30)
+			obs5 = Observer(obs5_pt, obs5_angle)
+			obs5.set_color(PATH_COLORS[OBS_INDEX_E])
+			# all_observers.append(obs5)
+
+
+			obs_sets[OBS_KEY_A] = [obs5]
+			# obs_sets[OBS_KEY_B] = [obs4]
+			obs_sets[OBS_KEY_C] = [obs3]
+			# obs_sets[OBS_KEY_D] = [obs2]
+			obs_sets[OBS_KEY_E] = [obs1]
+			
+
+
+
+			# obs_sets[OBS_KEY_ALL] = all_observers
+			self.obs_sets = obs_sets
+
+			for o in self.obs_sets:
+				# print("OBSERVER A")
+				# print(image_to_unity(obs_sets[OBS_KEY_A][0].get_center()))
+				# print("OBSERVER B")
+				# print(image_to_unity(obs_sets[OBS_KEY_B][0].get_center()))
+				# print("OBSERVER C")
+				# print(image_to_unity(obs_sets[OBS_KEY_C][0].get_center()))
+				# print("OBSERVER D")
+				# print(image_to_unity(obs_sets[OBS_KEY_D][0].get_center()))
+				# print("OBSERVER E")
+				# print(image_to_unity(obs_sets[OBS_KEY_E][0].get_center()))
+				pass
+				# exit()
+
 		else:
 			print("Incorrect generate_type")
 
 		self.img = self.generate_obstacle_map_and_img(self.observers)
 		self.generate_visibility_maps()
+
+		self.export_restaurant_descrip()
 
 	def get_goal_index(self, goal):
 		if goal not in self.goals:
@@ -1927,6 +2085,9 @@ class Restaurant:
 		# # obs_sets[OBS_ALL]  = obs_all
 		# return obs_sets
 
+
+	def export_restaurant_descrip(self):
+		return
 
 	def generate_visibility_maps(self):
 		visibility_maps = {}
