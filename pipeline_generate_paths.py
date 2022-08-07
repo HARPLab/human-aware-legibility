@@ -11,6 +11,7 @@ import decimal
 import random
 import os
 import sys
+import string
 
 from pandas.plotting import table
 import matplotlib.gridspec as gridspec
@@ -55,6 +56,9 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 SETTING_EXPORT_TITLE 			= 'title'
 SETTING_RESOLUTION				= 'resolution'
 SETTING_SAMPLING_TYPE			= 'sampling_type'
+
+SETTING_IS_RANDOM 				= 'is_random'
+SETTING_RANDOM_KEY				= 'random_key_string'
 
 SETTING_F_VIS_LABEL				= 'f_vis_label'
 SETTING_EPSILON 				= 'epsilon'
@@ -1167,7 +1171,15 @@ def fn_export_from_exp_settings(exp_settings):
 	right_bound 		= exp_settings[SETTING_RIGHT_BOUND]
 
 	f_legibility		= exp_settings[SETTING_LEGIBILITY_METHOD]
+
+	is_random 			= exp_settings[SETTING_IS_RANDOM]
+	r_key	= exp_settings[SETTING_RANDOM_KEY]
 	
+	if not is_random:
+		r_key = ""
+	else:
+		r_key += "_"
+
 	is_denom = 0
 	if FLAG_is_denominator:
 		is_denom = 1
@@ -1177,7 +1189,7 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = str(title) + "" + f_legibility + "_"
+	unique_title = str(title) + "" + f_legibility + "_" + r_key
 	unique_title += str(sampling_type) + "-rez" + str(rez) + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov) +  "-la" + lam
 	unique_title += "-rb" + str(right_bound)
@@ -1561,8 +1573,8 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 	return trimmed_paths, trimm_sp
 
 
-def experimental_scenario_single():
-	generate_type = resto.TYPE_EXP_SINGLE
+def experimental_scenario_single_heading():
+	generate_type = resto.TYPE_EXP_THREE_GOALS
 
 	# SETUP FROM SCRATCH, AND SAVE OPTIONS
 	if True:
@@ -1603,6 +1615,22 @@ def experimental_scenario_single():
 			print("Imported pickle of vis")
 
 
+	return r
+
+
+def experimental_scenario_three_goals_random(exp_settings):
+	generate_type = resto.TYPE_EXP_THREE_GOALS_RANDOMIZED
+	exp_settings[SETTING_IS_RANDOM] = True
+	# no caching currently done, because it is random
+
+	r 	= resto.Restaurant(generate_type)
+
+	fn_pickle_resto_descrip = fn_export_from_exp_settings(exp_settings) + "_restopkl.pickle"
+	dbfile = open(fn_pickle_resto_descrip, 'wb')
+	pickle.dump(r, dbfile)
+	dbfile.close()
+
+	# TODO ADA Add human readable version, either with a and b or with all locations involved, nice format
 	return r
 
 
@@ -2405,7 +2433,7 @@ def analyze_all_paths(r, paths_for_analysis_dict, exp_settings):
 # Function for when I've found the best path using the main code
 # but want to iterate a bunch of times for denser analytics, more sampling, etc.
 def export_best_options():
-	r = experimental_scenario_single()
+	r = experimental_scenario_single_heading()
 	exp_settings = defaultdict(float)
 	exp_settings[SETTING_PROB_OG] = False
 	exp_settings[SETTING_SAMPLING_TYPE] = 'custom'
@@ -2574,7 +2602,8 @@ def export_best_options():
 
 def do_exp(exp_settings):
 	# Run the scenario that aligns with our use case
-	restaurant = experimental_scenario_single()
+	restaurant = experimental_scenario_three_goals_random(exp_settings)
+
 	start = restaurant.get_start()
 	all_goals = restaurant.get_goals_all()
 
@@ -2584,8 +2613,6 @@ def do_exp(exp_settings):
 			goal = all_goals[i]
 			# lane_state_sampling_test1(resto, goal, i)
 			make_path_libs(resto, goal)
-
-	exp_settings = get_default_exp_settings()
 
 	pprint.pprint(exp_settings)
 	print("---!!!---")
@@ -2613,6 +2640,9 @@ def do_exp(exp_settings):
 	title = title_from_exp_settings(exp_settings)
 	resto.export_raw_paths(restaurant, img, min_paths, title, fn_export_from_exp_settings(exp_settings) + "_all" + "-min")
 
+	# print("MAKING THIS EXP")
+	# exit()
+
 	paths_for_analysis = {}
 	#  add permutations of goals with some final-angle-wiggle
 	for goal in all_goals:
@@ -2631,13 +2661,14 @@ def do_exp(exp_settings):
 	file1.write(str(best_paths))
 	file1.close()
 
-	print("Done with experiment")
+	print("Done with experiment from settings")
 
 def get_default_exp_settings(unique_key = ""):
 
 	exp_settings = {}
 	exp_settings[SETTING_EXPORT_TITLE] 				= unique_key
-	exp_settings[SETTING_RESOLUTION]				= 150 #15
+	exp_settings[SETTING_IS_RANDOM]						= False
+	exp_settings[SETTING_RESOLUTION]				= 250 #15
 	exp_settings[SETTING_F_VIS_LABEL]				= 'no-chunk'
 	exp_settings[SETTING_EPSILON] 					= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings[SETTING_LAMBDA] 					= 0 #decimal.Decimal(1e-12) #lam #.000000000001
@@ -2655,6 +2686,7 @@ def get_default_exp_settings(unique_key = ""):
 	exp_settings[SETTING_WAYPOINT_OFFSET]			= 20
 	# exp_settings['l_method']		= prob_goal_given_path
 	exp_settings[SETTING_LEGIBILITY_METHOD]			= legib.get_legibility_options()[0] #_use_heading
+	exp_settings[SETTING_RANDOM_KEY]				= ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
 	# sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
@@ -2678,14 +2710,14 @@ def exp_diff_legibilities():
 
 	for l in legib_options:
 		exp_settings 				= get_default_exp_settings()
-		exp_settings[SETTING_LEGIBILITY_METHOD]
+		exp_settings[SETTING_LEGIBILITY_METHOD] = l
 
 		print("Testing label " + l)
 		do_exp(exp_settings)
 		print("Done")
-		print()
+		print("~~~~~~~~~~~")
 	
-	print("Done with experiment")
+	print("Done with experiments of diff legibilities")
 
 
 def exp_determine_lam_eps():
