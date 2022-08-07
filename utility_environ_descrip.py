@@ -1464,7 +1464,7 @@ class Restaurant:
 			# a = (.6, 0)
 			# Offset between top tables
 			a = (0, 3.0)
-			t = (0, 0)
+			t = (-.4, 0)
 
 			# unity_goal_pt = (4.43, -7.0)
 
@@ -1770,8 +1770,6 @@ class Restaurant:
 
 		self.img = self.generate_obstacle_map_and_img(self.observers)
 		self.generate_visibility_maps()
-
-		self.export_restaurant_descrip()
 
 	def get_goal_index(self, goal):
 		if goal not in self.goals:
@@ -2084,10 +2082,6 @@ class Restaurant:
 
 		# # obs_sets[OBS_ALL]  = obs_all
 		# return obs_sets
-
-
-	def export_restaurant_descrip(self):
-		return
 
 	def generate_visibility_maps(self):
 		visibility_maps = {}
