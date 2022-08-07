@@ -1199,6 +1199,8 @@ def fn_export_from_exp_settings(exp_settings):
 
 	if not os.path.exists(fn):
 		os.mkdir(fn)
+	else:
+		os.utime(fn)
 
 	fn += unique_title
 	return fn
@@ -1574,7 +1576,7 @@ def create_systematic_path_options_for_goal(r, exp_settings, start, goal, img, n
 
 
 def experimental_scenario_single_heading():
-	generate_type = resto.TYPE_EXP_THREE_GOALS
+	generate_type = resto.TYPE_EXP_SINGLE
 
 	# SETUP FROM SCRATCH, AND SAVE OPTIONS
 	if True:
@@ -1617,6 +1619,50 @@ def experimental_scenario_single_heading():
 
 	return r
 
+
+def experimental_scenario_three_goals(exp_settings):
+	generate_type = resto.TYPE_EXP_THREE_GOALS
+
+	# SETUP FROM SCRATCH, AND SAVE OPTIONS
+	if True:
+		# Create the restaurant scene from our saved description of it
+		print("PLANNER: Creating layout of type " + str(generate_type))
+		r 	= resto.Restaurant(generate_type)
+		# print("PLANNER: get visibility info")
+
+		if FLAG_VIS_GRID:
+			# If we'd like to make a graph of what the visibility score is at different points
+			# df_vis = r.get_visibility_of_pts_pandas(f_visibility)
+
+			# dbfile = open(vis_pickle, 'ab') 
+			# pickle.dump(df_vis, dbfile)					  
+			# dbfile.close()
+			# print("Saved visibility map")
+
+			# df_vis.to_csv('visibility.csv')
+			# print("Visibility point grid created")
+			pass
+		
+		# pickle the map for future use
+		dbfile = open(resto_pickle, 'ab') 
+		pickle.dump(r, dbfile)					  
+		dbfile.close()
+		print("Saved restaurant pickle")
+
+	# OR LOAD FROM FILE
+	else:
+		dbfile = open(resto_pickle, 'rb')
+		r = pickle.load(dbfile)
+		print("Imported pickle of restaurant")
+
+
+		if FLAG_VIS_GRID:
+			dbfile = open(vis_pickle, 'rb')
+			df_vis = pickle.load(dbfile)
+			print("Imported pickle of vis")
+
+
+	return r
 
 def experimental_scenario_three_goals_random(exp_settings):
 	generate_type = resto.TYPE_EXP_THREE_GOALS_RANDOMIZED
@@ -2602,7 +2648,7 @@ def export_best_options():
 
 def do_exp(exp_settings):
 	# Run the scenario that aligns with our use case
-	restaurant = experimental_scenario_three_goals_random(exp_settings)
+	restaurant = experimental_scenario_three_goals(exp_settings)
 
 	start = restaurant.get_start()
 	all_goals = restaurant.get_goals_all()
