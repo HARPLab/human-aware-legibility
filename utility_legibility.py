@@ -16,6 +16,8 @@ F_JDIST 				= 'JDIST'
 F_JHEADING_EXPONENTIAL 	= 'JHEAD_EXPON'
 F_JHEADING_QUADRATIC 	= 'JHEAD_QUADR'
 F_JHEADING 				= 'JHEAD'
+F_SUM_DIST_EXPON 		= 'SUM_DIST_EXPON'
+F_MIN_DIST_EXPON 		= 'MIN_DIST_EXPON'
 
 LEGIBILITY_METHOD		= 'l_method'
 
@@ -188,7 +190,20 @@ def prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, 
 	COMPONENT_DIST 			= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_DIST])
 	COMPONENT_HEADING 		= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_HEADING])
 
-	return COMPONENT_DIST + COMPONENT_HEADING
+	if exp_settings[LEGIBILITY_METHOD] in [F_JDIST, F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL, F_SUM_DIST_EXPON]:
+		return COMPONENT_DIST + COMPONENT_HEADING
+	elif exp_settings[LEGIBILITY_METHOD] in [F_SUM_DIST_EXPON]:
+		return (.5 * COMPONENT_DIST) + (.5 * COMPONENT_HEADING)
+	elif exp_settings[LEGIBILITY_METHOD] in [F_MIN_DIST_EXPON]:
+		if COMPONENT_HEADING < COMPONENT_DIST:
+			return COMPONENT_HEADING
+		else:
+			return COMPONENT_DIST
+
+	else:
+		print(exp_settings[LEGIBILITY_METHOD])
+		print("ERROR UNRECOGNIZED F FUSION CHOICE")
+		exit()
 
 
 # Ada: Final equation
@@ -710,10 +725,10 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 		ax1 = fig.add_subplot(111)
 		
 		for key in v.keys():
-			print("key combo is")
-			print(key)
-			# print(len(t))
-			print(len(v[key]))
+			# print("key combo is")
+			# print(key)
+			# # print(len(t))
+			# print(len(v[key]))
 			t = range(len(v[key]))
 
 			ax1.scatter(t, v[key], s=10, marker="o", label=key)
@@ -746,7 +761,9 @@ def get_legib_graph_info(path, restaurant, exp_settings):
 				cost_path_to_here = costs_along[t]
 				# goal, goals, path, df_obs
 				# new_val = legib.f_legibility(resto, target, goals, path, [], legib.f_naked, exp_settings)
-				new_val = prob_goal_given_path(restaurant, path[t - 1], path[t], goal, restaurant.get_goals_all(), cost_path_to_here, exp_settings)
+
+				# TODO ADA AUG
+				new_val = 0 #prob_goal_given_path(restaurant, path[t - 1], path[t], goal, restaurant.get_goals_all(), cost_path_to_here, exp_settings)
 				# new_val = f_legibi(t, path[t], obs_sets[aud_i], path)
 				# print(new_val)
 				# exit()
@@ -767,7 +784,7 @@ def get_set_legibility_method_uses_dist():
 
 
 def get_legibility_options():
-	options = [F_JDIST, F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
+	options = [F_SUM_DIST_EXPON, F_MIN_DIST_EXPON, F_JDIST, F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
 
 	return options
 
