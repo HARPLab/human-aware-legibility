@@ -307,7 +307,7 @@ def prob_array_goal_given_signals(r, p_n1, pt, goal, goals, cost_path_to_here, e
 	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_dist():
 		val_0 = prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path)
 	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_heading():
-		val_1 = prob_goal_given_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path_use_heading)
+		val_1 = prob_goal_given_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings)
 
 	return [val_0, val_1]
 
@@ -357,13 +357,19 @@ def prob_goals_given_heading(p0, p1, goals, exp_settings):
 
 		goal_theta = resto.angle_between(p1, goal[:2])
 		prob = f_angle_prob(heading, goal_theta, exp_settings)
+		prob = decimal.Decimal(prob)
+		if prob == decimal.Decimal('Infinity'):
+			# very large number
+			prob = 10000
+
 		probs.append(prob)
 
 
 	divisor = sum(probs)
 	# divisor = 1.0
 
-	return decimal.Decimal(np.true_divide(probs, divisor))
+	# print(probs)
+	return np.true_divide(probs, divisor)
 	# return ratio
 
 
@@ -784,7 +790,7 @@ def get_set_legibility_method_uses_dist():
 
 
 def get_legibility_options():
-	options = [F_SUM_DIST_EXPON, F_MIN_DIST_EXPON, F_JDIST, F_JHEADING_EXPONENTIAL, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
+	options = [F_JHEADING_EXPONENTIAL, F_SUM_DIST_EXPON, F_MIN_DIST_EXPON, F_JDIST, F_JHEADING, F_JHEADING_QUADRATIC] #F_JDIST
 
 	return options
 
