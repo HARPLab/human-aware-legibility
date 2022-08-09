@@ -103,7 +103,7 @@ def stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
 
 
 def term_cost(x, xref):
-    diff = (x-xref)
+    diff = (x - xref)
     # LQR terminal cost (depends on just x)
     J = 0.5*diff.T * Qf * diff
     return (J*1000)
@@ -140,17 +140,17 @@ def stage_cost_expansion(x,u,xref,uref, start, goal1, all_goals, nongoal_scale):
         
     return Jxx, Jx, Juu, Ju
 
-def term_cost_expansion(x, xref):
+def term_cost_expansion(x_input, xref):
     # if the terminal cost function is J, return the following derivatives:
     # ∇²ₓJ,  ∇ₓJ
 	# Jxx = FD.hessian(dx -> term_cost(dx, xref), x)
 	# Jx = FD.gradient(dx -> term_cost(dx, xref), x)
 
-    print(x)
-    print(xref)
-    print("~~~~~~~~~~")
+    # print(x)
+    # print(xref)
+    # print("~~~~~~~~~~")
 
-    # lil_x	= Symbol('x')
+    x	= Matrix(Symbol('x'))
     dx 		= term_cost(x, xref)
 
     print('dx ->')
@@ -158,8 +158,11 @@ def term_cost_expansion(x, xref):
     print('x ->')
     print(x)
 
-    Jxx 	= hessian(dx, x)
-    Jx 		= gradient(dx, x)
+    # take the hessian of term_cost with respect to variable xref, at point x (from my input)
+    # dx is actually wrt first input variable x, xref is held constant
+    # eval hessian setting first input val to x passed in
+    Jxx 	= hessian(dx, x_input) # taken at 0
+    Jx 		= gradient(dx, x_input)
     
     return Jxx, Jx
 
