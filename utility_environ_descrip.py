@@ -1614,7 +1614,7 @@ class Restaurant:
 			# Unity scenario created specifically for parameters of Unity restaurant
 			# This experiment 
 
-			self.SCENARIO_IDENTIFIER = "_exp_3goals_"
+			self.SCENARIO_IDENTIFIER = "_exp_3goals_rand"
 
 			UNITY_CORNERS = [(1.23, 3.05), (11.22, -10.7)]
 			ux1, uy1 = UNITY_CORNERS[0]
@@ -1685,8 +1685,8 @@ class Restaurant:
 
 			separation = 1.8
 			unity_goal_stop_options.append((y_coord_start - separation, -7.0, DIR_SOUTH))
-			unity_goal_stop_options.append((y_coord_start + separation, 	-7.0  + a[1], DIR_NORTH))
-			unity_goal_stop_options.append((y_coord_start + separation, 	-7.0  - b[1], DIR_NORTH))
+			unity_goal_stop_options.append((y_coord_start + separation + a[0], 	-7.0  + a[1], DIR_NORTH))
+			unity_goal_stop_options.append((y_coord_start + separation + b[0], 	-7.0  + b[1], DIR_NORTH))
 
 			table_pts = []
 			for t in unity_table_pts:
