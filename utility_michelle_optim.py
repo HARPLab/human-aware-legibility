@@ -128,8 +128,16 @@ def stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
 
 
 def term_cost(x, xref):
+    # verify orientation of points before this math
+    if x.shape[0] > 1:
+        x = x.T
+
+    if xref.shape[0] > 1:
+        xref = xref.T
+
     # print(x, xref)
-    diff = (x - xref)
+    diff = (x - xref).T
+
     # LQR terminal cost (depends on just x)
     J = 0.5*diff.T * Qf * diff
     return (J*1000).as_mutable()
@@ -145,15 +153,15 @@ def term_cost_symbolic(x, xref):
 
 def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
     # calculate the cost of a given trajectory 
-    N_len = length(Xref)
+    # N_len = len(Xref)
 
-    J = term_cost(X[N_len], Xref[N_len])
+    J = term_cost(X[-1, :], Xref[-1, :])
     for i in range(len(Xref)-1):
         xref = Xref[i]
         uref = Uref[i]
         x = X[i]
         u = U[i]
-        J = J + stage_cost(x,u,xref,uref, start, goal1, all_goals, nongoal_scale)
+        J = J + stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale)
     return J
         
 def stage_cost_expansion(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
