@@ -102,8 +102,17 @@ def stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
     # Legibility LQR cost at each knot point (depends on both x and u)    
 
     goal_idx = 1
-    
+
     # ' = .T
+    if x.shape[1] > 1:
+        x = x.T
+
+    if u.shape[1] > 1:
+        u = u.T
+
+    if uref.shape[1] > 1:
+        uref = uref.T
+
     J_g1 = (start-goal1).T * Q * (start-goal1) - (start-x).T * Q * (start-x) +  - (x-goal1).T * Q * (x-goal1) 
     J_g1 *= 0.5
 
@@ -114,15 +123,21 @@ def stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
         if goal != goal1:
             scale = nongoal_scale
 
-        n = - ((start-x).T * Q * (start-x) + 5) - ((x-goal).T * Q * (x-goal) +10)
+        n0 = (start-x).T * Q * (start-x)
+        n1 = (x-goal).T * Q * (x-goal)
+
+        n = - (n0[0,0] + 5) - (n1[0,0] + 10)
         d = (start-goal).T*Q*(start-goal)
+        d = d[0,0]
+
         log_sum += (exp(n )/exp(d)) * scale
     
-    
-    J = J_g1 - log(log_sum)
+    J = J_g1 - Matrix([[log(log_sum)]])
 
     J *= -1
+
     J += 0.5 *  (u-uref).T * R * (u-uref)
+    # J += 0.5 *  (u-uref).T * R * (u-uref)
 
     return J
 
@@ -157,10 +172,10 @@ def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
 
     J = term_cost(X[-1, :], Xref[-1, :])
     for i in range(len(Xref)-1):
-        xref = Xref[i]
-        uref = Uref[i]
-        x = X[i]
-        u = U[i]
+        xref = Xref[i, :]
+        uref = Uref[i, :]
+        x = X[i, :]
+        u = U[i, :]
         J = J + stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale)
     return J
         
@@ -332,11 +347,11 @@ def forward_pass(X,U,Xref,Uref,K,d,del_J, start, goal1, all_goals, nongoal_scale
         for k in range(N-1):
             u_k = U_prev[k] - alpha * d[k] - K[k]*(Xn[k]-X_prev[k])
             
-            x_k = rk4(Xn[k],u_k, dt)
+            x_k = rk4(Xn[k, :],u_k, dt)
             
-            Xn[k+1] = x_k
+            Xn[k+1, :] = x_k
 
-            Un[k] += u_k
+            Un[k, :] += u_k
         
         Jn = trajectory_cost(Xn,Un,Xref,Uref, start, goal1, all_goals, nongoal_scale)
         
