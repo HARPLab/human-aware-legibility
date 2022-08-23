@@ -45,28 +45,46 @@ def d(x1, y1, x2, y2):
     c = np.sqrt((x2 - x2)*(x2 - x1) + (y2 - y1)*(y2 - y1))
     return c
 
-def dynamics(x,u):
-    A = Matrix([1,0],[0,1])
-    B = Matrix([1,0],[0,1])
+def dynamics(x, u):
+    A = Matrix([[1,0],[0,1]])
+    B = Matrix([[1,0],[0,1]])
 
-    xnext = A * x + B*u
+    n0 = A * x
+    n1 = B * u
+
+    xnext = A*x + B*u
+     
     return xnext
 
 # https://stackoverflow.com/questions/49553006/compute-the-jacobian-matrix-in-python
 def rk4(x, u, dt):
     # rk4 for integration
-    k1,k2,k3,k4=symbols("k1,k2,k3,k4")
+    k1,k2,k3,k4 = symbols("k1,k2,k3,k4")
+
+    # print(x.shape)
+    # print(u.shape)
+
+    if x.shape[1] > 1:
+        x = x.T
+
+    if u.shape[1] > 1:
+        u = u.T
+
+    print("x shape, u shape")
+    print(x.shape)
+    print(u.shape)
 
     k1 = dt*dynamics(x, u)
-    k2 = dt*dynamics(x + k1/2,u)
-    k3 = dt*dynamics(x + k2/2,u)
-    k4 = dt*dynamics(x + k3,u)
-    print(k1)
-    print(k2)
-    print(k3)
-    print(k4)
+    k2 = dt*dynamics(x + k1/2, u)
+    k3 = dt*dynamics(x + k2/2, u)
+    k4 = dt*dynamics(x + k3, u)
+    # print(k1)
+    # print(k2)
+    # print(k3)
+    # print(k4)
 
-    return x + (1/6)*(k1 + 2*k2 + 2*k3 + k4)
+    total = x + (1/6)*(k1 + 2*k2 + 2*k3 + k4)
+    return total.T
 
 
 # # https://docs.sympy.org/latest/modules/holonomic/operations.html?highlight=kutta
@@ -85,6 +103,15 @@ def dynamics_jacobians(x, u, dt):
     u = Symbol('u')
     _x = Symbol('_x')
     _u = Symbol('_u')
+
+    if x[0] == 1:
+        x = x.T
+    if u[0] == 1:
+        u = u.T
+
+    print(x.shape)
+    print(u.shape)
+    print(dt.shape)
 
     rk4_A = rk4(_x,u,dt)
     rk4_B = rk4(x,_u,dt)
@@ -171,7 +198,11 @@ def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
     # N_len = len(Xref)
 
     J = term_cost(X[-1, :], Xref[-1, :])
-    for i in range(len(Xref)-1):
+
+    for i in range(Uref.shape[0]):
+        # print(i)
+        # print(Xref.shape)
+        # print(Uref.shape)
         xref = Xref[i, :]
         uref = Uref[i, :]
         x = X[i, :]
@@ -278,10 +309,10 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
 
     empty_P = sympy.zeros(nx,nx)
     P = make_array_copying(empty_P, N)         # cost to go quadratic term
-    p = make_array_copying(sympy.zeros(nx), N)            # cost to go linear term 
-    d = make_array_copying((sympy.ones(nu)*nan), (N-1))      # feedforward control
-    K = make_array_copying(sympy.zeros(nu,nx), (N-1))       # feedback gain
-    
+    p = make_array_copying(sympy.zeros(nx, 1), N)            # cost to go linear term 
+    d = make_array_copying(sympy.zeros(nu, 1), (N-1))        # feedforward control removed the NaN
+    K = make_array_copying(sympy.zeros(nu, nx), (N-1))       # feedback gain
+
     end = -1
 
     # print(X.shape)
@@ -294,15 +325,16 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
     # print(p.shape)
     # print(Jx_term.shape)
 
-    # print(P)
+    # print(P.shape)
     # print(P[end].shape)
 
-    p[end] = Jx_term
-    P[end] = Jxx_term
+    p[end, 0]      = Jx_term[0,0]
+    p[end, 1]      = Jx_term[1,0]
+    P[end, :]   = Jxx_term
     
-    for i in range(N-1, 0):
-        print(i)
-        Jxx, Jx, Juu, Ju = stage_cost_expansion(X[i], U[i], Xref[i], Uref[i], start, goal1, all_goals, nongoal_scale)  
+    for i in range(U.shape[0] - 1, 0, -1):
+    
+        Jxx, Jx, Juu, Ju = stage_cost_expansion(X[i, :], U[i, :], Xrefline[i, :], Urefline[i, :], start, goal1, all_goals, nongoal_scale)  
         
         A, B = dynamics_jacobians(X[i], U[i], dt)
         
@@ -318,7 +350,7 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
         # backslash operator divides the argument on its right by the one on its left, commonly used to solve matrix equations
         K_i = Guu / Gux     # Guu\ Gux
         d_i = Guu / gu      # Guu\ gu
-
+        
         # slight tweak from the julia
         P_i = Gxx + K_i.T * Guu*K_i - Gxu*K_i - K_i.T*Gux
         p_i = gx - K_i.T * gu + K_i.T * Guu*d_i - Gxu*d_i
@@ -331,7 +363,7 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
         
     return d, K, P, del_J
 
-def forward_pass(X,U,Xref,Uref,K,d,del_J, start, goal1, all_goals, nongoal_scale, max_linesearch_iters = 10):
+def forward_pass(X, U, Xref, Uref, K, d, del_J, start, goal1, all_goals, nongoal_scale, max_linesearch_iters = 10):
     Xn = copy.deepcopy(X)
     Un = copy.deepcopy(U)
     Jn = np.NaN
@@ -342,20 +374,32 @@ def forward_pass(X,U,Xref,Uref,K,d,del_J, start, goal1, all_goals, nongoal_scale
     
     X_prev = copy.deepcopy(X)
     U_prev = copy.deepcopy(U)
-    J = trajectory_cost(X,U,Xref,Uref, start, goal1, all_goals, nongoal_scale)
+    J = trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale)
     while n_iters <= max_linesearch_iters:
         for k in range(N-1):
-            u_k = U_prev[k] - alpha * d[k] - K[k]*(Xn[k]-X_prev[k])
+            u_k = (U_prev[k, :].T) - (alpha * d[k, :].T) - K[k, :]*(Xn[k, :].T - X_prev[k, :].T)
+            u_k = u_k.T
             
-            x_k = rk4(Xn[k, :],u_k, dt)
+            print("Forward rk4")
+            x_k = rk4(Xn[k, :], u_k, dt)
             
+            # print("in")
+            # print(u_k.shape)
+            # print("slot")
+            # print(Un[k, :].shape)
+            # # print(Un[k].shape)
+            # print(u_k)
+            # print(u_k.shape)
+
             Xn[k+1, :] = x_k
 
-            Un[k, :] += u_k
+            Un[k, :] = Un[k, :] + u_k
         
-        Jn = trajectory_cost(Xn,Un,Xref,Uref, start, goal1, all_goals, nongoal_scale)
-        
-        if Jn < J - 0.01* alpha * del_J:
+        Jn = trajectory_cost(Xn, Un, Xref, Uref, start, goal1, all_goals, nongoal_scale)
+        # print(Jn.shape)        
+        # print(J.shape)
+
+        if Jn[0,0] < J[0,0] - (0.01 * alpha * del_J):
             break
         alpha = c * alpha
         n_iters += 1
@@ -425,6 +469,9 @@ def iLQR(x0, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_scale, atol
         print("Doing forward pass")
         X, U, J, alpha = forward_pass(X, U, Xrefline, Urefline, K, d, del_J, start, goal1, all_goals, nongoal_scale)
 
+        print(d)
+        print(norm(d))
+
         if max(norm(d)) < atol:
             is_complete = True
         else:
@@ -464,8 +511,8 @@ def trial_1():
     print("done")
 
 
-    xvals_leg = [Xline[:][1]]
-    yvals_leg = [Xline[:][2]]
+    xvals_leg = [Xline[:][0]]
+    yvals_leg = [Xline[:][1]]
 
     p = plot()
 
