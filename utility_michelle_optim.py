@@ -5,6 +5,7 @@ import copy
 from autograd import grad, jacobian
 import tensorflow as tf
 import sympy as sympy
+from sympy.interactive.printing import init_printing
 
 nx = 2 
 nu = 2
@@ -25,8 +26,18 @@ def nested_tuple(size, ndims, t=0):
 
     return t
 
+def get_derivatives(func):
+    arg_symbols = symbols(inspect.getargspec(func).args)
+    sym_func = func(*arg_symbols)
+
+    return [lambdify(arg_symbols, sym_func.diff(a)) for a in arg_symbols]
+
 def compute_hessian(fn, vars):
+    print("type f")
+    print(type(fn))
+
     gradients = lambda f, v: Matrix([f]).jacobian(v)
+    # gradients = lambda f, v: Matrix([f]).jacobian(v)
 
     mat = []
     for v1 in vars:
@@ -185,13 +196,97 @@ def term_cost(x, xref):
     return (J*1000).as_mutable()
 
 def term_cost_symbolic(x, xref):
-    x = Matrix(x)
-    xref = Matrix(xref)
+    x, xref = MatrixSymbol('x', 1, 2), MatrixSymbol('xref', 1, 2)
+
+    # x = Matrix(x)
+    # xref = Matrix(xref)
+
     diff = (x - xref)
     # LQR terminal cost (depends on just x)
     J = 0.5*diff.T * Qf * diff
+
+    print("type diff")
+    print(type(diff))
+    print("type J")
+    print(type(J))
+
     return (J*1000), [x, xref]
 
+
+def stage_cost_symbolic(xref, uref, start, goal1, all_goals, nongoal_scale):
+    x, u = MatrixSymbol('x', 1, 2), MatrixSymbol('u', 1, 2)
+
+    # Legibility LQR cost at each knot point (depends on both x and u)    
+    goal_idx = 1
+
+    print((start-goal1))
+    J_g1 = ((start-goal1).T * Q * (start-goal1)) #- (start-x).T * Q * (start-x) #+  - (x-goal1).T * Q * (x-goal1) 
+    J_g1 *= 0.5
+
+    log_sum = 0
+    for i in range(len(all_goals)):
+        goal = all_goals[i]
+        scale = 1
+        if goal != goal1:
+            scale = nongoal_scale
+
+        n0 = (start.T - x) * Q * (start.T - x).T
+        n1 = (x - goal.T) * Q * (x-goal.T).T
+
+        n = - (n0[0,0] + 5) - (n1[0,0] + 10)
+        d = (start-goal).T*Q*(start-goal)
+        d = d[0,0]
+
+        log_sum += (exp(n )/exp(d)) * scale
+    
+    J = J_g1 - Matrix([[log(log_sum)]])
+
+    J *= -1
+
+    # Combine the new part of J to the old
+
+    print(u.shape)
+    print(uref.shape)
+
+    # this is always 2x2
+    # debug
+    # print("u")
+    # print(u.shape)
+    # print(uref.shape)
+
+    #TODO: this ought to be 1x1
+    u_diff = (u-uref)
+    u_diff = np.asarray(u_diff)
+    print("u_diff")
+    # print(u_diff)
+    print(u_diff.shape)
+    # print(u_diff.T.shape)
+
+    print(type(u_diff))
+    print(type(R))
+
+    J_new = (u_diff).dot(R)
+    J_new = J_new.dot(u_diff.T)
+
+    print("J_new")
+    print(J_new.shape)
+    print(J_new[0,0])
+    # J_new = J_new * (u-uref).T
+    
+    print("R")
+    print(R.shape)
+
+    print("J_new")
+    print(J_new.shape)
+    print(J_new)
+    
+    print("J")
+    print(J.shape)
+    print(J)
+    J = J + (0.5 *  J_new)
+    # J += 0.5 *  (u-uref).T * R * (u-uref)
+
+    return J
 
 def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
     # calculate the cost of a given trajectory 
@@ -210,22 +305,45 @@ def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
         J = J + stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale)
     return J
         
-def stage_cost_expansion(x, u, xref, uref, start, goal1, all_goals, nongoal_scale):
+def stage_cost_expansion(x_input, u_input, xref, uref, start, goal1, all_goals, nongoal_scale):
     # if the stage cost function is J, return the following derivatives:
-    
+    x, u = MatrixSymbol('x', 2, 1), MatrixSymbol('u', 2, 1)
+
     # dx = x
     # Jxx = FD.hessian(dx -> stage_cost(dx,u,xref,uref, start, goal1, all_goals, nongoal_scale), x)
     # Jx = FD.gradient(dx -> stage_cost(dx,u,xref,uref, start, goal1, all_goals, nongoal_scale), x)
-    dx = stage_cost(x, u, xref,uref, start, goal1, all_goals, nongoal_scale)
+    # dx = stage_cost(x, u, xref, uref, start, goal1, all_goals, nongoal_scale)
 
-    Jxx    = dx.hessian(x)
-    Jx     = dx.gradient(x)
+    # x, du, xref, uref, start, goal1, all_goals, nongoal_scale = symbols('x', 'du', 'xr', 'ur', 's', 'g', 'ag', 'ngs')
 
-        
-    du = stage_cost(x,du,xref,uref, start, goal1, all_goals, nongoal_scale)
+    dx = stage_cost_symbolic(xref, uref, start, goal1, all_goals, nongoal_scale)
+    # f           = lambdify([x, du, xref, uref, start, goal1, all_goals, nongoal_scale], stage_cost, "numpy")
+    gradient    = lambda f, v: Matrix([f]).jacobian(v).T
 
-    Juu    = du.hessian(u)
-    Ju     = du.gradient(u)
+
+    # derivs = get_derivatives(dx)
+
+    # Jxx    = dx.hessian(x)
+    # Jx     = dx.gradient(x)
+
+    # dx, u at x
+    Jx          = gradient(dx, [x]) #x_input)
+    Jx          = Jx.subs([(x,x_input), (u, u_input)])
+
+    Jxx         = compute_hessian(dx, [x, u])
+    Jxx         = Jxx.subs([(x,x_input)])
+    #hessian(dx_symbolic, (x, xr)) #x_input) # taken at 0
+    
+    # x, du, at u
+    du          = stage_cost_symbolic(xref, uref, start, goal1, all_goals, nongoal_scale)
+    # eval at x,du,
+
+    Juu = compute_hessian(du, [x, u])
+    Juu = Jxx.subs([(u,u_input)])
+
+    # Juu    = du.hessian(u)
+    Ju      = gradient(du, [x])
+    Ju      = Ju.subs([(u,u_input)])
         
     return Jxx, Jx, Juu, Ju
 
@@ -235,28 +353,20 @@ def term_cost_expansion(x_input_t, xref_t):
     # Jxx = FD.hessian(dx -> term_cost(dx, xref), x)
     # Jx = FD.gradient(dx -> term_cost(dx, xref), x)
 
-    # print(x)
-    # print(xref)
-    # print("~~~~~~~~~~")
-    x0 = Symbol('x0')
-    x1 = Symbol('x1')
-    x = Symbol('x')
-    x = Matrix([x, x])
-
     x_input     = x_input_t.T
     xref        = xref_t.T
 
-    print("x_ref")
-    print(xref)
-    print('x ->')
-    print(x_input)
+    # print("x_ref")
+    # print(xref)
+    # print('x ->')
+    # print(x_input)
 
 
     # x_m           = Matrix([x, x]) #Matrix([x0, x1]) #Matrix([x0, x1]) #Matrix(x)
     dx            = term_cost(x_input, xref)
 
-    print('term_cost ->')
-    print(dx)
+    # print('term_cost ->')
+    # print(dx)
 
     x = MatrixSymbol('x', 2, 1)
     xr = MatrixSymbol('xr', 2, 1)
@@ -268,8 +378,8 @@ def term_cost_expansion(x_input_t, xref_t):
     # dx is actually wrt first input variable x, xref is held constant
     # eval hessian setting first input val to x passed in
 
-    print("dx")
-    print(dx)
+    # print("dx")
+    # print(dx)
 
     dx_symbolic, dx_vars = term_cost_symbolic(x, xr)
     # dx_symbolic = lambdify([x, xr], term_cost, "numpy")
@@ -277,8 +387,6 @@ def term_cost_expansion(x_input_t, xref_t):
     # 2x2 matrix
     # Note: this can also take additional constraints
     # hessian(fx.as_explicit(), x.as_explicit())
-    # print(type(dx_symbolic))
-
     gradient = lambda f, v: Matrix([f]).jacobian(v).T
     f = dx_symbolic
 
@@ -292,6 +400,7 @@ def term_cost_expansion(x_input_t, xref_t):
     print(Jx)
     print("Jxx")
     print(Jxx)
+    print("done with term cost expansion")
     print("~")
     print()
 
@@ -301,6 +410,7 @@ def term_cost_expansion(x_input_t, xref_t):
 
 
 def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_scale):
+    print("BACKWARDS PASS")
     # P = [zeros(nx,nx) for i = 1:N]     # cost to go quadratic term
     # p = [zeros(nx) for i = 1:N]        # cost to go linear term 
     # d = [zeros(nu)*NaN for i = 1:N-1]  # feedforward control
@@ -320,6 +430,7 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
     X_last              = X[-1, :]
     Xref                = Xrefline[-1, :]
 
+    print("Term cost expansion")
     Jxx_term, Jx_term = term_cost_expansion(X_last, Xref)
 
     # print(p.shape)
@@ -334,6 +445,7 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
     
     for i in range(U.shape[0] - 1, 0, -1):
     
+        print("Stage cost expansion")
         Jxx, Jx, Juu, Ju = stage_cost_expansion(X[i, :], U[i, :], Xrefline[i, :], Urefline[i, :], start, goal1, all_goals, nongoal_scale)  
         
         A, B = dynamics_jacobians(X[i], U[i], dt)
@@ -364,6 +476,8 @@ def backward_pass(X, U, Xrefline, Urefline, start, goal1, all_goals, nongoal_sca
     return d, K, P, del_J
 
 def forward_pass(X, U, Xref, Uref, K, d, del_J, start, goal1, all_goals, nongoal_scale, max_linesearch_iters = 10):
+    print("FORWARD PASS")
+
     Xn = copy.deepcopy(X)
     Un = copy.deepcopy(U)
     Jn = np.NaN
