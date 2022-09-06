@@ -20,7 +20,7 @@ class LegiblePathQRCost(PathQRCost):
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
 
-    def __init__(self, Q, R, x_path, goals, u_path=None, Q_terminal=None):
+    def __init__(self, Q, R, x_path, u_path, goals, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
