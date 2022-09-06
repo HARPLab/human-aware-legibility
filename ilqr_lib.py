@@ -267,28 +267,17 @@ R = np.identity(2)
 Qf = np.identity(2) * 10
 
 print(Xrefline.shape)
-# Q, R, x_path, u_path = None, Q_terminal=None
-# Q, R, x_path, u_path=None, Q_terminal=None
 cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, all_goals)
 
 # cost = PathQRCost(Q, R, traj, us_init)
-
-
 # x_dot = (dt * t - u) * x**2
 # f = T.stack([x + x_dot * dt])
 
 us_init = np.random.uniform(0, 1, (N, dynamics.action_size))
 ilqr = iLQR(dynamics, cost, N)
 
-
-print(Xrefline.shape)
-print(Urefline.shape)
-# print(Xrefline)
-# print(Urefline)
-
 J_hist = []
 xs, us = ilqr.fit(x0_raw, us_init, n_iterations=N, on_iteration=on_iteration)
-# xs, us = ilqr.fit(x0, us_init, n_iterations=200, on_iteration=on_iteration)
 
 
 # # Reduce the state to something more reasonable.
@@ -311,10 +300,21 @@ theta = np.unwrap(xs[:, 0])  # Makes for smoother plots.
 theta_dot = xs[:, 1]
 
 
-_ = plt.plot(theta, theta_dot)
-_ = plt.xlabel("theta (rad)")
-_ = plt.ylabel("theta_dot (rad/s)")
-_ = plt.title("Phase Plot")
+# _ = plt.plot(theta, theta_dot)
+# _ = plt.xlabel("theta (rad)")
+# _ = plt.ylabel("theta_dot (rad/s)")
+# _ = plt.title("Phase Plot")
+# plt.show()
+# plt.clf()
+
+# Plot of the path through space
+verts = xs
+xs, ys = zip(*verts)
+gx, gy = zip(*all_goals)
+
+plt.plot(xs, ys, 'x--', lw=2, color='black', ms=10)
+plt.plot(gx, gy, marker="o", markersize=20, markeredgecolor="black", markerfacecolor="green", lw=0)
+_ = plt.title("Path through space")
 plt.show()
 plt.clf()
 
@@ -329,9 +329,9 @@ _ = plt.plot(J_hist)
 _ = plt.xlabel("Iteration")
 _ = plt.ylabel("Total cost")
 _ = plt.title("Total cost-to-go")
+plt.show()
+plt.clf()
 
 # n_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
 # plt.savefig(fn_spline)
-plt.show()
-plt.clf()
 
