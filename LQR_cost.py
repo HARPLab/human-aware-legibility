@@ -20,7 +20,7 @@ class LegiblePathQRCost(PathQRCost):
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
 
-    def __init__(self, Q, R, x_path, u_path, goals, Q_terminal=None):
+    def __init__(self, Q, R, x_path, u_path, target_goal, goals, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -35,6 +35,7 @@ class LegiblePathQRCost(PathQRCost):
         self.x_path = np.array(x_path)
 
         self.goals = goals
+        self.target_goal = target_goal
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
@@ -54,9 +55,6 @@ class LegiblePathQRCost(PathQRCost):
         assert self.Q.shape[0] == self.Q.shape[1], "Q must be square"
         assert self.R.shape[0] == self.R.shape[1], "R must be square"
         
-        print(state_size)
-        print(self.x_path.shape[1])
-
         assert state_size == self.x_path.shape[1], "Q & x_path mismatch"
         assert action_size == self.u_path.shape[1], "R & u_path mismatch"
         assert path_length == self.u_path.shape[0] + 1, \
@@ -69,26 +67,130 @@ class LegiblePathQRCost(PathQRCost):
 
         super(PathQRCost, self).__init__()
 
+
     def l(self, x, u, i, terminal=False):
         """Instantaneous cost function.
-        Args:
-            x: Current state [state_size].
-            u: Current control [action_size]. None if terminal.
-            i: Current time step.
-            terminal: Compute terminal cost. Default: False.
-        Returns:
-            Instantaneous cost (scalar).
-        """
+        #     Args:
+        #         x: Current state [state_size].
+        #         u: Current control [action_size]. None if terminal.
+        #         i: Current time step.
+        #         terminal: Compute terminal cost. Default: False.
+        #     Returns:
+        #         Instantaneous cost (scalar).
+        #     """
+
+         # NOTE: The terminal cost needs to at most be a function of x and i, whereas
+         #  the non-terminal cost can be a function of x, u and i.
+
+        nongoal_scale = 50
+
+        start = self.x_path[0]
+        goal1 = self.target_goal
+
         Q = self.Q_terminal if terminal else self.Q
         R = self.R
-        x_diff = x - self.x_path[i]
-        squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
+        all_goals = self.goals
 
-        if terminal:
-            return squared_x_cost
+        if not terminal: #ie, u is not None:
+            x_diff = x - self.x_path[i]
+            # squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
+            u_diff = u - self.u_path[i]
+            # squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+        
+        # TERMINAL COST FUNCTION
+        else:
+            x_diff = (x - self.x_path[i]).T
+            terminal_cost = 0.5*((x_diff).dot(Q).dot((x_diff).T))
+            print("term cost")
+            print(terminal_cost)
 
-        u_diff = u - self.u_path[i]
-        return squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+            return terminal_cost
+
+        # print("start - goal")
+        # print(start-goal1)
+
+        # STAGE COST FUNCTION
+        goal_diff = start - goal1
+        start_diff = start - x
+        togoal_diff = x-goal1
+
+        goal_diff   = np.reshape(goal_diff.T, (-1, 2))
+        start_diff  = np.reshape(start_diff.T, (-1, 2))
+        togoal_diff = np.reshape(togoal_diff.T, (-1, 2))
+
+        a = (goal_diff).dot(Q).dot((goal_diff).T)
+        b = (start_diff).dot(Q).dot((start_diff).T)
+        c = (togoal_diff).dot(Q).dot((togoal_diff).T)
+    
+
+        J_g1 = a - b + - c
+        J_g1 *= 0.5
+
+        # print("J_g1")
+        # print(J_g1)
+
+        log_sum = 0
+        for i in range(len(all_goals)):
+            goal = all_goals[i]
+            scale = 1
+            if goal != goal1:
+                scale = nongoal_scale
+
+            alt_goal_diff = np.reshape(x - goal, (-1, 2))
+            alt_goal_from_start_diff = np.reshape(start - goal, (-1, 2))
+
+            n0 = (start_diff).dot(Q).dot((start_diff).T)
+            n1 = (alt_goal_diff).dot(Q).dot((alt_goal_diff).T)
+
+            # print("n0")
+            # print(n0)
+            # print("n1")
+            # print(n1)
+
+            n = - (n0[0,0] + 5) - (n1[0,0] + 10)
+            d = (alt_goal_from_start_diff).dot(Q).dot((alt_goal_from_start_diff).T)
+            d = d[0,0]
+
+            # print(n)
+            # print(d)
+
+            log_sum += (np.exp(n)/np.exp(d)) * scale
+        
+        # print("log sum")
+        # print(np.log(log_sum))
+
+        J = J_g1[0,0] - np.log(log_sum)
+
+        J *= -1
+
+        J += 0.5 * (u_diff.T.dot(R).dot(u_diff))
+
+        print("stage cost")
+        print(J)
+
+        return J
+
+
+    # def l(self, x, u, i, terminal=False):
+    #     """Instantaneous cost function.
+    #     Args:
+    #         x: Current state [state_size].
+    #         u: Current control [action_size]. None if terminal.
+    #         i: Current time step.
+    #         terminal: Compute terminal cost. Default: False.
+    #     Returns:
+    #         Instantaneous cost (scalar).
+    #     """
+    #     Q = self.Q_terminal if terminal else self.Q
+    #     R = self.R
+    #     x_diff = x - self.x_path[i]
+    #     squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
+
+    #     if terminal:
+    #         return squared_x_cost
+
+    #     u_diff = u - self.u_path[i]
+    #     return squared_x_cost + u_diff.T.dot(R).dot(u_diff)
 
     def l_x(self, x, u, i, terminal=False):
         """Partial derivative of cost function with respect to x.
@@ -102,7 +204,12 @@ class LegiblePathQRCost(PathQRCost):
         """
         Q_plus_Q_T = self._Q_plus_Q_T_terminal if terminal else self._Q_plus_Q_T
         x_diff = x - self.x_path[i]
-        return x_diff.T.dot(Q_plus_Q_T)
+
+        val = x_diff.T.dot(Q_plus_Q_T)
+
+        print("J_x")
+        print(val)
+        return val
 
     def l_u(self, x, u, i, terminal=False):
         """Partial derivative of cost function with respect to u.
@@ -118,7 +225,12 @@ class LegiblePathQRCost(PathQRCost):
             return np.zeros_like(self.u_path)
 
         u_diff = u - self.u_path[i]
-        return u_diff.T.dot(self._R_plus_R_T)
+        val = u_diff.T.dot(self._R_plus_R_T)
+
+        print("J_u")
+        print(val)
+
+        return val
 
     def l_xx(self, x, u, i, terminal=False):
         """Second partial derivative of cost function with respect to x.
@@ -130,7 +242,11 @@ class LegiblePathQRCost(PathQRCost):
         Returns:
             d^2l/dx^2 [state_size, state_size].
         """
-        return self._Q_plus_Q_T_terminal if terminal else self._Q_plus_Q_T
+        val = self._Q_plus_Q_T_terminal if terminal else self._Q_plus_Q_T
+        print("J_xx")
+        print(val)
+
+        return val
 
     def l_ux(self, x, u, i, terminal=False):
         """Second partial derivative of cost function with respect to u and x.
@@ -142,7 +258,10 @@ class LegiblePathQRCost(PathQRCost):
         Returns:
             d^2l/dudx [action_size, state_size].
         """
-        return np.zeros((self.R.shape[0], self.Q.shape[0]))
+        val = np.zeros((self.R.shape[0], self.Q.shape[0]))
+        print("J_ux")
+        print(val)
+        return val
 
     def l_uu(self, x, u, i, terminal=False):
         """Second partial derivative of cost function with respect to u.
@@ -157,4 +276,8 @@ class LegiblePathQRCost(PathQRCost):
         if terminal:
             return np.zeros_like(self.R)
 
-        return self._R_plus_R_T
+        val = self._R_plus_R_T
+        print("J_uu")
+        print(val)
+
+        return val

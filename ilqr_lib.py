@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import theano.tensor as T
 
 from ilqr import iLQR
-from ilqr.cost import QRCost
+from ilqr.cost import QRCost, PathQRCost
 from ilqr.dynamics import constrain
 from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_constrain
@@ -37,26 +37,13 @@ class NavigationDynamics(FiniteDiffDynamics):
 
         v0 = A*x
 
-        # print("A and x shape")
-        # print(A.shape)
-        # print(x.shape)
-        # print(v0.shape)
-        # print("Ax")
-        # print(A)
-        # print(x)
-
         v1 = B.dot(u)
         v0 = A.dot(x)
 
-        # print(v0)
-        
-        #(2,2) * (2, 1) = (2,1)
         xnext = v0 + v1 #A * x + B*u
-        # print(xnext)
-        # print(xnext.shape)
         return xnext
 
-    """Inverted pendulum auto-differentiated dynamics model."""
+    """ Original based on inverted pendulum auto-differentiated dynamics model."""
     def __init__(self,
                  dt,
                  constrain=True,
@@ -153,62 +140,12 @@ class NavigationDynamics(FiniteDiffDynamics):
         # return np.hstack([theta, theta_dot])
 
 
-# # Inverted Pendulum Problem
-# 
-# The state and control vectors $\textbf{x}$ and $\textbf{u}$ are defined as follows:
-# 
-# $$
-# \begin{equation*}
-# \textbf{x} = \begin{bmatrix}
-#     \theta & \dot{\theta}
-#     \end{bmatrix}
-# \end{equation*}
-# $$
-# 
-# $$
-# \begin{equation*}
-# \textbf{u} = \begin{bmatrix}
-#     \tau
-#     \end{bmatrix}
-# \end{equation*}
-# $$
-# 
-# The goal is to swing the pendulum upright:
-# 
-# $$
-# \begin{equation*}
-# \textbf{x}_{goal} = \begin{bmatrix}
-#     0 & 0
-#     \end{bmatrix}
-# \end{equation*}
-# $$
-# 
-# In order to deal with potential angle wrap-around issues (i.e. $2\pi = 0$), we
-# augment the state as follows and use that instead:
-# 
-# $$
-# \begin{equation*}
-# \textbf{x}_{augmented} = \begin{bmatrix}
-#     \sin\theta & \cos\theta & \dot{\theta}
-#     \end{bmatrix}
-# \end{equation*}
-# $$
-# 
-# **Note**: The torque is constrained between $-1$ and $1$. This is achieved by
-# instead fitting for unconstrained actions and then applying it to a squashing
-# function $\tanh(\textbf{u})$. This is directly embedded into the dynamics model
-# in order to be auto-differentiated. This also means that we need to apply this
-# transformation manually to the output of our iLQR at the end.
-
-# In[22]:
-
-
-# In[4]:
-
-
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
     info = "converged" if converged else ("accepted" if accepted else "failed")
+    print(J_opt)
+    print(xs)
+
     final_state = dynamics.reduce_state(xs[-1])
     print("iteration", iteration_count, info, J_opt, final_state)
 
@@ -217,9 +154,6 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
 
 dt = .025
 N = 61
-
-x0_raw          = [0.0, 0.0]    # initial state
-x_goal_raw      = [6.0, 5.0]
 
 true_goal       = [8.0, 2.0]
 goal2           = [2.0, 1.0]
@@ -237,48 +171,43 @@ x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
+target_goal = true_goal
+
+x0_raw          = [0.0, 0.0]    # initial state
+x_goal_raw      = true_goal
+
 # dynamics = AutoDiffDynamics(f, [x], [u], t)
 dynamics = NavigationDynamics(dt)
 
 # Note that the augmented state is not all 0.
-x0 = dynamics.augment_state(np.array(x0_raw)).T
-x_goal = dynamics.augment_state(np.array(x_goal_raw)).T
-
-# Q = np.eye(dynamics.state_size)
-# Q[0, 1] = Q[1, 0] = pendulum_length
-# Q[0, 0] = Q[1, 1] = pendulum_length**2
-# Q[2, 2] = 0.0
-# Q_terminal = 100 * np.eye(dynamics.state_size)
-# R = np.array([[0.1]])
+x0      = dynamics.augment_state(np.array(x0_raw)).T
+x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
 
 x_T = N
 Xrefline = np.tile(x_goal_raw, (N+1, 1))
-Xrefline = Xrefline
+Xrefline = np.reshape(Xrefline, (-1, 2))
 
-#[np.array(x_goal_raw)] * N
-# upath3=np.full((nos,1),10)
-Urefline = np.tile(x0_raw, (N, 1))
-Urefline = Urefline
+u_blank = np.asarray([0.0, 0.0])
+Urefline = np.tile(u_blank, (N, 1))
+Urefline = np.reshape(Urefline, (-1, 2))
 
-# Q = np.eye(dynamics.state_size)
-# R = 0.1 * np.eye(dynamics.action_size)
 Q = np.identity(2)
 R = np.identity(2)
 Qf = np.identity(2) * 10
 
-print(Xrefline.shape)
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, all_goals)
 
-# cost = PathQRCost(Q, R, traj, us_init)
+cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, target_goal, all_goals)
+
+traj        = Xrefline
+us_init     = Urefline
+cost        = PathQRCost(Q, R, traj, us_init)
 # x_dot = (dt * t - u) * x**2
 # f = T.stack([x + x_dot * dt])
 
-us_init = np.random.uniform(0, 1, (N, dynamics.action_size))
 ilqr = iLQR(dynamics, cost, N)
 
 J_hist = []
-xs, us = ilqr.fit(x0_raw, us_init, n_iterations=N, on_iteration=on_iteration)
-
+xs, us = ilqr.fit(x0_raw, Urefline, n_iterations=N, on_iteration=on_iteration)
 
 # # Reduce the state to something more reasonable.
 # xs = dynamics.reduce_state(xs)
@@ -311,9 +240,15 @@ theta_dot = xs[:, 1]
 verts = xs
 xs, ys = zip(*verts)
 gx, gy = zip(*all_goals)
+sx, sy = zip(*[x0_raw])
+
+print("verts")
+print(verts)
+print("Attempt to display this path")
 
 plt.plot(xs, ys, 'x--', lw=2, color='black', ms=10)
-plt.plot(gx, gy, marker="o", markersize=20, markeredgecolor="black", markerfacecolor="green", lw=0)
+plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0)
+plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0)
 _ = plt.title("Path through space")
 plt.show()
 plt.clf()
