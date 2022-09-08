@@ -68,7 +68,70 @@ class LegiblePathQRCost(PathQRCost):
         super(PathQRCost, self).__init__()
 
 
+    def term_cost(self, x, i):
+        start = self.x_path[0]
+        goal1 = self.target_goal
+
+
+        print("start, goal1")
+        print(start)
+        print(goal1)
+
+        Qf = np.identity(2) * 10
+        R = self.R
+        all_goals = self.goals
+
+        if i == -1:
+            xref = goal1
+        else:
+            xref = self.x_path[i]
+
+        x_diff = (x - xref)
+        terminal_cost = 0.5*((x_diff).dot(Qf).dot((x_diff).T))
+
+        print("x_diff")
+        print(x_diff)
+        terminal_coeff = 1000000000.0
+        terminal_cost = terminal_cost * terminal_coeff
+
+        print("term cost")
+        print(terminal_cost)
+
+        # is term cost a 1x3 vector actually?
+        # 100000.0,-40000.0,-20000.0
+
+        return terminal_cost
+
     def l(self, x, u, i, terminal=False):
+    # def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
+    # calculate the cost of a given trajectory 
+        # N_len = len(Xref)
+        Xref = self.x_path
+        Uref = self.u_path
+
+        end_of_path = self.x_path[-1]
+        # end_goal    = Xref[N_len]
+
+        # start with the term cost
+        J = self.term_cost(end_of_path, -1)
+
+
+
+        # J = term_cost(X[N_len],Xref[N_len])
+
+
+        print("J in beginning")
+        print(J)
+
+        for i in range(Uref.shape[0]):
+            J = J + self.stage_cost(x, u, i, terminal=terminal)
+
+        print("x, xref")
+        print(x, Xref[i])
+        return J
+
+
+    def stage_cost(self, x, u, i, terminal=False):
         """Instantaneous cost function.
         #     Args:
         #         x: Current state [state_size].
@@ -82,7 +145,7 @@ class LegiblePathQRCost(PathQRCost):
          # NOTE: The terminal cost needs to at most be a function of x and i, whereas
          #  the non-terminal cost can be a function of x, u and i.
 
-        nongoal_scale = 50
+        nongoal_scale = 1 #50
 
         start = self.x_path[0]
         goal1 = self.target_goal
@@ -91,32 +154,24 @@ class LegiblePathQRCost(PathQRCost):
         R = self.R
         all_goals = self.goals
 
-        if not terminal: #ie, u is not None:
-            x_diff = x - self.x_path[i]
-            # squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
-            u_diff = u - self.u_path[i]
-            # squared_x_cost + u_diff.T.dot(R).dot(u_diff)
-        
+        if terminal: #ie, u is not None:
         # TERMINAL COST FUNCTION
-        else:
-            x_diff = (x - self.x_path[i]).T
-            terminal_cost = 0.5*((x_diff).dot(Q).dot((x_diff).T))
-            print("term cost")
-            print(terminal_cost)
+            return self.term_cost(x, len(x))
 
-            return terminal_cost
-
-        # print("start - goal")
-        # print(start-goal1)
-
+        xref = self.x_path[i]
+        uref = self.u_path[i]
+        
+        x_diff = x - xref
+        u_diff = u - uref
+        
         # STAGE COST FUNCTION
-        goal_diff = start - goal1
-        start_diff = start - x
-        togoal_diff = x-goal1
+        goal_diff   = start - goal1
+        start_diff  = (start - x)
+        togoal_diff = (x - goal1)
 
-        goal_diff   = np.reshape(goal_diff.T, (-1, 2))
-        start_diff  = np.reshape(start_diff.T, (-1, 2))
-        togoal_diff = np.reshape(togoal_diff.T, (-1, 2))
+        # goal_diff   = np.reshape(goal_diff.T, (-1, 2))
+        # start_diff  = np.reshape(start_diff.T, (-1, 2))
+        # togoal_diff = np.reshape(togoal_diff.T, (-1, 2))
 
         a = (goal_diff).dot(Q).dot((goal_diff).T)
         b = (start_diff).dot(Q).dot((start_diff).T)
@@ -126,47 +181,45 @@ class LegiblePathQRCost(PathQRCost):
         J_g1 = a - b + - c
         J_g1 *= 0.5
 
+        # print("x, xref")
+        # print(x, self.x_path[i])
+        # # print("x_diff, u_diff")
+        # # print(x_diff)
+        # # print(u_diff)
+
         # print("J_g1")
         # print(J_g1)
 
         log_sum = 0
         for i in range(len(all_goals)):
             goal = all_goals[i]
+
+            # print(goal)
+            # print(g)
+
             scale = 1
             if goal != goal1:
                 scale = nongoal_scale
 
-            alt_goal_diff = np.reshape(x - goal, (-1, 2))
-            alt_goal_from_start_diff = np.reshape(start - goal, (-1, 2))
+            alt_goal_diff               = (x - goal)
+            alt_goal_from_start_diff    = (start - goal)
 
             n0 = (start_diff).dot(Q).dot((start_diff).T)
             n1 = (alt_goal_diff).dot(Q).dot((alt_goal_diff).T)
 
-            # print("n0")
-            # print(n0)
-            # print("n1")
-            # print(n1)
-
-            n = - (n0[0,0] + 5) - (n1[0,0] + 10)
+            n = - (n0 + 5) - (n1 + 10)
             d = (alt_goal_from_start_diff).dot(Q).dot((alt_goal_from_start_diff).T)
-            d = d[0,0]
-
-            # print(n)
-            # print(d)
+            d = d
 
             log_sum += (np.exp(n)/np.exp(d)) * scale
         
-        # print("log sum")
-        # print(np.log(log_sum))
-
-        J = J_g1[0,0] - np.log(log_sum)
-
+        J = J_g1 - np.log(log_sum)
         J *= -1
+        J_addition = 0.5 * (u_diff.T.dot(R).dot(u_diff))
+        J += J_addition
 
-        J += 0.5 * (u_diff.T.dot(R).dot(u_diff))
-
-        print("stage cost")
-        print(J)
+        # print("stage cost")
+        # print(J)
 
         return J
 

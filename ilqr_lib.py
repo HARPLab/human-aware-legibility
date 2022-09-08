@@ -27,6 +27,9 @@ class NavigationDynamics(FiniteDiffDynamics):
     _action_size = 2
 
     def f(self, x, u, i):
+        return self.dynamics(x, u)
+
+    def dynamics(self, x, u):
         # # Constrain action space.
         # if constrain:
         #     u = tensor_constrain(u, min_bounds, max_bounds)
@@ -40,8 +43,29 @@ class NavigationDynamics(FiniteDiffDynamics):
         v1 = B.dot(u)
         v0 = A.dot(x)
 
-        xnext = v0 + v1 #A * x + B*u
+        xnext = v0 + v1     # A * x + B*u
         return xnext
+
+    # these are functions from michelle's implementation
+    # def rk4(self, x, u, dt):
+    #     # rk4 for integration
+    #     k1 = dt * self.dynamics(x, u)
+    #     k2 = dt * self.dynamics(x + k1/2, u)
+    #     k3 = dt * self.dynamics(x + k2/2, u)
+    #     k4 = dt * self.dynamics(x + k3, u)
+    #     # print("rk4")
+    #     # print(x)
+    #     # print(u)
+    #     # print(dt)
+    #     return x + (1/6)*(k1 + 2*k2 + 2*k3 + k4)
+
+
+    # def dynamics_jacobians(self, x, u, dt):
+    #     # returns the discrete time dynamics jacobians
+    #     A = self.rk4(0, u, dt) # FD.jacobian(_x -> rk4(_x,u,dt),x)
+    #     B = self.rk4(x, 0, dt) #FD.jacobian(_u -> rk4(x,_u,dt),u)
+        
+    #     return A,B
 
     """ Original based on inverted pendulum auto-differentiated dynamics model."""
     def __init__(self,
@@ -108,13 +132,6 @@ class NavigationDynamics(FiniteDiffDynamics):
         """
         return state
 
-        # if state.ndim == 1:
-        #     theta, theta_dot = state
-        # else:
-        #     theta = state[..., 0].reshape(-1, 1)
-        #     theta_dot = state[..., 1].reshape(-1, 1)
-
-        # return np.hstack([np.sin(theta), np.cos(theta), theta_dot])
 
     @classmethod
     def reduce_state(cls, state):
@@ -128,17 +145,6 @@ class NavigationDynamics(FiniteDiffDynamics):
             Reduced state size [reducted_state_size].
         """
         return state
-
-        # if state.ndim == 1:
-        #     sin_theta, cos_theta, theta_dot = state
-        # else:
-        #     sin_theta = state[..., 0].reshape(-1, 1)
-        #     cos_theta = state[..., 1].reshape(-1, 1)
-        #     theta_dot = state[..., 2].reshape(-1, 1)
-
-        # theta = np.arctan2(sin_theta, cos_theta)
-        # return np.hstack([theta, theta_dot])
-
 
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
@@ -160,10 +166,12 @@ goal2           = [2.0, 1.0]
 goal3           = [4.0, 1.0]
 start           = [0.0, 0.0]
 
-true_goal       = [4.0, 2.0]
+goal1           = [4.0, 2.0]
 goal3           = [1.0, 3.0]
-    
-all_goals   = [true_goal, goal3]
+
+true_goal = goal3
+
+all_goals   = [goal1, goal3, goal2]
 bounds0     = [0.0,     0.0]
 bounds1     = [10.0,    10.0]
 
@@ -198,9 +206,14 @@ Qf = np.identity(2) * 10
 
 cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, target_goal, all_goals)
 
-traj        = Xrefline
-us_init     = Urefline
-cost        = PathQRCost(Q, R, traj, us_init)
+FLAG_JUST_PATH = False
+if FLAG_JUST_PATH:
+    traj        = Xrefline
+    us_init     = Urefline
+    cost        = PathQRCost(Q, R, traj, us_init)
+    print("Set to old school pathing")
+    exit()
+
 # x_dot = (dt * t - u) * x**2
 # f = T.stack([x + x_dot * dt])
 
@@ -246,10 +259,13 @@ print("verts")
 print(verts)
 print("Attempt to display this path")
 
-plt.plot(xs, ys, 'x--', lw=2, color='black', ms=10)
-plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0)
-plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0)
+plt.plot(xs, ys, 'x--', lw=2, color='black', ms=10, label="path")
+plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
+plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+_ = plt.xlabel("X")
+_ = plt.ylabel("Y")
 _ = plt.title("Path through space")
+plt.legend(loc="upper left")
 plt.show()
 plt.clf()
 
