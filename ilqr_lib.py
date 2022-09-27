@@ -184,6 +184,37 @@ def get_window_dimensions_for_envir(start, goals):
 
     return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
+def scenario_1():
+    start           = [0.0, 0.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal3           = [4.0, 1.0]
+
+    goal1           = [4.0, 2.0]
+    goal3           = [1.0, 3.0]
+
+    target_goal = goal2
+
+    all_goals   = [goal1, goal3, goal2]
+    return start, target_goal, all_goals
+
+
+def scenario_2():
+    start           = [0.0, 0.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal3           = [4.0, 1.0]
+
+    goal1           = [4.0, 2.0]
+    goal3           = [1.0, 3.0]
+
+    target_goal = goal2
+    start = goal3
+
+    all_goals   = [goal1, goal3, goal2]
+    return start, target_goal, all_goals
 
 
 # In[1]:
@@ -191,31 +222,14 @@ def get_window_dimensions_for_envir(start, goals):
 dt = .1 #.025
 N = 61
 
-start           = [0.0, 0.0]
-
-true_goal       = [8.0, 2.0]
-goal2           = [2.0, 1.0]
-goal3           = [4.0, 1.0]
-
-goal1           = [4.0, 2.0]
-goal3           = [1.0, 3.0]
-
-true_goal = goal2
-start = goal3
-
-all_goals   = [goal1, goal3, goal2]
-# all_goals   = [[0.0, 0.0], goal2]
-bounds0     = [-2.0,    -2.0]
-bounds1     = [10.0,    10.0]
-
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-target_goal = true_goal
+start, target_goal, all_goals = scenario_1()
 
-x0_raw          = [0.0, 0.0]    # initial state
-x_goal_raw      = true_goal
+x0_raw          = start    # initial state
+x_goal_raw      = target_goal
 
 # dynamics = AutoDiffDynamics(f, [x], [u], t)
 dynamics = NavigationDynamics(dt)
@@ -236,10 +250,9 @@ Q = np.identity(2)
 R = np.identity(2)
 Qf = np.identity(2) * 10
 
+cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals)
 
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, target_goal, all_goals)
-
-FLAG_JUST_PATH = True
+FLAG_JUST_PATH = False
 if FLAG_JUST_PATH:
     traj        = Xrefline
     us_init     = Urefline
