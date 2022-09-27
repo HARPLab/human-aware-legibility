@@ -67,17 +67,17 @@ class LegiblePathQRCost(PathQRCost):
 
         super(PathQRCost, self).__init__()
 
-
+    # TODO ada why does this always come out to be 0???
     def term_cost(self, x, i):
         start = self.x_path[0]
         goal1 = self.target_goal
 
 
-        print("start, goal1")
-        print(start)
-        print(goal1)
+        # print("start, goal1")
+        # print(start)
+        # print(goal1)
 
-        Qf = np.identity(2) * 10
+        Qf = np.identity(2) # * 10
         R = self.R
         all_goals = self.goals
 
@@ -86,22 +86,41 @@ class LegiblePathQRCost(PathQRCost):
         else:
             xref = self.x_path[i]
 
+        # TODO Check whether this was evil or not
         x_diff = (x - xref)
         terminal_cost = 0.5*((x_diff).dot(Qf).dot((x_diff).T))
 
-        print("x_diff")
-        print(x_diff)
-        terminal_coeff = 1000000000.0
+        # print("x_diff")
+        # print(x_diff)
+        terminal_coeff = 1.0
         terminal_cost = terminal_cost * terminal_coeff
 
-        print("term cost")
-        print(terminal_cost)
-
-        # is term cost a 1x3 vector actually?
-        # 100000.0,-40000.0,-20000.0
-
+        # Once we're at the goal, the terminal cost is 0
         return terminal_cost
 
+    # original version for plain path following
+    def l_og(self, x, u, i, terminal=False):
+        """Instantaneous cost function.
+        Args:
+            x: Current state [state_size].
+            u: Current control [action_size]. None if terminal.
+            i: Current time step.
+            terminal: Compute terminal cost. Default: False.
+        Returns:
+            Instantaneous cost (scalar).
+        """
+        Q = self.Q_terminal if terminal else self.Q
+        R = self.R
+        x_diff = x - self.x_path[i]
+        squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
+
+        if terminal:
+            return squared_x_cost
+
+        u_diff = u - self.u_path[i]
+        return squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+
+    # stage cost
     def l(self, x, u, i, terminal=False):
     # def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
     # calculate the cost of a given trajectory 
@@ -113,21 +132,26 @@ class LegiblePathQRCost(PathQRCost):
         # end_goal    = Xref[N_len]
 
         # start with the term cost
-        J = self.term_cost(end_of_path, -1)
+        term_cost = self.term_cost(end_of_path, -1)
 
 
 
         # J = term_cost(X[N_len],Xref[N_len])
+        N = Uref.shape[0]
 
+        print("Uref shape")
+        print(N)
+        stage_costs = 0
 
-        print("J in beginning")
-        print(J)
+        # currently has a value of about 10 * N steps
+        for i in range(N):
+            stage_costs = stage_costs + self.stage_cost(x, u, i, terminal=terminal)
 
-        for i in range(Uref.shape[0]):
-            J = J + self.stage_cost(x, u, i, terminal=terminal)
+        J = term_cost + stage_costs
 
-        print("x, xref")
-        print(x, Xref[i])
+        print("Total J for stage: term, stage, J")
+        print(term_cost, stage_costs, J)
+
         return J
 
 
@@ -156,7 +180,7 @@ class LegiblePathQRCost(PathQRCost):
 
         if terminal: #ie, u is not None:
         # TERMINAL COST FUNCTION
-            return self.term_cost(x, len(x))
+            return self.term_cost(x, -1)
 
         xref = self.x_path[i]
         uref = self.u_path[i]
@@ -164,6 +188,7 @@ class LegiblePathQRCost(PathQRCost):
         x_diff = x - xref
         u_diff = u - uref
         
+        # Find the cost of going to the targeted goal
         # STAGE COST FUNCTION
         goal_diff   = start - goal1
         start_diff  = (start - x)
@@ -178,24 +203,26 @@ class LegiblePathQRCost(PathQRCost):
         c = (togoal_diff).dot(Q).dot((togoal_diff).T)
     
 
+
         J_g1 = a - b + - c
-        J_g1 *= 0.5
+        print("Value for goal before others: " + str(J_g1))
 
-        # print("x, xref")
-        # print(x, self.x_path[i])
-        # # print("x_diff, u_diff")
-        # # print(x_diff)
-        # # print(u_diff)
+        # J_g1 = (np.exp(a - b)/np.exp(c))
 
-        # print("J_g1")
+        # J_g1 *= 0.5
+
+        # print("J_g1 = legibility for goal 1")
         # print(J_g1)
+
+        # and then also find this ratio for all of the other goals and combine
+        print("Finding ratio")
+        all_components = []
+        goal_component = 0
 
         log_sum = 0
         for i in range(len(all_goals)):
             goal = all_goals[i]
-
-            # print(goal)
-            # print(g)
+            # print("goal = " + str(goal))
 
             scale = 1
             if goal != goal1:
@@ -207,19 +234,43 @@ class LegiblePathQRCost(PathQRCost):
             n0 = (start_diff).dot(Q).dot((start_diff).T)
             n1 = (alt_goal_diff).dot(Q).dot((alt_goal_diff).T)
 
-            n = - (n0 + 5) - (n1 + 10)
+
+            # weight_before = 5
+            # weight_after = 10
+            weight_before = 0.0
+            weight_after = 0.0
+
+            n = - (n0 + weight_before) - (n1 + weight_after)
             d = (alt_goal_from_start_diff).dot(Q).dot((alt_goal_from_start_diff).T)
             d = d
+            component = (np.exp(n)/np.exp(d))
+            
+            all_components.append(component)
+            if goal == goal1:
+                goal_component = component
 
-            log_sum += (np.exp(n)/np.exp(d)) * scale
+            # add weighted value for this component
+            log_sum += component * scale
         
-        J = J_g1 - np.log(log_sum)
-        J *= -1
-        J_addition = 0.5 * (u_diff.T.dot(R).dot(u_diff))
-        J += J_addition
 
-        # print("stage cost")
-        # print(J)
+        print("RATIO")
+        print(all_components)
+        # print(J_g1)
+        ratio = goal_component / sum(all_components)
+        print(ratio)
+        if ratio > .5:
+            print("Doing the thing!")
+
+        J = np.log(goal_component) - np.log(log_sum)
+        # J *= -1
+        # J_addition = 0.5 * (u_diff.T.dot(R).dot(u_diff))
+        # J += J_addition
+
+        print("J components")
+        print((goal_component), (log_sum))
+        print(np.log(goal_component), -np.log(log_sum))
+        print("stage cost~~~")
+        print(J)
 
         return J
 
