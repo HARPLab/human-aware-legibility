@@ -258,7 +258,7 @@ if FLAG_JUST_PATH:
     us_init     = Urefline
     cost        = PathQRCost(Q, R, traj, us_init)
     print("Set to old school pathing")
-    # exit()
+    exit()
 
 # x_dot = (dt * t - u) * x**2
 # f = T.stack([x + x_dot * dt])
@@ -309,9 +309,9 @@ xmin, xmax, ymin, ymax = get_window_dimensions_for_envir(start, all_goals)
 plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
 plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
 plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
-_ = plt.xlabel("X")
-_ = plt.ylabel("Y")
-_ = plt.title("Path through space")
+_ = plt.xlabel("X", fontweight='bold')
+_ = plt.ylabel("Y", fontweight='bold')
+_ = plt.title("Path through space", fontweight='bold')
 plt.legend(loc="upper left")
 plt.xlim([xmin, xmax])
 plt.ylim([ymin, ymax])
