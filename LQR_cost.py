@@ -122,8 +122,10 @@ class LegiblePathQRCost(PathQRCost):
 
     # stage cost
     def l(self, x, u, i, terminal=False):
-    # def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
-    # calculate the cost of a given trajectory 
+        # return self.l_og(x, u, i, terminal)
+
+        # def trajectory_cost(X, U, Xref, Uref, start, goal1, all_goals, nongoal_scale):
+        # calculate the cost of a given trajectory 
         # N_len = len(Xref)
         Xref = self.x_path
         Uref = self.u_path
