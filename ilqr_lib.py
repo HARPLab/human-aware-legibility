@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import sys
+import copy
 module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
     sys.path.append(module_path)
@@ -34,14 +35,14 @@ class NavigationDynamics(FiniteDiffDynamics):
         # if constrain:
         #     u = tensor_constrain(u, min_bounds, max_bounds)
 
+        dt = self.dt
+
         # Moving a square
-        A = np.eye(2) #np.asarray([[1, 0], [0, 1]])
-        B = np.eye(2)
+        A = np.eye(self._state_size)
+        B = np.eye(self._action_size) * dt
 
-        v0 = A*x
-
-        v1 = B.dot(u)
         v0 = A.dot(x)
+        v1 = B.dot(u)
 
         xnext = v0 + v1     # A * x + B*u
         return xnext
@@ -97,25 +98,27 @@ class NavigationDynamics(FiniteDiffDynamics):
         self.min_bounds = min_bounds
         self.max_bounds = max_bounds
 
-            # sin_theta = x[..., 0]
-            # cos_theta = x[..., 1]
-            # theta_dot = x[..., 2]
-            # torque = u[..., 0]
 
-            # # Deal with angle wrap-around.
-            # theta = T.arctan2(sin_theta, cos_theta)
+        self.dt = dt
+        # sin_theta = x[..., 0]
+        # cos_theta = x[..., 1]
+        # theta_dot = x[..., 2]
+        # torque = u[..., 0]
 
-            # # Define acceleration.
-            # theta_dot_dot = -3.0 * g / (2 * l) * T.sin(theta + np.pi)
-            # theta_dot_dot += 3.0 / (m * l**2) * torque
+        # # Deal with angle wrap-around.
+        # theta = T.arctan2(sin_theta, cos_theta)
 
-            # next_theta = theta + theta_dot * dt
+        # # Define acceleration.
+        # theta_dot_dot = -3.0 * g / (2 * l) * T.sin(theta + np.pi)
+        # theta_dot_dot += 3.0 / (m * l**2) * torque
 
-            # return T.stack([
-            #     T.sin(next_theta),
-            #     T.cos(next_theta),
-            #     theta_dot + theta_dot_dot * dt,
-            # ]).T
+        # next_theta = theta + theta_dot * dt
+
+        # return T.stack([
+        #     T.sin(next_theta),
+        #     T.cos(next_theta),
+        #     theta_dot + theta_dot_dot * dt,
+        # ]).T
 
         super(NavigationDynamics, self).__init__(self.f, 2, 2)
 
@@ -156,23 +159,53 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     print("iteration", iteration_count, info, J_opt, final_state)
 
 
+def get_window_dimensions_for_envir(start, goals):
+    xmin, xmax, ymin, ymax = 0, 0, 0, 0
+
+    all_points = copy.copy(goals)
+    all_points.append(start)
+    for pt in all_points:
+        x, y = pt
+
+        if x < xmin:
+            xmin = x
+        if y < ymin:
+            ymin = y
+        if x > xmax:
+            xmax = x
+        if y > ymax:
+            ymax = y
+
+    xwidth      = xmax - xmin
+    yheight     = ymax - ymin
+
+    xbuffer     = .1 * xwidth
+    ybuffer     = .1 * yheight
+
+    return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
+
+
+
 # In[1]:
 
-dt = .025
+dt = .1 #.025
 N = 61
+
+start           = [0.0, 0.0]
 
 true_goal       = [8.0, 2.0]
 goal2           = [2.0, 1.0]
 goal3           = [4.0, 1.0]
-start           = [0.0, 0.0]
 
 goal1           = [4.0, 2.0]
 goal3           = [1.0, 3.0]
 
-true_goal = goal3
+true_goal = goal2
+start = goal3
 
 all_goals   = [goal1, goal3, goal2]
-bounds0     = [0.0,     0.0]
+# all_goals   = [[0.0, 0.0], goal2]
+bounds0     = [-2.0,    -2.0]
 bounds1     = [10.0,    10.0]
 
 x = T.dscalar("x")
@@ -206,19 +239,18 @@ Qf = np.identity(2) * 10
 
 cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, target_goal, all_goals)
 
-FLAG_JUST_PATH = False
+FLAG_JUST_PATH = True
 if FLAG_JUST_PATH:
     traj        = Xrefline
     us_init     = Urefline
     cost        = PathQRCost(Q, R, traj, us_init)
     print("Set to old school pathing")
-    exit()
+    # exit()
 
 # x_dot = (dt * t - u) * x**2
 # f = T.stack([x + x_dot * dt])
 
 ilqr = iLQR(dynamics, cost, N)
-
 J_hist = []
 xs, us = ilqr.fit(x0_raw, Urefline, n_iterations=N, on_iteration=on_iteration)
 
@@ -259,13 +291,17 @@ print("verts")
 print(verts)
 print("Attempt to display this path")
 
-plt.plot(xs, ys, 'x--', lw=2, color='black', ms=10, label="path")
+xmin, xmax, ymin, ymax = get_window_dimensions_for_envir(start, all_goals)
+
+plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
 plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
 plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
 _ = plt.xlabel("X")
 _ = plt.ylabel("Y")
 _ = plt.title("Path through space")
 plt.legend(loc="upper left")
+plt.xlim([xmin, xmax])
+plt.ylim([ymin, ymax])
 plt.show()
 plt.clf()
 
@@ -273,15 +309,15 @@ _ = plt.plot(t, us)
 _ = plt.xlabel("time (s)")
 _ = plt.ylabel("Force (N)")
 _ = plt.title("Action path")
-plt.show()
-plt.clf()
+# plt.show()
+# plt.clf()
 
 _ = plt.plot(J_hist)
 _ = plt.xlabel("Iteration")
 _ = plt.ylabel("Total cost")
 _ = plt.title("Total cost-to-go")
-plt.show()
-plt.clf()
+# plt.show()
+# plt.clf()
 
 # n_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
 # plt.savefig(fn_spline)
