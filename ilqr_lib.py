@@ -47,27 +47,6 @@ class NavigationDynamics(FiniteDiffDynamics):
         xnext = v0 + v1     # A * x + B*u
         return xnext
 
-    # these are functions from michelle's implementation
-    # def rk4(self, x, u, dt):
-    #     # rk4 for integration
-    #     k1 = dt * self.dynamics(x, u)
-    #     k2 = dt * self.dynamics(x + k1/2, u)
-    #     k3 = dt * self.dynamics(x + k2/2, u)
-    #     k4 = dt * self.dynamics(x + k3, u)
-    #     # print("rk4")
-    #     # print(x)
-    #     # print(u)
-    #     # print(dt)
-    #     return x + (1/6)*(k1 + 2*k2 + 2*k3 + k4)
-
-
-    # def dynamics_jacobians(self, x, u, dt):
-    #     # returns the discrete time dynamics jacobians
-    #     A = self.rk4(0, u, dt) # FD.jacobian(_x -> rk4(_x,u,dt),x)
-    #     B = self.rk4(x, 0, dt) #FD.jacobian(_u -> rk4(x,_u,dt),u)
-        
-    #     return A,B
-
     """ Original based on inverted pendulum auto-differentiated dynamics model."""
     def __init__(self,
                  dt,
@@ -152,15 +131,15 @@ class NavigationDynamics(FiniteDiffDynamics):
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
     info = "converged" if converged else ("accepted" if accepted else "failed")
-    print(J_opt)
-    print(xs)
+    # print(J_opt)
+    # print(xs)
 
     final_state = dynamics.reduce_state(xs[-1])
     print("iteration", iteration_count, info, J_opt, final_state)
 
 
 def get_window_dimensions_for_envir(start, goals):
-    xmin, xmax, ymin, ymax = 0, 0, 0, 0
+    xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
 
     all_points = copy.copy(goals)
     all_points.append(start)
@@ -194,9 +173,9 @@ def scenario_1():
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal2
+    target_goal = goal1
 
-    all_goals   = [goal1, goal3, goal2]
+    all_goals   = [goal1, goal3]
     return start, target_goal, all_goals
 
 
@@ -216,10 +195,26 @@ def scenario_2():
     all_goals   = [goal1, goal3, goal2]
     return start, target_goal, all_goals
 
+def scenario_3():
+    start           = [8.0, 2.0]
+
+    true_goal       = [0.0, 0.0]
+    goal2           = [2.0, 1.0]
+    goal3           = [4.0, 1.0]
+
+    goal1           = [4.0, 2.0]
+    goal3           = [1.0, 3.0]
+
+    target_goal = goal2
+    start = goal3
+
+    all_goals   = [goal1, goal3, goal2]
+    return start, target_goal, all_goals
+
 
 # In[1]:
 
-dt = .1 #.025
+dt = .025
 N = 61
 
 x = T.dscalar("x")
@@ -251,6 +246,11 @@ R = np.identity(2)
 Qf = np.identity(2) * 10
 
 cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals)
+# l = leg_cost.l
+# l_terminal = leg_cost.term_cost
+# cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
+
+
 
 FLAG_JUST_PATH = False
 if FLAG_JUST_PATH:
