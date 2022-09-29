@@ -22,7 +22,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, Q_terminal=None):
+    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -40,13 +40,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         self.start = np.array(start)
         self.goals = goals
         self.target_goal = target_goal
+        self.N = N
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
         path_length = self.x_path.shape[0]
 
-        x_eps = .05
-        u_eps = .05
+        x_eps = .1 #05
+        u_eps = .1 #05
 
         # self._x_eps_hess = np.sqrt(self._x_eps)
         # self._u_eps_hess = np.sqrt(self._u_eps)
@@ -89,7 +90,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         )
 
 
-    # TODO ada why does this always come out to be 0???
+    # How far away is the final step in the path from the goal?
     def term_cost(self, x, i):
         start = self.start
         goal1 = self.target_goal
@@ -97,16 +98,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         Qf = self.Q_terminal
         R = self.R
 
-        # x_diff = (x - xref)
         x_diff = x - self.x_path[i]
         squared_x_cost = x_diff.T.dot(Qf).dot(x_diff)
 
-        all_goals = self.goals
-
         terminal_cost = squared_x_cost
 
-        # somehow this governs how far is explored
-        terminal_coeff = 1000.0
+        # We want to value this highly enough that we don't not end at the goal
+        terminal_coeff = 10000.0
         terminal_cost = terminal_cost * terminal_coeff
 
         # Once we're at the goal, the terminal cost is 0
@@ -151,8 +149,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal = self.target_goal
 
         if terminal:
-            return self.term_cost(x, i)
+            return self.term_cost(x, self.N)
         else:
+            # difference between this step and the end
+            print("term cost x, N")
+            print(x, self.N, self.x_path[self.N])
             term_cost = self.term_cost(x, i)
 
         stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
@@ -177,7 +178,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         u_diff = u - self.u_path[i]
         R = self.R
 
-        stage_costs = u_diff.T.dot(R).dot(u_diff)
+        stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
 
         for i in range(N):
             stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, i, terminal)
@@ -204,11 +205,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         b = (start_diff.T).dot(Q).dot((start_diff))
         c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
+        # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        # print("J_g1")
-        # print(J_g1)
-
-        # this_goal = self.goal_efficiency_through_point(start, x, goal)
+        J_g1 *= .5
 
         # print("For point at x -> " + str(x))
 
@@ -246,16 +245,15 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         u_diff_val = (u_diff).dot(R).dot(u_diff).T
         # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        u_diff_val = .1 * (u_diff_val)
+        u_diff_val = .5 * (u_diff_val)
 
         J *= -1
+        J += u_diff_val
+
         # print("J_initial")
         # print(J)
         # print("u_diff_val")
         # print(u_diff_val)
-
-        J += u_diff_val
-
         # print(J)
 
         return J
