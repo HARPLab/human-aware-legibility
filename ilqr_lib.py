@@ -245,7 +245,7 @@ Q = np.identity(2)
 R = np.identity(2)
 Qf = np.identity(2) * 10
 
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals)
+cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N)
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost
 # cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
