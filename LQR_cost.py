@@ -22,7 +22,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, Q_terminal=None):
+    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -41,13 +41,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         self.goals = goals
         self.target_goal = target_goal
         self.N = N
+        self.dt = dt
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
         path_length = self.x_path.shape[0]
 
-        x_eps = .1 #05
-        u_eps = .1 #05
+        x_eps = .05 #05
+        u_eps = .01 #05
 
         # self._x_eps_hess = np.sqrt(self._x_eps)
         # self._u_eps_hess = np.sqrt(self._u_eps)
@@ -103,11 +104,19 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         terminal_cost = squared_x_cost
 
+        print("term cost squared x cost")
+        print(squared_x_cost)
+
         # We want to value this highly enough that we don't not end at the goal
-        terminal_coeff = 10000.0
+        terminal_coeff = 1000.0
         terminal_cost = terminal_cost * terminal_coeff
 
         # Once we're at the goal, the terminal cost is 0
+        
+        # Attempted fix for paths which do not hit the final mark
+        if squared_x_cost > .001:
+            terminal_cost *= 1000.0
+
         return terminal_cost
 
     # original version for plain path following
@@ -152,9 +161,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             return self.term_cost(x, self.N)
         else:
             # difference between this step and the end
-            print("term cost x, N")
+            print("x, N, x_end_of_path -> inputs and then term cost")
             print(x, self.N, self.x_path[self.N])
             term_cost = self.term_cost(x, i)
+            print(term_cost)
 
         stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
     
@@ -173,15 +183,16 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return float(total)
 
+    def f(t):
+        return 1.0
+
     def get_total_stage_cost(self, start, goal, x, u, i, terminal):
-        N = self.u_path.shape[0]
-        u_diff = u - self.u_path[i]
-        R = self.R
+        N = self.N
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
 
-        for i in range(N):
-            stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, i, terminal)
+        for j in range(N):
+            stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, j, terminal)
 
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
 
@@ -198,6 +209,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal_diff   = start - goal
         start_diff  = (start - np.array(x))
         togoal_diff = (np.array(x) - goal)
+
+        if len(self.u_path) == 0:
+            return 0
+
+        # print(self.u_path)
+        # print(i)
+        # print(len(self.u_path))
 
         u_diff = np.array(u) - self.u_path[i]
 
@@ -399,6 +417,56 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(Q)
 
         return Q
+
+    def graph_legibility_over_time(self, verts):
+        t = np.arange(self.N) * self.dt
+
+        xs, ys = zip(*verts)
+
+        xs, ys = zip(*verts)
+        gx, gy = zip(*self.goals)
+        sx, sy = self.start
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3))
+
+        ax1.grid(axis='y')
+        ax2.grid(axis='y')
+        # each set of xs, ys happens at time t
+        # we want to find the legibility at time t
+        # and graph it
+        # ideally even combine it into a graph with the drawing itself
+
+        # Color code the goals for ease of reading graphs
+
+        # Draw the path itself
+        ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
+        ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
+        ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = ax1.xlabel("X", fontweight='bold')
+        _ = ax1.ylabel("Y", fontweight='bold')
+        _ = ax1.title("Path through space", fontweight='bold')
+        ax1.legend(loc="upper left")
+        # plt.xlim([xmin, xmax])
+        # plt.ylim([ymin, ymax])
+
+        # Draw the legibility over time
+
+        # for each goal, graph legibility
+        ls = []
+
+        ax2.plot(ts, ls, 'o--', lw=2, color='black', label="path", markersize=3)
+        _ = ax2.xlabel("Time", fontweight='bold')
+        _ = ax2.ylabel("Legibility", fontweight='bold')
+        _ = ax2.title("Legibility during path", fontweight='bold')
+        ax2.legend(loc="upper left")
+        # plt.xlim([xmin, xmax])
+        # plt.ylim([ymin, ymax])
+
+        plt.tight_layout()
+        plt.show()
+        plt.clf()
+
+        return
 
     # def goal_efficiency_through_path(self, start, goal, path, terminal=False):
     #     for i in path:
