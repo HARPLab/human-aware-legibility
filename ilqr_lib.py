@@ -30,21 +30,38 @@ class NavigationDynamics(FiniteDiffDynamics):
     def f(self, x, u, i):
         return self.dynamics(x, u)
 
-    def dynamics(self, x, u):
+    # Combine the existing state with 
+    def dynamics(self, x, u, max_u=10.0):
         # # Constrain action space.
         # if constrain:
         #     u = tensor_constrain(u, min_bounds, max_bounds)
 
         dt = self.dt
 
+        # Apply a constraint that limits how much the robot can move per-timestep
+        # TODO: apply to overall vector magnitude rather than x and y components alone
+        if u[0] > max_u:
+            u[0] = 1.0
+        if u[1] > max_u:
+            u[1] = 1.0
+
+        if u[0] < (max_u * -1):
+            u[0] = -1.0
+        if u[1] < (max_u * -1):
+            u[1] = -1.0
+
         # Moving a square
         A = np.eye(self._state_size)
-        B = np.eye(self._action_size) * dt
+        B = np.eye(self._action_size)
 
         v0 = A.dot(x)
-        v1 = B.dot(u)
+        v1 = B.dot(u) * dt
 
-        xnext = v0 + v1     # A * x + B*u
+        xnext = v0 + v1     # A*x + B*u
+
+        print("xnext")
+        print(x, xnext, v0, v1)
+
         return xnext
 
     """ Original based on inverted pendulum auto-differentiated dynamics model."""
@@ -53,9 +70,6 @@ class NavigationDynamics(FiniteDiffDynamics):
                  constrain=True,
                  min_bounds=-1.0,
                  max_bounds=1.0,
-                 m=1.0,
-                 l=1.0,
-                 g=9.80665,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
         Args:
@@ -138,11 +152,12 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     print("iteration", iteration_count, info, J_opt, final_state)
 
 
-def get_window_dimensions_for_envir(start, goals):
+def get_window_dimensions_for_envir(start, goals, pts):
     xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
 
     all_points = copy.copy(goals)
     all_points.append(start)
+    all_points.append(pts)
     for pt in all_points:
         x, y = pt
 
@@ -215,7 +230,7 @@ def scenario_3():
 # In[1]:
 
 dt = .025
-N = 61
+N = 100 #61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
@@ -265,7 +280,7 @@ if FLAG_JUST_PATH:
 
 ilqr = iLQR(dynamics, cost, N)
 J_hist = []
-xs, us = ilqr.fit(x0_raw, Urefline, n_iterations=N, on_iteration=on_iteration)
+xs, us = ilqr.fit(x0_raw, Urefline, tol=1e-6, n_iterations=N, on_iteration=on_iteration)
 
 # # Reduce the state to something more reasonable.
 # xs = dynamics.reduce_state(xs)
@@ -304,7 +319,7 @@ print("verts")
 print(verts)
 print("Attempt to display this path")
 
-xmin, xmax, ymin, ymax = get_window_dimensions_for_envir(start, all_goals)
+xmin, xmax, ymin, ymax = get_window_dimensions_for_envir(start, all_goals, xs)
 
 plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
 plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
@@ -313,8 +328,8 @@ _ = plt.xlabel("X", fontweight='bold')
 _ = plt.ylabel("Y", fontweight='bold')
 _ = plt.title("Path through space", fontweight='bold')
 plt.legend(loc="upper left")
-plt.xlim([xmin, xmax])
-plt.ylim([ymin, ymax])
+# plt.xlim([xmin, xmax])
+# plt.ylim([ymin, ymax])
 plt.show()
 plt.clf()
 
@@ -322,8 +337,8 @@ _ = plt.plot(t, us)
 _ = plt.xlabel("time (s)")
 _ = plt.ylabel("Force (N)")
 _ = plt.title("Action path")
-# plt.show()
-# plt.clf()
+plt.show()
+plt.clf()
 
 _ = plt.plot(J_hist)
 _ = plt.xlabel("Iteration")
