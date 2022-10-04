@@ -419,7 +419,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         return Q
 
     def graph_legibility_over_time(self, verts):
-        t = np.arange(self.N) * self.dt
+        ts = np.arange(self.N) * self.dt
 
         xs, ys = zip(*verts)
 
@@ -427,7 +427,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         gx, gy = zip(*self.goals)
         sx, sy = self.start
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3))
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
         ax1.grid(axis='y')
         ax2.grid(axis='y')
@@ -442,23 +442,25 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
         ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
-        _ = ax1.xlabel("X", fontweight='bold')
-        _ = ax1.ylabel("Y", fontweight='bold')
-        _ = ax1.title("Path through space", fontweight='bold')
+        _ = ax1.set_xlabel("X", fontweight='bold')
+        _ = ax1.set_ylabel("Y", fontweight='bold')
+        _ = ax1.set_title("Path through space", fontweight='bold')
         ax1.legend(loc="upper left")
+        ax1.grid(False)
         # plt.xlim([xmin, xmax])
         # plt.ylim([ymin, ymax])
 
         # Draw the legibility over time
 
         # for each goal, graph legibility
-        ls = []
+        ls = [0] * self.N
 
         ax2.plot(ts, ls, 'o--', lw=2, color='black', label="path", markersize=3)
-        _ = ax2.xlabel("Time", fontweight='bold')
-        _ = ax2.ylabel("Legibility", fontweight='bold')
-        _ = ax2.title("Legibility during path", fontweight='bold')
+        _ = ax2.set_xlabel("Time", fontweight='bold')
+        _ = ax2.set_ylabel("Legibility", fontweight='bold')
+        _ = ax2.set_title("Legibility during path", fontweight='bold')
         ax2.legend(loc="upper left")
+        ax2.grid(False)
         # plt.xlim([xmin, xmax])
         # plt.ylim([ymin, ymax])
 
