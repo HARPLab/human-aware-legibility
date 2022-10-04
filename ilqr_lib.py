@@ -33,22 +33,20 @@ class NavigationDynamics(FiniteDiffDynamics):
     # Combine the existing state with 
     def dynamics(self, x, u, max_u=10.0):
         # # Constrain action space.
-        # if constrain:
-        #     u = tensor_constrain(u, min_bounds, max_bounds)
+        if constrain:
+            min_bounds, max_bounds = -1*max_u, max_u
+            print(u)
+
+            diff = (max_bounds - min_bounds) / 2.0
+            mean = (max_bounds + min_bounds) / 2.0
+            u = diff * np.tanh(u) + mean
+            # u = tensor_constrain(u, min_bounds, max_bounds)
+            print(u)
 
         dt = self.dt
 
         # Apply a constraint that limits how much the robot can move per-timestep
         # TODO: apply to overall vector magnitude rather than x and y components alone
-        if u[0] > max_u:
-            u[0] = 1.0
-        if u[1] > max_u:
-            u[1] = 1.0
-
-        if u[0] < (max_u * -1):
-            u[0] = -1.0
-        if u[1] < (max_u * -1):
-            u[1] = -1.0
 
         # Moving a square
         A = np.eye(self._state_size)
@@ -230,7 +228,7 @@ def scenario_3():
 # In[1]:
 
 dt = .025
-N = 100 #61
+N = 61 #100 #61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
@@ -260,7 +258,7 @@ Q = np.identity(2)
 R = np.identity(2)
 Qf = np.identity(2) * 10
 
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N)
+cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost
 # cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
@@ -314,6 +312,9 @@ verts = xs
 xs, ys = zip(*verts)
 gx, gy = zip(*all_goals)
 sx, sy = zip(*[x0_raw])
+
+
+cost.graph_legibility_over_time(verts)
 
 print("verts")
 print(verts)
