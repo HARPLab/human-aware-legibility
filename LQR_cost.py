@@ -499,22 +499,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # for each goal, graph legibility
         for j in range(len(self.goals)):
-            print(j)
             goal = self.goals[j]
             color = goal_colors[j]
 
             gx, gy = goal
             ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
-            print("Getting legibility for this goal")
             ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, goal)
             ts = np.arange(len(ls)) * self.dt
-            print("Got all data")
-
-            print(ts.shape)
-            print(len(tcs))
-            print(len(scs))
-            print(len(ls))
 
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
             # print("plotted ax2")
