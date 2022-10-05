@@ -18,6 +18,10 @@ from ilqr.dynamics import BatchAutoDiffDynamics, tensor_constrain
 
 from scipy.optimize import approx_fprime
 
+import utility_legibility as legib
+import utility_environ_descrip as resto
+import pipeline_generate_paths as pipeline
+
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
 
@@ -42,6 +46,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         self.target_goal = target_goal
         self.N = N
         self.dt = dt
+
+        # Create a restaurant object for using those utilities, functions, and print functions
+        # dim gives the dimensions of the restaurant
+        self.restaurant = resto.Restaurant(resto.TYPE_CUSTOM, tables=[], goals=goals, start=start, observers=[], dim=None)
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
@@ -217,8 +225,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         # print(i)
         # print(len(self.u_path))
 
-        u_diff = np.array(u) - self.u_path[i]
-
         a = (goal_diff.T).dot(Q).dot((goal_diff))
         b = (start_diff.T).dot(Q).dot((start_diff))
         c = (togoal_diff.T).dot(Q).dot((togoal_diff))
@@ -261,9 +267,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         # the log on the log sum actually just cancels out the exp
         J = J_g1 - np.log(log_sum)
 
-        u_diff_val = (u_diff).dot(R).dot(u_diff).T
-        # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        u_diff_val = .5 * (u_diff_val)
+        if u is None:
+            u_diff = 0.0
+            u_diff_val = 0.0
+        else:
+            u_diff = np.array(u) - self.u_path[i]
+            u_diff_val = (u_diff).dot(R).dot(u_diff).T
+            # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+            u_diff_val = .5 * (u_diff_val)
 
         J *= -1
         J += u_diff_val
@@ -418,19 +429,52 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return Q
 
-    def graph_legibility_over_time(self, verts):
-        ts = np.arange(self.N) * self.dt
+    def get_legibility_of_path_to_goal(self, verts, goal):
+        ls, scs, tcs = [], [], []
+        start = self.start
+        u = None
+        terminal = False
 
-        xs, ys = zip(*verts)
+        if len(verts) != self.N + 1:
+            print("points in path does not match the solve N")
+
+        resto_envir = self.restaurant
+        goals = self.goals
+
+        exp_settings = pipeline.get_default_exp_settings(unique_key="ilqr_verif")
+
+        for i in range(len(verts)):
+            print(str(i) + " out of " + str(len(verts)))
+            x = verts[i]
+
+            l = legib.f_legibility(resto_envir, goal, goals, verts, [])
+            sc = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+            scs.append(sc)
+
+            tc = float(self.term_cost(x, i))
+            tcs.append(tc)
+            
+            ls.append(l)
+
+        return ls, scs, tcs
+
+
+
+    def graph_legibility_over_time(self, verts):
+        print("GRAPHING LEGIBILITY OVER TIME")
+        ts = np.arange(self.N) * self.dt
 
         xs, ys = zip(*verts)
         gx, gy = zip(*self.goals)
         sx, sy = self.start
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 6))
 
         ax1.grid(axis='y')
         ax2.grid(axis='y')
+        ax3.grid(axis='y')
+        ax4.grid(axis='y')
+        
         # each set of xs, ys happens at time t
         # we want to find the legibility at time t
         # and graph it
@@ -440,7 +484,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # Draw the path itself
         ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
-        ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
@@ -452,15 +495,55 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # Draw the legibility over time
 
-        # for each goal, graph legibility
-        ls = [0] * self.N
+        goal_colors = ['red', 'blue', 'purple']
 
-        ax2.plot(ts, ls, 'o--', lw=2, color='black', label="path", markersize=3)
+        # for each goal, graph legibility
+        for j in range(len(self.goals)):
+            print(j)
+            goal = self.goals[j]
+            color = goal_colors[j]
+
+            gx, gy = goal
+            ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+            print("Getting legibility for this goal")
+            ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, goal)
+            ts = np.arange(len(ls)) * self.dt
+            print("Got all data")
+
+            print(ts.shape)
+            print(len(tcs))
+            print(len(scs))
+            print(len(ls))
+
+            ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
+            # print("plotted ax2")
+            ax3.plot(ts, scs, 'o--', lw=2, color=color, label=goal, markersize=3)
+            # print("plotted ax3")
+            ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
+            # print("plotted ax4")
+            # print("Plotted all data")
+
+
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
-        _ = ax2.set_title("Legibility during path", fontweight='bold')
+        _ = ax2.set_title("Legibility according to old code during path", fontweight='bold')
         ax2.legend(loc="upper left")
+
+        _ = ax3.set_xlabel("Time", fontweight='bold')
+        _ = ax3.set_ylabel("Stage Cost", fontweight='bold')
+        _ = ax3.set_title("Stage cost during path", fontweight='bold')
+        ax3.legend(loc="upper left")
+
+        _ = ax4.set_xlabel("Time", fontweight='bold')
+        _ = ax4.set_ylabel("Term Cost", fontweight='bold')
+        _ = ax4.set_title("Term cost during path", fontweight='bold')
+        ax4.legend(loc="upper left")
+
+        
         ax2.grid(False)
+        ax3.grid(False)
+        ax4.grid(False)
         # plt.xlim([xmin, xmax])
         # plt.ylim([ymin, ymax])
 
@@ -468,7 +551,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         plt.show()
         plt.clf()
 
-        return
+        print("Showed graphs")
 
     # def goal_efficiency_through_path(self, start, goal, path, terminal=False):
     #     for i in path:
