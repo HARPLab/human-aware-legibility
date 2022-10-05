@@ -56,6 +56,7 @@ FLAG_EXPORT_SPLINE_DEBUG = False
 SETTING_EXPORT_TITLE 			= 'title'
 SETTING_RESOLUTION				= 'resolution'
 SETTING_SAMPLING_TYPE			= 'sampling_type'
+SETTING_LAYOUT_TYPE				= 'exp_layout'
 
 SETTING_IS_RANDOM 				= 'is_random'
 SETTING_RANDOM_KEY				= 'random_key_string'
@@ -1042,7 +1043,7 @@ def get_sample_points_sets(r, start, goal, exp_settings):
 					for imp in imported:
 						new_set = []
 						for p in imp:
-							print(p)
+							# print(p)
 							# print(xi, yi)
 							new_pt = (p[0] + xi, p[1] + yi)
 							new_set.append(new_pt)
@@ -1173,7 +1174,9 @@ def fn_export_from_exp_settings(exp_settings):
 	f_legibility		= exp_settings[SETTING_LEGIBILITY_METHOD]
 
 	is_random 			= exp_settings[SETTING_IS_RANDOM]
-	r_key	= exp_settings[SETTING_RANDOM_KEY]
+	r_key				= exp_settings[SETTING_RANDOM_KEY]
+	
+	exp_layout 			= str(exp_settings[SETTING_LAYOUT_TYPE])
 	
 	if not is_random:
 		r_key = ""
@@ -1189,7 +1192,7 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = str(title) + "" + f_legibility + "_" + r_key
+	unique_title = str(title) + "" + exp_layout + "-" + f_legibility + "_" + r_key
 	unique_title += str(sampling_type) + "-rez" + str(rez) + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov) +  "-la" + lam
 	unique_title += "-rb" + str(right_bound)
@@ -1211,8 +1214,13 @@ def fn_pathpickle_from_exp_settings(exp_settings, goal_index):
 	n_chunks 		= exp_settings[SETTING_NUM_CHUNKS]
 	angle_str 		= exp_settings[SETTING_ANGLE_STRENGTH]
 	res 			= exp_settings[SETTING_RESOLUTION]
+	exp_layout 		= str(exp_settings[SETTING_LAYOUT_TYPE])
 
-	fn_pickle = FILENAME_PATH_ASSESS + "pickles/export-" + sampling_type + "-g" + str(goal_index)
+	r_key = ""
+	if exp_settings[SETTING_LAYOUT_TYPE] in [resto.TYPE_EXP_THREE_GOALS_RANDOMIZED] or exp_settings[SETTING_IS_RANDOM]:
+		r_key				= exp_settings[SETTING_RANDOM_KEY] + "-"
+
+	fn_pickle = FILENAME_PATH_ASSESS + "pickles/export-" + exp_layout + "-" + r_key + sampling_type + "-g" + str(goal_index)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 	print("{" + fn_pickle + "}")
 	return fn_pickle
@@ -1225,12 +1233,13 @@ def fn_pathpickle_envir_cache(exp_settings):
 	res 					= exp_settings[SETTING_RESOLUTION]
 	f_vis_label 			= exp_settings[SETTING_F_VIS_LABEL]
 	FLAG_is_denominator 	= exp_settings[SETTING_IS_DENOMINATOR]
+	exp_layout 				= str(exp_settings[SETTING_LAYOUT_TYPE])
 	is_denom 				= 0
 	if FLAG_is_denominator:
 		is_denom = 1
 	is_denom = str(is_denom)
 
-	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + str(sampling_type) + "-" + str(f_vis_label)
+	fn_pickle = FILENAME_PATH_ASSESS + "export-envir-cache-" + exp_layout + "-" + str(sampling_type) + "-" + str(f_vis_label)
 	fn_pickle += "ch" + str(n_chunks) +"as" + str(angle_str) + "res" + str(res) +  ".pickle"
 
 	# print("{" + fn_pickle + "}")
@@ -1495,6 +1504,12 @@ def get_paths_from_sample_set(r, exp_settings, goal_index):
 	fn_pickle = fn_pathpickle_from_exp_settings(exp_settings, goal_index)
 
 	print("\t Looking for import @ " + fn_pickle)
+
+	if exp_settings[SETTING_LAYOUT_TYPE] in [resto.TYPE_EXP_THREE_GOALS_RANDOMIZED]:
+		FLAG_REDO_PATH_CREATION = True
+	else:
+		FLAG_REDO_PATH_CREATION = False
+
 
 	if not FLAG_REDO_PATH_CREATION and os.path.isfile(fn_pickle):
 		print("\tImporting preassembled paths")
@@ -2196,8 +2211,17 @@ def make_overview_plot(r, df, exp_settings, columns, label):
 
 	key_cols = columns
 	key_cols.append('goal')
-	mdf = df[key_cols].melt(id_vars=['goal'])
-	ax3 = sns.stripplot(x="goal", y="value", hue="variable", data=mdf, palette=obs_palette, split=True, linewidth=1, edgecolor='gray')	
+	mdf = df[key_cols].melt(id_vars=['goal'])['goal']
+	mdf = list(mdf)
+	# print(mdf.shape)
+	print(mdf)
+
+	# TODO Ada puzzle solved
+	# it can't graph these points with the third value on there, RIP
+	# strip the angle values from this path or don't add them to begin with
+
+	# palette=obs_palette, 
+	ax3 = sns.stripplot(x="goal", y="value", hue="variable", data=mdf, split=True, linewidth=1, edgecolor='gray')	
 	if label == 'env':
 		ax3.set_ylabel('Size of maximum envelope of visibility')
 	else:
@@ -2648,7 +2672,7 @@ def export_best_options():
 
 def do_exp(exp_settings):
 	# Run the scenario that aligns with our use case
-	restaurant = experimental_scenario_three_goals(exp_settings)
+	restaurant = experimental_scenario_three_goals_random(exp_settings)
 
 	start = restaurant.get_start()
 	all_goals = restaurant.get_goals_all()
@@ -2710,15 +2734,15 @@ def do_exp(exp_settings):
 	print("Done with experiment from settings")
 
 def get_default_exp_settings(unique_key = ""):
-
 	exp_settings = {}
 	exp_settings[SETTING_EXPORT_TITLE] 				= unique_key
-	exp_settings[SETTING_IS_RANDOM]						= False
-	exp_settings[SETTING_RESOLUTION]				= 250 #15
+	exp_settings[SETTING_LAYOUT_TYPE]				= resto.TYPE_EXP_THREE_GOALS
+	exp_settings[SETTING_IS_RANDOM]					= False
+	exp_settings[SETTING_RESOLUTION]				= 250 #20 #15 #250 #15
 	exp_settings[SETTING_F_VIS_LABEL]				= 'no-chunk'
 	exp_settings[SETTING_EPSILON] 					= 0 #1e-12 #eps #decimal.Decimal(1e-12) # eps #.000000000001
 	exp_settings[SETTING_LAMBDA] 					= 0 #decimal.Decimal(1e-12) #lam #.000000000001
-	exp_settings[SETTING_NUM_CHUNKS]				= 50
+	exp_settings[SETTING_NUM_CHUNKS]				= 8
 	exp_settings[SETTING_CHUNK_BY_WHAT]				= chunkify.CHUNK_BY_DURATION
 	exp_settings[SETTING_CHUNK_METHOD]				= chunkify.CHUNKIFY_LINEAR	# CHUNKIFY_LINEAR, CHUNKIFY_TRIANGULAR, CHUNKIFY_MINJERK
 	exp_settings[SETTING_ANGLE_STRENGTH]			= 500 #40
@@ -2734,9 +2758,9 @@ def get_default_exp_settings(unique_key = ""):
 	exp_settings[SETTING_LEGIBILITY_METHOD]			= legib.get_legibility_options()[0] #_use_heading
 	exp_settings[SETTING_RANDOM_KEY]				= ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
 
-	# sampling_type = SAMPLE_TYPE_CENTRAL
+	sampling_type = SAMPLE_TYPE_CENTRAL
 	# sampling_type = SAMPLE_TYPE_DEMO
-	sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
+	# sampling_type = SAMPLE_TYPE_CENTRAL_SPARSE
 	# sampling_type = SAMPLE_TYPE_FUSION
 	# sampling_type = SAMPLE_TYPE_SPARSE
 	# sampling_type = SAMPLE_TYPE_SYSTEMATIC
@@ -2751,74 +2775,5 @@ def get_default_exp_settings(unique_key = ""):
 
 	return exp_settings
 
-def exp_diff_legibilities():
-	legib_options = legib.get_legibility_options()
 
-	for l in legib_options:
-		exp_settings 				= get_default_exp_settings()
-		exp_settings[SETTING_LEGIBILITY_METHOD] = l
-
-		print("Testing label " + l)
-		do_exp(exp_settings)
-		print("Done")
-		print("~~~~~~~~~~~")
-	
-	print("Done with experiments of diff legibilities")
-
-
-def exp_determine_lam_eps():
-	lam_vals = []
-	eps = 1e-7
-	# eps_vals = []
-	# # exit()
-	# * 1e-6
-	for i in range(-5, -10, -1):
-	# for i in np.arange(1.1, 2, .1):
-		new_val = 10 ** i 
-	# 	eps_vals.append(new_val)
-		lam_vals.append(new_val)
-	# 	# lam_vals.append(new_val)
-
-	# print("REMIX TIME")
-	# for eps in eps_vals:
-	lam = 0
-	angle_strs = [520]
-	rbs = [55]
-	
-	print("WILDIN")
-	for astr in angle_strs:
-		for rb in rbs:
-			exp_settings = get_default_exp_settings()
-			exp_settings[SETTING_LAMBDA] = lam
-			exp_settings[SETTING_ANGLE_STRENGTH] = astr
-			exp_settings[SETTING_RIGHT_BOUND] = rb
-
-			do_exp(exp_settings)
-	
-def exp_observer_aware():
-	lam = 0
-	kill_mode = True
-	astr = 500
-	rb = 40
-
-	# print("Doing main")
-	# Get the best path for the given scenario
-	exp_settings 							= get_default_exp_settings('jul15')
-	exp_settings[SETTING_LAMBDA] 			= lam
-	exp_settings[SETTING_ANGLE_STRENGTH] 	= astr
-	exp_settings[SETTING_RIGHT_BOUND] 		= rb
-
-	do_exp(exp_settings)
-
-
-
-def main():
-	# export_best_options()
-	# exit()
-
-	exp_diff_legibilities()
-
-
-if __name__ == "__main__":
-	main()
 
