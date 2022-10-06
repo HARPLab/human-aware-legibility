@@ -238,8 +238,8 @@ UNITY_GOAL_NAMES = ["BEFORE", "ME", "PAST", "ACROSS"]
 
 def to_xy(pt):
 	if len(pt) == 3:
-		return (pt[0], pt[1])
-	return pt
+		return (int(pt[0]), int(pt[1]))
+	return (int(pt[0]), int(pt[1]))
 
 def dist(p0, p1):
 	return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2)
@@ -285,24 +285,24 @@ def bresenham_line(xy1, xy2):
 	return line
 
 def unit_vector(vector):
-    """ Returns the unit vector of the vector.  """
-    return vector / np.linalg.norm(vector)
+	""" Returns the unit vector of the vector.  """
+	return vector / np.linalg.norm(vector)
 
 # return angle_between in degrees
 def angle_between(v1, v2):
-    """ Returns the angle in radians between vectors 'v1' and 'v2'::
+	""" Returns the angle in radians between vectors 'v1' and 'v2'::
 
-            >>> angle_between((1, 0, 0), (0, 1, 0))
-            1.5707963267948966
-            >>> angle_between((1, 0, 0), (1, 0, 0))
-            0.0
-            >>> angle_between((1, 0, 0), (-1, 0, 0))
-            3.141592653589793
-    """
-    v1_u = unit_vector(v1)
-    v2_u = unit_vector(v2)
-    in_rad = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-    return np.degrees(in_rad)
+			>>> angle_between((1, 0, 0), (0, 1, 0))
+			1.5707963267948966
+			>>> angle_between((1, 0, 0), (1, 0, 0))
+			0.0
+			>>> angle_between((1, 0, 0), (-1, 0, 0))
+			3.141592653589793
+	"""
+	v1_u = unit_vector(v1)
+	v2_u = unit_vector(v2)
+	in_rad = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+	return np.degrees(in_rad)
 
 def in_bounds(point):
 	x, y = point
@@ -461,41 +461,41 @@ def get_paths_astar(start, goal, obstacle_map, visibility_maps):
 
 # Bezier helpers
 def make_bezier(xys):
-    # xys should be a sequence of 2-tuples (Bezier control points)
-    n = len(xys)
-    combinations = pascal_row(n-1)
-    def bezier(ts):
-        # This uses the generalized formula for bezier curves
-        # http://en.wikipedia.org/wiki/B%C3%A9zier_curve#Generalization
-        result = []
-        for t in ts:
-            tpowers = (t**i for i in range(n))
-            upowers = reversed([(1-t)**i for i in range(n)])
-            coefs = [c*a*b for c, a, b in zip(combinations, tpowers, upowers)]
-            result.append(
-                tuple(sum([coef*p for coef, p in zip(coefs, ps)]) for ps in zip(*xys)))
-        return result
-    return bezier
+	# xys should be a sequence of 2-tuples (Bezier control points)
+	n = len(xys)
+	combinations = pascal_row(n-1)
+	def bezier(ts):
+		# This uses the generalized formula for bezier curves
+		# http://en.wikipedia.org/wiki/B%C3%A9zier_curve#Generalization
+		result = []
+		for t in ts:
+			tpowers = (t**i for i in range(n))
+			upowers = reversed([(1-t)**i for i in range(n)])
+			coefs = [c*a*b for c, a, b in zip(combinations, tpowers, upowers)]
+			result.append(
+				tuple(sum([coef*p for coef, p in zip(coefs, ps)]) for ps in zip(*xys)))
+		return result
+	return bezier
 
 def pascal_row(n, memo={}):
-    # This returns the nth row of Pascal's Triangle
-    if n in memo:
-        return memo[n]
-    result = [1]
-    x, numerator = 1, n
-    for denominator in range(1, n//2+1):
-        # print(numerator,denominator,x)
-        x *= numerator
-        x /= denominator
-        result.append(x)
-        numerator -= 1
-    if n&1 == 0:
-        # n is even
-        result.extend(reversed(result[:-1]))
-    else:
-        result.extend(reversed(result))
-    memo[n] = result
-    return result
+	# This returns the nth row of Pascal's Triangle
+	if n in memo:
+		return memo[n]
+	result = [1]
+	x, numerator = 1, n
+	for denominator in range(1, n//2+1):
+		# print(numerator,denominator,x)
+		x *= numerator
+		x /= denominator
+		result.append(x)
+		numerator -= 1
+	if n&1 == 0:
+		# n is even
+		result.extend(reversed(result[:-1]))
+	else:
+		result.extend(reversed(result))
+	memo[n] = result
+	return result
 
 def get_path_spoof(start, end, goal_pts, table_pts, vis_type, visibility_map):
 	STEPSIZE = 15
@@ -1027,8 +1027,15 @@ class Restaurant:
 			self.tables = tables
 			self.start 	= start
 			self.observers = observers
+
+			if dim is None:
+				xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir()
+				dim = (int(xmax - xmin), int(ymax - ymin))
+				
 			self.dim = dim
 			self.length, self.width = self.dim
+
+			self.obs_sets = {}
 
 		elif generate_type == TYPE_PLOTTED:
 			# Creates a 2x3 layout restaurant with start location in between
@@ -1812,6 +1819,39 @@ class Restaurant:
 		dbfile.close() 
 
 
+	def get_window_dimensions_for_envir(self, pts=None):
+		start = self.start
+		goals = self.goals
+
+		xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
+
+		all_points = copy.copy(goals)
+		all_points.append(start)
+
+		if pts is not None:
+			all_points.append(pts)
+	
+		for pt in all_points:
+			print(pt)
+			x, y = pt
+
+			if x < xmin:
+				xmin = x
+			if y < ymin:
+				ymin = y
+			if x > xmax:
+				xmax = x
+			if y > ymax:
+				ymax = y
+
+		xwidth	  = xmax - xmin
+		yheight	 = ymax - ymin
+
+		xbuffer	 = .1 * xwidth
+		ybuffer	 = .1 * yheight
+
+		return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
+
 	def generate_obstacle_map_and_img(self, observers, obs_set=None, show_cones=True):
 		obstacle_vis = np.ones((self.length, self.width,3), np.uint8)
 		if obs_set == None:
@@ -1888,6 +1928,8 @@ class Restaurant:
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
+			print(to_xy(goal))
+
 			cv2.circle(img, to_xy(goal), goal_radius + 1, (0,0,0), goal_radius + 1)
 			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
 
@@ -1899,7 +1941,11 @@ class Restaurant:
 					obs = obs[0]
 					cv2.circle(img, obs.get_center(), obs_radius, obs.get_color(), obs_radius)
 
-		sx, sy, st = self.get_start()
+		if len(self.get_start()) == 3:
+			sx, sy, st = self.get_start()
+		else:
+			sx, sy = self.get_start()
+
 		s_radius = int(obs_radius * 1.5)
 		# cv2.circle(img, to_xy(self.get_start()), start_radius, COLOR_START, start_radius)
 		start_list = [(sx + s_radius, sy + s_radius), (sx + s_radius, sy - s_radius), (sx - s_radius, sy - s_radius), (sx - s_radius, sy + s_radius)]
@@ -2483,23 +2529,23 @@ def export_diagrams_with_paths(img, saved_paths, fn=None):
 
 
 def lighten_color(color, amount=0.5):
-    """
-    Lightens the given color by multiplying (1-luminosity) by the given amount.
-    Input can be matplotlib color string, hex string, or RGB tuple.
+	"""
+	Lightens the given color by multiplying (1-luminosity) by the given amount.
+	Input can be matplotlib color string, hex string, or RGB tuple.
 
-    Examples:
-    >> lighten_color('g', 0.3)
-    >> lighten_color('#F034A3', 0.6)
-    >> lighten_color((.3,.55,.1), 0.5)
-    """
-    # import matplotlib.colors as mc
-    # import colorsys
-    # try:
-    #     c = mc.cnames[color]
-    # except:
-    #     c = color
-    c = colorsys.rgb_to_hls(*mc.to_rgb(color))
-    return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
+	Examples:
+	>> lighten_color('g', 0.3)
+	>> lighten_color('#F034A3', 0.6)
+	>> lighten_color((.3,.55,.1), 0.5)
+	"""
+	# import matplotlib.colors as mc
+	# import colorsys
+	# try:
+	#	 c = mc.cnames[color]
+	# except:
+	#	 c = color
+	c = colorsys.rgb_to_hls(*mc.to_rgb(color))
+	return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
 
 # DISPLAY PATHS CODE
 def export_assessments_by_criteria(img, saved_paths, fn=None):
@@ -2721,8 +2767,8 @@ def export_raw_paths(r, img, saved_paths_list, title, fn, sample_points_list=[])
 	font_size = 1
 	y0, dy = 50, 50
 	for i, line in enumerate(title.split('\n')):
-	    y = y0 + i*dy
-	    cv2.putText(all_paths_img, line, (50, y), cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
+		y = y0 + i*dy
+		cv2.putText(all_paths_img, line, (50, y), cv2.FONT_HERSHEY_SIMPLEX, font_size, (209, 80, 0, 255), 3)
 
 	cv2.imwrite(fn + "_raw.png", all_paths_img) 
 	### END DISPLAY PATHS CODE
