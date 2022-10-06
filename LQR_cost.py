@@ -167,7 +167,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal = self.target_goal
 
         if terminal:
-            return self.term_cost(x, self.N)
+            return self.term_cost(x, i)
         else:
             # difference between this step and the end
             print("x, N, x_end_of_path -> inputs and then term cost")
@@ -580,19 +580,19 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
-        _ = ax2.set_title("Legibility according to old code during path", fontweight='bold')
-        ax2.legend(loc="upper left")
+        _ = ax2.set_title("Legibility according to old", fontweight='bold')
+        ax2.legend() #loc="upper left")
         ax2.set_ylim([0.0, 1.0])
 
         _ = ax3.set_xlabel("Time", fontweight='bold')
         _ = ax3.set_ylabel("Stage Cost", fontweight='bold')
         _ = ax3.set_title("Stage cost during path", fontweight='bold')
-        ax3.legend(loc="upper left")
+        ax3.legend() #loc="upper left")
 
         _ = ax4.set_xlabel("Time", fontweight='bold')
         _ = ax4.set_ylabel("Term Cost", fontweight='bold')
         _ = ax4.set_title("Term cost during path", fontweight='bold')
-        ax4.legend(loc="upper left")
+        ax4.legend() #loc="upper left")
         
         ax2.grid(False)
         ax3.grid(False)
