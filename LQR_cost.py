@@ -258,24 +258,31 @@ class LegiblePathQRCost(FiniteDiffCost):
             n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
             d = (diff_all).T.dot(Q).dot(diff_all)
 
-            this_goal = np.exp(n) / np.exp(d)
+            # this_goal = np.exp(n) / np.exp(d)
+            this_goal = n + d
 
             if goal != alt_goal:
                 log_sum += this_goal
                 # print("Value for alt target goal " + str(alt_goal))
-                print("This is the nontarget goal: " + str(this_goal))
+                print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
                 J_g1 = this_goal
-                print("This is the target goal " + str(this_goal))
-            # print(n + d)
-        
+                print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
+            # print(n + d) 
+
         print("log sum")
         print(np.log(log_sum))
 
+        # ratio = J_g1 / (J_g1 + np.log(log_sum))
+        # print("ratio " + str(ratio))
+
         # the log on the log sum actually just cancels out the exp
-        J = np.log(J_g1) - np.log(log_sum)
-        J = -1.0 * J
+        # J = np.log(J_g1) - np.log(log_sum)
+        J = this_goal
+        J -= log_sum
+
+        # J = -1.0 * J
 
         if u is None:
             u_diff = 0.0
@@ -286,8 +293,6 @@ class LegiblePathQRCost(FiniteDiffCost):
             # needs a smaller value of this u_diff_val in order to reach all the way to the goal
             u_diff_val = .5 * (u_diff_val)
 
-
-        u_diff_val = 0.0
 
         J *= -1
         J += u_diff_val
@@ -492,7 +497,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             print(str(i) + " out of " + str(len(verts)))
             x = verts[i]
 
-            l = legib.f_legibility(resto_envir, goal, goals, verts, [])
+            l = legib.f_legibility(resto_envir, goal, goals, verts[:i], [])
             sc = self.get_total_stage_cost(start, goal, x, u, i, terminal)
             scs.append(sc)
 
@@ -508,6 +513,10 @@ class LegiblePathQRCost(FiniteDiffCost):
     def graph_legibility_over_time(self, verts, us):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
+
+        print("verts")
+        print(verts)
+        print("Attempt to display this path")
 
         xs, ys = zip(*verts)
         gx, gy = zip(*self.goals)
@@ -578,22 +587,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax4.set_ylabel("Term Cost", fontweight='bold')
         _ = ax4.set_title("Term cost during path", fontweight='bold')
         ax4.legend(loc="upper left")
-
         
         ax2.grid(False)
         ax3.grid(False)
         ax4.grid(False)
-        # plt.xlim([xmin, xmax])
-        # plt.ylim([ymin, ymax])
 
         plt.tight_layout()
         plt.show()
         plt.clf()
-
-
-        print("verts")
-        print(verts)
-        print("Attempt to display this path")
 
         if False:
             plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
