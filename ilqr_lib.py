@@ -34,15 +34,13 @@ class NavigationDynamics(FiniteDiffDynamics):
     def dynamics(self, x, u, max_u=10.0):
         # # Constrain action space.
         if constrain:
-            min_bounds, max_bounds = -1*max_u, max_u
-            print(u)
-
+            min_bounds, max_bounds = 0.0, max_u
+            
             diff = (max_bounds - min_bounds) / 2.0
             mean = (max_bounds + min_bounds) / 2.0
             u = diff * np.tanh(u) + mean
             # u = tensor_constrain(u, min_bounds, max_bounds)
-            print(u)
-
+            
         dt = self.dt
 
         # Apply a constraint that limits how much the robot can move per-timestep
@@ -218,7 +216,7 @@ def scenario_3():
     goal3           = [1.0, 3.0]
 
     target_goal = goal2
-    start = goal3
+    # start = goal3
 
     all_goals   = [goal1, goal3, goal2]
     return start, target_goal, all_goals
@@ -227,7 +225,7 @@ def scenario_3():
 # In[1]:
 
 dt = .025
-N = 30 #61 #100 #61
+N = 61 #100 #61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
