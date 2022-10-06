@@ -200,7 +200,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
 
-        for j in range(N):
+        for j in range(i):
             stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, j, terminal)
             # stage_cost(x, u, j, terminal) #
 
@@ -272,7 +272,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print(n + d) 
 
         print("log sum")
-        print(np.log(log_sum))
+        print(log_sum)
 
         # ratio = J_g1 / (J_g1 + np.log(log_sum))
         # print("ratio " + str(ratio))
@@ -542,23 +542,23 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
         _ = ax1.set_title("Path through space", fontweight='bold')
-        ax1.legend(loc="upper left")
-        ax1.grid(False)
-        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
-        ax1.set_xlim([xmin, xmax])
-        ax1.set_ylim([ymin, ymax])
-
         # Draw the legibility over time
 
-        goal_colors = ['red', 'blue', 'purple']
+        goal_colors = ['red', 'blue', 'purple', 'green']
 
+
+        target = self.target_goal
         # for each goal, graph legibility
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
 
             gx, gy = goal
-            ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+            if gx == target[0] and gy == target[1]:
+                ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
+            else:
+                ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
             ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, goal)
             ts = np.arange(len(ls)) * self.dt
@@ -571,6 +571,12 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print("plotted ax4")
             # print("Plotted all data")
 
+
+        ax1.legend() #loc="upper left")
+        ax1.grid(False)
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
+        ax1.set_xlim([xmin, xmax])
+        ax1.set_ylim([ymin, ymax])
 
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
