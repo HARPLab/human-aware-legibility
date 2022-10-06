@@ -30,15 +30,28 @@ class NavigationDynamics(FiniteDiffDynamics):
     def f(self, x, u, i):
         return self.dynamics(x, u)
 
+    # hardcoded test function for being within an obstacle
+    def in_object(self, x):
+
+        obstacle = .5, 1.0
+        xx, xy = x
+        if xx > .5 and xx < 1.0 and xy > .5 and xy < 1.0:
+            return True
+
+
+        return False
+
     # Combine the existing state with 
-    def dynamics(self, x, u, max_u=10.0):
+    def dynamics(self, x, u, max_u=5.0):
         # # Constrain action space.
         if constrain:
-            min_bounds, max_bounds = 0.0, max_u
+            min_bounds, max_bounds = -1.0 * max_u, max_u
             
             diff = (max_bounds - min_bounds) / 2.0
             mean = (max_bounds + min_bounds) / 2.0
-            u = diff * np.tanh(u) + mean
+            ux = diff * np.tanh(u[0]) + mean
+            uy = diff * np.tanh(u[1]) + mean
+            u = ux, uy
             # u = tensor_constrain(u, min_bounds, max_bounds)
             
         dt = self.dt
@@ -54,6 +67,11 @@ class NavigationDynamics(FiniteDiffDynamics):
         v1 = B.dot(u) * dt
 
         xnext = v0 + v1     # A*x + B*u
+
+        # Sample code that shows what would happen if we attempted raw obstacle avoidance within dynamics
+        if False and self.in_object(xnext):
+            # Bounce
+            xnext = x
 
         print("xnext")
         print(x, xnext, v0, v1)
