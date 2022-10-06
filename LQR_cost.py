@@ -7,6 +7,7 @@ if module_path not in sys.path:
 import numpy as np
 import matplotlib.pyplot as plt
 import decimal
+import copy
 
 from ilqr import iLQR
 from ilqr.cost import Cost
@@ -122,8 +123,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         # Once we're at the goal, the terminal cost is 0
         
         # Attempted fix for paths which do not hit the final mark
-        if squared_x_cost > .001:
-            terminal_cost *= 1000.0
+        # if squared_x_cost > .001:
+        #     terminal_cost *= 1000.0
 
         return terminal_cost
 
@@ -201,6 +202,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         for j in range(N):
             stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            # stage_cost(x, u, j, terminal) #
 
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
 
@@ -230,10 +232,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
-        J_g1 = a - b - c
-        J_g1 *= .5
+        J_g1_1 = - c - b + a
+        # J_g1 = (b - c) / (a)
+        J_g1_1 *= .5
 
-        # print("For point at x -> " + str(x))
+        print("For point at x -> " + str(x))
+        # print("Jg1 " + str(J_g1))
 
         log_sum = 0.0
         for alt_goal in all_goals:
@@ -250,22 +254,28 @@ class LegiblePathQRCost(FiniteDiffCost):
             diff_goal   = diff_goal.T
             diff_all    = diff_all.T
 
+            # TODO verify if this is pointwise, or pathwise
             n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
             d = (diff_all).T.dot(Q).dot(diff_all)
 
+            this_goal = np.exp(n) / np.exp(d)
+
             if goal != alt_goal:
-                log_sum += np.exp(n) / np.exp(d)
+                log_sum += this_goal
                 # print("Value for alt target goal " + str(alt_goal))
+                print("This is the nontarget goal: " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
-                pass
+                J_g1 = this_goal
+                print("This is the target goal " + str(this_goal))
             # print(n + d)
         
-        # print("log sum")
-        # print(np.log(log_sum))
+        print("log sum")
+        print(np.log(log_sum))
 
         # the log on the log sum actually just cancels out the exp
-        J = J_g1 - np.log(log_sum)
+        J = np.log(J_g1) - np.log(log_sum)
+        J = -1.0 * J
 
         if u is None:
             u_diff = 0.0
@@ -275,6 +285,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             u_diff_val = (u_diff).dot(R).dot(u_diff).T
             # needs a smaller value of this u_diff_val in order to reach all the way to the goal
             u_diff_val = .5 * (u_diff_val)
+
+
+        u_diff_val = 0.0
 
         J *= -1
         J += u_diff_val
@@ -309,9 +322,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         goals_total = 0.0
         for alt_goal in all_goals:
             sub_goal = self.goal_efficiency_through_point(start, x, alt_goal)
-            goals_total += sub_goal
+            goals_total += np.exp(sub_goal)
     
-        return np.log(this_goal) - np.log(goals_total)
+        ratio = this_goal / np.log(goals_total)
+        print(ratio)
+        return ratio
+
+        # return np.log(this_goal) - np.log(goals_total)
 
         # return decimal.Decimal(this_goal / goals_total)
         # return np.log(this_goal) - np.log(goals_total)
@@ -429,6 +446,34 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return Q
 
+    def get_window_dimensions_for_envir(self, start, goals, pts):
+        xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
+
+        all_points = copy.copy(goals)
+        all_points.append(start)
+        all_points.extend(pts)
+        
+        for pt in all_points:
+            print(pt)
+            x, y = pt[0], pt[1]
+
+            if x < xmin:
+                xmin = x
+            if y < ymin:
+                ymin = y
+            if x > xmax:
+                xmax = x
+            if y > ymax:
+                ymax = y
+
+        xwidth      = xmax - xmin
+        yheight     = ymax - ymin
+
+        xbuffer     = .1 * xwidth
+        ybuffer     = .1 * yheight
+
+        return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
+
     def get_legibility_of_path_to_goal(self, verts, goal):
         ls, scs, tcs = [], [], []
         start = self.start
@@ -460,7 +505,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
 
-    def graph_legibility_over_time(self, verts):
+    def graph_legibility_over_time(self, verts, us):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
 
@@ -490,8 +535,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_title("Path through space", fontweight='bold')
         ax1.legend(loc="upper left")
         ax1.grid(False)
-        # plt.xlim([xmin, xmax])
-        # plt.ylim([ymin, ymax])
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
+        ax1.set_xlim([xmin, xmax])
+        ax1.set_ylim([ymin, ymax])
 
         # Draw the legibility over time
 
@@ -521,6 +567,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
         _ = ax2.set_title("Legibility according to old code during path", fontweight='bold')
         ax2.legend(loc="upper left")
+        ax2.set_ylim([0.0, 1.0])
 
         _ = ax3.set_xlabel("Time", fontweight='bold')
         _ = ax3.set_ylabel("Stage Cost", fontweight='bold')
@@ -543,21 +590,55 @@ class LegiblePathQRCost(FiniteDiffCost):
         plt.show()
         plt.clf()
 
-        print("Showed graphs")
+
+        print("verts")
+        print(verts)
+        print("Attempt to display this path")
+
+        if False:
+            plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
+            plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
+            plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+            _ = plt.xlabel("X", fontweight='bold')
+            _ = plt.ylabel("Y", fontweight='bold')
+            _ = plt.title("Path through space", fontweight='bold')
+            plt.legend(loc="upper left")
+            # plt.xlim([xmin, xmax])
+            # plt.ylim([ymin, ymax])
+            plt.show()
+            plt.clf()
+
+        if True:
+            ts = np.arange(len(us)) * self.dt
+            _ = plt.plot(ts, us)
+            _ = plt.xlabel("time (s)")
+            _ = plt.ylabel("Force (N)")
+            _ = plt.title("Action path")
+            plt.show()
+            plt.clf()
+
+        # _ = plt.plot(J_hist)
+        # _ = plt.xlabel("Iteration")
+        # _ = plt.ylabel("Total cost")
+        # _ = plt.title("Total cost-to-go")
+        # plt.show()
+        # plt.clf()
+
+
 
     # def goal_efficiency_through_path(self, start, goal, path, terminal=False):
     #     for i in path:
     #         J = np.log(goal_component) - np.log(log_sum)
     #     return J
 
-    # def stage_cost(self, x, u, i, terminal=False):
-    #     print("DOING STAGE COST")
-    #     start   = self.start
-    #     goal    = self.target_goal
+    def stage_cost(self, x, u, i, terminal=False):
+        print("DOING STAGE COST")
+        start   = self.start
+        goal    = self.target_goal
 
-    #     x = np.array(x)
-    #     J = self.goal_efficiency_through_point_relative(start, goal, x, terminal)
-    #     return J
+        x = np.array(x)
+        J = self.goal_efficiency_through_point_relative(start, goal, x, terminal)
+        return J
 
 
     # def l(self, x, u, i, terminal=False):
