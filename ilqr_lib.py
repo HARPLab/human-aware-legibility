@@ -150,14 +150,14 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     print("iteration", iteration_count, info, J_opt, final_state)
 
 
-def get_window_dimensions_for_envir(start, goals, pts):
+def get_window_dimensions_for_envir(self, start, goals, pts):
     xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
 
     all_points = copy.copy(goals)
     all_points.append(start)
     all_points.append(pts)
     for pt in all_points:
-        x, y = pt
+        x, y = pt[0], pt[1]
 
         if x < xmin:
             xmin = x
@@ -197,15 +197,14 @@ def scenario_2():
 
     true_goal       = [8.0, 2.0]
     goal2           = [2.0, 1.0]
-    goal3           = [4.0, 1.0]
+    goal4           = [4.0, 1.0]
 
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal2
-    start = goal3
+    target_goal = goal4
 
-    all_goals   = [goal1, goal3, goal2]
+    all_goals   = [goal1, goal4, goal2]
     return start, target_goal, all_goals
 
 def scenario_3():
@@ -228,13 +227,13 @@ def scenario_3():
 # In[1]:
 
 dt = .025
-N = 61 #100 #61
+N = 30 #61 #100 #61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals = scenario_1()
+start, target_goal, all_goals = scenario_2()
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
@@ -314,39 +313,8 @@ gx, gy = zip(*all_goals)
 sx, sy = zip(*[x0_raw])
 
 
-cost.graph_legibility_over_time(verts)
+cost.graph_legibility_over_time(verts, us)
 
-print("verts")
-print(verts)
-print("Attempt to display this path")
-
-xmin, xmax, ymin, ymax = get_window_dimensions_for_envir(start, all_goals, xs)
-
-plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
-plt.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="green", lw=0, label="goals")
-plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
-_ = plt.xlabel("X", fontweight='bold')
-_ = plt.ylabel("Y", fontweight='bold')
-_ = plt.title("Path through space", fontweight='bold')
-plt.legend(loc="upper left")
-# plt.xlim([xmin, xmax])
-# plt.ylim([ymin, ymax])
-plt.show()
-plt.clf()
-
-_ = plt.plot(t, us)
-_ = plt.xlabel("time (s)")
-_ = plt.ylabel("Force (N)")
-_ = plt.title("Action path")
-plt.show()
-plt.clf()
-
-_ = plt.plot(J_hist)
-_ = plt.xlabel("Iteration")
-_ = plt.ylabel("Total cost")
-_ = plt.title("Total cost-to-go")
-# plt.show()
-# plt.clf()
 
 # n_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
 # plt.savefig(fn_spline)
