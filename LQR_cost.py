@@ -257,7 +257,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             d = (diff_all).T.dot(Q).dot(diff_all)
 
             # this_goal = np.exp(n) / np.exp(d)
-            this_goal = n / d
+            this_goal = np.exp(n) / np.exp(d)
 
             total_sum += this_goal
 
@@ -279,11 +279,11 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # the log on the log sum actually just cancels out the exp
         # J = np.log(J_g1) - np.log(log_sum)
-        alt_goal_multiplier = 5.0
+        # alt_goal_multiplier = 5.0
 
         print("Jg1, total")
         print(J_g1, total_sum)
-        J = J_g1 - (total_sum)
+        J = J_g1 - (np.log(total_sum))
         # J -= this_goal
         # J += log_sum * alt_goal_multiplier
         # J *= -1
