@@ -109,7 +109,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         R = self.R
 
         x_diff = x - self.x_path[i]
-        squared_x_cost = x_diff.T.dot(Qf).dot(x_diff)
+        squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
 
         terminal_cost = squared_x_cost
 
@@ -175,6 +175,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             term_cost = self.term_cost(x, i)
             print(term_cost)
 
+        #stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
         stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
     
         print("STAGE,\t TERM")
@@ -183,8 +184,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
         
-        print(stage_costs, term_cost)
-
         total = term_cost + stage_costs
 
         # print("total stage cost l")
@@ -208,8 +207,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return stage_costs
 
-
-
     def michelle_stage_cost(self, start, goal, x, u, i, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
         R = self.R
@@ -232,14 +229,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
-        J_g1_1 = - c - b + a
+        J_g1 = a - b - c
         # J_g1 = (b - c) / (a)
-        J_g1_1 *= .5
+        J_g1 *= -.5
 
         print("For point at x -> " + str(x))
         # print("Jg1 " + str(J_g1))
 
         log_sum = 0.0
+        total_sum = 0.0
         for alt_goal in all_goals:
             # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
             # d = (start-goal)'*Q*(start-goal)
@@ -259,7 +257,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             d = (diff_all).T.dot(Q).dot(diff_all)
 
             # this_goal = np.exp(n) / np.exp(d)
-            this_goal = n + d
+            this_goal = n / d
+
+            total_sum += this_goal
 
             if goal != alt_goal:
                 log_sum += this_goal
@@ -267,22 +267,31 @@ class LegiblePathQRCost(FiniteDiffCost):
                 print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
-                J_g1 = this_goal
+                # J_g1 = this_goal
                 print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
             # print(n + d) 
 
-        print("log sum")
-        print(log_sum)
+        # print("log sum")
+        # print(log_sum)
 
         # ratio = J_g1 / (J_g1 + np.log(log_sum))
         # print("ratio " + str(ratio))
 
         # the log on the log sum actually just cancels out the exp
         # J = np.log(J_g1) - np.log(log_sum)
-        J = this_goal
-        J -= log_sum
+        alt_goal_multiplier = 5.0
 
-        # J = -1.0 * J
+        print("Jg1, total")
+        print(J_g1, total_sum)
+        J = J_g1 - (total_sum)
+        # J -= this_goal
+        # J += log_sum * alt_goal_multiplier
+        # J *= -1
+
+        J = -1.0 * J
+
+        print("overall J " + str(J))
+
 
         if u is None:
             u_diff = 0.0
@@ -293,14 +302,12 @@ class LegiblePathQRCost(FiniteDiffCost):
             # needs a smaller value of this u_diff_val in order to reach all the way to the goal
             u_diff_val = .5 * (u_diff_val)
 
-
-        J *= -1
-        J += u_diff_val
+        J += u_diff_val * -1
 
         # print("J_initial")
         # print(J)
-        # print("u_diff_val")
-        # print(u_diff_val)
+        print("u_diff_val")
+        print(u_diff_val)
         # print(J)
 
         return J
