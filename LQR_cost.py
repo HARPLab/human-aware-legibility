@@ -302,7 +302,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             # needs a smaller value of this u_diff_val in order to reach all the way to the goal
             u_diff_val = .5 * (u_diff_val)
 
-        J += u_diff_val * -1
+
+        # CONFIRMED: We want to add this value to stage cost to minimize jerk
+        # flipping the sign adds jerk for the sake of jerk
+        J += u_diff_val
 
         # print("J_initial")
         # print(J)
@@ -550,6 +553,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_ylabel("Y", fontweight='bold')
         _ = ax1.set_title("Path through space", fontweight='bold')
         # Draw the legibility over time
+
+        # Example of how to draw an obstacle on the path
+        if False:
+            obs = [[.5, 1], [1, 1], [1, .5], [.5, .5], [.5, 1]]
+            oxs, oys = zip(*obs)
+            ax1.fill(oxs, oys, "c")
 
         goal_colors = ['red', 'blue', 'purple', 'green']
 
