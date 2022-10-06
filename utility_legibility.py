@@ -190,18 +190,20 @@ def prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, 
 	COMPONENT_DIST 			= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_DIST])
 	COMPONENT_HEADING 		= decimal.Decimal(probs_array_goal_given_signals[PROB_INDEX_HEADING])
 
-	if exp_settings[LEGIBILITY_METHOD] in [F_JDIST, F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL, F_SUM_DIST_EXPON]:
+	legib_method = get_legib_method_from_exp_settings(exp_settings)
+
+	if legib_method in [F_JDIST, F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL, F_SUM_DIST_EXPON]:
 		return COMPONENT_DIST + COMPONENT_HEADING
-	elif exp_settings[LEGIBILITY_METHOD] in [F_SUM_DIST_EXPON]:
+	elif legib_method in [F_SUM_DIST_EXPON]:
 		return (.5 * COMPONENT_DIST) + (.5 * COMPONENT_HEADING)
-	elif exp_settings[LEGIBILITY_METHOD] in [F_MIN_DIST_EXPON]:
+	elif legib_method in [F_MIN_DIST_EXPON]:
 		if COMPONENT_HEADING < COMPONENT_DIST:
 			return COMPONENT_HEADING
 		else:
 			return COMPONENT_DIST
 
 	else:
-		print(exp_settings[LEGIBILITY_METHOD])
+		print(legib_method)
 		print("ERROR UNRECOGNIZED F FUSION CHOICE")
 		exit()
 
@@ -271,7 +273,10 @@ def unnormalized_prob_goal_given_path_use_heading(r, p_n1, pt, goal, goals, cost
 # Ada: final equation
 def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
 	decimal.getcontext().prec = 60
-	is_og = exp_settings['prob_og']
+	if exp_settings is None:
+		is_og = True
+	else:
+		is_og = exp_settings['prob_og']
 
 	start = r.get_start()
 
@@ -298,15 +303,27 @@ def unnormalized_prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_her
 
 	return ratio
 
+def get_legib_method_from_exp_settings(exp_settings):
+
+	if exp_settings is None:
+		legib_method = F_JDIST
+	else:
+		legib_method = exp_settings[LEGIBILITY_METHOD]
+
+	return legib_method
+
+
 # Ada: Final equation
 # TODO Cache this result for a given path so far and set of goals
 def prob_array_goal_given_signals(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings):
 	val_0, val_1 = 0.0, 0.0
 
+	legib_method = get_legib_method_from_exp_settings(exp_settings)
+
 	# only add the value to the array if it's going to be relevant
-	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_dist():
+	if legib_method in get_set_legibility_method_uses_dist():
 		val_0 = prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path)
-	if exp_settings[LEGIBILITY_METHOD] in get_set_legibility_method_uses_heading():
+	if legib_method in get_set_legibility_method_uses_heading():
 		val_1 = prob_goal_given_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings)
 
 	return [val_0, val_1]
@@ -429,7 +446,11 @@ def get_min_direct_path_cost_angle_between(r, p0, p1, exp_settings):
 	
 def get_min_direct_path_cost_between(r, p0, p1, exp_settings):
 	dist = get_dist(p0, p1)
-	dt = chunkify.get_dt(exp_settings)
+	if exp_settings is None:
+		dt = .025
+	else:
+		dt = chunkify.get_dt(exp_settings)
+	
 	cost_chunk = dt * dt
 	num_chunks = int()
 
@@ -443,8 +464,14 @@ def get_min_direct_path_length(r, p0, p1, exp_settings):
 	return get_dist(p0, p1)
 
 # Given a 
-def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
-	FLAG_is_denominator = exp_settings['is_denominator']
+def f_legibility(r, goal, goals, path, aud, f_function=None, exp_settings=None):
+	if f_function is None:
+		f_function = f_exp_single_normalized
+
+	if exp_settings is not None:
+		FLAG_is_denominator = exp_settings['is_denominator']
+	else:
+		FLAG_is_denominator = True
 	
 	if f_function is None and FLAG_is_denominator:
 		f_function = f_exp_single
@@ -458,7 +485,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
 
-	if 'lambda' in exp_settings and exp_settings['lambda'] != '':
+	if exp_settings is not None and 'lambda' in exp_settings and exp_settings['lambda'] != '':
 		LAMBDA = decimal.Decimal(exp_settings['lambda'])
 		epsilon = decimal.Decimal(exp_settings['epsilon'])
 	else:
@@ -477,11 +504,12 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 
 	t = 1
 	p_n = path[0]
-	divisor = epsilon
+	divisor = decimal.Decimal(epsilon)
 	numerator = decimal.Decimal(0.0)
 
 	f_log = []
 	p_log = []
+
 	for pt, cost_to_here in aug_path:
 		f = decimal.Decimal(f_function(t, pt, aud, path))
 
@@ -513,7 +541,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	else:
 		legibility = (numerator / divisor)
 
-	total_cost =  - LAMBDA*total_cost
+	total_cost =  - decimal.Decimal(LAMBDA)*total_cost
 	overall = legibility + total_cost
 
 	# if len(aud) == 0:
@@ -526,7 +554,7 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 	# 	print()
 
 	if legibility > 1.0 or legibility < 0:
-		# print("BAD L ==> " + str(legibility))
+		print("BAD L ==> " + str(legibility))
 		# r.get_obs_label(aud)
 		goal_index = r.get_goal_index(goal)
 		category = r.get_obs_label(aud)
@@ -541,10 +569,18 @@ def f_legibility(r, goal, goals, path, aud, f_function, exp_settings):
 		if exp_settings['kill_1'] == True:
 			overall = 0.0
 
-	return overall
+	return legibility #overall
 
 # Old version used for RO-MAN paper 2022
-def f_legibility_single_input(r, goal, goals, path, aud, f_function, exp_settings):
+def f_legibility_single_input(r, goal, goals, path, aud, f_function=None, exp_settings=None):
+	if f_function is None:
+		f_function = f_exp_single_normalized
+
+	if exp_settings is not None:
+		FLAG_is_denominator = exp_settings['is_denominator']
+	else:
+		FLAG_is_denominator = True
+
 
 	if path is None or len(path) == 0:
 		return 0
@@ -553,7 +589,7 @@ def f_legibility_single_input(r, goal, goals, path, aud, f_function, exp_setting
 	divisor = decimal.Decimal(0)
 	total_dist = decimal.Decimal(0)
 
-	if 'lambda' in exp_settings and exp_settings['lambda'] != '':
+	if exp_settings is not None and 'lambda' in exp_settings and exp_settings['lambda'] != '':
 		LAMBDA = decimal.Decimal(exp_settings['lambda'])
 		epsilon = decimal.Decimal(exp_settings['epsilon'])
 	else:
@@ -712,16 +748,25 @@ def angle_between_lines(l1, l2):
 def angle_of_turn(l1, l2):
 	return (angle_between_lines(l1, l2))
 
+def get_scenario_key_label(key):
+	goal = 'TOP'
+	if key[0] == (1005, 257, 180):
+		goal = 'BOT'
+
+	observer_label = str(key[1])
+
+	return goal + "-o" + observer_label
+
 # TODO ada update
 def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 	# options = options[0]
 	print("Inspecting overall legibility")
+	print(options.keys())
 
 	for pkey in options.keys():
 		print(pkey)
 		path = options[pkey]
 		# print('saving fig')
-
 
 		t = range(len(path))
 		v = get_legib_graph_info(path, restaurant, exp_settings)
@@ -731,24 +776,27 @@ def inspect_legibility_of_paths(options, restaurant, exp_settings, fn):
 		ax1 = fig.add_subplot(111)
 		
 		for key in v.keys():
-			# print("key combo is")
-			# print(key)
+			print("key combo is")
+			print(key)
 			# # print(len(t))
 			# print(len(v[key]))
 			t = range(len(v[key]))
 
-			ax1.scatter(t, v[key], s=10, marker="o", label=key)
+			observer_group = key[1]
+
+			ax1.scatter(t, v[key], s=10, marker="o", label=observer_group)
+			# plt.savefig(fn + "-" + text_label + '-legib' + '.png')
+			# plt.clf()
 
 		# ax1.scatter(t, va, s=10, c='b', marker="o", label="Vis A")
 		# ax1.scatter(t, vb, s=10, c='y', marker="o", label="Vis B")
 		# ax1.scatter(t, vm, s=10, c='g', marker="o", label="Vis Multi")
 
-		pkey_label = str(pkey)
+		pkey_label = str(get_scenario_key_label(key))
 		pkey_label.replace(" ", "")
 		ax1.set_title('legibility of ' + str(pkey_label))
 		# plt.get_legend().remove()
-		# plt.legend(loc='upper left');
-		
+		plt.legend(loc='upper left')
 		plt.savefig(fn + "-" + pkey_label + '-legib' + '.png')
 		plt.clf()
 			
@@ -802,9 +850,12 @@ def lookup_legibility_label_of(f):
 
 	return "LABELERR"
 
-def lookup_legibility_unnormalized_function(exp_settings):
+def lookup_legibility_unnormalized_function_from_exp(exp_settings):
 	l = exp_settings[LEGIBILITY_METHOD] # l_method defined in pipeline_generate_path
 
+	return lookup_legibility_unnormalized_function(l)
+
+def lookup_legibility_unnormalized_function(l):
 	if l in [F_JDIST]:
 		return unnormalized_prob_goal_given_path
 	elif l in [F_JHEADING, F_JHEADING_QUADRATIC, F_JHEADING_EXPONENTIAL]:
