@@ -110,6 +110,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         x_diff = x - self.x_path[i]
         squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
+        # squared_x_cost = squared_x_cost * squared_x_cost
 
         terminal_cost = squared_x_cost
 
@@ -184,7 +185,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
         
-        total = term_cost + stage_costs
+        total = term_cost #+ stage_costs
 
         # print("total stage cost l")
         # print(total)
@@ -224,12 +225,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         # print(i)
         # print(len(self.u_path))
 
-        a = (goal_diff.T).dot(Q).dot((goal_diff))
-        b = (start_diff.T).dot(Q).dot((start_diff))
-        c = (togoal_diff.T).dot(Q).dot((togoal_diff))
+        a = np.abs(goal_diff.T).dot(Q).dot((goal_diff))
+        b = np.abs(start_diff.T).dot(Q).dot((start_diff))
+        c = np.abs(togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
+        J_g1 = np.abs(J_g1)
         # J_g1 = (b - c) / (a)
         J_g1 *= -.5
 
@@ -258,6 +260,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             # this_goal = np.exp(n) / np.exp(d)
             this_goal = np.exp(n) / np.exp(d)
+            this_goal = np.abs(this_goal)
 
             total_sum += this_goal
 
@@ -283,7 +286,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         print("Jg1, total")
         print(J_g1, total_sum)
-        J = J_g1 - (np.log(total_sum))
+        J = J_g1 + (np.log(total_sum))
         # J -= this_goal
         # J += log_sum * alt_goal_multiplier
         # J *= -1

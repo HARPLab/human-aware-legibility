@@ -42,7 +42,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         return False
 
     # Combine the existing state with 
-    def dynamics(self, x, u, max_u=5.0):
+    def dynamics(self, x, u, max_u=10.0):
         # # Constrain action space.
         if constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
@@ -243,13 +243,13 @@ def scenario_3():
 # In[1]:
 
 dt = .025
-N = 61 #100 #61
+N = 61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals = scenario_2()
+start, target_goal, all_goals = scenario_1()
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
