@@ -23,6 +23,7 @@ import utility_legibility as legib
 import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 
+
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = True
 
@@ -203,16 +204,20 @@ class LegiblePathQRCost(FiniteDiffCost):
         
         print("u = " + str(u))
 
+
+        print("Getting stage cost")
         for j in range(i):
             u_diff = u - self.u_path[j]
+            print("at " + str(j) + "u_diff = " + str(u_diff))
+            print(u_diff.T.dot(R).dot(u_diff))
 
-            stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            # stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
             stage_costs += u_diff.T.dot(R).dot(u_diff)
 
             # stage_cost(x, u, j, terminal) #
-
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
 
+        print("total stage cost " + str(stage_costs))
         return stage_costs
 
     def michelle_stage_cost(self, start, goal, x, u, i, terminal=False):
@@ -531,8 +536,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             l = legib.f_legibility(resto_envir, goal, goals, verts[:i], [])
             
             if i < len(us):
-                u = us[i]
-                sc = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+                j = len(us) - 1
+                u = us[j]
+                sc = self.get_total_stage_cost(start, goal, x, u, j, terminal)
             else:
                 sc = 0.0
 
@@ -663,10 +669,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         if True:
             ts = np.arange(len(us)) * self.dt
-            _ = plt.plot(ts, us)
-            _ = plt.xlabel("time (s)")
-            _ = plt.ylabel("Force (N)")
-            _ = plt.title("Action path")
+            u_mags = [np.linalg.norm(vector) for vector in us]
+
+            _ = plt.plot(ts, u_mags, lw=2, color='black',)
+            _ = plt.xlabel("time (s)", fontweight='bold')
+            _ = plt.ylabel("Magnitude of U", fontweight='bold')
+            _ = plt.title("Magnitude of U Over Path", fontweight='bold')
             plt.show()
             plt.clf()
 
