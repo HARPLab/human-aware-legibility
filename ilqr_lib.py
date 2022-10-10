@@ -20,7 +20,7 @@ from ilqr.dynamics import constrain
 from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_constrain
 
-from LQR_cost import LegiblePathQRCost
+from LegiblePathQRCost import LegiblePathQRCost
 from DirectPathQRCost import DirectPathQRCost
 from sklearn.preprocessing import normalize
 
