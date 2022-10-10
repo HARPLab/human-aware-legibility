@@ -22,6 +22,8 @@ from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_cons
 
 from LegiblePathQRCost import LegiblePathQRCost
 from DirectPathQRCost import DirectPathQRCost
+from ObstaclePathQRCost import ObstaclePathQRCost
+from LegibilityOGPathQRCost import LegibilityOGPathQRCost
 from sklearn.preprocessing import normalize
 
 # from contextlib import redirect_stdout
@@ -305,7 +307,9 @@ R = np.identity(2)
 Qf = np.identity(2) * 10
 
 # cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
-cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+# cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+# cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost
