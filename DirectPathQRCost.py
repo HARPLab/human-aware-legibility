@@ -59,7 +59,7 @@ class DirectPathQRCost(LegiblePathQRCost):
         action_size = self.R.shape[0]
         path_length = self.x_path.shape[0]
 
-        x_eps = .05 #05
+        x_eps = .01 #05
         u_eps = .01 #05
 
         # self._x_eps_hess = np.sqrt(self._x_eps)
@@ -130,22 +130,32 @@ class DirectPathQRCost(LegiblePathQRCost):
         """
         Q = self.Q_terminal if terminal else self.Q
         R = self.R
-        start = self.start
-        goal = self.target_goal
+        x_diff = x - self.x_path[i]
+        squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
 
         if terminal:
-            return self.term_cost(x, i)
-        else:
-            # difference between this step and the end
-            term_cost = self.term_cost(x, i)
+            return squared_x_cost
+
+        u_diff = u - self.u_path[i]
+        return squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+
+        # Removed version that overcounted
+        # start = self.start
+        # goal = self.target_goal
+
+        # if terminal:
+        #     return self.term_cost(x, i)
+        # else:
+        #     # difference between this step and the end
+        #     term_cost = self.term_cost(x, i)
         
-        stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+        # stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
     
         # print("STAGE,\t TERM")
         # print(stage_costs, term_cost)
         
-        total = term_cost + stage_costs
-        return float(total)
+        # total = term_cost + stage_costs
+        # return float(total)
 
     def get_total_stage_cost(self, start, goal, x, u, i, terminal):
         N = self.N
