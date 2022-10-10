@@ -24,7 +24,7 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 
 class LegiblePathQRCost(FiniteDiffCost):
-    FLAG_DEBUG_J = False
+    FLAG_DEBUG_J = True
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
@@ -185,7 +185,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
         
-        total = term_cost #+ stage_costs
+        total = term_cost + stage_costs
 
         # print("total stage cost l")
         # print(total)
@@ -197,11 +197,18 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def get_total_stage_cost(self, start, goal, x, u, i, terminal):
         N = self.N
+        R = self.R
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
+        
+        print("u = " + str(u))
 
         for j in range(i):
+            u_diff = u - self.u_path[j]
+
             stage_costs = stage_costs + self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            stage_costs += u_diff.T.dot(R).dot(u_diff)
+
             # stage_cost(x, u, j, terminal) #
 
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
@@ -296,19 +303,28 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("overall J " + str(J))
 
 
-        if u is None:
-            u_diff = 0.0
-            u_diff_val = 0.0
-        else:
-            u_diff = np.array(u) - self.u_path[i]
-            u_diff_val = (u_diff).dot(R).dot(u_diff).T
-            # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-            u_diff_val = .5 * (u_diff_val)
+        # # We want the path to be smooth, so we incentivize small and distributed u
+        # MOVED TO MAIN COLLATING FUNCTION
+        # if u is None:
+        #     u_diff = 0.0
+        #     u_diff_val = 0.0
+        # else:
+        #     u_diff = np.array(u) - self.u_path[i]
+        #     u_diff_val = (u_diff).dot(R).dot(u_diff).T
+        #     # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+        #     u_diff_val = -1.0 * (u_diff_val)
 
+
+        x_diff = np.array(x) - self.x_path[i]
+        x_diff_val = (x_diff).dot(Q).dot(x_diff).T
+        # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+        lambda_val = .1
+        x_diff_val = lambda_val * (x_diff_val)
 
         # CONFIRMED: We want to add this value to stage cost to minimize jerk
         # flipping the sign adds jerk for the sake of jerk
-        J += u_diff_val
+        u_diff_val = 0
+        J += u_diff_val # + x_diff_val
 
         # print("J_initial")
         # print(J)
@@ -367,7 +383,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         val = approx_fprime(x, lambda x: self._l(x, u, i), self._x_eps)
         if self.FLAG_DEBUG_J:
-            print("J_x")
+            print("J_x at " + str(x) + "," + str(u) + ","  + str(i))
             print(val)
 
         return val
@@ -388,7 +404,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         val = approx_fprime(u, lambda u: self._l(x, u, i), self._u_eps)
         if self.FLAG_DEBUG_J:
-            print("J_x")
+            print("J_u at " + str(x) + "," + str(u) + ","  + str(i))
             print(val)
 
         return val
@@ -409,8 +425,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             for m in range(self._state_size)
         ])
 
-        print("J_xx")
-        print(Q)
+        if self.FLAG_DEBUG_J:
+            print("J_xx at " + str(x) + "," + str(u) + ","  + str(i))
+            print(Q)
 
         return Q
 
@@ -434,8 +451,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             for m in range(self._action_size)
         ])
 
-        print("J_ux")
-        print(Q)
+        if self.FLAG_DEBUG_J:
+            print("J_ux at " + str(x) + "," + str(u) + ","  + str(i))
+            print(Q)
 
         return Q
 
@@ -459,8 +477,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             for m in range(self._action_size)
         ])
 
-        print("J_uu")
-        print(Q)
+        if self.FLAG_DEBUG_J:
+            print("J_uu at " + str(x) + "," + str(u) + ","  + str(i))
+            print(Q)
 
         return Q
 
@@ -472,7 +491,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         all_points.extend(pts)
         
         for pt in all_points:
-            print(pt)
             x, y = pt[0], pt[1]
 
             if x < xmin:
@@ -492,7 +510,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
-    def get_legibility_of_path_to_goal(self, verts, goal):
+    def get_legibility_of_path_to_goal(self, verts, us, goal):
         ls, scs, tcs = [], [], []
         start = self.start
         u = None
@@ -507,11 +525,17 @@ class LegiblePathQRCost(FiniteDiffCost):
         exp_settings = pipeline.get_default_exp_settings(unique_key="ilqr_verif")
 
         for i in range(len(verts)):
-            print(str(i) + " out of " + str(len(verts)))
+            # print(str(i) + " out of " + str(len(verts)))
             x = verts[i]
 
             l = legib.f_legibility(resto_envir, goal, goals, verts[:i], [])
-            sc = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+            
+            if i < len(us):
+                u = us[i]
+                sc = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+            else:
+                sc = 0.0
+
             scs.append(sc)
 
             tc = float(self.term_cost(x, i))
@@ -525,6 +549,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def graph_legibility_over_time(self, verts, us):
         print("GRAPHING LEGIBILITY OVER TIME")
+        sys.stdout = open('path_overview.txt','wt')
+
+
         ts = np.arange(self.N) * self.dt
 
         print("verts")
@@ -579,7 +606,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             else:
                 ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
-            ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, goal)
+            ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, us, goal)
             ts = np.arange(len(ls)) * self.dt
 
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
@@ -643,12 +670,21 @@ class LegiblePathQRCost(FiniteDiffCost):
             plt.show()
             plt.clf()
 
+        for i in range(len(us)):
+            # print("STAGE COSTS")
+            print("xs,\t\t us,\t\t tcs,\t\t scs \t at " + str(i))
+            print(str(xs[i]) + "\t" + str(us[i]) + "\t" + str(tcs[i]) + "\t" + str(scs[i]))
+
+            # print("TERM COSTS")
+
         # _ = plt.plot(J_hist)
         # _ = plt.xlabel("Iteration")
         # _ = plt.ylabel("Total cost")
         # _ = plt.title("Total cost-to-go")
         # plt.show()
         # plt.clf()
+
+        sys.stdout = open('output.txt','wt')
 
 
 
