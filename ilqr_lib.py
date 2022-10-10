@@ -22,10 +22,23 @@ from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_cons
 
 from LQR_cost import LegiblePathQRCost
 
+# from contextlib import redirect_stdout
+
+# with open('out.txt', 'w') as f:
+#     with redirect_stdout(f):
+#         print('data')
+
+
+import sys
+sys.stdout = open('output.txt','wt')
+
 class NavigationDynamics(FiniteDiffDynamics):
 
     _state_size  = 2
     _action_size = 2
+
+    x_eps = .1
+    u_eps = .1
 
     def f(self, x, u, i):
         return self.dynamics(x, u)
@@ -42,7 +55,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         return False
 
     # Combine the existing state with 
-    def dynamics(self, x, u, max_u=10.0):
+    def dynamics(self, x, u, max_u=5.0):
         # # Constrain action space.
         if constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
@@ -52,6 +65,15 @@ class NavigationDynamics(FiniteDiffDynamics):
             ux = diff * np.tanh(u[0]) + mean
             uy = diff * np.tanh(u[1]) + mean
             u = ux, uy
+
+            # downscaling the u
+            # if np.linalg.norm(x) > max_u:
+            #     scalar = max_u / np.linalg.norm(x)
+            #     print("SCALING U")
+            #     print(scalar)
+            #     u = u * scalar
+            #     print(u)
+
             # u = tensor_constrain(u, min_bounds, max_bounds)
             
         dt = self.dt
@@ -74,7 +96,7 @@ class NavigationDynamics(FiniteDiffDynamics):
             xnext = x
 
         print("xnext")
-        print(x, xnext, v0, v1)
+        print(str(x) + " -> " + str(xnext))
 
         return xnext
 
