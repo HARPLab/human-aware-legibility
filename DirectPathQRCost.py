@@ -16,7 +16,7 @@ from ilqr.cost import PathQRCost, AutoDiffCost, FiniteDiffCost
 from ilqr.dynamics import constrain
 from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import BatchAutoDiffDynamics, tensor_constrain
-from LQR_cost import LegiblePathQRCost
+from LegiblePathQRCost import LegiblePathQRCost
 
 from scipy.optimize import approx_fprime
 
