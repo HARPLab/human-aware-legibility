@@ -21,6 +21,7 @@ from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_constrain
 
 from LQR_cost import LegiblePathQRCost
+from sklearn.preprocessing import normalize
 
 # from contextlib import redirect_stdout
 
@@ -60,11 +61,18 @@ class NavigationDynamics(FiniteDiffDynamics):
         if constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
             
-            diff = (max_bounds - min_bounds) / 2.0
-            mean = (max_bounds + min_bounds) / 2.0
-            ux = diff * np.tanh(u[0]) + mean
-            uy = diff * np.tanh(u[1]) + mean
-            u = ux, uy
+            # If we want to constrain movements to manhattan 
+            # (straight lines and diagonals)
+            if False:
+                diff = (max_bounds - min_bounds) / 2.0
+                mean = (max_bounds + min_bounds) / 2.0
+                ux = diff * np.tanh(u[0]) + mean
+                uy = diff * np.tanh(u[1]) + mean
+                u = ux, uy
+
+            norm1 = u / np.linalg.norm(u)
+            norm2 = normalize(u[:,np.newaxis], axis=0).ravel()
+            u = norm2 * max_u
 
             # downscaling the u
             # if np.linalg.norm(x) > max_u:
