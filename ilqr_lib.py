@@ -21,6 +21,7 @@ from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import FiniteDiffDynamics, BatchAutoDiffDynamics, tensor_constrain
 
 from LQR_cost import LegiblePathQRCost
+from DirectPathQRCost import DirectPathQRCost
 from sklearn.preprocessing import normalize
 
 # from contextlib import redirect_stdout
@@ -303,7 +304,9 @@ Q = np.identity(2)
 R = np.identity(2)
 Qf = np.identity(2) * 10
 
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+# cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost
 # cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
