@@ -121,19 +121,21 @@ class LegibilityOGPathQRCost(LegiblePathQRCost):
 
         # This is a value from 0 to 1
         l = legib.f_legibility(resto_envir, self.target_goal, self.goals, self.x_path[:i], [])
-        legibility_scalar = -100.0
+        legibility_scalar = -1000.0
         l = float(l) * legibility_scalar
 
         if terminal:
             return squared_x_cost + l
 
         u_diff = u - self.u_path[i]
-        J = squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+        u_diff_cost = u_diff.T.dot(R).dot(u_diff)
+
+        J = squared_x_cost + u_diff_cost
     
         total_J = J + l
 
         print("parts of J: J = l + x + u")
-        print(total_J, l, squared_x_cost, u_diff.T.dot(R).dot(u_diff))
+        print(total_J, l, squared_x_cost, u_diff_cost)
 
         return total_J
 

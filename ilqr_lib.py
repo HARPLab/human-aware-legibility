@@ -302,9 +302,14 @@ u_blank = np.asarray([0.0, 0.0])
 Urefline = np.tile(u_blank, (N, 1))
 Urefline = np.reshape(Urefline, (-1, 2))
 
-Q = np.identity(2)
-R = np.identity(2)
-Qf = np.identity(2) * 10
+state_size = 2
+action_size = 2
+# The coefficients weigh how much your state error is worth to you vs
+# the size of your controls. You can favor a solution that uses smaller
+# controls by increasing R's coefficient.
+Q = 1.0 * np.eye(state_size)
+R = 100.0 * np.eye(action_size)
+Qf = np.identity(2) * 1.0
 
 # cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)

@@ -208,8 +208,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("Getting stage cost")
         for j in range(i):
             u_diff = u - self.u_path[j]
-            print("at " + str(j) + "u_diff = " + str(u_diff))
-            print(u_diff.T.dot(R).dot(u_diff))
+            # print("at " + str(j) + " u_diff = " + str(u_diff))
+            # print(u_diff.T.dot(R).dot(u_diff))
 
             # stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
             stage_costs += u_diff.T.dot(R).dot(u_diff)
@@ -692,7 +692,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # plt.show()
         # plt.clf()
 
-        sys.stdout = open('output.txt','wt')
+        # sys.stdout = open('output.txt','wt')
 
 
 
