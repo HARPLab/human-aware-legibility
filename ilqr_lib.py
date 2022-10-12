@@ -294,7 +294,7 @@ def scenario_3():
 # N = 61
 
 dt = .025
-N = 51
+N = 61
 
 x = T.dscalar("x")
 u = T.dscalar("u")
@@ -326,10 +326,11 @@ action_size = 2
 # the size of your controls. You can favor a solution that uses smaller
 # controls by increasing R's coefficient.
 Q = 1.0 * np.eye(state_size)
-R = 100.0 * np.eye(action_size)
-Qf = np.identity(2) * 1.0
+# R = 100.0 * np.eye(action_size)
+R = 1.0 * np.eye(action_size)
+Qf = np.identity(2) * 10.0
 
-cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)

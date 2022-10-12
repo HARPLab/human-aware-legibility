@@ -28,7 +28,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = True
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -40,6 +40,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         """
 
         self.Q = np.array(Q)
+        self.Qf = np.array(Qf)
         self.R = np.array(R)
         self.x_path = np.array(x_path)
 
@@ -106,7 +107,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         start = self.start
         goal1 = self.target_goal
         
-        Qf = self.Q_terminal
+        # Qf = self.Q_terminal
+        Qf = self.Qf
         R = self.R
 
         # x_diff = x - self.x_path[i]
@@ -121,7 +123,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
-        terminal_coeff = 1.0
+        terminal_coeff = 1000.0
         terminal_cost = terminal_cost * terminal_coeff
 
         # Once we're at the goal, the terminal cost is 0
@@ -165,7 +167,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         Returns:
             Instantaneous cost (scalar).
         """
-        Q = self.Q_terminal if terminal else self.Q
+        Q = self.Qf if terminal else self.Q
         R = self.R
         start = self.start
         goal = self.target_goal
@@ -188,17 +190,24 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
-        # if i < 10:
-        #     stage_scale = self.N - i
-        #     term_scale = self.N - i
-        # else:
-        #     stage_scale = i
-        #     term_scale = i
-        stage_scale = max([(self.N - i), 20])
-        term_scale = 100
+        if i < 30:
+            stage_scale = 200
+            term_scale = 0.1
+        else:
+            stage_scale = 10
+            term_scale = 1
+        # stage_scale = max([(self.N - i), 20])
+        # term_scale = 100
+        # stage_scale = 10
+        # term_scale = 1
+        # stage_scale = max([self.N-i, 10])
+        # stage_scale = abs(self.N-i)
+        # term_scale = i/self.N
+        # term_scale = 1
+
+
         
         total = (term_scale * term_cost) + (stage_scale * stage_costs)
-
         # print("total stage cost l")
         # print(total)
 
@@ -224,6 +233,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
+            # print(" (0.5 * u_diff.T.dot(R).dot(u_diff))",  (0.5 * u_diff.T.dot(R).dot(u_diff)))
+            # import pdb
+            # pdb.set_trace()
 
             # stage_cost(x, u, j, terminal) #
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
@@ -248,9 +260,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         # print(i)
         # print(len(self.u_path))
 
-        a = np.abs(goal_diff.T).dot(Q).dot((goal_diff))
-        b = np.abs(start_diff.T).dot(Q).dot((start_diff))
-        c = np.abs(togoal_diff.T).dot(Q).dot((togoal_diff))
+        a = (goal_diff.T).dot(Q).dot((goal_diff))
+        b = (start_diff.T).dot(Q).dot((start_diff))
+        c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
@@ -288,7 +300,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             total_sum += this_goal
 
             if goal != alt_goal:
-                log_sum += (this_goal)
+                log_sum += (5 * this_goal)
                 # print("Value for alt target goal " + str(alt_goal))
                 print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
@@ -331,6 +343,123 @@ class LegiblePathQRCost(FiniteDiffCost):
         #     # needs a smaller value of this u_diff_val in order to reach all the way to the goal
         #     u_diff_val = -1.0 * (u_diff_val)
 
+
+        # x_diff = np.array(x) - self.x_path[i]
+        # x_diff_val = (x_diff).dot(Q).dot(x_diff).T
+        # # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+        # lambda_val = .1
+        # x_diff_val = lambda_val * (x_diff_val)
+        #
+        # # CONFIRMED: We want to add this value to stage cost to minimize jerk
+        # # flipping the sign adds jerk for the sake of jerk
+        # u_diff_val = 0
+        # J += u_diff_val # + x_diff_val
+        #
+        # # print("J_initial")
+        # # print(J)
+        # print("u_diff_val")
+        # print(u_diff_val)
+        # print(J)
+
+        return J
+
+    def path_following_stage_cost(self, start, goal, x, u, i, terminal=False):
+        Q = self.Q_terminal if terminal else self.Q
+        R = self.R
+
+        all_goals = self.goals
+
+        goal_diff = start - goal
+        start_diff = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        if len(self.u_path) == 0:
+            return 0
+
+        # print(self.u_path)
+        # print(i)
+        # print(len(self.u_path))
+
+        a = np.abs(goal_diff.T).dot(Q).dot((goal_diff))
+        b = np.abs(start_diff.T).dot(Q).dot((start_diff))
+        c = np.abs(togoal_diff.T).dot(Q).dot((togoal_diff))
+
+        # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1)
+        J_g1 = a - b - c
+        # J_g1 = np.abs(J_g1)
+        # J_g1 = (b - c) / (a)
+        J_g1 *= .5
+
+        print("For point at x -> " + str(x))
+        # print("Jg1 " + str(J_g1))
+
+        log_sum = 0.0
+        total_sum = 0.0
+        for alt_goal in all_goals:
+            # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
+            # d = (start-goal)'*Q*(start-goal)
+            # log_sum += (exp(n )/exp(d))* scale
+
+            diff_curr = start - x
+            diff_goal = x - alt_goal
+            diff_all = start - alt_goal
+
+            diff_curr = diff_curr.T
+            diff_goal = diff_goal.T
+            diff_all = diff_all.T
+
+            # TODO verify if this is pointwise, or pathwise
+            n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
+            d = (diff_all).T.dot(Q).dot(diff_all)
+
+            # this_goal = np.exp(n) / np.exp(d)
+            this_goal = np.exp(n) / np.exp(d)
+            # this_goal = np.abs(this_goal)
+
+            total_sum += this_goal
+
+            if goal != alt_goal:
+                log_sum += (2 * this_goal)
+                # print("Value for alt target goal " + str(alt_goal))
+                print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
+            else:
+                # print("Value for our target goal " + str(goal))
+                # J_g1 = this_goal
+                log_sum += this_goal
+                print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
+            # print(n + d)
+
+        # print("log sum")
+        # print(log_sum)
+
+        # ratio = J_g1 / (J_g1 + np.log(log_sum))
+        # print("ratio " + str(ratio))
+
+        # the log on the log sum actually just cancels out the exp
+        # J = np.log(J_g1) - np.log(log_sum)
+        # alt_goal_multiplier = 5.0
+
+        print("Jg1, total")
+        print(J_g1, total_sum)
+        J = J_g1 - (np.log(total_sum))
+        # J -= this_goal
+        # J += log_sum * alt_goal_multiplier
+        # J *= -1
+
+        J = -1.0 * J
+
+        print("overall J " + str(J))
+
+        # # We want the path to be smooth, so we incentivize small and distributed u
+        # MOVED TO MAIN COLLATING FUNCTION
+        # if u is None:
+        #     u_diff = 0.0
+        #     u_diff_val = 0.0
+        # else:
+        #     u_diff = np.array(u) - self.u_path[i]
+        #     u_diff_val = (u_diff).dot(R).dot(u_diff).T
+        #     # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+        #     u_diff_val = -1.0 * (u_diff_val)
 
         # x_diff = np.array(x) - self.x_path[i]
         # x_diff_val = (x_diff).dot(Q).dot(x_diff).T
