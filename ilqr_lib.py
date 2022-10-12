@@ -225,6 +225,21 @@ def get_window_dimensions_for_envir(self, start, goals, pts):
 
     return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
+def scenario_0():
+    start           = [1.0, 0.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal3           = [4.0, 1.0]
+
+    goal1           = [0.0, 6.0]
+    goal3           = [2.0, 6.0]
+
+    target_goal = goal1
+
+    all_goals   = [goal1, goal3]
+    return start, target_goal, all_goals
+
 def scenario_1():
     start           = [0.0, 0.0]
 
@@ -275,14 +290,17 @@ def scenario_3():
 
 # In[1]:
 
+# dt = .025
+# N = 61
+
 dt = .025
-N = 61
+N = 51
 
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals = scenario_1()
+start, target_goal, all_goals = scenario_0()
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
@@ -311,10 +329,10 @@ Q = 1.0 * np.eye(state_size)
 R = 100.0 * np.eye(action_size)
 Qf = np.identity(2) * 1.0
 
-# cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+cost = LegiblePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
-cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+# cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost

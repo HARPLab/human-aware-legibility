@@ -109,7 +109,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         Qf = self.Q_terminal
         R = self.R
 
-        x_diff = x - self.x_path[i]
+        # x_diff = x - self.x_path[i]
+        x_diff = x - self.x_path[self.N]
         squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
         # squared_x_cost = squared_x_cost * squared_x_cost
 
@@ -119,7 +120,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(squared_x_cost)
 
         # We want to value this highly enough that we don't not end at the goal
-        terminal_coeff = 1000.0
+        # terminal_coeff = 100.0
+        terminal_coeff = 1.0
         terminal_cost = terminal_cost * terminal_coeff
 
         # Once we're at the goal, the terminal cost is 0
@@ -179,14 +181,23 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         #stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
         stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+        # stage_costs += (self.term_cost(x, i))
     
         print("STAGE,\t TERM")
         print(stage_costs, term_cost)
 
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
+        # if i < 10:
+        #     stage_scale = self.N - i
+        #     term_scale = self.N - i
+        # else:
+        #     stage_scale = i
+        #     term_scale = i
+        stage_scale = max([(self.N - i), 20])
+        term_scale = 100
         
-        total = term_cost + stage_costs
+        total = (term_scale * term_cost) + (stage_scale * stage_costs)
 
         # print("total stage cost l")
         # print(total)
@@ -211,8 +222,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print("at " + str(j) + " u_diff = " + str(u_diff))
             # print(u_diff.T.dot(R).dot(u_diff))
 
-            # stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
-            stage_costs += u_diff.T.dot(R).dot(u_diff)
+            stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
             # stage_cost(x, u, j, terminal) #
             # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
@@ -243,9 +254,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        J_g1 = np.abs(J_g1)
+        # J_g1 = np.abs(J_g1)
         # J_g1 = (b - c) / (a)
-        J_g1 *= -.5
+        J_g1 *= .5
 
         print("For point at x -> " + str(x))
         # print("Jg1 " + str(J_g1))
@@ -272,17 +283,18 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             # this_goal = np.exp(n) / np.exp(d)
             this_goal = np.exp(n) / np.exp(d)
-            this_goal = np.abs(this_goal)
+            # this_goal = np.abs(this_goal)
 
             total_sum += this_goal
 
             if goal != alt_goal:
-                log_sum += this_goal
+                log_sum += (this_goal)
                 # print("Value for alt target goal " + str(alt_goal))
                 print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
                 # J_g1 = this_goal
+                log_sum += this_goal
                 print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
             # print(n + d) 
 
@@ -298,7 +310,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         print("Jg1, total")
         print(J_g1, total_sum)
-        J = J_g1 + (np.log(total_sum))
+        J = J_g1 - (np.log(total_sum))
         # J -= this_goal
         # J += log_sum * alt_goal_multiplier
         # J *= -1
@@ -320,21 +332,21 @@ class LegiblePathQRCost(FiniteDiffCost):
         #     u_diff_val = -1.0 * (u_diff_val)
 
 
-        x_diff = np.array(x) - self.x_path[i]
-        x_diff_val = (x_diff).dot(Q).dot(x_diff).T
-        # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        lambda_val = .1
-        x_diff_val = lambda_val * (x_diff_val)
-
-        # CONFIRMED: We want to add this value to stage cost to minimize jerk
-        # flipping the sign adds jerk for the sake of jerk
-        u_diff_val = 0
-        J += u_diff_val # + x_diff_val
-
-        # print("J_initial")
-        # print(J)
-        print("u_diff_val")
-        print(u_diff_val)
+        # x_diff = np.array(x) - self.x_path[i]
+        # x_diff_val = (x_diff).dot(Q).dot(x_diff).T
+        # # needs a smaller value of this u_diff_val in order to reach all the way to the goal
+        # lambda_val = .1
+        # x_diff_val = lambda_val * (x_diff_val)
+        #
+        # # CONFIRMED: We want to add this value to stage cost to minimize jerk
+        # # flipping the sign adds jerk for the sake of jerk
+        # u_diff_val = 0
+        # J += u_diff_val # + x_diff_val
+        #
+        # # print("J_initial")
+        # # print(J)
+        # print("u_diff_val")
+        # print(u_diff_val)
         # print(J)
 
         return J
