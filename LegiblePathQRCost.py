@@ -22,6 +22,7 @@ from scipy.optimize import approx_fprime
 import utility_legibility as legib
 import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
+import pdb
 
 
 class LegiblePathQRCost(FiniteDiffCost):
@@ -42,6 +43,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         self.Q = np.array(Q)
         self.Qf = np.array(Qf)
         self.R = np.array(R)
+
+        # self.R = np.eye(2)*10000
+
         self.x_path = np.array(x_path)
 
         self.start = np.array(start)
@@ -60,6 +64,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         x_eps = .05 #05
         u_eps = .01 #05
+
 
         # self._x_eps_hess = np.sqrt(self._x_eps)
         # self._u_eps_hess = np.sqrt(self._u_eps)
@@ -124,6 +129,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
         terminal_coeff = 1000.0
+        terminal_coeff = 1
         terminal_cost = terminal_cost * terminal_coeff
 
         # Once we're at the goal, the terminal cost is 0
@@ -171,18 +177,22 @@ class LegiblePathQRCost(FiniteDiffCost):
         R = self.R
         start = self.start
         goal = self.target_goal
+        thresh = 1
 
-        if terminal:
-            return self.term_cost(x, i)
+
+        if terminal or abs(i - self.N) < thresh:
+            return self.term_cost(x, i)*1000
         else:
             # difference between this step and the end
             print("x, N, x_end_of_path -> inputs and then term cost")
             print(x, self.N, self.x_path[self.N])
-            term_cost = self.term_cost(x, i)
+            # term_cost = self.term_cost(x, i)
+            term_cost = 0
             print(term_cost)
 
-        #stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
-        stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
+        # stage_costs = self.path_following_stage_cost(start, goal, x, u, i, terminal)
+        # stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
         # stage_costs += (self.term_cost(x, i))
     
         print("STAGE,\t TERM")
@@ -190,12 +200,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
-        if i < 30:
-            stage_scale = 200
-            term_scale = 0.1
-        else:
-            stage_scale = 10
-            term_scale = 1
+        # if i < 30:
+        #     stage_scale = 200
+        #     term_scale = 0.1
+        # else:
+        #     stage_scale = 10
+        #     term_scale = 1
         # stage_scale = max([(self.N - i), 20])
         # term_scale = 100
         # stage_scale = 10
@@ -204,6 +214,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         # stage_scale = abs(self.N-i)
         # term_scale = i/self.N
         # term_scale = 1
+        # stage_scale = 50
+
+        term_scale = 0.01 # 1/100
+        stage_scale = 1.5
+        stage_scale = 2
 
 
         
@@ -231,7 +246,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print("at " + str(j) + " u_diff = " + str(u_diff))
             # print(u_diff.T.dot(R).dot(u_diff))
 
-            stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            # stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
+            # stage_costs += self.path_following_stage_cost(start, goal, x, u, j, terminal)
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
             # print(" (0.5 * u_diff.T.dot(R).dot(u_diff))",  (0.5 * u_diff.T.dot(R).dot(u_diff)))
             # import pdb
@@ -252,6 +268,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal_diff   = start - goal
         start_diff  = (start - np.array(x))
         togoal_diff = (np.array(x) - goal)
+
+        u_diff = u - self.u_path[i]
+        # u_diff = abs(u)
+        # print("u = ", u)
+        # print("u_diff =", u_diff)
+        # pdb.set_trace()
 
         if len(self.u_path) == 0:
             return 0
@@ -300,7 +322,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             total_sum += this_goal
 
             if goal != alt_goal:
-                log_sum += (5 * this_goal)
+                log_sum += (1 * this_goal)
                 # print("Value for alt target goal " + str(alt_goal))
                 print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
@@ -330,6 +352,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         J = -1.0 * J
 
         print("overall J " + str(J))
+
+
+        J += (0.5 * u_diff.T.dot(R).dot(u_diff))
+        # J += (u[0]**2 + u[1]**2)*50
 
 
         # # We want the path to be smooth, so we incentivize small and distributed u
@@ -365,13 +391,22 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def path_following_stage_cost(self, start, goal, x, u, i, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
+
         R = self.R
+
+        # Q = np.eye(2) * 1
+        # R = np.eye(2) * 1000
 
         all_goals = self.goals
 
         goal_diff = start - goal
         start_diff = (start - np.array(x))
         togoal_diff = (np.array(x) - goal)
+
+        # desired_path_x = np.linspace(start[0], goal[0], num=self.N)
+        # desired_path_y = np.linspace(start[1], goal[1], num=self.N)
+        #
+        # togoal_diff = (np.array(x) - np.array([desired_path_x[i], desired_path_y[i]]))
 
         if len(self.u_path) == 0:
             return 0
@@ -382,103 +417,15 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         a = np.abs(goal_diff.T).dot(Q).dot((goal_diff))
         b = np.abs(start_diff.T).dot(Q).dot((start_diff))
-        c = np.abs(togoal_diff.T).dot(Q).dot((togoal_diff))
+        c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1)
-        J_g1 = a - b - c
+        J_g1 = c
         # J_g1 = np.abs(J_g1)
         # J_g1 = (b - c) / (a)
         J_g1 *= .5
 
-        print("For point at x -> " + str(x))
-        # print("Jg1 " + str(J_g1))
-
-        log_sum = 0.0
-        total_sum = 0.0
-        for alt_goal in all_goals:
-            # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
-            # d = (start-goal)'*Q*(start-goal)
-            # log_sum += (exp(n )/exp(d))* scale
-
-            diff_curr = start - x
-            diff_goal = x - alt_goal
-            diff_all = start - alt_goal
-
-            diff_curr = diff_curr.T
-            diff_goal = diff_goal.T
-            diff_all = diff_all.T
-
-            # TODO verify if this is pointwise, or pathwise
-            n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
-            d = (diff_all).T.dot(Q).dot(diff_all)
-
-            # this_goal = np.exp(n) / np.exp(d)
-            this_goal = np.exp(n) / np.exp(d)
-            # this_goal = np.abs(this_goal)
-
-            total_sum += this_goal
-
-            if goal != alt_goal:
-                log_sum += (2 * this_goal)
-                # print("Value for alt target goal " + str(alt_goal))
-                print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
-            else:
-                # print("Value for our target goal " + str(goal))
-                # J_g1 = this_goal
-                log_sum += this_goal
-                print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
-            # print(n + d)
-
-        # print("log sum")
-        # print(log_sum)
-
-        # ratio = J_g1 / (J_g1 + np.log(log_sum))
-        # print("ratio " + str(ratio))
-
-        # the log on the log sum actually just cancels out the exp
-        # J = np.log(J_g1) - np.log(log_sum)
-        # alt_goal_multiplier = 5.0
-
-        print("Jg1, total")
-        print(J_g1, total_sum)
-        J = J_g1 - (np.log(total_sum))
-        # J -= this_goal
-        # J += log_sum * alt_goal_multiplier
-        # J *= -1
-
-        J = -1.0 * J
-
-        print("overall J " + str(J))
-
-        # # We want the path to be smooth, so we incentivize small and distributed u
-        # MOVED TO MAIN COLLATING FUNCTION
-        # if u is None:
-        #     u_diff = 0.0
-        #     u_diff_val = 0.0
-        # else:
-        #     u_diff = np.array(u) - self.u_path[i]
-        #     u_diff_val = (u_diff).dot(R).dot(u_diff).T
-        #     # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        #     u_diff_val = -1.0 * (u_diff_val)
-
-        # x_diff = np.array(x) - self.x_path[i]
-        # x_diff_val = (x_diff).dot(Q).dot(x_diff).T
-        # # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        # lambda_val = .1
-        # x_diff_val = lambda_val * (x_diff_val)
-        #
-        # # CONFIRMED: We want to add this value to stage cost to minimize jerk
-        # # flipping the sign adds jerk for the sake of jerk
-        # u_diff_val = 0
-        # J += u_diff_val # + x_diff_val
-        #
-        # # print("J_initial")
-        # # print(J)
-        # print("u_diff_val")
-        # print(u_diff_val)
-        # print(J)
-
-        return J
+        return J_g1
 
     def goal_efficiency_through_point(self, start, x, goal, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
@@ -724,11 +671,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         # Color code the goals for ease of reading graphs
 
         # Draw the path itself
-        ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
+        ax1.plot(xs, ys, 'o--', lw=2, color='m', label="path", markersize=10)
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
         _ = ax1.set_title("Path through space", fontweight='bold')
+
         # Draw the legibility over time
 
         # Example of how to draw an obstacle on the path
@@ -770,6 +718,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
         ax1.set_xlim([xmin, xmax])
         ax1.set_ylim([ymin, ymax])
+        # ax1.set_ylim(-5, 25)
+        # ax1.set_xlim(-15, 15)
 
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')

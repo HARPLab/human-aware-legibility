@@ -66,16 +66,16 @@ class NavigationDynamics(FiniteDiffDynamics):
             
             # If we want to constrain movements to manhattan 
             # (straight lines and diagonals)
-            if False:
-                diff = (max_bounds - min_bounds) / 2.0
-                mean = (max_bounds + min_bounds) / 2.0
-                ux = diff * np.tanh(u[0]) + mean
-                uy = diff * np.tanh(u[1]) + mean
-                u = ux, uy
+            # if False:
+            #     diff = (max_bounds - min_bounds) / 2.0
+            #     mean = (max_bounds + min_bounds) / 2.0
+            #     ux = diff * np.tanh(u[0]) + mean
+            #     uy = diff * np.tanh(u[1]) + mean
+            #     u = ux, uy
 
-            norm1 = u / np.linalg.norm(u)
-            norm2 = normalize(u[:,np.newaxis], axis=0).ravel()
-            u = norm2 * max_u
+            # norm1 = u / np.linalg.norm(u)
+            # norm2 = normalize(u[:,np.newaxis], axis=0).ravel()
+            # u = norm2 * max_u
 
             # downscaling the u
             # if np.linalg.norm(x) > max_u:
@@ -95,10 +95,8 @@ class NavigationDynamics(FiniteDiffDynamics):
         # Moving a square
         A = np.eye(self._state_size)
         B = np.eye(self._action_size)
-
         v0 = A.dot(x)
-        v1 = B.dot(u) * dt
-
+        v1 = B.dot(u)
         xnext = v0 + v1     # A*x + B*u
 
         # Sample code that shows what would happen if we attempted raw obstacle avoidance within dynamics
@@ -226,16 +224,26 @@ def get_window_dimensions_for_envir(self, start, goals, pts):
     return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
 def scenario_0():
-    start           = [1.0, 0.0]
+    start           = [1.0, 0.01]
 
     true_goal       = [8.0, 2.0]
     goal2           = [2.0, 1.0]
     goal3           = [4.0, 1.0]
 
-    goal1           = [0.0, 6.0]
-    goal3           = [2.0, 6.0]
+    # goal1           = [0.0, 6.0]
+    # goal3           = [2.0, 6.0]
+    goal1 = [0.0, 18.0]
+    goal3 = [2.0, 18.0]
 
-    target_goal = goal1
+    goal1 = [0.0, 6.0]
+    goal3 = [2.0, 6.0]
+    goal2 = [4.0, 4.0]
+
+    goal1 = [0.0, 6.0]
+    goal3 = [2.0, 9.0]
+
+
+    target_goal = goal3
 
     all_goals   = [goal1, goal3]
     return start, target_goal, all_goals
@@ -294,7 +302,7 @@ def scenario_3():
 # N = 61
 
 dt = .025
-N = 61
+N = 21
 
 x = T.dscalar("x")
 u = T.dscalar("u")
@@ -327,8 +335,11 @@ action_size = 2
 # controls by increasing R's coefficient.
 Q = 1.0 * np.eye(state_size)
 # R = 100.0 * np.eye(action_size)
-R = 1.0 * np.eye(action_size)
-Qf = np.identity(2) * 10.0
+# R = 100.0 * np.eye(action_size)
+# Qf = np.identity(2) * 40.0
+# R = 100.0 * np.eye(action_size)
+R = 200.0 * np.eye(action_size)
+Qf = np.identity(2) * 400.0
 
 cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
