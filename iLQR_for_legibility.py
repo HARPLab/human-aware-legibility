@@ -24,6 +24,8 @@ from LegiblePathQRCost import LegiblePathQRCost
 from DirectPathQRCost import DirectPathQRCost
 from ObstaclePathQRCost import ObstaclePathQRCost
 from LegibilityOGPathQRCost import LegibilityOGPathQRCost
+from OALegiblePathQRCost import OALegiblePathQRCost
+
 from sklearn.preprocessing import normalize
 
 # from contextlib import redirect_stdout
@@ -344,7 +346,8 @@ Q = 1.0 * np.eye(state_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
-cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+cost = OALegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)

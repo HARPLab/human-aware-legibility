@@ -24,12 +24,14 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 
+from LegiblePathQRCost import LegiblePathQRCost
 
-class OALegiblePathQRCost(FiniteDiffCost):
+
+class OALegiblePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = True
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -40,7 +42,7 @@ class OALegiblePathQRCost(FiniteDiffCost):
                 [state_size, state_size].
         """
 
-        OALegiblePathQRCost.__init__(
+        LegiblePathQRCost.__init__(
             self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None
         )
 
