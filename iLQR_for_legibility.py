@@ -224,6 +224,7 @@ def get_window_dimensions_for_envir(self, start, goals, pts):
     return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
 def scenario_0():
+    restaurant      = None
     start           = [1.0, 0.01]
 
     true_goal       = [8.0, 2.0]
@@ -246,9 +247,10 @@ def scenario_0():
     target_goal = goal3
 
     all_goals   = [goal1, goal3]
-    return start, target_goal, all_goals
+    return start, target_goal, all_goals, restaurant
 
 def scenario_1():
+    restaurant      = None
     start           = [0.0, 0.0]
 
     true_goal       = [8.0, 2.0]
@@ -261,10 +263,11 @@ def scenario_1():
     target_goal = goal1
 
     all_goals   = [goal1, goal3]
-    return start, target_goal, all_goals
+    return start, target_goal, all_goals, restaurant
 
 
 def scenario_2():
+    restaurant      = None
     start           = [0.0, 0.0]
 
     true_goal       = [8.0, 2.0]
@@ -277,7 +280,7 @@ def scenario_2():
     target_goal = goal4
 
     all_goals   = [goal1, goal4, goal2]
-    return start, target_goal, all_goals
+    return start, target_goal, all_goals, restaurant
 
 def scenario_3():
     start           = [8.0, 2.0]
@@ -293,7 +296,7 @@ def scenario_3():
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2]
-    return start, target_goal, all_goals
+    return start, target_goal, all_goals, restaurant
 
 
 # In[1]:
@@ -308,7 +311,7 @@ x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals = scenario_0()
+start, target_goal, all_goals, restaurant = scenario_0()
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
@@ -341,10 +344,10 @@ Q = 1.0 * np.eye(state_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
-cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
-# cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
-# cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
-# cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt)
+cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l
 # l_terminal = leg_cost.term_cost

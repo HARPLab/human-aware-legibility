@@ -29,7 +29,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = True
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -56,7 +56,10 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # Create a restaurant object for using those utilities, functions, and print functions
         # dim gives the dimensions of the restaurant
-        self.restaurant = resto.Restaurant(resto.TYPE_CUSTOM, tables=[], goals=goals, start=start, observers=[], dim=None)
+        if restaurant is None:
+            self.restaurant = resto.Restaurant(resto.TYPE_CUSTOM, tables=[], goals=goals, start=start, observers=[], dim=None)
+        else:
+            self.restaurant = restaurant
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
