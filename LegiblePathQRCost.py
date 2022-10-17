@@ -26,7 +26,8 @@ import pdb
 
 
 class LegiblePathQRCost(FiniteDiffCost):
-    FLAG_DEBUG_J = True
+    FLAG_DEBUG_J = False
+    FLAG_DEBUG_STAGE_AND_TERM = False
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
@@ -126,8 +127,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         terminal_cost = squared_x_cost
 
-        print("term cost squared x cost")
-        print(squared_x_cost)
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("term cost squared x cost")
+            print(squared_x_cost)
 
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
@@ -186,21 +188,21 @@ class LegiblePathQRCost(FiniteDiffCost):
         if terminal or abs(i - self.N) < thresh:
             return self.term_cost(x, i)*1000
         else:
-            # difference between this step and the end
-            print("x, N, x_end_of_path -> inputs and then term cost")
-            print(x, self.N, self.x_path[self.N])
-            # term_cost = self.term_cost(x, i)
-            term_cost = 0
-            print(term_cost)
+            if FLAG_DEBUG_STAGE_AND_TERM:
+                # difference between this step and the end
+                print("x, N, x_end_of_path -> inputs and then term cost")
+                print(x, self.N, self.x_path[self.N])
+                # term_cost = self.term_cost(x, i)
+                term_cost = 0
+                print(term_cost)
 
         stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
-        # stage_costs = self.path_following_stage_cost(start, goal, x, u, i, terminal)
-        # stage_costs = self.get_total_stage_cost(start, goal, x, u, i, terminal)
-        # stage_costs += (self.term_cost(x, i))
     
-        print("STAGE,\t TERM")
-        print(stage_costs, term_cost)
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("STAGE,\t TERM")
+            print(stage_costs, term_cost)
 
+        # Log of remixes of term and stage cost weightings
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
         # if i < 30:
@@ -224,10 +226,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         stage_scale = 2
 
 
-        
         total = (term_scale * term_cost) + (stage_scale * stage_costs)
-        # print("total stage cost l")
-        # print(total)
 
         return float(total)
 
@@ -240,26 +239,18 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
         
-        print("u = " + str(u))
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("u = " + str(u))
+            print("Getting stage cost")
 
-
-        print("Getting stage cost")
         for j in range(i):
             u_diff = u - self.u_path[j]
-            # print("at " + str(j) + " u_diff = " + str(u_diff))
-            # print(u_diff.T.dot(R).dot(u_diff))
 
-            # stage_costs += self.michelle_stage_cost(start, goal, x, u, j, terminal)
-            # stage_costs += self.path_following_stage_cost(start, goal, x, u, j, terminal)
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
-            # print(" (0.5 * u_diff.T.dot(R).dot(u_diff))",  (0.5 * u_diff.T.dot(R).dot(u_diff)))
-            # import pdb
-            # pdb.set_trace()
 
-            # stage_cost(x, u, j, terminal) #
-            # stage_costs = stage_costs + self.goal_efficiency_through_point_relative(start, goal, x, terminal)
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("total stage cost " + str(stage_costs))
 
-        print("total stage cost " + str(stage_costs))
         return stage_costs
 
     def michelle_stage_cost(self, start, goal, x, u, i, terminal=False):
@@ -273,17 +264,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         togoal_diff = (np.array(x) - goal)
 
         u_diff = u - self.u_path[i]
-        # u_diff = abs(u)
-        # print("u = ", u)
-        # print("u_diff =", u_diff)
-        # pdb.set_trace()
 
         if len(self.u_path) == 0:
             return 0
-
-        # print(self.u_path)
-        # print(i)
-        # print(len(self.u_path))
 
         a = (goal_diff.T).dot(Q).dot((goal_diff))
         b = (start_diff.T).dot(Q).dot((start_diff))
@@ -291,12 +274,11 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        # J_g1 = np.abs(J_g1)
-        # J_g1 = (b - c) / (a)
         J_g1 *= .5
 
-        print("For point at x -> " + str(x))
-        # print("Jg1 " + str(J_g1))
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("For point at x -> " + str(x))
+            # print("Jg1 " + str(J_g1))
 
         log_sum = 0.0
         total_sum = 0.0
@@ -314,25 +296,25 @@ class LegiblePathQRCost(FiniteDiffCost):
             diff_goal   = diff_goal.T
             diff_all    = diff_all.T
 
-            # TODO verify if this is pointwise, or pathwise
             n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
             d = (diff_all).T.dot(Q).dot(diff_all)
 
-            # this_goal = np.exp(n) / np.exp(d)
             this_goal = np.exp(n) / np.exp(d)
-            # this_goal = np.abs(this_goal)
 
             total_sum += this_goal
 
             if goal != alt_goal:
                 log_sum += (1 * this_goal)
-                # print("Value for alt target goal " + str(alt_goal))
-                print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
+                if FLAG_DEBUG_STAGE_AND_TERM:
+                    # print("Value for alt target goal " + str(alt_goal))
+                    print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
                 # J_g1 = this_goal
                 log_sum += this_goal
-                print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
+                if FLAG_DEBUG_STAGE_AND_TERM:
+                    print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
+    
             # print(n + d) 
 
         # print("log sum")
@@ -345,50 +327,19 @@ class LegiblePathQRCost(FiniteDiffCost):
         # J = np.log(J_g1) - np.log(log_sum)
         # alt_goal_multiplier = 5.0
 
-        print("Jg1, total")
-        print(J_g1, total_sum)
-        J = J_g1 - (np.log(total_sum))
-        # J -= this_goal
-        # J += log_sum * alt_goal_multiplier
-        # J *= -1
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("Jg1, total")
+            print(J_g1, total_sum)
 
+        J = J_g1 - (np.log(total_sum))
         J = -1.0 * J
 
-        print("overall J " + str(J))
-
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            print("overall J " + str(J))
 
         J += (0.5 * u_diff.T.dot(R).dot(u_diff))
-        # J += (u[0]**2 + u[1]**2)*50
-
 
         # # We want the path to be smooth, so we incentivize small and distributed u
-        # MOVED TO MAIN COLLATING FUNCTION
-        # if u is None:
-        #     u_diff = 0.0
-        #     u_diff_val = 0.0
-        # else:
-        #     u_diff = np.array(u) - self.u_path[i]
-        #     u_diff_val = (u_diff).dot(R).dot(u_diff).T
-        #     # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        #     u_diff_val = -1.0 * (u_diff_val)
-
-
-        # x_diff = np.array(x) - self.x_path[i]
-        # x_diff_val = (x_diff).dot(Q).dot(x_diff).T
-        # # needs a smaller value of this u_diff_val in order to reach all the way to the goal
-        # lambda_val = .1
-        # x_diff_val = lambda_val * (x_diff_val)
-        #
-        # # CONFIRMED: We want to add this value to stage cost to minimize jerk
-        # # flipping the sign adds jerk for the sake of jerk
-        # u_diff_val = 0
-        # J += u_diff_val # + x_diff_val
-        #
-        # # print("J_initial")
-        # # print(J)
-        # print("u_diff_val")
-        # print(u_diff_val)
-        # print(J)
 
         return J
 
@@ -405,11 +356,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal_diff = start - goal
         start_diff = (start - np.array(x))
         togoal_diff = (np.array(x) - goal)
-
-        # desired_path_x = np.linspace(start[0], goal[0], num=self.N)
-        # desired_path_y = np.linspace(start[1], goal[1], num=self.N)
-        #
-        # togoal_diff = (np.array(x) - np.array([desired_path_x[i], desired_path_y[i]]))
 
         if len(self.u_path) == 0:
             return 0
@@ -659,7 +605,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         gx, gy = zip(*self.goals)
         sx, sy = self.start
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 6))
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 6.5))
+        fig.subplots_adjust(top=0.95, bottom=.1, right=1, left=.05, hspace=.3, wspace=.1)
+        txt = "" #"I need the caption to be present a little below X-axis"
+        plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
+
+
+        # textstr = 'XXXXX'
+        # plt.figtext(0.02, 6, textstr, fontsize=14)
+
 
         ax1.grid(axis='y')
         ax2.grid(axis='y')
@@ -744,7 +698,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax3.grid(False)
         ax4.grid(False)
 
-        plt.tight_layout()
+
+        # plt.tight_layout()
         plt.show()
         plt.clf()
 
@@ -769,13 +724,15 @@ class LegiblePathQRCost(FiniteDiffCost):
             _ = plt.xlabel("time (s)", fontweight='bold')
             _ = plt.ylabel("Magnitude of U", fontweight='bold')
             _ = plt.title("Magnitude of U Over Path", fontweight='bold')
+            plt.tight_layout()
             plt.show()
             plt.clf()
 
-        for i in range(len(us)):
-            # print("STAGE COSTS")
-            print("xs,\t\t us,\t\t tcs,\t\t scs \t at " + str(i))
-            print(str(xs[i]) + "\t" + str(us[i]) + "\t" + str(tcs[i]) + "\t" + str(scs[i]))
+        if FLAG_DEBUG_STAGE_AND_TERM:
+            for i in range(len(us)):
+                # print("STAGE COSTS")
+                print("xs,\t\t us,\t\t tcs,\t\t scs \t at " + str(i))
+                print(str(xs[i]) + "\t" + str(us[i]) + "\t" + str(tcs[i]) + "\t" + str(scs[i]))
 
             # print("TERM COSTS")
 
