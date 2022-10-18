@@ -10,6 +10,7 @@ import decimal
 import copy
 import time
 from datetime import timedelta
+import matplotlib.ticker as mtick
 
 from ilqr import iLQR
 from ilqr.cost import Cost
@@ -31,7 +32,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = False
 
-    coeff_terminal = 1000.0
+    coeff_terminal = 1000000.0
     scale_term = 0.01 # 1/100
     # scale_stage = 1.5
     scale_stage = 2
@@ -201,10 +202,10 @@ class LegiblePathQRCost(FiniteDiffCost):
                 print("x, N, x_end_of_path -> inputs and then term cost")
                 print(x, self.N, self.x_path[self.N])
                 # term_cost = self.term_cost(x, i)
-                term_cost = 0
                 print(term_cost)
 
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
+        term_cost = 0
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * self.f(i)#
     
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
@@ -236,8 +237,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return float(total)
 
-    def f(t):
-        return 1.0
+    def f(self, t):
+        return 1.0 #self.N - t #1.0
 
     def get_total_stage_cost(self, start, goal, x, u, i, terminal):
         N = self.N
@@ -658,6 +659,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax3.grid(axis='y')
         ax4.grid(axis='y')
         
+        ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
+        ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
+
         # each set of xs, ys happens at time t
         # we want to find the legibility at time t
         # and graph it
@@ -671,6 +675,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
         _ = ax1.set_title("Path through space", fontweight='bold')
+
+
+        tables = self.restaurant.get_tables()
+        for table in tables:
+            TABLE_RADIUS = .5
+            table = plt.Circle(table.get_center(), TABLE_RADIUS, color='g', clip_on=False)
+            ax1.add_patch(table)
 
         # Draw the legibility over time
 
