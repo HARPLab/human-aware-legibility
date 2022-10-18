@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import decimal
 import copy
+import time
+from datetime import timedelta
 
 from ilqr import iLQR
 from ilqr.cost import Cost
@@ -33,6 +35,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     scale_term = 0.01 # 1/100
     # scale_stage = 1.5
     scale_stage = 2
+    scale_obstacle = 0
 
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
@@ -592,8 +595,23 @@ class LegiblePathQRCost(FiniteDiffCost):
         return ls, scs, tcs
 
 
+    def get_debug_text(self, elapsed_time):
+        debug_text_a = "stage scale: " + str(self.scale_stage) + "        "
+        debug_text_b = "term scale: " + str(self.scale_term) + "\n"
+        debug_text_c = "coeff_terminal: " + str(self.coeff_terminal) + "        "
+        debug_text_d = "obstacle scale: " + str(self.scale_obstacle) # + "\n"
 
-    def graph_legibility_over_time(self, verts, us):
+        debug_text = debug_text_a + debug_text_b + debug_text_c + debug_text_d
+
+        if elapsed_time is not None:
+            # time.strftime("%M:%S:%f", time.gmtime())
+            elapsed_time =  "%.2f seconds" % elapsed_time
+            debug_text = elapsed_time + "        " + debug_text
+
+        
+        return debug_text
+
+    def graph_legibility_over_time(self, verts, us, elapsed_time=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         sys.stdout = open('path_overview.txt','wt')
 
@@ -608,15 +626,32 @@ class LegiblePathQRCost(FiniteDiffCost):
         gx, gy = zip(*self.goals)
         sx, sy = self.start
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(8, 6.5))
-        fig.subplots_adjust(top=0.95, bottom=.1, right=1, left=.05, hspace=.3, wspace=.1)
-        txt = "" #"I need the caption to be present a little below X-axis"
-        plt.figtext(0.5, 0.01, txt, wrap=True, horizontalalignment='center', fontsize=12)
+        # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
+        
+        # plt.figure(figsize=(12, 6))
+        # ax1 = plt.subplot(2,3,1)
+        # ax2 = plt.subplot(2,3,2)
+        # ax3 = plt.subplot(2,3,3)
+
+        # ax4 = plt.subplot(2,1,2)
+        # axes = [ax1, ax2, ax3, ax4]
+
+        # Ummm, incredible plot layout system for numpy
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplot_mosaic.html
+        fig, axes = plt.subplot_mosaic("AB;CD;EE", figsize=(8, 6), gridspec_kw={'height_ratios':[36, 36, 1], 'width_ratios':[1, 1]})
+        # fig, axes = plt.subplot_mosaic("AAB;AAC;DEF")
+        ax1 = axes['A']
+        ax2 = axes['B']
+        ax3 = axes['C']
+        ax4 = axes['D']
+        ax5 = axes['E']
+        # ax6 = axes['F']
+        # ax7 = axes['G']
 
 
-        # textstr = 'XXXXX'
-        # plt.figtext(0.02, 6, textstr, fontsize=14)
-
+        ax5.axis('off')
+        debug_text = self.get_debug_text(elapsed_time)
+        ax5.annotate(debug_text, (0.5, 0), xycoords='axes fraction', ha="center", va="center", wrap=True, fontweight='bold') #, fontsize=6)
 
         ax1.grid(axis='y')
         ax2.grid(axis='y')
@@ -702,7 +737,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax4.grid(False)
 
 
-        # plt.tight_layout()
+        plt.tight_layout()
         plt.show()
         plt.clf()
 
