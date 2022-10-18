@@ -625,7 +625,12 @@ class Table:
 
 		tp = pt
 		if USE_POLYGON:
-			tx, ty, ttheta = tp
+			if len(tp) == 3:
+				tx, ty, ttheta = tp
+			else:
+				tx, ty = tp
+				ttheta = DIR_SOUTH
+
 			dir_y = 0
 			if ttheta == DIR_SOUTH:
 				dir_y = -1
@@ -743,7 +748,10 @@ class Table:
 		return (self.location[0], self.location[1])
 
 	def get_orientation(self):
-		return self.location[2]
+		if len(self.location) > 2:
+			return self.location[2]
+		else:
+			return -1
 
 	def get_JSON(self):
 		return (self.location, self.radius)
@@ -1007,7 +1015,7 @@ n_length = int(length / resolution_planning) + 1
 goal_helper_pts = []
 
 class Restaurant: 
-	def __init__(self, generate_type, tables=None, goals=None, start=None, observers=None, dim=None):
+	def __init__(self, generate_type, tables=None, table_pts=None, goals=None, start=None, observers=None, dim=None):
 		self.generate_type = generate_type
 		print(generate_type)
 		self.observers = []
@@ -1024,9 +1032,18 @@ class Restaurant:
 
 		if generate_type == TYPE_CUSTOM:
 			self.goals 	= goals
-			self.tables = tables
 			self.start 	= start
 			self.observers = observers
+
+			if table_pts is not None:
+				for pt in table_pts:
+					table = Table(pt, generate_type)
+					self.tables.append(table)
+			elif tables is not None:
+				self.tables = tables
+			else:
+				self.tables = []
+
 
 			if dim is None:
 				xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir()
@@ -1905,7 +1922,8 @@ class Restaurant:
 			endAngle = 180 * dir_y
 			t_up = int(dir_y * table_radius * .5)
 
-			cv2.ellipse(img, center_pt, axes, angle, startAngle, endAngle, COLOR_TABLE, -1)
+			if ttheta is not -1:
+				cv2.ellipse(img, center_pt, axes, angle, startAngle, endAngle, COLOR_TABLE, -1)
 			
 			table_list = [(tx + radius, ty), (tx + radius, ty - t_up), (tx - radius, ty - t_up), (tx - radius, ty)]
 			tpoly = np.array([table_list], np.int32)
