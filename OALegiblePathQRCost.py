@@ -28,7 +28,14 @@ from LegiblePathQRCost import LegiblePathQRCost
 
 
 class OALegiblePathQRCost(LegiblePathQRCost):
-    FLAG_DEBUG_J = True
+    FLAG_DEBUG_J = False
+    FLAG_DEBUG_STAGE_AND_TERM = False
+
+    coeff_terminal = 1000.0
+    scale_term = 0.01 # 1/100
+    # scale_stage = 1.5
+    scale_stage = 2
+
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
@@ -63,22 +70,17 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
         terminal_cost = squared_x_cost
 
-        print("term cost squared x cost")
-        print(squared_x_cost)
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("term cost squared x cost")
+            print(squared_x_cost)
 
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
-        terminal_coeff = 1000.0
-        terminal_coeff = 1
-        terminal_cost = terminal_cost * terminal_coeff
-
-        # Once we're at the goal, the terminal cost is 0
-        
-        # Attempted fix for paths which do not hit the final mark
-        # if squared_x_cost > .001:
-        #     terminal_cost *= 1000.0
+        coeff_terminal = self.coeff_terminal
+        terminal_cost = terminal_cost * coeff_terminal
 
         return terminal_cost
+
 
     # original version for plain path following
     def l(self, x, u, i, terminal=False):
@@ -101,18 +103,21 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         if terminal or abs(i - self.N) < thresh:
             return self.term_cost(x, i)*1000
         else:
-            # difference between this step and the end
-            print("x, N, x_end_of_path -> inputs and then term cost")
-            print(x, self.N, self.x_path[self.N])
-            # term_cost = self.term_cost(x, i)
-            term_cost = 0
-            print(term_cost)
+            if self.FLAG_DEBUG_STAGE_AND_TERM:
+                # difference between this step and the end
+                print("x, N, x_end_of_path -> inputs and then term cost")
+                print(x, self.N, self.x_path[self.N])
+                # term_cost = self.term_cost(x, i)
+                term_cost = 0
+                print(term_cost)
 
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal)
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
     
-        print("STAGE,\t TERM")
-        print(stage_costs, term_cost)
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("STAGE,\t TERM")
+            print(stage_costs, term_cost)
 
+        # Log of remixes of term and stage cost weightings
         # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
         # stage_costs    = decimal.Decimal.ln(stage_costs)
         # if i < 30:
@@ -131,15 +136,10 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         # term_scale = 1
         # stage_scale = 50
 
-        term_scale = 0.01 # 1/100
-        stage_scale = 1.5
-        stage_scale = 2
+        scale_term = self.scale_term #0.01 # 1/100
+        scale_stage = self.scale_stage #1.5
 
-
-        
-        total = (term_scale * term_cost) + (stage_scale * stage_costs)
-        # print("total stage cost l")
-        # print(total)
+        total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
         return float(total)
 
@@ -152,15 +152,18 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
         
-        print("u = " + str(u))
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("u = " + str(u))
+            print("Getting stage cost")
 
-
-        print("Getting stage cost")
         for j in range(i):
             u_diff = u - self.u_path[j]
+
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
-        print("total stage cost " + str(stage_costs))
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("total stage cost " + str(stage_costs))
+
         return stage_costs
 
     def michelle_stage_cost(self, start, goal, x, u, i, terminal=False):
@@ -186,8 +189,9 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         J_g1 = a - b - c
         J_g1 *= .5
 
-        print("For point at x -> " + str(x))
-        # print("Jg1 " + str(J_g1))
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("For point at x -> " + str(x))
+            # print("Jg1 " + str(J_g1))
 
         log_sum = 0.0
         total_sum = 0.0
@@ -195,6 +199,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
             # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
             # d = (start-goal)'*Q*(start-goal)
             # log_sum += (exp(n )/exp(d))* scale
+
             
             diff_curr   = start - x
             diff_goal   = x - alt_goal
@@ -204,65 +209,47 @@ class OALegiblePathQRCost(LegiblePathQRCost):
             diff_goal   = diff_goal.T
             diff_all    = diff_all.T
 
-            # TODO verify if this is pointwise, or pathwise
             n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
             d = (diff_all).T.dot(Q).dot(diff_all)
 
-            # this_goal = np.exp(n) / np.exp(d)
             this_goal = np.exp(n) / np.exp(d)
-            # this_goal = np.abs(this_goal)
 
             total_sum += this_goal
 
             if goal != alt_goal:
                 log_sum += (1 * this_goal)
-                # print("Value for alt target goal " + str(alt_goal))
-                print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
+                if self.FLAG_DEBUG_STAGE_AND_TERM:
+                    # print("Value for alt target goal " + str(alt_goal))
+                    print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
                 # J_g1 = this_goal
                 log_sum += this_goal
-                print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
-            # print(n + d) 
+                if self.FLAG_DEBUG_STAGE_AND_TERM:
+                    print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
+    
 
-        # print("Jg1, total")
-        # print(J_g1, total_sum)
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("Jg1, total")
+            print(J_g1, total_sum)
+
         J = J_g1 - (np.log(total_sum))
-        # J -= this_goal
-        # J += log_sum * alt_goal_multiplier
-        # J *= -1
-
         J = -1.0 * J
 
-        # print("overall J " + str(J))
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("overall J " + str(J))
 
         J += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
+        # # We want the path to be smooth, so we incentivize small and distributed u
+
         return J
 
-    def get_window_dimensions_for_envir(self, start, goals, pts):
-        xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
+    def stage_cost(self, x, u, i, terminal=False):
+        print("DOING STAGE COST")
+        start   = self.start
+        goal    = self.target_goal
 
-        all_points = copy.copy(goals)
-        all_points.append(start)
-        all_points.extend(pts)
-        
-        for pt in all_points:
-            x, y = pt[0], pt[1]
-
-            if x < xmin:
-                xmin = x
-            if y < ymin:
-                ymin = y
-            if x > xmax:
-                xmax = x
-            if y > ymax:
-                ymax = y
-
-        xwidth      = xmax - xmin
-        yheight     = ymax - ymin
-
-        xbuffer     = .1 * xwidth
-        ybuffer     = .1 * yheight
-
-        return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
+        x = np.array(x)
+        J = self.goal_efficiency_through_point_relative(start, goal, x, terminal)
+        return J
