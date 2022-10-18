@@ -108,9 +108,9 @@ class OALegiblePathQRCost(LegiblePathQRCost):
                 print("x, N, x_end_of_path -> inputs and then term cost")
                 print(x, self.N, self.x_path[self.N])
                 # term_cost = self.term_cost(x, i)
-                term_cost = 0
                 print(term_cost)
 
+        term_cost = 0
         stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
     
         if self.FLAG_DEBUG_STAGE_AND_TERM:
