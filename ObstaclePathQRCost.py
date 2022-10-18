@@ -28,9 +28,10 @@ import pipeline_generate_paths as pipeline
 
 class ObstaclePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = True
+    scale_obstacle = 100000000000.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -41,61 +42,10 @@ class ObstaclePathQRCost(LegiblePathQRCost):
                 [state_size, state_size].
         """
 
-        self.Q = np.array(Q)
-        self.R = np.array(R)
-        self.x_path = np.array(x_path)
-
-        self.start = np.array(start)
-        self.goals = goals
-        self.target_goal = target_goal
-        self.N = N
-        self.dt = dt
-
-        # Create a restaurant object for using those utilities, functions, and print functions
-        # dim gives the dimensions of the restaurant
-        self.restaurant = resto.Restaurant(resto.TYPE_CUSTOM, tables=[], goals=goals, start=start, observers=[], dim=None)
-
-        state_size = self.Q.shape[0]
-        action_size = self.R.shape[0]
-        path_length = self.x_path.shape[0]
-
-        x_eps = .01 #05
-        u_eps = .01 #05
-
-        # self._x_eps_hess = np.sqrt(self._x_eps)
-        # self._u_eps_hess = np.sqrt(self._u_eps)
-
-        self._state_size = state_size
-        self._action_size = action_size
-
-        if Q_terminal is None:
-            self.Q_terminal = self.Q
-        else:
-            self.Q_terminal = np.array(Q_terminal)
-
-        if u_path is None:
-            self.u_path = np.zeros(path_length - 1, action_size)
-        else:
-            self.u_path = np.array(u_path)
-
-        assert self.Q.shape == self.Q_terminal.shape, "Q & Q_terminal mismatch"
-        assert self.Q.shape[0] == self.Q.shape[1], "Q must be square"
-        assert self.R.shape[0] == self.R.shape[1], "R must be square"
-        
-        assert state_size == self.x_path.shape[1], "Q & x_path mismatch"
-        assert action_size == self.u_path.shape[1], "R & u_path mismatch"
-        assert path_length == self.u_path.shape[0] + 1, \
-                "x_path must be 1 longer than u_path"
-
-        # Precompute some common constants.
-        self._Q_plus_Q_T = self.Q + self.Q.T
-        self._R_plus_R_T = self.R + self.R.T
-        self._Q_plus_Q_T_terminal = self.Q_terminal + self.Q_terminal.T
-
         LegiblePathQRCost.__init__(
-            self,
-            Q, R, x_path, u_path, start, target_goal, goals, N, dt, Q_terminal=Q_terminal
+            self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, Q_terminal=None
         )
+
 
     # original version for plain path following
     def l(self, x, u, i, terminal=False):
@@ -108,29 +58,77 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         Returns:
             Instantaneous cost (scalar).
         """
-        Q = self.Q_terminal if terminal else self.Q
+        Q = self.Qf if terminal else self.Q
         R = self.R
-        x_diff = x - self.x_path[i]
-        squared_x_cost = x_diff.T.dot(Q).dot(x_diff)
+        start = self.start
+        goal = self.target_goal
+        thresh = 1
 
-        if terminal:
-            return squared_x_cost
 
-        u_diff = u - self.u_path[i]
-        total = squared_x_cost + u_diff.T.dot(R).dot(u_diff)
+        if terminal or abs(i - self.N) < thresh:
+            return self.term_cost(x, i)*1000
+        else:
+            if self.FLAG_DEBUG_STAGE_AND_TERM:
+                # difference between this step and the end
+                print("x, N, x_end_of_path -> inputs and then term cost")
+                print(x, self.N, self.x_path[self.N])
+                # term_cost = self.term_cost(x, i)
+                print(term_cost)
 
-        obstacles = [(2.0, 1.0)]
+        term_cost = 0
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
+    
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("STAGE,\t TERM")
+            print(stage_costs, term_cost)
+
+        # Log of remixes of term and stage cost weightings
+        # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
+        # stage_costs    = decimal.Decimal.ln(stage_costs)
+        # if i < 30:
+        #     stage_scale = 200
+        #     term_scale = 0.1
+        # else:
+        #     stage_scale = 10
+        #     term_scale = 1
+        # stage_scale = max([(self.N - i), 20])
+        # term_scale = 100
+        # stage_scale = 10
+        # term_scale = 1
+        # stage_scale = max([self.N-i, 10])
+        # stage_scale = abs(self.N-i)
+        # term_scale = i/self.N
+        # term_scale = 1
+        # stage_scale = 50
+
+        scale_term = self.scale_term #0.01 # 1/100
+        scale_stage = self.scale_stage #1.5
+
+
+        tables = self.restaurant.get_tables()
         obstacle_penalty = 0
 
-        for obstacle in obstacles:
+        TABLE_RADIUS = .5
+        for table in tables:
+            obstacle = table.get_center()
             obs_dist = obstacle - x
             obs_dist = np.linalg.norm(obs_dist)
-            if obs_dist < .5:
-                print("obstacle dist for " + str(x) + " " + str(obs_dist))
-                # exit()
-                obstacle_penalty += np.exp(obs_dist * 1000)
 
-        total += obstacle_penalty
-        return total
+            if obs_dist < TABLE_RADIUS:
+                print("obstacle dist for " + str(x) + " " + str(obs_dist))
+                obstacle_penalty += obs_dist * self.scale_obstacle
+                # np.inf #
+
+
+        if obstacle_penalty > 0:
+            print("total obstacle penalty " + str(obstacle_penalty))
+    
+        stage_costs += obstacle_penalty
+
+        total = (scale_term * term_cost) + (scale_stage * stage_costs)
+
+        return float(total)
+
+
 
 
