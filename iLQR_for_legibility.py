@@ -28,6 +28,8 @@ from NavigationDynamics import NavigationDynamics
 
 from sklearn.preprocessing import normalize
 
+import utility_environ_descrip as resto
+
 # from contextlib import redirect_stdout
 
 # with open('out.txt', 'w') as f:
@@ -110,7 +112,7 @@ def scenario_1():
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal1scale_
+    target_goal = goal1
 
     all_goals   = [goal1, goal3]
     return start, target_goal, all_goals, restaurant
@@ -148,6 +150,30 @@ def scenario_3():
     all_goals   = [goal1, goal3, goal2]
     return start, target_goal, all_goals, restaurant
 
+def scenario_4_has_obstacles():
+    start           = [0.0, 0.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal4           = [4.0, 1.0]
+
+    goal1           = [4.0, 2.0]
+    goal3           = [1.0, 3.0]
+
+    target_goal = goal4
+    all_goals   = [goal1, goal4, goal2]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([1.0, 1.0])
+    table_pts.append([3.0, 1.0])
+
+    restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, observers=[], dim=None)
+
+    return start, target_goal, all_goals, restaurant
+
+
 
 # In[1]:
 
@@ -161,7 +187,7 @@ x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals, restaurant = scenario_0()
+start, target_goal, all_goals, restaurant = scenario_4_has_obstacles()
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
