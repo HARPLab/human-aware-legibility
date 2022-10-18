@@ -5,6 +5,8 @@ from __future__ import print_function
 import os
 import sys
 import copy
+import time
+
 module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
     sys.path.append(module_path)
@@ -38,6 +40,8 @@ import utility_environ_descrip as resto
 
 import sys
 sys.stdout = open('output.txt','wt')
+
+J_hist = []
 
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
@@ -240,39 +244,16 @@ if FLAG_JUST_PATH:
     print("Set to old school pathing")
     exit()
 
-# x_dot = (dt * t - u) * x**2
-# f = T.stack([x + x_dot * dt])
-
 ilqr = iLQR(dynamics, cost, N)
-J_hist = []
+
+start_time = time.time()
 xs, us = ilqr.fit(x0_raw, Urefline, tol=1e-6, n_iterations=N, on_iteration=on_iteration)
-
-# # Reduce the state to something more reasonable.
-# xs = dynamics.reduce_state(xs)
-
-# # Constrain the actions to see what's actually applied to the system.
-# us = constrain(us, dynamics.min_bounds, dynamics.max_bounds)
-
-# # Constrain the inputs.
-# min_bounds = np.array([0.0, 0.0, 0.0])
-# max_bounds = np.array([61.0, 10.0, 10.0])
-# u_constrained_inputs = tensor_constrain(us, min_bounds, max_bounds)
-
-# # Constrain the solution.
-# xs, us_unconstrained = ilqr.fit(x0, us_init)
-# us = constrain(us_unconstrained, min_bounds, max_bounds)
+end_time = time.time()
 
 t = np.arange(N) * dt
 theta = np.unwrap(xs[:, 0])  # Makes for smoother plots.
 theta_dot = xs[:, 1]
 
-
-# _ = plt.plot(theta, theta_dot)
-# _ = plt.xlabel("theta (rad)")
-# _ = plt.ylabel("theta_dot (rad/s)")
-# _ = plt.title("Phase Plot")
-# plt.show()
-# plt.clf()
 
 # Plot of the path through space
 verts = xs
@@ -281,7 +262,8 @@ gx, gy = zip(*all_goals)
 sx, sy = zip(*[x0_raw])
 
 
-cost.graph_legibility_over_time(verts, us)
+elapsed_time = end_time - start_time
+cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
 
 
 # n_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
