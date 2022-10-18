@@ -29,6 +29,12 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = False
 
+    coeff_terminal = 1000.0
+    scale_term = 0.01 # 1/100
+    # scale_stage = 1.5
+    scale_stage = 2
+
+
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
         """Constructs a QRCost.
@@ -127,15 +133,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         terminal_cost = squared_x_cost
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("term cost squared x cost")
             print(squared_x_cost)
 
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
-        terminal_coeff = 1000.0
-        terminal_coeff = 1
-        terminal_cost = terminal_cost * terminal_coeff
+        coeff_terminal = self.coeff_terminal
+        terminal_cost = terminal_cost * coeff_terminal
 
         # Once we're at the goal, the terminal cost is 0
         
@@ -188,7 +193,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         if terminal or abs(i - self.N) < thresh:
             return self.term_cost(x, i)*1000
         else:
-            if FLAG_DEBUG_STAGE_AND_TERM:
+            if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
                 print("x, N, x_end_of_path -> inputs and then term cost")
                 print(x, self.N, self.x_path[self.N])
@@ -198,7 +203,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
     
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
             print(stage_costs, term_cost)
 
@@ -221,12 +226,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         # term_scale = 1
         # stage_scale = 50
 
-        term_scale = 0.01 # 1/100
-        stage_scale = 1.5
-        stage_scale = 2
+        scale_term = self.scale_term #0.01 # 1/100
+        scale_stage = self.scale_stage #1.5
 
-
-        total = (term_scale * term_cost) + (stage_scale * stage_costs)
+        total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
         return float(total)
 
@@ -239,7 +242,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
         
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("u = " + str(u))
             print("Getting stage cost")
 
@@ -248,7 +251,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("total stage cost " + str(stage_costs))
 
         return stage_costs
@@ -276,7 +279,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         J_g1 = a - b - c
         J_g1 *= .5
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
             # print("Jg1 " + str(J_g1))
 
@@ -305,14 +308,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             if goal != alt_goal:
                 log_sum += (1 * this_goal)
-                if FLAG_DEBUG_STAGE_AND_TERM:
+                if self.FLAG_DEBUG_STAGE_AND_TERM:
                     # print("Value for alt target goal " + str(alt_goal))
                     print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
             else:
                 # print("Value for our target goal " + str(goal))
                 # J_g1 = this_goal
                 log_sum += this_goal
-                if FLAG_DEBUG_STAGE_AND_TERM:
+                if self.FLAG_DEBUG_STAGE_AND_TERM:
                     print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
     
             # print(n + d) 
@@ -327,14 +330,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         # J = np.log(J_g1) - np.log(log_sum)
         # alt_goal_multiplier = 5.0
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("Jg1, total")
             print(J_g1, total_sum)
 
         J = J_g1 - (np.log(total_sum))
         J = -1.0 * J
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("overall J " + str(J))
 
         J += (0.5 * u_diff.T.dot(R).dot(u_diff))
@@ -628,7 +631,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # Color code the goals for ease of reading graphs
 
         # Draw the path itself
-        ax1.plot(xs, ys, 'o--', lw=2, color='m', label="path", markersize=10)
+        ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=10)
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
@@ -728,7 +731,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             plt.show()
             plt.clf()
 
-        if FLAG_DEBUG_STAGE_AND_TERM:
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
             for i in range(len(us)):
                 # print("STAGE COSTS")
                 print("xs,\t\t us,\t\t tcs,\t\t scs \t at " + str(i))
