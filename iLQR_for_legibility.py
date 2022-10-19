@@ -13,6 +13,7 @@ if module_path not in sys.path:
 
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import timedelta, datetime
 
 import theano.tensor as T
 
@@ -39,9 +40,8 @@ import utility_environ_descrip as resto
 #         print('data')
 
 import sys
-sys.stdout = open('output.txt','wt')
-
 J_hist = []
+PREFIX_EXPORT = 'experiment_outputs/'
 
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
@@ -206,20 +206,25 @@ def scenario_6():
     goal1           = [5.0, 2.0]
     goal3           = [1.0, 3.5]
 
-    target_goal = goal3
+    target_goal = goal4
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2, goal4]
     return start, target_goal, all_goals, restaurant
 
 
-# In[1]:
+####################################
+### SET UP EXPERIMENT
 
-# dt = .025
-# N = 61
+# Create a new folder for this experiment, along with sending debug output there
+file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+print(PREFIX_EXPORT + file_id)
+os.mkdir(PREFIX_EXPORT + file_id)
+sys.stdout = open(PREFIX_EXPORT + file_id + '/output.txt','wt')
+
 
 dt = .025
-N = 21 * 100
+N = 21
 # N = N*10
 
 
@@ -227,7 +232,7 @@ x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals, restaurant = scenario_5_large_scale() #4_has_obstacles
+start, target_goal, all_goals, restaurant = scenario_4_has_obstacles() #6() #5_large_scale() #
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
@@ -260,10 +265,10 @@ Q = 1.0 * np.eye(state_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
-cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = OALegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = ObstaclePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+cost = ObstaclePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant, file_id=file_id)
 # cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l

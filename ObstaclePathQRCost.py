@@ -28,10 +28,10 @@ import pipeline_generate_paths as pipeline
 
 class ObstaclePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = True
-    scale_obstacle = 100000000000.0
+    scale_obstacle = 100000.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -43,7 +43,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         """
 
         LegiblePathQRCost.__init__(
-            self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, Q_terminal=None
+            self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, file_id=file_id, Q_terminal=None
         )
 
 
@@ -109,10 +109,13 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         obstacle_penalty = 0
 
         TABLE_RADIUS = .5
+        self.scale_obstacle = 10.0
         for table in tables:
             obstacle = table.get_center()
             obs_dist = obstacle - x
             obs_dist = np.linalg.norm(obs_dist)
+            # Flip so edges lower cost than center
+            obs_dist = TABLE_RADIUS - obs_dist
 
             if obs_dist < TABLE_RADIUS:
                 print("obstacle dist for " + str(x) + " " + str(obs_dist))

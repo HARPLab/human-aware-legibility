@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import decimal
 import copy
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 import matplotlib.ticker as mtick
 
 from ilqr import iLQR
@@ -27,6 +27,7 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 
+PREFIX_EXPORT = 'experiment_outputs/'
 
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
@@ -40,7 +41,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, Q_terminal=None):
+    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -64,6 +65,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         self.target_goal = target_goal
         self.N = N
         self.dt = dt
+
+        if file_id is None:
+            self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+        else:
+            self.file_id = file_id
 
         # Create a restaurant object for using those utilities, functions, and print functions
         # dim gives the dimensions of the restaurant
@@ -677,9 +683,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_title("Path through space", fontweight='bold')
 
 
+        TABLE_RADIUS = .5
         tables = self.restaurant.get_tables()
         for table in tables:
-            TABLE_RADIUS = .5
             table = plt.Circle(table.get_center(), TABLE_RADIUS, color='g', clip_on=False)
             ax1.add_patch(table)
 
@@ -750,6 +756,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         plt.tight_layout()
         plt.show()
+        plt.savefig(PREFIX_EXPORT + self.file_id + "/" + self.file_id + '-overview.png')
         plt.clf()
 
         if False:
@@ -775,6 +782,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             _ = plt.title("Magnitude of U Over Path", fontweight='bold')
             plt.tight_layout()
             plt.show()
+            plt.savefig(PREFIX_EXPORT + self.file_id + "/" + self.file_id + 'u_graph.png')
             plt.clf()
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
