@@ -139,6 +139,7 @@ def scenario_2():
     return start, target_goal, all_goals, restaurant
 
 def scenario_3():
+    restaurant      = None
     start           = [8.0, 2.0]
 
     true_goal       = [0.0, 0.0]
@@ -148,7 +149,24 @@ def scenario_3():
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal2
+    target_goal = goal3
+    # start = goal3
+
+    all_goals   = [goal1, goal3, goal2]
+    return start, target_goal, all_goals, restaurant
+
+def scenario_5_large_scale():
+    restaurant      = None
+    start           = [800.0, 200.0]
+
+    true_goal       = [0.0, 0.0]
+    goal2           = [200.0, 100.0]
+    goal3           = [400.0, 100.0]
+
+    goal1           = [400.0, 200.0]
+    goal3           = [100.0, 300.0]
+
+    target_goal = goal3
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2]
@@ -171,12 +189,28 @@ def scenario_4_has_obstacles():
     # radius needs to be agreed upon between this definition and the Obstacle class
     table_pts = []
     table_pts.append([1.0, 1.0])
-    table_pts.append([3.0, 1.0])
+    table_pts.append([3.0, 0.5])
 
     restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, observers=[], dim=None)
 
     return start, target_goal, all_goals, restaurant
 
+def scenario_6():
+    restaurant      = None
+    start           = [0, 0]
+
+    true_goal       = [0.0, 0.0]
+    goal2           = [2.5, 1.0]
+    goal4           = [4.0, 1.5]
+
+    goal1           = [5.0, 2.0]
+    goal3           = [1.0, 3.5]
+
+    target_goal = goal3
+    # start = goal3
+
+    all_goals   = [goal1, goal3, goal2, goal4]
+    return start, target_goal, all_goals, restaurant
 
 
 # In[1]:
@@ -185,13 +219,15 @@ def scenario_4_has_obstacles():
 # N = 61
 
 dt = .025
-N = 21
+N = 21 * 100
+# N = N*10
+
 
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals, restaurant = scenario_4_has_obstacles()
+start, target_goal, all_goals, restaurant = scenario_5_large_scale() #4_has_obstacles
 
 x0_raw          = start    # initial state
 x_goal_raw      = target_goal
@@ -224,10 +260,10 @@ Q = 1.0 * np.eye(state_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
-# cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-cost = OALegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = OALegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = ObstaclePathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = ObstaclePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l
