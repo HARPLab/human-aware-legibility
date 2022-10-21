@@ -31,7 +31,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
     scale_obstacle = 100000.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
+    def __init__(self, exp, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
@@ -43,7 +43,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         """
 
         LegiblePathQRCost.__init__(
-            self, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, file_id=file_id, Q_terminal=None
+            self, exp, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, file_id=file_id, Q_terminal=None
         )
 
 
