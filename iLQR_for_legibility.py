@@ -22,6 +22,7 @@ from ilqr.cost import QRCost, PathQRCost
 from ilqr.dynamics import constrain
 from ilqr.dynamics import tensor_constrain
 
+import PathingExperiment as ex
 from LegiblePathQRCost import LegiblePathQRCost
 from DirectPathQRCost import DirectPathQRCost
 from ObstaclePathQRCost import ObstaclePathQRCost
@@ -33,15 +34,7 @@ from sklearn.preprocessing import normalize
 
 import utility_environ_descrip as resto
 
-# from contextlib import redirect_stdout
-
-# with open('out.txt', 'w') as f:
-#     with redirect_stdout(f):
-#         print('data')
-
-import sys
 J_hist = []
-PREFIX_EXPORT = 'experiment_outputs/'
 
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
@@ -101,9 +94,10 @@ def scenario_0():
 
 
     target_goal = goal3
-
     all_goals   = [goal1, goal3]
-    return start, target_goal, all_goals, restaurant
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 def scenario_1():
     restaurant      = None
@@ -119,7 +113,9 @@ def scenario_1():
     target_goal = goal1
 
     all_goals   = [goal1, goal3]
-    return start, target_goal, all_goals, restaurant
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 
 def scenario_2():
@@ -136,7 +132,9 @@ def scenario_2():
     target_goal = goal4
 
     all_goals   = [goal1, goal4, goal2]
-    return start, target_goal, all_goals, restaurant
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 def scenario_3():
     restaurant      = None
@@ -153,7 +151,9 @@ def scenario_3():
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2]
-    return start, target_goal, all_goals, restaurant
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 def scenario_5_large_scale():
     restaurant      = None
@@ -170,7 +170,9 @@ def scenario_5_large_scale():
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2]
-    return start, target_goal, all_goals, restaurant
+    
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 def scenario_4_has_obstacles():
     start           = [0.0, 0.0]
@@ -191,9 +193,8 @@ def scenario_4_has_obstacles():
     table_pts.append([1.0, 1.0])
     table_pts.append([3.0, 0.5])
 
-    restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, observers=[], dim=None)
-
-    return start, target_goal, all_goals, restaurant
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 def scenario_6():
     restaurant      = None
@@ -210,18 +211,13 @@ def scenario_6():
     # start = goal3
 
     all_goals   = [goal1, goal3, goal2, goal4]
-    return start, target_goal, all_goals, restaurant
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    return exp
 
 
 ####################################
 ### SET UP EXPERIMENT
-
-# Create a new folder for this experiment, along with sending debug output there
-file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
-print(PREFIX_EXPORT + file_id)
-os.mkdir(PREFIX_EXPORT + file_id)
-sys.stdout = open(PREFIX_EXPORT + file_id + '/output.txt','wt')
-
 
 dt = .025
 N = 21
@@ -232,10 +228,10 @@ x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
 
-start, target_goal, all_goals, restaurant = scenario_4_has_obstacles() #6() #5_large_scale() #
+exp = scenario_4_has_obstacles() #6() #5_large_scale() #
 
-x0_raw          = start    # initial state
-x_goal_raw      = target_goal
+x0_raw          = exp.get_start()    # initial state
+x_goal_raw      = exp.get_target_goal()
 
 # dynamics = AutoDiffDynamics(f, [x], [u], t)
 dynamics = NavigationDynamics(dt)
@@ -252,23 +248,20 @@ u_blank = np.asarray([0.0, 0.0])
 Urefline = np.tile(u_blank, (N, 1))
 Urefline = np.reshape(Urefline, (-1, 2))
 
-state_size = 2
-action_size = 2
+state_size  = 2 #
+action_size = 2 # 
+
 # The coefficients weigh how much your state error is worth to you vs
 # the size of your controls. You can favor a solution that uses smaller
 # controls by increasing R's coefficient.
 Q = 1.0 * np.eye(state_size)
-# R = 100.0 * np.eye(action_size)
-# R = 100.0 * np.eye(action_size)
-# Qf = np.identity(2) * 40.0
-# R = 100.0 * np.eye(action_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
 # cost = LegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = OALegiblePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = DirectPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-cost = ObstaclePathQRCost(Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant, file_id=file_id)
+cost = ObstaclePathQRCost(Q, R, Qf, Xrefline, Urefline, exp.get_start(), exp.get_target_goal(), exp.get_all_goals(), N, dt, restaurant=exp.get_restaurant(), file_id=exp.get_file_id())
 # cost = LegibilityOGPathQRCost(Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l
@@ -299,7 +292,7 @@ theta_dot = xs[:, 1]
 # Plot of the path through space
 verts = xs
 xs, ys = zip(*verts)
-gx, gy = zip(*all_goals)
+gx, gy = zip(*exp.get_all_goals())
 sx, sy = zip(*[x0_raw])
 
 
