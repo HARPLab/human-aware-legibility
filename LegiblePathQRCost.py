@@ -29,6 +29,7 @@ import pdb
 
 PREFIX_EXPORT = 'experiment_outputs/'
 
+# Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = False
@@ -565,6 +566,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
+    def get_export_label(self):
+        return PREFIX_EXPORT + self.file_id + "/" + self.file_id
+
     def get_legibility_of_path_to_goal(self, verts, us, goal):
         ls, scs, tcs = [], [], []
         start = self.start
@@ -755,9 +759,10 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
         plt.tight_layout()
+        plt.savefig(self.get_export_label() + '-overview.png')
         plt.show()
-        plt.savefig(PREFIX_EXPORT + self.file_id + "/" + self.file_id + '-overview.png')
         plt.clf()
+
 
         if False:
             plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
@@ -781,8 +786,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             _ = plt.ylabel("Magnitude of U", fontweight='bold')
             _ = plt.title("Magnitude of U Over Path", fontweight='bold')
             plt.tight_layout()
+            plt.savefig(self.get_export_label() + 'u_graph.png')
             plt.show()
-            plt.savefig(PREFIX_EXPORT + self.file_id + "/" + self.file_id + 'u_graph.png')
             plt.clf()
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
