@@ -60,7 +60,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         """
 
         LegiblePathQRCost.__init__(
-            self, exp, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=restaurant, file_id=file_id, Q_terminal=None
+            self, exp, x_path, u_path
         )
 
 

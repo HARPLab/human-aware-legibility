@@ -222,7 +222,6 @@ dt = .025
 N = 21
 # N = N*10
 
-
 x = T.dscalar("x")
 u = T.dscalar("u")
 t = T.dscalar("t")
@@ -261,10 +260,10 @@ exp.set_QR_weights(Q, R, Qf)
 exp.set_N(N)
 exp.set_dt(dt)
 
-cost = LegiblePathQRCost(exp, Xrefline, Urefline)
+# cost = LegiblePathQRCost(exp, Xrefline, Urefline)
 # cost = OALegiblePathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 # cost = DirectPathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
+cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
 # cost = LegibilityOGPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l
