@@ -257,10 +257,14 @@ Q = 1.0 * np.eye(state_size)
 R = 200.0 * np.eye(action_size)
 Qf = np.identity(2) * 400.0
 
-# cost = LegiblePathQRCost(exp, Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = OALegiblePathQRCost(exp, Q, R, Qf, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = DirectPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-cost = ObstaclePathQRCost(exp, Q, R, Qf, Xrefline, Urefline, exp.get_start(), exp.get_target_goal(), exp.get_all_goals(), N, dt, restaurant=exp.get_restaurant(), file_id=exp.get_file_id())
+exp.set_QR_weights(Q, R, Qf)
+exp.set_N(N)
+exp.set_dt(dt)
+
+cost = LegiblePathQRCost(exp, Xrefline, Urefline)
+# cost = OALegiblePathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = DirectPathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+# cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
 # cost = LegibilityOGPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
 
 # l = leg_cost.l
@@ -291,7 +295,7 @@ theta_dot = xs[:, 1]
 # Plot of the path through space
 verts = xs
 xs, ys = zip(*verts)
-gx, gy = zip(*exp.get_all_goals())
+gx, gy = zip(*exp.get_goals())
 sx, sy = zip(*[x0_raw])
 
 

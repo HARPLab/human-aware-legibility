@@ -32,7 +32,7 @@ class PathingExperiment():
 
         self.start          = restaurant.get_start()
         self.target_goal    = restaurant.get_goals_all()
-        self.goals      = restaurant.get_goals()
+        self.goals          = restaurant.get_goals()
 
         self.observers      = restaurant.get_observers()
         self.tables         = restaurant.get_tables()
@@ -90,11 +90,38 @@ class PathingExperiment():
     def get_start(self):
         return self.start
 
-    def get_all_goals(self):
+    def get_goals(self):
         return self.goals
 
     def get_target_goal(self):
         return self.target_goal
+
+    def set_QR_weights(self, Q, R, Qf):
+        self.Q  = Q
+        self.R  = R
+        self.Qf = Qf
+
+    def get_Q(self):
+        return self.Q
+
+    def get_R(self):
+        return self.R
+
+    def get_Qf(self):
+        return self.Qf
+
+    def set_N(self, N):
+        self.N = N
+
+    def get_N(self):
+        return self.N
+
+    def set_dt(self, dt):
+        self.dt = dt
+
+    def get_dt(self):
+        return self.dt
+
 
     def get_file_id(self):
         return self.file_id

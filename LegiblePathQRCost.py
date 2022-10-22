@@ -42,7 +42,24 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
-    def __init__(self, exp, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
+    def __init__(self, exp, x_path, u_path):
+        self.make_self(
+            exp,
+            exp.get_Q(),
+            exp.get_R(),
+            exp.get_Qf(),
+            x_path,
+            u_path,
+            exp.get_start(),
+            exp.get_target_goal(),
+            exp.get_goals(),
+            exp.get_N(),
+            exp.get_dt(),
+            restaurant=exp.get_restaurant(),
+            file_id=exp.get_file_id()
+            )
+
+    def make_self(self, exp, Q, R, Qf, x_path, u_path, start, target_goal, goals, N, dt, restaurant=None, file_id=None, Q_terminal=None):
         """Constructs a QRCost.
         Args:
             Q: Quadratic state cost matrix [state_size, state_size].
