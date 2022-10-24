@@ -35,14 +35,13 @@ from sklearn.preprocessing import normalize
 import utility_environ_descrip as resto
 
 J_hist = []
+dynamics = None
 
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
     info = "converged" if converged else ("accepted" if accepted else "failed")
-    # print(J_opt)
-    # print(xs)
 
-    final_state = dynamics.reduce_state(xs[-1])
+    final_state = xs[-1]
     print("iteration", iteration_count, info, J_opt, final_state)
 
 
@@ -215,93 +214,90 @@ def scenario_6():
     return exp
 
 
+def run_solver(exp):
+    x0_raw          = exp.get_start()    # initial state
+    x_goal_raw      = exp.get_target_goal()
+
+    # dynamics = AutoDiffDynamics(f, [x], [u], t)
+    dynamics = NavigationDynamics(exp.get_dt())
+
+    # Note that the augmented state is not all 0.
+    x0      = dynamics.augment_state(np.array(x0_raw)).T
+    x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
+
+    x_T = N
+    Xrefline = np.tile(x_goal_raw, (N+1, 1))
+    Xrefline = np.reshape(Xrefline, (-1, 2))
+
+    u_blank = np.asarray([0.0, 0.0])
+    Urefline = np.tile(u_blank, (N, 1))
+    Urefline = np.reshape(Urefline, (-1, 2))
+
+    state_size  = 2 #
+    action_size = 2 # 
+
+    ### EXP IS USED AFTER THIS POINT
+
+    # cost = LegiblePathQRCost(exp, Xrefline, Urefline)
+    # cost = OALegiblePathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+    # cost = DirectPathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+    cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
+    # cost = LegibilityOGPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+
+    # l = leg_cost.l
+    # l_terminal = leg_cost.term_cost
+    # cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
+
+    FLAG_JUST_PATH = False
+    if FLAG_JUST_PATH:
+        traj        = Xrefline
+        us_init     = Urefline
+        cost        = PathQRCost(Q, R, traj, us_init)
+        print("Set to old school pathing")
+        exit()
+
+    ilqr = iLQR(dynamics, cost, N)
+
+    start_time = time.time()
+    xs, us = ilqr.fit(x0_raw, Urefline, tol=1e-6, n_iterations=N, on_iteration=on_iteration)
+    end_time = time.time()
+
+    t = np.arange(N) * dt
+    theta = np.unwrap(xs[:, 0])  # Makes for smoother plots.
+    theta_dot = xs[:, 1]
+
+    # Plot of the path through space
+    verts = xs
+    xs, ys = zip(*verts)
+    gx, gy = zip(*exp.get_goals())
+    sx, sy = zip(*[x0_raw])
+
+    elapsed_time = end_time - start_time
+    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
+
+
+
 ####################################
 ### SET UP EXPERIMENT
+exp = scenario_4_has_obstacles() #6() #5_large_scale() #
 
+### STANDARD SOLVE DEFAULTS
 dt = .025
 N = 21
 # N = N*10
 
-x = T.dscalar("x")
-u = T.dscalar("u")
-t = T.dscalar("t")
-
-exp = scenario_4_has_obstacles() #6() #5_large_scale() #
-
-x0_raw          = exp.get_start()    # initial state
-x_goal_raw      = exp.get_target_goal()
-
-# dynamics = AutoDiffDynamics(f, [x], [u], t)
-dynamics = NavigationDynamics(dt)
-
-# Note that the augmented state is not all 0.
-x0      = dynamics.augment_state(np.array(x0_raw)).T
-x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
-
-x_T = N
-Xrefline = np.tile(x_goal_raw, (N+1, 1))
-Xrefline = np.reshape(Xrefline, (-1, 2))
-
-u_blank = np.asarray([0.0, 0.0])
-Urefline = np.tile(u_blank, (N, 1))
-Urefline = np.reshape(Urefline, (-1, 2))
-
-state_size  = 2 #
-action_size = 2 # 
+exp.set_state_size(2)
+exp.set_action_size(2)
 
 # The coefficients weigh how much your state error is worth to you vs
 # the size of your controls. You can favor a solution that uses smaller
 # controls by increasing R's coefficient.
-Q = 1.0 * np.eye(state_size)
-R = 200.0 * np.eye(action_size)
+Q = 1.0 * np.eye(exp.get_state_size())
+R = 200.0 * np.eye(exp.get_action_size())
 Qf = np.identity(2) * 400.0
 
 exp.set_QR_weights(Q, R, Qf)
 exp.set_N(N)
 exp.set_dt(dt)
 
-# cost = LegiblePathQRCost(exp, Xrefline, Urefline)
-# cost = OALegiblePathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-# cost = DirectPathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
-# cost = LegibilityOGPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-
-# l = leg_cost.l
-# l_terminal = leg_cost.term_cost
-# cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
-
-
-
-FLAG_JUST_PATH = False
-if FLAG_JUST_PATH:
-    traj        = Xrefline
-    us_init     = Urefline
-    cost        = PathQRCost(Q, R, traj, us_init)
-    print("Set to old school pathing")
-    exit()
-
-ilqr = iLQR(dynamics, cost, N)
-
-start_time = time.time()
-xs, us = ilqr.fit(x0_raw, Urefline, tol=1e-6, n_iterations=N, on_iteration=on_iteration)
-end_time = time.time()
-
-t = np.arange(N) * dt
-theta = np.unwrap(xs[:, 0])  # Makes for smoother plots.
-theta_dot = xs[:, 1]
-
-
-# Plot of the path through space
-verts = xs
-xs, ys = zip(*verts)
-gx, gy = zip(*exp.get_goals())
-sx, sy = zip(*[x0_raw])
-
-
-elapsed_time = end_time - start_time
-cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
-
-
-# n_spline = fn_pathpickle_from_exp_settings(exp_settings) + 'sample-cubic_spline_imposed_tangent_direction.png'
-# plt.savefig(fn_spline)
-
+run_solver(exp)
