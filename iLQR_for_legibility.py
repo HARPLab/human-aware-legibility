@@ -90,11 +90,24 @@ def scenario_0():
     goal1 = [0.0, 6.0]
     goal3 = [2.0, 9.0]
 
-
     target_goal = goal3
     all_goals   = [goal1, goal3]
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 def scenario_1():
@@ -113,6 +126,20 @@ def scenario_1():
     all_goals   = [goal1, goal3]
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 
@@ -132,6 +159,20 @@ def scenario_2():
     all_goals   = [goal1, goal4, goal2]
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 def scenario_3():
@@ -151,6 +192,20 @@ def scenario_3():
     all_goals   = [goal1, goal3, goal2]
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 def scenario_5_large_scale():
@@ -170,6 +225,20 @@ def scenario_5_large_scale():
     all_goals   = [goal1, goal3, goal2]
     
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 def scenario_4_has_obstacles():
@@ -192,6 +261,20 @@ def scenario_4_has_obstacles():
     table_pts.append([3.0, 0.5])
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 def scenario_6():
@@ -211,6 +294,20 @@ def scenario_6():
     all_goals   = [goal1, goal3, goal2, goal4]
 
     exp = ex.PathingExperiment(start, target_goal, all_goals)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
     return exp
 
 
@@ -225,7 +322,10 @@ def run_solver(exp):
     x0      = dynamics.augment_state(np.array(x0_raw)).T
     x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
 
-    x_T = N
+    N       = exp.get_N()
+    dt      = exp.get_dt()
+
+    x_T     = N
     Xrefline = np.tile(x_goal_raw, (N+1, 1))
     Xrefline = np.reshape(Xrefline, (-1, 2))
 
@@ -276,28 +376,17 @@ def run_solver(exp):
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
 
 
+def main():
+    ####################################
+    ### SET UP EXPERIMENT
+    print("Setting up experiment")
+    exp = scenario_4_has_obstacles() #6() #5_large_scale() #
 
-####################################
-### SET UP EXPERIMENT
-exp = scenario_4_has_obstacles() #6() #5_large_scale() #
+    ### STANDARD SOLVE DEFAULTS
+    print("Running solver")
+    run_solver(exp)
 
-### STANDARD SOLVE DEFAULTS
-dt = .025
-N = 21
-# N = N*10
+    print("Done")
 
-exp.set_state_size(2)
-exp.set_action_size(2)
-
-# The coefficients weigh how much your state error is worth to you vs
-# the size of your controls. You can favor a solution that uses smaller
-# controls by increasing R's coefficient.
-Q = 1.0 * np.eye(exp.get_state_size())
-R = 200.0 * np.eye(exp.get_action_size())
-Qf = np.identity(2) * 400.0
-
-exp.set_QR_weights(Q, R, Qf)
-exp.set_N(N)
-exp.set_dt(dt)
-
-run_solver(exp)
+if __name__ == "__main__":
+    main()

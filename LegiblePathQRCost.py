@@ -40,6 +40,15 @@ class LegiblePathQRCost(FiniteDiffCost):
     scale_stage = 2
     scale_obstacle = 0
 
+    state_size = 2
+    action_size = 2
+
+    # The coefficients weigh how much your state error is worth to you vs
+    # the size of your controls. You can favor a solution that uses smaller
+    # controls by increasing R's coefficient.
+    Q = 1.0 * np.eye(state_size)
+    R = 200.0 * np.eye(action_size)
+    Qf = np.identity(state_size) * 400.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
