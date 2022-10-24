@@ -78,6 +78,18 @@ class PathingExperiment():
     def get_cost_label(self):
         return self.cost_label
 
+    def set_state_size(self, label):
+        self.state_size = label
+
+    def get_state_size(self):
+        return self.state_size
+
+    def set_action_size(self, label):
+        self.action_size = label
+
+    def get_action_size(self):
+        return self.action_size
+
     def set_observers(self, x):
         self.observers = x
 
@@ -121,7 +133,6 @@ class PathingExperiment():
 
     def get_dt(self):
         return self.dt
-
 
     def get_file_id(self):
         return self.file_id
