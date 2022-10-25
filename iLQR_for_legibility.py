@@ -337,12 +337,7 @@ def run_solver(exp):
     action_size = 2 # 
 
     ### EXP IS USED AFTER THIS POINT
-
-    # cost = LegiblePathQRCost(exp, Xrefline, Urefline)
-    # cost = OALegiblePathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-    # cost = DirectPathQRCost(exp, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
-    cost = ObstaclePathQRCost(exp, Xrefline, Urefline)
-    # cost = LegibilityOGPathQRCost(exp, Q, R, Xrefline, Urefline, start, target_goal, all_goals, N, dt, restaurant=restaurant)
+    cost = exp.setup_cost(Xrefline, Urefline)
 
     # l = leg_cost.l
     # l_terminal = leg_cost.term_cost
@@ -380,10 +375,12 @@ def main():
     ####################################
     ### SET UP EXPERIMENT
     print("Setting up experiment")
-    exp = scenario_4_has_obstacles() #6() #5_large_scale() #
+    exp = scenario_4_has_obstacles()
+    # exp = scenario_5_large_scale()
 
     ### STANDARD SOLVE DEFAULTS
     print("Running solver")
+    exp.set_cost_label(ex.COST_OBS)
     run_solver(exp)
 
     print("Done")

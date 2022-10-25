@@ -27,6 +27,8 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 
+import PathingExperiment as ex
+
 PREFIX_EXPORT = 'experiment_outputs/'
 
 # Base class for all of our legible pathing offshoots
@@ -106,6 +108,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         else:
             self.restaurant = restaurant
 
+        self.f_func = self.get_f()
+
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
         path_length = self.x_path.shape[0]
@@ -153,6 +157,28 @@ class LegiblePathQRCost(FiniteDiffCost):
             x_eps=x_eps,
             u_eps=u_eps,
         )
+
+
+    def get_f(self):
+        f_label = self.exp.get_f_label()
+        print(f_label)
+
+        if f_label is ex.F_ANCA_LINEAR:
+            def f(i):
+                return self.N - i
+
+        elif f_label is ex.F_VIS:
+            def f(i):
+                pt = x_path[i]
+                # Can I see this point from each observer who is targeted
+                return 1.0
+        
+        else:
+            def f(i):
+                return 1.0
+
+
+        print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
 
 
     # How far away is the final step in the path from the goal?
@@ -386,7 +412,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def path_following_stage_cost(self, start, goal, x, u, i, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
-
         R = self.R
 
         # Q = np.eye(2) * 1
@@ -401,18 +426,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         if len(self.u_path) == 0:
             return 0
 
-        # print(self.u_path)
-        # print(i)
-        # print(len(self.u_path))
-
         a = np.abs(goal_diff.T).dot(Q).dot((goal_diff))
         b = np.abs(start_diff.T).dot(Q).dot((start_diff))
         c = (togoal_diff.T).dot(Q).dot((togoal_diff))
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1)
         J_g1 = c
-        # J_g1 = np.abs(J_g1)
-        # J_g1 = (b - c) / (a)
         J_g1 *= .5
 
         return J_g1

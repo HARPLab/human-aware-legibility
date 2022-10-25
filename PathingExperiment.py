@@ -6,6 +6,12 @@ from datetime import timedelta, datetime
 
 import utility_environ_descrip as resto
 
+from LegiblePathQRCost import LegiblePathQRCost
+from DirectPathQRCost import DirectPathQRCost
+from ObstaclePathQRCost import ObstaclePathQRCost
+from LegibilityOGPathQRCost import LegibilityOGPathQRCost
+from OALegiblePathQRCost import OALegiblePathQRCost
+
 PREFIX_EXPORT = 'experiment_outputs/'
 
 # OPTIONS OF F FUNCTION
@@ -17,7 +23,13 @@ F_VIS           = 'f_vis'
 COST_DIRECT     = 'cost_direct'
 COST_LEGIB      = 'cost_legible'
 COST_OALEGIB    = 'cost_oalegib'
-COST_DIRECT     = 'cost_obstacles'
+COST_OBS        = 'cost_obstacles'
+
+# # SOLVER TYPE
+# SOLVER_LEGIB        = 'Solver=Legible'
+# SOLVER_OBSTACLES    = 'Solver=Obstacles'
+# SOLVER_OA           = 'Solver=OALegible'
+# SOLVER_DIRECT       = 'Solver=Direct'
 
 class PathingExperiment():
 
@@ -26,6 +38,10 @@ class PathingExperiment():
     solver_scale_term       = 0.01
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
+
+    # DEFAULT COST TYPE AND F TYPE
+    cost_label  = COST_LEGIB
+    f_label     = F_NONE
 
     def __init__(self, restaurant, f_label=None, cost_label=None):
         self.restaurant = restaurant
@@ -59,6 +75,20 @@ class PathingExperiment():
         self.table_pts = table_pts
 
         self.setup_file_id()
+
+    def setup_cost(self, Xrefline, Urefline):
+        solver_label = self.cost_label
+
+        if solver_label is COST_LEGIB:
+            return LegiblePathQRCost(self, Xrefline, Urefline)
+        elif solver_label is COST_OBS:
+            return ObstaclePathQRCost(self, Xrefline, Urefline)
+        elif solver_label is COST_OA:
+            return OALegiblePathQRCost(self, Xrefline, Urefline)
+        elif solver_label is COST_DIRECT:
+            return DirectPathQRCost(self, Xrefline, Urefline)
+
+        print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
 
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
