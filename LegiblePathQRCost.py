@@ -752,10 +752,17 @@ class LegiblePathQRCost(FiniteDiffCost):
             ax1.add_patch(table)
 
         for observer in observers:
-            print(observer)
+            obs_color = 'orange'
             obs_pt  = observer.get_center()
-            obs     = plt.Circle(obs_pt, OBS_RADIUS, color='orange', clip_on=False)
+            obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
             ax1.add_patch(obs)
+
+            x, y = obs_pt
+            THETA_ARROW_RADIUS = .2
+            r = THETA_ARROW_RADIUS
+            theta = observer.get_orientation()
+            ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=True, color=obs_color, width=.06)
+
 
         # Draw the legibility over time
 
