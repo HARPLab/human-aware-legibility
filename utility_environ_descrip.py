@@ -1015,7 +1015,7 @@ n_length = int(length / resolution_planning) + 1
 goal_helper_pts = []
 
 class Restaurant: 
-	def __init__(self, generate_type, tables=None, table_pts=None, goals=None, start=None, observers=None, dim=None):
+	def __init__(self, generate_type, tables=None, table_pts=None, obs_pts=None, goals=None, start=None, observers=None, dim=None):
 		self.generate_type = generate_type
 		print(generate_type)
 		self.observers = []
@@ -1033,7 +1033,18 @@ class Restaurant:
 		if generate_type == TYPE_CUSTOM:
 			self.goals 	= goals
 			self.start 	= start
-			self.observers = observers
+
+
+			if obs_pts is not None:
+				for pt in obs_pts:
+					x, y, theta = pt
+					xy = [x, y]
+					o = Observer(xy, theta)
+					self.observers.append(o)
+			elif observers is not None:
+				self.observers = observers
+			else:
+				self.observers = []
 
 			if table_pts is not None:
 				for pt in table_pts:
@@ -1976,6 +1987,9 @@ class Restaurant:
 			self.make_obstacle_map(obstacle_vis, img)
 
 		return cv2.flip(img, 0)
+
+	def get_observers(self):
+		return self.observers
 
 	def get_visibility_of_pt_raw(self, pt):
 		observations = []
