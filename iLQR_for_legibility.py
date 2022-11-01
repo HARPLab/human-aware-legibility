@@ -260,7 +260,7 @@ def scenario_4_has_obstacles():
     table_pts.append([1.0, 1.0])
     table_pts.append([3.0, 0.5])
 
-    exp = ex.PathingExperiment(start, target_goal, all_goals)
+    exp = ex.PathingExperiment(start, target_goal, all_goals, table_pts=table_pts)
 
     exp.set_state_size(2)
     exp.set_action_size(2)
@@ -274,6 +274,48 @@ def scenario_4_has_obstacles():
     exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
+
+    return exp
+
+def scenario_4_has_obstacles_and_observer():
+    start           = [0.0, 0.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal4           = [4.0, 1.0]
+
+    goal1           = [4.0, 2.0]
+    goal3           = [1.0, 3.0]
+
+    target_goal = goal4
+    all_goals   = [goal1, goal4, goal2]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([1.0, 1.0])
+    table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
 
     return exp
 
@@ -375,13 +417,24 @@ def main():
     ####################################
     ### SET UP EXPERIMENT
     print("Setting up experiment")
-    exp = scenario_4_has_obstacles()
+    exp = scenario_4_has_obstacles_and_observer()
     # exp = scenario_5_large_scale()
 
     ### STANDARD SOLVE DEFAULTS
     print("Running solver")
     exp.set_cost_label(ex.COST_OBS)
+
+    # TODO, make it so the master folder is the run of the exp,
+    # but the results are saved under a secondary file_id
+
+    exp.set_f_label(ex.F_VIS)
     run_solver(exp)
+
+    # exp.set_f_label(ex.F_NONE)
+    # run_solver(exp)
+
+    # exp.set_f_label(ex.F_ANCA_LINEAR)
+    # run_solver(exp)
 
     print("Done")
 
