@@ -260,7 +260,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
         if terminal or abs(i - self.N) < thresh:
-            return self.term_cost(x, i)*1000
+            # TODO verify not a magic number
+            return self.term_cost(x, i) * 1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -322,6 +323,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             u_diff = u - self.u_path[j]
 
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
+
+        # f_func     = self.get_f()
+        # f_value    = f_func(i)
+        # stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("total stage cost " + str(stage_costs))
@@ -646,7 +651,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             if i < len(us):
                 j = len(us) - 1
                 u = us[j]
-                sc = self.get_total_stage_cost(start, goal, x, u, j, terminal)
+                sc = self.l(x, u, j) #self.get_total_stage_cost(start, goal, x, u, j, terminal)
             else:
                 sc = 0.0
 
