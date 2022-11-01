@@ -178,6 +178,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 return 1.0
 
 
+        return f
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
 
 
@@ -265,7 +266,10 @@ class LegiblePathQRCost(FiniteDiffCost):
                 print(term_cost)
 
         term_cost = 0
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * self.f(i)#
+
+        f_func     = self.get_f()
+        f_value    = f_func(i)
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
     
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")

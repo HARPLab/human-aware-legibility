@@ -18,6 +18,8 @@ from ilqr.examples.pendulum import InvertedPendulumDynamics
 from ilqr.dynamics import BatchAutoDiffDynamics, tensor_constrain
 from LegiblePathQRCost import LegiblePathQRCost
 
+import PathingExperiment as ex
+
 from scipy.optimize import approx_fprime
 
 import utility_legibility as legib
@@ -63,7 +65,6 @@ class ObstaclePathQRCost(LegiblePathQRCost):
             self, exp, x_path, u_path
         )
 
-
     # original version for plain path following
     def l(self, x, u, i, terminal=False):
         """Instantaneous cost function.
@@ -93,7 +94,10 @@ class ObstaclePathQRCost(LegiblePathQRCost):
                 print(term_cost)
 
         term_cost = 0
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) #
+        
+        f_func     = self.get_f()
+        f_value    = f_func(i)
+        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
     
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
