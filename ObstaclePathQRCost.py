@@ -130,7 +130,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         obstacle_penalty = 0
 
         TABLE_RADIUS = .5
-        self.scale_obstacle = 10.0
+        self.scale_obstacle = self.exp.get_solver_scale_obstacle()
         for table in tables:
             obstacle = table.get_center()
             obs_dist = obstacle - x
