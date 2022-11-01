@@ -65,7 +65,7 @@ class PathingExperiment():
         self.goals = all_goals
 
         if restaurant is None:
-            restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, observers=observers, dim=None)
+            restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, obs_pts=observers, dim=None)
         self.restaurant = restaurant
 
         self.f_label    = cost_label
@@ -166,6 +166,12 @@ class PathingExperiment():
 
     def get_file_id(self):
         return self.file_id
+
+    def set_solver_scale_obstacle(self, scale):
+        self.solver_scale_obstacle = scale
+
+    def get_solver_scale_obstacle(self):
+        return self.solver_scale_obstacle
 
     def get_experiment_dict(self):
         return {}
