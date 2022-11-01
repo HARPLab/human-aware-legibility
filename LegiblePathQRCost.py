@@ -741,11 +741,21 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_title("Path through space", fontweight='bold')
 
 
-        TABLE_RADIUS = .5
-        tables = self.restaurant.get_tables()
+        TABLE_RADIUS    = .5
+        OBS_RADIUS      = .1
+
+        tables      = self.restaurant.get_tables()
+        observers   = self.restaurant.get_observers()
+
         for table in tables:
             table = plt.Circle(table.get_center(), TABLE_RADIUS, color='g', clip_on=False)
             ax1.add_patch(table)
+
+        for observer in observers:
+            print(observer)
+            obs_pt  = observer.get_center()
+            obs     = plt.Circle(obs_pt, OBS_RADIUS, color='orange', clip_on=False)
+            ax1.add_patch(obs)
 
         # Draw the legibility over time
 
