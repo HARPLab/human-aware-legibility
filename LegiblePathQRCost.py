@@ -242,7 +242,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         return squared_x_cost + u_diff.T.dot(R).dot(u_diff)
 
     # original version for plain path following
-    def l(self, x, u, i, terminal=False):
+    def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
         """Instantaneous cost function.
         Args:
             x: Current state [state_size].
@@ -261,7 +261,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         if terminal or abs(i - self.N) < thresh:
             # TODO verify not a magic number
-            return self.term_cost(x, i) * 1000
+            return self.term_cost(x, i) # * 1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -301,6 +301,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         scale_term = self.scale_term #0.01 # 1/100
         scale_stage = self.scale_stage #1.5
+
+        if just_term:   
+            scale_stage = 0
+
+        if just_stage:
+            scale_term  = 0
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
@@ -633,7 +639,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         start = self.start
         u = None
         terminal = False
-
         if len(verts) != self.N + 1:
             print("points in path does not match the solve N")
 
@@ -646,19 +651,20 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print(str(i) + " out of " + str(len(verts)))
             x = verts[i]
 
-            l = legib.f_legibility(resto_envir, goal, goals, verts[:i], [])
+            aud = resto_envir.get_observers()
+            l = legib.f_legibility(resto_envir, goal, goals, verts[:i], aud)
             
             if i < len(us):
                 j = len(us) - 1
                 u = us[j]
-                sc = self.l(x, u, j) #self.get_total_stage_cost(start, goal, x, u, j, terminal)
+                sc = self.l(x, u, j, just_stage=True) #self.get_total_stage_cost(start, goal, x, u, j, terminal)
+                tc = self.l(x, u, j, just_term=True)
             else:
                 sc = 0.0
 
             scs.append(sc)
-
-            tc = float(self.term_cost(x, i))
             tcs.append(tc)
+            # tc = float(self.term_cost(x, i))
             
             ls.append(l)
 

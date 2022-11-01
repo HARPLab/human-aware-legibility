@@ -66,7 +66,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         )
 
     # original version for plain path following
-    def l(self, x, u, i, terminal=False):
+    def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
         """Instantaneous cost function.
         Args:
             x: Current state [state_size].
@@ -84,7 +84,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
 
 
         if terminal or abs(i - self.N) < thresh:
-            return self.term_cost(x, i)*1000
+            return self.term_cost(x, i) #*1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -125,6 +125,11 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         scale_term = self.scale_term #0.01 # 1/100
         scale_stage = self.scale_stage #1.5
 
+        if just_term:   
+            scale_stage = 0
+
+        if just_stage:
+            scale_term  = 0
 
         tables = self.restaurant.get_tables()
         obstacle_penalty = 0

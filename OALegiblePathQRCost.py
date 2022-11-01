@@ -101,7 +101,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
 
     # original version for plain path following
-    def l(self, x, u, i, terminal=False):
+    def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
         """Instantaneous cost function.
         Args:
             x: Current state [state_size].
@@ -118,7 +118,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         thresh = 1
 
         if terminal or abs(i - self.N) < thresh:
-            return self.term_cost(x, i)*1000
+            return self.term_cost(x, i) #*1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -156,8 +156,14 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         # term_scale = 1
         # stage_scale = 50
 
-        scale_term = self.scale_term #0.01 # 1/100
+        scale_term  = self.scale_term #0.01 # 1/100
         scale_stage = self.scale_stage #1.5
+
+        if just_term:   
+            scale_stage = 0
+
+        if just_stage:
+            scale_term  = 0
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
