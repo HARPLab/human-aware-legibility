@@ -169,10 +169,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         elif f_label is ex.F_VIS:
             def f(i):
-                pt = x_path[i]
+                pt = self.x_path[i]
+                restaurant  = self.exp.get_restaurant()
+                observers   = restaurant.get_obs_sets()
+                visibility  = legib.get_visibility_of_pt_w_observers(pt, observers, normalized=True)
+
                 # Can I see this point from each observer who is targeted
                 return 1.0
-        
+
         else:
             def f(i):
                 return 1.0

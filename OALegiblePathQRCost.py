@@ -117,7 +117,6 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         goal = self.target_goal
         thresh = 1
 
-
         if terminal or abs(i - self.N) < thresh:
             return self.term_cost(x, i)*1000
         else:
@@ -129,7 +128,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
                 print(term_cost)
 
         term_cost = 0
-        
+
         f_func     = self.get_f()
         f_value    = f_func(i)
         stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
