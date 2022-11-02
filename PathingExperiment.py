@@ -22,7 +22,7 @@ F_VIS           = 'f_vis'
 # OPTIONS FOR COST/SOLVER TYPE
 COST_DIRECT     = 'cost_direct'
 COST_LEGIB      = 'cost_legible'
-COST_OALEGIB    = 'cost_oalegib'
+COST_OA         = 'cost_oalegib'
 COST_OBS        = 'cost_obstacles'
 
 # # SOLVER TYPE
@@ -93,8 +93,15 @@ class PathingExperiment():
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
         self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
-        os.mkdir(PREFIX_EXPORT + self.file_id)
+        try:
+            os.mkdir(PREFIX_EXPORT + self.file_id)
+        except:
+            print("FILE ALREADY EXISTS " + self.file_id)
+        
         sys.stdout = open(PREFIX_EXPORT + self.file_id + '/output.txt','wt')
+
+    def reinit_file_id(self):
+        self.setup_file_id()
 
     def set_f_label(self, label):
         self.f_label = label

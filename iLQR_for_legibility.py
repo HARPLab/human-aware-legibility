@@ -164,7 +164,7 @@ def scenario_2():
     exp.set_action_size(2)
 
     dt = .025
-    N = 21
+    N = 11 #42 #21
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -257,7 +257,7 @@ def scenario_4_has_obstacles():
     # center points of tables, circular in iLQR world
     # radius needs to be agreed upon between this definition and the Obstacle class
     table_pts = []
-    table_pts.append([1.0, 1.0])
+    # table_pts.append([1.0, 1.0])
     table_pts.append([3.0, 0.5])
 
     exp = ex.PathingExperiment(start, target_goal, all_goals, table_pts=table_pts)
@@ -266,14 +266,19 @@ def scenario_4_has_obstacles():
     exp.set_action_size(2)
 
     dt = .025
-    N = 21
+    N = int(21 * 1.5)
     Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
+    R = 200.0 * np.eye(exp.get_action_size()) * 4
     Qf = np.identity(2) * 400.0
+
+    # print(Q, R, Qf)
 
     exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
+
+    obs_scale = 0.0 #100.0
+    exp.set_solver_scale_obstacle(obs_scale)
 
     return exp
 
@@ -306,6 +311,94 @@ def scenario_4_has_obstacles_and_observer():
 
     dt = .025
     N = 21
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return exp
+
+def scenario_7_observer():
+    start           = [0.0, 2.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal4           = [4.0, 1.0]
+
+    goal1           = [4.0, 1.0]
+    goal3           = [4.0, 3.0]
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([3.5, 1.0, 0])
+    # obs_pts.append([4.5, 1.0, 180])
+    # obs_pts.append([4.0, 0.5, 90])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = int(21 * 2)
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return exp
+
+def scenario_7_observer():
+    start           = [100.0, 102.0]
+
+    true_goal       = [108.0, 102.0]
+    goal2           = [102.0, 101.0]
+    goal4           = [104.0, 101.0]
+
+    goal1           = [104.0, 101.0]
+    goal3           = [104.0, 103.0]
+
+    target_goal = goal3
+    all_goals   = [goal1, goal3]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([3.5, 1.0, 0])
+    # obs_pts.append([4.5, 1.0, 180])
+    # obs_pts.append([4.0, 0.5, 90])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = int(21 * 2)
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -354,6 +447,8 @@ def scenario_6():
 
 
 def run_solver(exp):
+    exp.reinit_file_id()
+
     x0_raw          = exp.get_start()    # initial state
     x_goal_raw      = exp.get_target_goal()
 
@@ -417,17 +512,26 @@ def main():
     ####################################
     ### SET UP EXPERIMENT
     print("Setting up experiment")
-    exp = scenario_4_has_obstacles_and_observer()
+    # exp = scenario_7_observer()
+    exp = scenario_4_has_obstacles()
+    # exp = scenario_4_has_obstacles_and_observer()
+    # exp = scenario_2()
     # exp = scenario_5_large_scale()
 
     ### STANDARD SOLVE DEFAULTS
     print("Running solver")
+    # exp.set_cost_label(ex.COST_LEGIB)
     exp.set_cost_label(ex.COST_OBS)
+    # exp.set_cost_label(ex.COST_OA)
 
     # TODO, make it so the master folder is the run of the exp,
     # but the results are saved under a secondary file_id
 
-    exp.set_f_label(ex.F_VIS)
+    # exp.set_f_label(ex.F_VIS)
+    exp.set_f_label(ex.F_NONE)
+    exp.set_solver_scale_obstacle(10000000.0)
+
+    # TODO every run_solver needs a fresh file id
     run_solver(exp)
 
     # exp.set_f_label(ex.F_NONE)
