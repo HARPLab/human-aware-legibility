@@ -36,7 +36,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = False
 
-    coeff_terminal = 1000000.0
+    coeff_terminal = 10000.0
     scale_term = 0.01 # 1/100
     # scale_stage = 1.5
     scale_stage = 2
@@ -605,7 +605,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         return Q
 
     def get_window_dimensions_for_envir(self, start, goals, pts):
-        xmin, xmax, ymin, ymax = 0.0, 0.0, 0.0, 0.0
+        xmin, ymin = start
+        xmax, ymax = start
 
         all_points = copy.copy(goals)
         all_points.append(start)
@@ -729,11 +730,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         debug_text = self.get_debug_text(elapsed_time)
         ax5.annotate(debug_text, (0.5, 0), xycoords='axes fraction', ha="center", va="center", wrap=True, fontweight='bold') #, fontsize=6)
 
+        ax1.set_aspect('equal')
+
         ax1.grid(axis='y')
         ax2.grid(axis='y')
         ax3.grid(axis='y')
         ax4.grid(axis='y')
-        
+
         ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
         ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
 
