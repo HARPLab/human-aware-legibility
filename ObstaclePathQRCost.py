@@ -145,14 +145,17 @@ class ObstaclePathQRCost(LegiblePathQRCost):
 
             if obs_dist < TABLE_RADIUS:
                 print("obstacle dist for " + str(x) + " " + str(obs_dist))
-                obstacle_penalty += obs_dist * self.scale_obstacle
+                # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
+
+                obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
+
                 # np.inf #
 
 
         if obstacle_penalty > 0:
             print("total obstacle penalty " + str(obstacle_penalty))
     
-        stage_costs += obstacle_penalty
+        term_cost += obstacle_penalty
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
