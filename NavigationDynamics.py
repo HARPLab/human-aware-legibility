@@ -27,8 +27,16 @@ class NavigationDynamics(FiniteDiffDynamics):
 
     # Combine the existing state with 
     def dynamics(self, x, u, max_u=5.0):
+        # TODO raise max_u to experimental settings
+
+        # This is the distance we go in dt time
+        dt          = self.dt # seconds
+        # if the max speed is .5 m/s
+        max_speed   = 20 #15 #m
+        max_u       = dt * max_speed # = 
+
         # # Constrain action space.
-        if constrain:
+        if True: #constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
             
             # If we want to constrain movements to manhattan 
@@ -45,16 +53,12 @@ class NavigationDynamics(FiniteDiffDynamics):
             # u = norm2 * max_u
 
             # downscaling the u
-            # if np.linalg.norm(x) > max_u:
-            #     scalar = max_u / np.linalg.norm(x)
-            #     print("SCALING U")
-            #     print(scalar)
-            #     u = u * scalar
-            #     print(u)
+            if np.linalg.norm(u) > max_u:
+                scalar = max_u / np.linalg.norm(u)
+                u = u * scalar
+                # print(u)
 
             # u = tensor_constrain(u, min_bounds, max_bounds)
-            
-        dt = self.dt
 
         # Apply a constraint that limits how much the robot can move per-timestep
         # TODO: apply to overall vector magnitude rather than x and y components alone
