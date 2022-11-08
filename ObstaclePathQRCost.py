@@ -30,7 +30,6 @@ import pipeline_generate_paths as pipeline
 
 class ObstaclePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = True
-    scale_obstacle = 100000.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
@@ -80,10 +79,10 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         R = self.R
         start = self.start
         goal = self.target_goal
-        thresh = 1
+        thresh = .0001
 
 
-        if terminal or abs(i - self.N) < thresh:
+        if terminal or just_term: # or abs(i - self.N) < thresh:
             return self.term_cost(x, i) #*1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
@@ -134,7 +133,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         tables = self.restaurant.get_tables()
         obstacle_penalty = 0
 
-        TABLE_RADIUS = .5
+        TABLE_RADIUS = self.exp.get_table_radius()
         self.scale_obstacle = self.exp.get_solver_scale_obstacle()
         for table in tables:
             obstacle = table.get_center()
@@ -147,7 +146,7 @@ class ObstaclePathQRCost(LegiblePathQRCost):
                 print("obstacle dist for " + str(x) + " " + str(obs_dist))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
-                obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
+                obstacle_penalty += (obs_dist)**2 * self.exp.get_solver_scale_obstacle()
 
                 # np.inf #
 
