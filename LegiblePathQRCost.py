@@ -676,7 +676,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         debug_text_a = "stage scale: " + str(self.scale_stage) + "        "
         debug_text_b = "term scale: " + str(self.scale_term) + "\n"
         debug_text_c = "coeff_terminal: " + str(self.coeff_terminal) + "        "
-        debug_text_d = "obstacle scale: " + str(self.scale_obstacle) # + "\n"
+        debug_text_d = "obstacle scale: " + str(self.exp.get_solver_scale_obstacle()) # + "\n"
 
         debug_text = debug_text_a + debug_text_b + debug_text_c + debug_text_d
 
@@ -755,7 +755,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax1.set_title("Path through space", fontweight='bold')
 
 
-        TABLE_RADIUS    = .5
+        TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .1
 
         tables      = self.restaurant.get_tables()
