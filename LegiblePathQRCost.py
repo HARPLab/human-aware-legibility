@@ -171,11 +171,12 @@ class LegiblePathQRCost(FiniteDiffCost):
             def f(i):
                 pt = self.x_path[i]
                 restaurant  = self.exp.get_restaurant()
-                observers   = restaurant.get_obs_sets()
+                observers   = restaurant.get_observers()
+
                 visibility  = legib.get_visibility_of_pt_w_observers(pt, observers, normalized=True)
 
                 # Can I see this point from each observer who is targeted
-                return 1.0
+                return visibility
 
         else:
             def f(i):
@@ -256,10 +257,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         R = self.R
         start = self.start
         goal = self.target_goal
-        thresh = 1
+        thresh = .0001
 
 
-        if terminal or abs(i - self.N) < thresh:
+        if terminal or abs(i - self.N) < thresh or just_term:
             # TODO verify not a magic number
             return self.term_cost(x, i) # * 1000
         else:
@@ -270,7 +271,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 # term_cost = self.term_cost(x, i)
                 print(term_cost)
 
-        term_cost = 0
+        term_cost = 0 #self.term_cost(x, i)
 
         f_func     = self.get_f()
         f_value    = f_func(i)
@@ -774,8 +775,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             x, y = obs_pt
             THETA_ARROW_RADIUS = .2
             r = THETA_ARROW_RADIUS
+
+
             theta = observer.get_orientation()
-            ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=True, color=obs_color, width=.06)
+            ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
 
 
         # Draw the legibility over time
