@@ -277,7 +277,7 @@ def scenario_4_has_obstacles():
     exp.set_N(N)
     exp.set_dt(dt)
 
-    obs_scale = 0.0 #100.0
+    obs_scale = 10000000.0
     exp.set_solver_scale_obstacle(obs_scale)
 
     return exp
@@ -508,10 +508,13 @@ def run_solver(exp):
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
 
 
-def main():
+def exp_observers():
+    return
+
+def exp_obstacles():
     ####################################
     ### SET UP EXPERIMENT
-    print("Setting up experiment")
+
     # exp = scenario_7_observer()
     exp = scenario_4_has_obstacles()
     # exp = scenario_4_has_obstacles_and_observer()
@@ -520,25 +523,30 @@ def main():
 
     ### STANDARD SOLVE DEFAULTS
     print("Running solver")
+
+    ###### COST/SOLVER OPTIONS
     # exp.set_cost_label(ex.COST_LEGIB)
     exp.set_cost_label(ex.COST_OBS)
     # exp.set_cost_label(ex.COST_OA)
 
-    # TODO, make it so the master folder is the run of the exp,
-    # but the results are saved under a secondary file_id
-
+    ###### WEIGHTING FUNCTION 
+    ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
     # exp.set_f_label(ex.F_VIS)
     exp.set_f_label(ex.F_NONE)
     exp.set_solver_scale_obstacle(10000000.0)
 
-    # TODO every run_solver needs a fresh file id
     run_solver(exp)
 
+    ###### RUN ADDITIONAL REMIXES
     # exp.set_f_label(ex.F_NONE)
     # run_solver(exp)
 
     # exp.set_f_label(ex.F_ANCA_LINEAR)
     # run_solver(exp)
+
+def main():
+    print("Setting up experiment")
+    exp_obstacles()
 
     print("Done")
 
