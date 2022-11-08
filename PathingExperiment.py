@@ -39,6 +39,8 @@ class PathingExperiment():
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
 
+    obstacle_table_radius   = .25
+
     # DEFAULT COST TYPE AND F TYPE
     cost_label  = COST_LEGIB
     f_label     = F_NONE
@@ -182,5 +184,11 @@ class PathingExperiment():
 
     def get_experiment_dict(self):
         return {}
+
+    def get_table_radius(self):
+        return self.obstacle_table_radius
+
+    def set_table_radius(self, trad):
+        self.obstacle_table_radius = trad
 
 
