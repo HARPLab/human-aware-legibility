@@ -173,8 +173,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 restaurant  = self.exp.get_restaurant()
                 observers   = restaurant.get_observers()
 
-                visibility  = legib.get_visibility_of_pt_w_observers(pt, observers, normalized=True)
-
+                visibility  = legib.get_visibility_of_pt_w_observers_ilqr(pt, observers, normalized=True)
                 # Can I see this point from each observer who is targeted
                 return visibility
 
@@ -209,7 +208,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # We want to value this highly enough that we don't not end at the goal
         # terminal_coeff = 100.0
-        coeff_terminal = self.coeff_terminal
+        coeff_terminal = self.exp.get_solver_coeff_terminal()
         terminal_cost = terminal_cost * coeff_terminal
 
         # Once we're at the goal, the terminal cost is 0
@@ -637,7 +636,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         return PREFIX_EXPORT + self.file_id + "/" + self.file_id
 
     def get_legibility_of_path_to_goal(self, verts, us, goal):
-        ls, scs, tcs = [], [], []
+        ls, scs, tcs, vs = [], [], [], []
         start = self.start
         u = None
         terminal = False
@@ -646,8 +645,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         resto_envir = self.restaurant
         goals = self.goals
-
-        exp_settings = pipeline.get_default_exp_settings(unique_key="ilqr_verif")
 
         for i in range(len(verts)):
             # print(str(i) + " out of " + str(len(verts)))
@@ -667,10 +664,21 @@ class LegiblePathQRCost(FiniteDiffCost):
             scs.append(sc)
             tcs.append(tc)
             # tc = float(self.term_cost(x, i))
-            
             ls.append(l)
 
-        return ls, scs, tcs
+        # TODO: alter this if we want to show vis from multiple observers
+        for obs in self.exp.get_restaurant().get_observers():
+            vis_log = []
+
+            for i in range(len(verts)):
+                x = verts[i]
+
+                v = legib.get_visibility_of_pt_w_observers_ilqr(x, [obs], normalized=True)
+                vis_log.append(v)
+
+            vs.append(vis_log)
+
+        return ls, scs, tcs, vs
 
 
     def get_debug_text(self, elapsed_time):
@@ -688,6 +696,23 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         
         return debug_text
+
+    def hex_to_RGB(self, hex_str):
+        """ #FFFFFF -> [255,255,255]"""
+        #Pass 16 to the integer function for change of base
+        return [int(hex_str[i:i+2], 16) for i in range(1,6,2)]
+
+    def get_color_gradient(self, c1, c2, n):
+        """
+        Given two hex colors, returns a color gradient
+        with n colors.
+        """
+        assert n > 1
+        c1_rgb = np.array(self.hex_to_RGB(c1))/255
+        c2_rgb = np.array(self.hex_to_RGB(c2))/255
+        mix_pcts = [x/(n-1) for x in range(n)]
+        rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
+        return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
     def graph_legibility_over_time(self, verts, us, elapsed_time=None):
         print("GRAPHING LEGIBILITY OVER TIME")
@@ -716,15 +741,15 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # Ummm, incredible plot layout system for numpy
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplot_mosaic.html
-        fig, axes = plt.subplot_mosaic("AB;CD;EE", figsize=(8, 6), gridspec_kw={'height_ratios':[36, 36, 1], 'width_ratios':[1, 1]})
+        fig, axes = plt.subplot_mosaic("AAF;AAB;CDG;EEE", figsize=(8, 6), gridspec_kw={'height_ratios':[36, 36, 36, 1], 'width_ratios':[1, 1, 1]})
         # fig, axes = plt.subplot_mosaic("AAB;AAC;DEF")
-        ax1 = axes['A']
-        ax2 = axes['B']
-        ax3 = axes['C']
-        ax4 = axes['D']
-        ax5 = axes['E']
-        # ax6 = axes['F']
-        # ax7 = axes['G']
+        ax1 = axes['A'] # plot of movements in space
+        ax2 = axes['B'] # 
+        ax3 = axes['C'] # 
+        ax4 = axes['D'] # 
+        ax5 = axes['E'] # error text box
+        ax6 = axes['F'] # U magnitude over time
+        ax7 = axes['G']
 
 
         ax5.axis('off')
@@ -737,6 +762,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax2.grid(axis='y')
         ax3.grid(axis='y')
         ax4.grid(axis='y')
+        ax7.grid(axis='y')
 
         ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
         ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
@@ -747,9 +773,19 @@ class LegiblePathQRCost(FiniteDiffCost):
         # ideally even combine it into a graph with the drawing itself
 
         # Color code the goals for ease of reading graphs
+        goal_colors = ['red', 'blue', 'purple', 'green']
+
+        for j in range(len(self.goals)):
+            goal = self.goals[j]
+            color = goal_colors[j]
+            if goal is self.target_goal:
+                target_color = color
+
+        color_grad = self.get_color_gradient('#000000', '#9F2B68', len(xs))
 
         # Draw the path itself
-        ax1.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=10)
+        ax1.plot(xs, ys, 'o--', lw=1, color='black', label="path", markersize=0)
+        ax1.scatter(xs, ys, c=color_grad, s=10)
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = ax1.set_xlabel("X", fontweight='bold')
         _ = ax1.set_ylabel("Y", fontweight='bold')
@@ -779,6 +815,10 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             theta = observer.get_orientation()
             ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            half_fov = 60
+            obs_color = 'yellow'
+            ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
 
 
         # Draw the legibility over time
@@ -788,9 +828,6 @@ class LegiblePathQRCost(FiniteDiffCost):
             obs = [[.5, 1], [1, 1], [1, .5], [.5, .5], [.5, 1]]
             oxs, oys = zip(*obs)
             ax1.fill(oxs, oys, "c")
-
-        goal_colors = ['red', 'blue', 'purple', 'green']
-
 
         target = self.target_goal
         # for each goal, graph legibility
@@ -805,14 +842,28 @@ class LegiblePathQRCost(FiniteDiffCost):
             else:
                 ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
-            ls, scs, tcs = self.get_legibility_of_path_to_goal(verts, us, goal)
+            ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, goal)
             ts = np.arange(len(ls)) * self.dt
 
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
-            # print("plotted ax2")
-            ax3.plot(ts, scs, 'o--', lw=2, color=color, label=goal, markersize=3)
-            # print("plotted ax3")
-            ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
+
+            ax3.plot(ts, scs, 'o--', lw=1, color=color, label=goal, markersize=0)
+            ax4.plot(ts, tcs, 'o--', lw=1, color=color, label=goal, markersize=0)
+
+            ax3.scatter(ts, scs, c=color_grad, s=4)
+            ax4.scatter(ts, tcs, c=color_grad, s=4)
+
+            # ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
+            # # print("plotted ax2")
+            # ax3.plot(ts, scs, 'o--', lw=2, color=color, label=goal, markersize=3)
+            # # print("plotted ax3")
+            # ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
+
+            for v in vs:
+                ax7.scatter(ts, v, c=color_grad, s=5)
+                ax7.plot(ts, v, lw=1, color=color, label=goal, markersize=0)
+
+                # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
             # print("plotted ax4")
             # print("Plotted all data")
 
@@ -822,9 +873,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
         ax1.set_xlim([xmin, xmax])
         ax1.set_ylim([ymin, ymax])
-        # ax1.set_ylim(-5, 25)
-        # ax1.set_xlim(-15, 15)
-
+        
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
         _ = ax2.set_title("Legibility according to old", fontweight='bold')
@@ -840,17 +889,26 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax4.set_ylabel("Term Cost", fontweight='bold')
         _ = ax4.set_title("Term cost during path", fontweight='bold')
         ax4.legend() #loc="upper left")
+
+        _ = ax7.set_xlabel("Visibility", fontweight='bold')
+        _ = ax7.set_ylabel("Percent", fontweight='bold')
+        _ = ax7.set_title("Visibility to Audience over path", fontweight='bold')
+        ax7.legend() #loc="upper left")
         
         ax2.grid(False)
         ax3.grid(False)
         ax4.grid(False)
+        ax7.grid(False)
 
+        # F = ax6 = Graph of U magnitude
+        ts = np.arange(len(us)) * self.dt
+        u_mags = [np.linalg.norm(vector) for vector in us]
 
-        plt.tight_layout()
-        plt.savefig(self.get_export_label() + '-overview.png')
-        plt.show()
-        plt.clf()
-
+        _ = ax6.plot(ts, u_mags, lw=2, color='black',)
+        _ = ax6.set_xlabel("time (s)", fontweight='bold')
+        _ = ax6.set_ylabel("Magnitude of U", fontweight='bold')
+        _ = ax6.set_title("Magnitude of U Over Path", fontweight='bold')
+        # ax6.legend()
 
         if False:
             plt.plot(xs, ys, 'o--', lw=2, color='black', label="path", markersize=3)
@@ -865,7 +923,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             plt.show()
             plt.clf()
 
-        if True:
+        if False:
             ts = np.arange(len(us)) * self.dt
             u_mags = [np.linalg.norm(vector) for vector in us]
 
@@ -892,6 +950,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         # _ = plt.title("Total cost-to-go")
         # plt.show()
         # plt.clf()
+
+        plt.tight_layout()
+        plt.savefig(self.get_export_label() + '-overview.png')
+        plt.show()
+        plt.clf()
 
         # sys.stdout = open('output.txt','wt')
 
