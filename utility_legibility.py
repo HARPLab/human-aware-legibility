@@ -109,6 +109,83 @@ def f_exp_single_normalized(t, pt, aud, path):
 
 
 # ADA MASTER VISIBILITY EQUATION
+# ILQR OBSERVER-AWARE EQUATION
+def get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True, epsilon=.01):
+
+	observers = []
+	score = []
+
+	reasonable_set_sizes = [0, 1, 5]
+	if len(aud) not in reasonable_set_sizes:
+		print(len(aud))
+
+	# section for alterating calculculation for a few 
+	# out of the whole set; mainly for different combination techniques
+	# if len(aud) == 5:
+	# 	aud = [aud[2], aud[4]]
+
+	MAX_DISTANCE = 500
+	for observer in aud:
+		obs_orient 	= observer.get_orientation() + 90
+		# if obs_orient != 300:
+		# 	print(obs_orient)
+		# 	exit()
+		obs_FOV 	= observer.get_FOV()
+
+		angle 		= angle_between_points(observer.get_center(), pt)
+		distance 	= resto.dist(pt, observer.get_center())
+		# print("~~~")
+		# print(observer.get_center())
+		# print(distance)
+		# print(pt)
+		
+		# print(ang)
+		a = angle - obs_orient
+		signed_angle_diff = (a + 180) % 360 - 180
+		angle_diff = abs(signed_angle_diff)
+
+		# if (pt[0] % 100 == 0) and (pt[1] % 100 == 0):
+		# 	print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+		# 	print("observer looking at... " + str(obs_orient))
+		# 	print("angle diff = " + str(angle_diff))
+
+		# print(angle, distance)
+		# observation = (pt, angle, distance)
+		# observers.append(observation)
+
+		half_fov = (obs_FOV / 2.0)
+		# print(half )
+		if angle_diff < half_fov:
+			from_center = half_fov - angle_diff
+			if normalized:
+				from_center = from_center / (half_fov)
+
+			# from_center = from_center * from_center
+			score.append(from_center)
+		else:
+			if normalized:
+				score.append(0)
+			else:
+				score.append(1)
+
+		# 	# full credit at the center of view
+		# 	offset_multiplier = np.abs(angle_diff) / obs_FOV
+
+		# 	# # 1 if very close
+		# 	# distance_bonus = (MAX_DISTANCE - distance) / MAX_DISTANCE
+		# 	# score += (distance_bonus*offset_multiplier)
+		# 	score = offset_multiplier
+		# 	score = distance
+
+	# combination method for multiple viewers: minimum value
+	if len(score) > 0:
+		# score = min(score)
+		score = sum(score)
+	else:
+		score = epsilon
+	return score
+
+# ADA MASTER VISIBILITY EQUATION
 # OBSERVER-AWARE EQUATION
 def get_visibility_of_pt_w_observers(pt, aud, normalized=True):
 	observers = []
