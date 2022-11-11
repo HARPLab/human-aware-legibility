@@ -29,13 +29,7 @@ from LegiblePathQRCost import LegiblePathQRCost
 
 class OALegiblePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
-    FLAG_DEBUG_STAGE_AND_TERM = False
-
-    coeff_terminal = 1000.0
-    scale_term = 0.01 # 1/100
-    # scale_stage = 1.5
-    scale_stage = 2
-
+    FLAG_DEBUG_STAGE_AND_TERM = True
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
@@ -72,32 +66,32 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         )
 
 
-    # How far away is the final step in the path from the goal?
-    def term_cost(self, x, i):
-        start = self.start
-        goal1 = self.target_goal
+    # # How far away is the final step in the path from the goal?
+    # def term_cost(self, x, i):
+    #     start = self.start
+    #     goal1 = self.target_goal
         
-        # Qf = self.Q_terminal
-        Qf = self.Qf
-        R = self.R
+    #     # Qf = self.Q_terminal
+    #     Qf = self.Qf
+    #     R = self.R
 
-        # x_diff = x - self.x_path[i]
-        x_diff = x - self.x_path[self.N]
-        squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
-        # squared_x_cost = squared_x_cost * squared_x_cost
+    #     # x_diff = x - self.x_path[i]
+    #     x_diff = x - self.x_path[self.N]
+    #     squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
+    #     # squared_x_cost = squared_x_cost * squared_x_cost
 
-        terminal_cost = squared_x_cost
+    #     terminal_cost = squared_x_cost
 
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("term cost squared x cost")
-            print(squared_x_cost)
+    #     if self.FLAG_DEBUG_STAGE_AND_TERM:
+    #         print("term cost squared x cost")
+    #         print(squared_x_cost)
 
-        # We want to value this highly enough that we don't not end at the goal
-        # terminal_coeff = 100.0
-        coeff_terminal = self.coeff_terminal
-        terminal_cost = terminal_cost * coeff_terminal
+    #     # We want to value this highly enough that we don't not end at the goal
+    #     # terminal_coeff = 100.0
+    #     coeff_terminal  = self.exp.get_coeff_terminal()
+    #     terminal_cost   = terminal_cost * coeff_terminal
 
-        return terminal_cost
+    #     return terminal_cost
 
 
     # original version for plain path following
@@ -115,9 +109,11 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         R = self.R
         start = self.start
         goal = self.target_goal
-        thresh = 1
+        thresh = .0001
 
-        if terminal or abs(i - self.N) < thresh:
+        term_cost = 0
+
+        if terminal or just_term: # or abs(i - self.N) < thresh:
             return self.term_cost(x, i) #*1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
@@ -125,12 +121,23 @@ class OALegiblePathQRCost(LegiblePathQRCost):
                 print("x, N, x_end_of_path -> inputs and then term cost")
                 print(x, self.N, self.x_path[self.N])
                 # term_cost = self.term_cost(x, i)
-                print(term_cost)
 
-        term_cost = 0
 
-        f_func     = self.get_f()
-        f_value    = f_func(i)
+        restaurant  = self.exp.get_restaurant()
+        observers   = restaurant.get_observers()
+
+        visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+        if visibility == 0:
+            visibility = .01
+
+        # f_func     = self.get_f()
+        # f_value    = f_func(i)
+
+        # if f_value != visibility:
+        #     exit()
+
+        f_value    = visibility
+
         stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
     
         if self.FLAG_DEBUG_STAGE_AND_TERM:
