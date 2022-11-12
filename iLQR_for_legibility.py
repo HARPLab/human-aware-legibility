@@ -71,7 +71,7 @@ def get_window_dimensions_for_envir(self, start, goals, pts):
 
     return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
-def scenario_0():
+def scenario_0(goal_index=None):
     start           = [1.0, 0.01]
 
     true_goal       = [8.0, 2.0]
@@ -110,7 +110,7 @@ def scenario_0():
 
     return exp
 
-def scenario_1():
+def scenario_1(goal_index=None):
     restaurant      = None
     start           = [0.0, 0.0]
 
@@ -143,7 +143,7 @@ def scenario_1():
     return exp
 
 
-def scenario_2():
+def scenario_2(goal_index=None):
     restaurant      = None
     start           = [0.0, 0.0]
 
@@ -175,7 +175,7 @@ def scenario_2():
 
     return exp
 
-def scenario_3():
+def scenario_3(goal_index=None):
     restaurant      = None
     start           = [8.0, 2.0]
 
@@ -208,7 +208,7 @@ def scenario_3():
 
     return exp
 
-def scenario_5_large_scale():
+def scenario_5_large_scale(goal_index=None):
     restaurant      = None
     start           = [800.0, 200.0]
 
@@ -241,7 +241,7 @@ def scenario_5_large_scale():
 
     return exp
 
-def scenario_4_has_obstacles():
+def scenario_4_has_obstacles(goal_index=None):
     start           = [0.0, 0.0]
 
     true_goal       = [8.0, 2.0]
@@ -266,10 +266,10 @@ def scenario_4_has_obstacles():
     exp.set_action_size(2)
 
     dt = .025
-    N = int(21 * 1.5)
+    N = int(21 * 2)
     Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size()) * 4
-    Qf = np.identity(2) * 400.0
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = 1.0 * np.identity(2)
 
     # print(Q, R, Qf)
 
@@ -282,7 +282,7 @@ def scenario_4_has_obstacles():
 
     return exp
 
-def scenario_4_has_obstacles_and_observer():
+def scenario_4_has_obstacles_and_observer(goal_index=None):
     start           = [0.0, 0.0]
 
     true_goal       = [8.0, 2.0]
@@ -324,7 +324,7 @@ def scenario_4_has_obstacles_and_observer():
 
     return exp
 
-def scenario_7_observer():
+def scenario_7_observer(goal_index=None, obs_angle=0):
     start           = [0.0, 2.0]
 
     true_goal       = [8.0, 2.0]
@@ -334,8 +334,12 @@ def scenario_7_observer():
     goal1           = [4.0, 1.0]
     goal3           = [4.0, 3.0]
 
-    target_goal = goal1
     all_goals   = [goal1, goal3]
+
+    if goal_index is None or goal_index > len(all_goals):
+        target_goal = goal3
+    else:
+        target_goal = all_goals[goal_index]
 
     # center points of tables, circular in iLQR world
     # radius needs to be agreed upon between this definition and the Obstacle class
@@ -344,7 +348,7 @@ def scenario_7_observer():
     # table_pts.append([3.0, 0.5])
 
     obs_pts = []
-    obs_pts.append([3.5, 1.0, 0])
+    obs_pts.append([3.5, 1.0, obs_angle])
     # obs_pts.append([4.5, 1.0, 180])
     # obs_pts.append([4.0, 0.5, 90])
 
@@ -368,7 +372,7 @@ def scenario_7_observer():
 
     return exp
 
-def scenario_7_observer():
+def scenario_7_observer_offset(goal_index=None):
     start           = [100.0, 102.0]
 
     true_goal       = [108.0, 102.0]
@@ -378,9 +382,13 @@ def scenario_7_observer():
     goal1           = [104.0, 101.0]
     goal3           = [104.0, 103.0]
 
-    target_goal = goal3
     all_goals   = [goal1, goal3]
 
+    if goal_index is None or goal_index > len(all_goals):
+        target_goal = goal3
+    else:
+        target_goal = all_goals[goal_index]
+    
     # center points of tables, circular in iLQR world
     # radius needs to be agreed upon between this definition and the Obstacle class
     table_pts = []
@@ -508,15 +516,31 @@ def run_solver(exp):
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
 
 
-def exp_observers():
-    return
+def exp_observers(goal_index=None, obs_angle=0):
+    ####################################
+    ### SET UP EXPERIMENT
 
-def exp_obstacles():
+    exp = scenario_7_observer(goal_index=goal_index, obs_angle=obs_angle)
+
+    ### STANDARD SOLVE DEFAULTS
+    print("Running solver")
+
+    ###### COST/SOLVER OPTIONS
+    exp.set_cost_label(ex.COST_OA)
+
+    ###### WEIGHTING FUNCTION 
+    ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
+    exp.set_f_label(ex.F_VIS)
+    # exp.set_f_label(ex.F_NONE)
+
+    run_solver(exp)
+
+def exp_obstacles(goal_index=None):
     ####################################
     ### SET UP EXPERIMENT
 
     # exp = scenario_7_observer()
-    exp = scenario_4_has_obstacles()
+    exp = scenario_4_has_obstacles(goal_index=goal_index)
     # exp = scenario_4_has_obstacles_and_observer()
     # exp = scenario_2()
     # exp = scenario_5_large_scale()
@@ -546,7 +570,8 @@ def exp_obstacles():
 
 def main():
     print("Setting up experiment")
-    exp_obstacles()
+    # exp_obstacles()
+    exp_observers(goal_index=0, obs_angle=30)
 
     print("Done")
 
