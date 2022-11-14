@@ -39,6 +39,8 @@ class PathingExperiment():
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
 
+    lambda_cost_path_coeff  = 1.0
+
     obstacle_table_radius   = .5
 
     # DEFAULT COST TYPE AND F TYPE
@@ -182,6 +184,18 @@ class PathingExperiment():
     def get_solver_scale_obstacle(self):
         return self.solver_scale_obstacle
 
+    def set_solver_scale_stage(self, scale):
+        self.solver_scale_stage = scale
+
+    def get_solver_scale_stage(self):
+        return self.solver_scale_stage
+
+    def set_solver_scale_term(self, scale):
+        self.solver_scale_term = scale
+
+    def get_solver_scale_term(self):
+        return self.solver_scale_term
+
     def set_solver_coeff_terminal(self, scale):
         self.solver_coeff_terminal = scale
 
@@ -196,5 +210,11 @@ class PathingExperiment():
 
     def set_table_radius(self, trad):
         self.obstacle_table_radius = trad
+
+    def get_lambda_cost_path_coeff(self):
+        return self.lambda_cost_path_coeff
+
+    def set_lambda_cost_path_coeff(self, l):
+        self.lambda_cost_path_coeff = l
 
 
