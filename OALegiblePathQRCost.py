@@ -111,60 +111,8 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         goal = self.target_goal
         thresh = .0001
 
-        term_cost = 0
-
-        if terminal or just_term: # or abs(i - self.N) < thresh:
-            return self.term_cost(x, i) #*1000
-        else:
-            if self.FLAG_DEBUG_STAGE_AND_TERM:
-                # difference between this step and the end
-                print("x, N, x_end_of_path -> inputs and then term cost")
-                print(x, self.N, self.x_path[self.N])
-                # term_cost = self.term_cost(x, i)
-
-
-        restaurant  = self.exp.get_restaurant()
-        observers   = restaurant.get_observers()
-
-        visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
-        if visibility == 0:
-            visibility = .01
-
-        # f_func     = self.get_f()
-        # f_value    = f_func(i)
-
-        # if f_value != visibility:
-        #     exit()
-
-        f_value    = visibility
-
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
-    
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("STAGE,\t TERM")
-            print(stage_costs, term_cost)
-
-        # Log of remixes of term and stage cost weightings
-        # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
-        # stage_costs    = decimal.Decimal.ln(stage_costs)
-        # if i < 30:
-        #     stage_scale = 200
-        #     term_scale = 0.1
-        # else:
-        #     stage_scale = 10
-        #     term_scale = 1
-        # stage_scale = max([(self.N - i), 20])
-        # term_scale = 100
-        # stage_scale = 10
-        # term_scale = 1
-        # stage_scale = max([self.N-i, 10])
-        # stage_scale = abs(self.N-i)
-        # term_scale = i/self.N
-        # term_scale = 1
-        # stage_scale = 50
-
-        scale_term  = self.scale_term #0.01 # 1/100
-        scale_stage = self.scale_stage #1.5
+        scale_term = self.exp.get_solver_scale_term() #0.01 # 1/100
+        scale_stage = self.exp.get_solver_scale_stage() #1.5
 
         if just_term:   
             scale_stage = 0
@@ -172,9 +120,153 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         if just_stage:
             scale_term  = 0
 
+        term_cost = 0 #self.term_cost(x, i)
+
+        x_diff = x - self.x_path[i]
+
+        u_diff = 0
+        if i < len(self.u_path):
+            u_diff = u - self.u_path[i]
+
+        if terminal or just_term: #abs(i - self.N) < thresh or
+            # TODO verify not a magic number
+            return scale_term * self.term_cost(x, i) # * 1000
+        else:
+            if self.FLAG_DEBUG_STAGE_AND_TERM:
+                # difference between this step and the end
+                print("x, N, x_end_of_path -> inputs and then term cost")
+                print(x, self.N, self.x_path[self.N])
+                # term_cost = self.term_cost(x, i)
+                print(term_cost)
+
+        # VISIBILITY COMPONENT
+        restaurant  = self.exp.get_restaurant()
+        observers   = restaurant.get_observers()
+
+        visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+        FLAG_OA_MIN_VIS = False
+
+        # if FLAG_OA_MIN_VIS:
+        #     if visibility == 0:
+        #         visibility = .01
+
+        # f_func     = self.get_f()
+        # f_value    = f_func(i)
+
+        f_func     = self.get_f()
+        f_value    = visibility #f_func(i)
+        J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
+
+        wt_legib     = -1.0
+        wt_lam       = .001
+        wt_control   = 3.0
+
+        J =  (wt_legib       * J)
+        J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
+        J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
+
+    
+        stage_costs = J
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("STAGE,\t TERM")
+            print(stage_costs, term_cost)
+
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
         return float(total)
+
+    # # original version for plain path following
+    # def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
+    #     """Instantaneous cost function.
+    #     Args:
+    #         x: Current state [state_size].
+    #         u: Current control [action_size]. None if terminal.
+    #         i: Current time step.
+    #         terminal: Compute terminal cost. Default: False.
+    #     Returns:
+    #         Instantaneous cost (scalar).
+    #     """
+    #     Q = self.Qf if terminal else self.Q
+    #     R = self.R
+    #     start = self.start
+    #     goal = self.target_goal
+    #     thresh = .0001
+
+    #     term_cost = 0
+
+    #     if terminal or just_term: # or abs(i - self.N) < thresh:
+    #         return self.term_cost(x, i) #*1000
+    #     else:
+    #         if self.FLAG_DEBUG_STAGE_AND_TERM:
+    #             # difference between this step and the end
+    #             print("x, N, x_end_of_path -> inputs and then term cost")
+    #             print(x, self.N, self.x_path[self.N])
+    #             # term_cost = self.term_cost(x, i)
+
+
+    #     # VISIBILITY COMPONENT
+    #     restaurant  = self.exp.get_restaurant()
+    #     observers   = restaurant.get_observers()
+
+    #     visibility  = 1 #legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+    #     FLAG_OA_MIN_VIS = False
+
+    #     if FLAG_OA_MIN_VIS:
+    #         if visibility == 0:
+    #             visibility = .01
+
+    #     # f_func     = self.get_f()
+    #     # f_value    = f_func(i)
+
+    #     # if f_value != visibility:
+    #     #     exit()
+
+    #     f_value    = visibility
+
+    #     # PATH COST PENALTY COMPONENT
+    #     x_diff = x - self.x_path[self.N]
+    #     Q_path_cost = np.identity(2)
+    #     path_squared_x_cost = .5 * x_diff.T.dot(Q_path_cost).dot(x_diff)
+
+    #     stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
+    #     stage_costs = stage_costs + self.exp.get_lambda_cost_path_coeff() * path_squared_x_cost
+    
+    #     if self.FLAG_DEBUG_STAGE_AND_TERM:
+    #         print("STAGE,\t TERM")
+    #         print(stage_costs, term_cost)
+
+    #     # Log of remixes of term and stage cost weightings
+    #     # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
+    #     # stage_costs    = decimal.Decimal.ln(stage_costs)
+    #     # if i < 30:
+    #     #     stage_scale = 200
+    #     #     term_scale = 0.1
+    #     # else:
+    #     #     stage_scale = 10
+    #     #     term_scale = 1
+    #     # stage_scale = max([(self.N - i), 20])
+    #     # term_scale = 100
+    #     # stage_scale = 10
+    #     # term_scale = 1
+    #     # stage_scale = max([self.N-i, 10])
+    #     # stage_scale = abs(self.N-i)
+    #     # term_scale = i/self.N
+    #     # term_scale = 1
+    #     # stage_scale = 50
+
+    #     scale_term  = self.scale_term #0.01 # 1/100
+    #     scale_stage = self.scale_stage #1.5
+
+    #     if just_term:   
+    #         scale_stage = 0
+
+    #     if just_stage:
+    #         scale_term  = 0
+
+    #     total = (scale_term * term_cost) + (scale_stage * stage_costs)
+
+    #     return float(total)
 
     def f(t):
         return 1.0
