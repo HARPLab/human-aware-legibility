@@ -258,10 +258,27 @@ class LegiblePathQRCost(FiniteDiffCost):
         goal = self.target_goal
         thresh = .0001
 
+        scale_term = self.exp.get_solver_scale_term() #0.01 # 1/100
+        scale_stage = self.exp.get_solver_scale_stage() #1.5
 
-        if terminal or abs(i - self.N) < thresh or just_term:
+        if just_term:   
+            scale_stage = 0
+
+        if just_stage:
+            scale_term  = 0
+
+
+        term_cost = 0 #self.term_cost(x, i)
+        x_diff = x - self.x_path[i]
+
+        u_diff = 0
+        if i < len(self.u_path):
+            u_diff = u - self.u_path[i]
+
+
+        if terminal or just_term: #abs(i - self.N) < thresh or
             # TODO verify not a magic number
-            return self.term_cost(x, i) # * 1000
+            return scale_term * self.term_cost(x, i) # * 1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -274,39 +291,22 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         f_func     = self.get_f()
         f_value    = f_func(i)
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
+        J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
+
+        wt_legib     = -1.0
+        wt_lam       = .001
+        wt_control   = 3.0
+
+        J =  (wt_legib       * J)
+        J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
+        J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
+
     
+        stage_costs = J
+
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
             print(stage_costs, term_cost)
-
-        # Log of remixes of term and stage cost weightings
-        # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
-        # stage_costs    = decimal.Decimal.ln(stage_costs)
-        # if i < 30:
-        #     stage_scale = 200
-        #     term_scale = 0.1
-        # else:
-        #     stage_scale = 10
-        #     term_scale = 1
-        # stage_scale = max([(self.N - i), 20])
-        # term_scale = 100
-        # stage_scale = 10
-        # term_scale = 1
-        # stage_scale = max([self.N-i, 10])
-        # stage_scale = abs(self.N-i)
-        # term_scale = i/self.N
-        # term_scale = 1
-        # stage_scale = 50
-
-        scale_term = self.scale_term #0.01 # 1/100
-        scale_stage = self.scale_stage #1.5
-
-        if just_term:   
-            scale_stage = 0
-
-        if just_stage:
-            scale_term  = 0
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
@@ -327,7 +327,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         for j in range(i):
             u_diff = u - self.u_path[j]
-
             stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
         # f_func     = self.get_f()
@@ -350,6 +349,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         togoal_diff = (np.array(x) - goal)
 
         u_diff = u - self.u_path[i]
+        x_diff = x - self.x_path[i]
 
         if len(self.u_path) == 0:
             return 0
@@ -360,7 +360,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        J_g1 *= .5
+        # J_g1 *= .5
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
@@ -368,6 +368,10 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         log_sum = 0.0
         total_sum = 0.0
+
+
+        ####### NOTE: J_g1 is an artefact, so is log_sum and total_sum, PARTS is now the only element that matters
+        parts = []
         for alt_goal in all_goals:
             # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
             # d = (start-goal)'*Q*(start-goal)
@@ -385,12 +389,15 @@ class LegiblePathQRCost(FiniteDiffCost):
             n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
             d = (diff_all).T.dot(Q).dot(diff_all)
 
-            this_goal = np.exp(n) / np.exp(d)
+            # this_goal = np.exp(n) / np.exp(d)
+            this_goal = n + d
 
-            total_sum += this_goal
+            # total_sum += this_goal
 
             if goal != alt_goal:
-                log_sum += (1 * this_goal)
+                log_sum += (-1 * this_goal)
+                parts.append(-1 * this_goal)
+                
                 if self.FLAG_DEBUG_STAGE_AND_TERM:
                     # print("Value for alt target goal " + str(alt_goal))
                     print("This is the nontarget goal: " + str(alt_goal) + " -> " + str(this_goal))
@@ -398,6 +405,8 @@ class LegiblePathQRCost(FiniteDiffCost):
                 # print("Value for our target goal " + str(goal))
                 # J_g1 = this_goal
                 log_sum += this_goal
+                parts.append(this_goal)
+                
                 if self.FLAG_DEBUG_STAGE_AND_TERM:
                     print("This is the target goal " + str(alt_goal) + " -> " + str(this_goal))
     
@@ -417,13 +426,16 @@ class LegiblePathQRCost(FiniteDiffCost):
             print("Jg1, total")
             print(J_g1, total_sum)
 
-        J = J_g1 - (np.log(total_sum))
-        J = -1.0 * J
+        print(J_g1, parts)
+
+        # J = J_g1 - (np.log(total_sum))
+        J = J_g1 + log_sum
+        # J = -1.0 * J
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("overall J " + str(J))
 
-        J += (0.5 * u_diff.T.dot(R).dot(u_diff))
+        J = sum(parts)
 
         # # We want the path to be smooth, so we incentivize small and distributed u
 
@@ -696,6 +708,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             elapsed_time =  "%.2f seconds" % elapsed_time
             debug_text = elapsed_time + "        " + debug_text
 
+        return debug_text
+
     def hex_to_RGB(self, hex_str):
         """ #FFFFFF -> [255,255,255]"""
         #Pass 16 to the integer function for change of base
@@ -792,7 +806,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = .1
+        OBS_RADIUS      = .05
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -807,22 +821,44 @@ class LegiblePathQRCost(FiniteDiffCost):
             obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
             ax1.add_patch(obs)
 
-            x, y = obs_pt
-            THETA_ARROW_RADIUS = .2
+            ox, oy = obs_pt
+            THETA_ARROW_RADIUS = .5
             r = THETA_ARROW_RADIUS
 
+            # u, v = x * (np.cos(y), np.sin(y))
 
-            theta = observer.get_orientation()
-            ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            angle = observer.get_orientation()
+            angle_rads = angle * np.pi / 180
+            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
+            ax1.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
+
             half_fov = 60
             obs_color = 'yellow'
-            ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
-            ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
+            fov1 = (angle + half_fov) % 360
+            fov2 = (angle - half_fov) % 360
+
+            fov1_rads = fov1 * np.pi / 180
+            fov2_rads = fov2 * np.pi / 180
+
+            print("fov1, angle, fov2")
+            print(fov1, angle, fov2)
+
+            print("arrow1")
+            print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            print("arrow2")
+            print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+                        
+            ax1.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
+            ax1.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
+
+            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
 
 
         # Draw the legibility over time
 
-        # Example of how to draw an obstacle on the path
+        # Example of how to draw a polygon obstacle on the path
         if False:
             obs = [[.5, 1], [1, 1], [1, .5], [.5, .5], [.5, 1]]
             oxs, oys = zip(*obs)
