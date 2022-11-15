@@ -682,20 +682,19 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
     def get_debug_text(self, elapsed_time):
-        debug_text_a = "stage scale: " + str(self.scale_stage) + "        "
-        debug_text_b = "term scale: " + str(self.scale_term) + "\n"
-        debug_text_c = "coeff_terminal: " + str(self.coeff_terminal) + "        "
-        debug_text_d = "obstacle scale: " + str(self.exp.get_solver_scale_obstacle()) # + "\n"
+        debug_text_a = "stage scale: " + str(self.exp.get_solver_scale_stage()) + "        "
+        debug_text_b = "term scale: " + str(self.exp.get_solver_scale_term()) + "        "
+        debug_text_c = "coeff_terminal: " + str(self.exp.get_solver_coeff_terminal()) + "\n        "
+        debug_text_d = "obstacle scale: " + str(self.exp.get_solver_scale_obstacle()) + "        " # + "\n"
+        debug_text_e = "dt: " + str(self.exp.get_dt()) + "        "
+        debug_text_f = "N: " + str(self.exp.get_N()) # + "\n"
 
-        debug_text = debug_text_a + debug_text_b + debug_text_c + debug_text_d
+        debug_text = debug_text_a + debug_text_b + debug_text_c + debug_text_d + debug_text_e + debug_text_f
 
         if elapsed_time is not None:
             # time.strftime("%M:%S:%f", time.gmtime())
             elapsed_time =  "%.2f seconds" % elapsed_time
             debug_text = elapsed_time + "        " + debug_text
-
-        
-        return debug_text
 
     def hex_to_RGB(self, hex_str):
         """ #FFFFFF -> [255,255,255]"""
