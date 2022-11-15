@@ -663,7 +663,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             x = verts[i]
 
             aud = resto_envir.get_observers()
-            l = legib.f_legibility(resto_envir, goal, goals, verts[:i], aud)
+            l = legib.f_legibility_ilqr(resto_envir, goal, goals, verts[:i], aud)
             
             if i < len(us):
                 j = len(us) - 1
@@ -836,25 +836,20 @@ class LegiblePathQRCost(FiniteDiffCost):
         # print(color_grad_2)
         # print(outline_grad)
 
-        # Draw the path itself
-        ax1.plot(xs, ys, 'o--', lw=1, color='black', label="path", markersize=0)
-        ax1.scatter(xs, ys, c=outline_grad, s=20)
-        ax1.scatter(xs, ys, c=color_grad, s=10)
-        ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
-        _ = ax1.set_xlabel("X", fontweight='bold')
-        _ = ax1.set_ylabel("Y", fontweight='bold')
-        _ = ax1.set_title("Path through space", fontweight='bold')
-
-
-        TABLE_RADIUS    = self.exp.get_table_radius()
+        TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
+        TABLE_RADIUS           = TABLE_RADIUS_BUFFER / 2.0
         OBS_RADIUS      = .05
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
 
         for table in tables:
-            table = plt.Circle(table.get_center(), TABLE_RADIUS, color='g', clip_on=False)
+            table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
             ax1.add_patch(table)
+
+            table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
+            ax1.add_patch(table)
+
 
         for observer in observers:
             obs_color = 'orange'
@@ -896,6 +891,15 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
             # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
 
+        # Draw the path itself
+        ax1.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+        ax1.scatter(xs, ys, c=outline_grad, s=20)
+        ax1.scatter(xs, ys, c=color_grad, s=10)
+
+        ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = ax1.set_xlabel("X", fontweight='bold')
+        _ = ax1.set_ylabel("Y", fontweight='bold')
+        _ = ax1.set_title("Path through space", fontweight='bold')
 
         # Draw the legibility over time
 
@@ -907,8 +911,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         target = self.target_goal
         # for each goal, graph legibility
-        for j in range(len(self.goals)):
-            goal = self.goals[j]
+        for j in range(len(self.exp.get_goals())):
+            goal = self.exp.get_goals()[j]
             color = goal_colors[j]
 
             gx, gy = goal
@@ -919,12 +923,16 @@ class LegiblePathQRCost(FiniteDiffCost):
                 ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
             ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, goal)
+            print(goal)
+            print("LEGIB VALUES")
+            print(ls)
             ts = np.arange(len(ls)) * self.dt
 
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
 
-            ax3.plot(ts, scs, 'o--', lw=1, color=color, label=goal, markersize=0)
-            ax4.plot(ts, tcs, 'o--', lw=1, color=color, label=goal, markersize=0)
+
+            ax3.plot(ts, scs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
+            ax4.plot(ts, tcs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
 
             ax3.scatter(ts, scs, c=outline_grad, s=8)
             ax4.scatter(ts, tcs, c=outline_grad, s=8)
@@ -958,22 +966,22 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
         _ = ax2.set_title("Legibility according to old", fontweight='bold')
         ax2.legend() #loc="upper left")
-        ax2.set_ylim([0.0, 1.0])
+        ax2.set_ylim([-0.05, 1.05])
 
         _ = ax3.set_xlabel("Time", fontweight='bold')
         _ = ax3.set_ylabel("Stage Cost", fontweight='bold')
         _ = ax3.set_title("Stage cost during path", fontweight='bold')
-        ax3.legend() #loc="upper left")
+        # ax3.legend() #loc="upper left")
 
         _ = ax4.set_xlabel("Time", fontweight='bold')
         _ = ax4.set_ylabel("Term Cost", fontweight='bold')
         _ = ax4.set_title("Term cost during path", fontweight='bold')
-        ax4.legend() #loc="upper left")
+        # ax4.legend() #loc="upper left")
 
         _ = ax7.set_xlabel("Visibility", fontweight='bold')
         _ = ax7.set_ylabel("Percent", fontweight='bold')
         _ = ax7.set_title("Visibility to Audience over path", fontweight='bold')
-        ax7.legend() #loc="upper left")
+        # ax7.legend() #loc="upper left")
         
         ax2.grid(False)
         ax3.grid(False)
