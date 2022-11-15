@@ -251,14 +251,18 @@ def scenario_4_has_obstacles(goal_index=None):
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal4
     all_goals   = [goal1, goal4, goal2]
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal4
 
     # center points of tables, circular in iLQR world
     # radius needs to be agreed upon between this definition and the Obstacle class
     table_pts = []
     # table_pts.append([1.0, 1.0])
-    table_pts.append([3.0, 0.5])
+    # table_pts.append([3.0, 0.5])
+    table_pts.append([1.0, 1.0])
 
     exp = ex.PathingExperiment(start, target_goal, all_goals, table_pts=table_pts)
 
@@ -266,9 +270,9 @@ def scenario_4_has_obstacles(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = int(21 * 2)
+    N = int(41)
     Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
+    R = 1.0 * np.eye(exp.get_action_size())
     Qf = 1.0 * np.identity(2)
 
     # print(Q, R, Qf)
@@ -277,7 +281,7 @@ def scenario_4_has_obstacles(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    obs_scale = 10000000.0
+    obs_scale = 100000.0
     exp.set_solver_scale_obstacle(obs_scale)
 
     return exp
@@ -440,7 +444,7 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     # table_pts.append([3.0, 0.5])
 
     obs_pts = []
-    obs_pts.append([.5, -1.0, 0])
+    obs_pts.append([.5, -1.0, obs_angle])
     # obs_pts.append([4.5, 1.0, 180])
     # obs_pts.append([4.0, 0.5, 90])
 
@@ -638,13 +642,13 @@ def run_solver(exp):
         exit()
 
     # default value from text
-    max_reg = None # default value is 1e-10
+    max_reg = 1e-10 #None # default value is 1e-10
     ilqr = iLQR(dynamics, cost, N, max_reg=None)
 
     tol = 1e-6
     # tol = 1e-10
 
-    num_iterations = 40
+    num_iterations = 100
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration)
@@ -677,7 +681,7 @@ def exp_plain_symmetrical(goal_index=None, obs_angle=0):
     ###### COST/SOLVER OPTIONS
     exp.set_cost_label(ex.COST_LEGIB)
 
-    N = 51
+    N = 31
     dt = 0.1 #025
 
     exp.set_N(N)
@@ -690,7 +694,7 @@ def exp_plain_symmetrical(goal_index=None, obs_angle=0):
 
     run_solver(exp)
 
-def exp_observers(goal_index=None, obs_angle=0):
+def exp_observers(goal_index=None, obs_angle=None):
     ####################################
     ### SET UP EXPERIMENT
 
@@ -703,11 +707,13 @@ def exp_observers(goal_index=None, obs_angle=0):
     ###### COST/SOLVER OPTIONS
     exp.set_cost_label(ex.COST_OA)
 
-    N = 51
+    N = 31
     dt = 0.1 #025
 
     exp.set_N(N)
     exp.set_dt(dt)
+
+    # exp.set_R(200.0 * np.eye(2))
 
     ###### WEIGHTING FUNCTION 
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
@@ -738,7 +744,9 @@ def exp_obstacles(goal_index=None):
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
     # exp.set_f_label(ex.F_VIS)
     exp.set_f_label(ex.F_NONE)
-    exp.set_solver_scale_obstacle(10000000.0)
+    exp.set_solver_scale_obstacle(100.0)
+
+    exp.set_solver_scale_term(1000.0)
 
     run_solver(exp)
 
@@ -751,8 +759,9 @@ def exp_obstacles(goal_index=None):
 
 def main():
     print("Setting up experiment")
-    # exp_obstacles()
-    exp_observers(goal_index=0, obs_angle=30)
+    # exp_plain_symmetrical(goal_index=0)
+    # exp_obstacles(goal_index=2)
+    exp_observers(goal_index=0, obs_angle=120)
     # exp_observers(goal_index=1, obs_angle=30)
 
     print("Done")
