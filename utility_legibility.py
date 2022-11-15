@@ -126,7 +126,7 @@ def get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True, epsilon=.01)
 
 	MAX_DISTANCE = 500
 	for observer in aud:
-		obs_orient 	= observer.get_orientation() + 90
+		obs_orient 	= observer.get_orientation() #+ 90
 		# if obs_orient != 300:
 		# 	print(obs_orient)
 		# 	exit()
