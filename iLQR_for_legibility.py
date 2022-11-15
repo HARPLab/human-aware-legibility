@@ -420,6 +420,147 @@ def scenario_7_observer_offset(goal_index=None):
 
     return exp
 
+def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
+    start           = [0.0, 0.0]
+
+    goal1           = [2.0, -1.0]
+    goal3           = [2.0, 1.0]
+
+    all_goals   = [goal1, goal3]
+
+    if goal_index is None or goal_index > len(all_goals):
+        target_goal = goal3
+    else:
+        target_goal = all_goals[goal_index]
+    
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([.5, -1.0, 0])
+    # obs_pts.append([4.5, 1.0, 180])
+    # obs_pts.append([4.0, 0.5, 90])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = int(21)
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return exp
+
+
+def scenario_7_observer_rot90(goal_index=None):
+    start           = [0.0, 2.0]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal4           = [4.0, 1.0]
+
+    goal1           = [4.0, 1.0]
+    goal3           = [4.0, 3.0]
+
+    all_goals   = [goal1, goal3]
+
+    if goal_index is None or goal_index > len(all_goals):
+        target_goal = goal3
+    else:
+        target_goal = all_goals[goal_index]
+    
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([3.5, 1.0, 0])
+    # obs_pts.append([4.5, 1.0, 180])
+    # obs_pts.append([4.0, 0.5, 90])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = int(21 * 2)
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return exp
+
+def scenario_7_mirrored(goal_index=None, obs_angle=0):
+    start           = [-0.0, -2.0]
+
+    true_goal       = [-8.0, -2.0]
+    goal2           = [-2.0, -1.0]
+    goal4           = [-4.0, -1.0]
+
+    goal1           = [-4.0, -1.0]
+    goal3           = [-4.0, -3.0]
+
+    all_goals   = [goal1, goal3]
+
+    if goal_index is None or goal_index > len(all_goals):
+        target_goal = goal3
+    else:
+        target_goal = all_goals[goal_index]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    obs_pts.append([3.5, 1.0, obs_angle])
+    # obs_pts.append([4.5, 1.0, 180])
+    # obs_pts.append([4.0, 0.5, 90])
+
+    exp = ex.PathingExperiment(start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = int(21 * 2)
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 0.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return exp
+
 def scenario_6():
     restaurant      = None
     start           = [0, 0]
@@ -496,10 +637,17 @@ def run_solver(exp):
         print("Set to old school pathing")
         exit()
 
-    ilqr = iLQR(dynamics, cost, N)
+    # default value from text
+    max_reg = None # default value is 1e-10
+    ilqr = iLQR(dynamics, cost, N, max_reg=None)
+
+    tol = 1e-6
+    # tol = 1e-10
+
+    num_iterations = 40
 
     start_time = time.time()
-    xs, us = ilqr.fit(x0_raw, Urefline, tol=1e-6, n_iterations=N, on_iteration=on_iteration)
+    xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration)
     end_time = time.time()
 
     t = np.arange(N) * dt
@@ -516,17 +664,50 @@ def run_solver(exp):
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
 
 
+def exp_plain_symmetrical(goal_index=None, obs_angle=0):
+    ####################################
+    ### SET UP EXPERIMENT
+
+    exp = scenario_7_observer_on_zero(goal_index=goal_index, obs_angle=obs_angle)
+    # exp = scenario_7_mirrored(goal_index=goal_index, obs_angle=obs_angle)
+
+    ### STANDARD SOLVE DEFAULTS
+    print("Running solver")
+
+    ###### COST/SOLVER OPTIONS
+    exp.set_cost_label(ex.COST_LEGIB)
+
+    N = 51
+    dt = 0.1 #025
+
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    ###### WEIGHTING FUNCTION 
+    ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
+    # exp.set_f_label(ex.F_VIS)
+    exp.set_f_label(ex.F_NONE)
+
+    run_solver(exp)
+
 def exp_observers(goal_index=None, obs_angle=0):
     ####################################
     ### SET UP EXPERIMENT
 
-    exp = scenario_7_observer(goal_index=goal_index, obs_angle=obs_angle)
+    exp = scenario_7_observer_on_zero(goal_index=goal_index, obs_angle=obs_angle)
+    # exp = scenario_7_mirrored(goal_index=goal_index, obs_angle=obs_angle)
 
     ### STANDARD SOLVE DEFAULTS
     print("Running solver")
 
     ###### COST/SOLVER OPTIONS
     exp.set_cost_label(ex.COST_OA)
+
+    N = 51
+    dt = 0.1 #025
+
+    exp.set_N(N)
+    exp.set_dt(dt)
 
     ###### WEIGHTING FUNCTION 
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
@@ -572,6 +753,7 @@ def main():
     print("Setting up experiment")
     # exp_obstacles()
     exp_observers(goal_index=0, obs_angle=30)
+    # exp_observers(goal_index=1, obs_angle=30)
 
     print("Done")
 
