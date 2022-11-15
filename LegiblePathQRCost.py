@@ -794,10 +794,51 @@ class LegiblePathQRCost(FiniteDiffCost):
             if goal is self.target_goal:
                 target_color = color
 
-        color_grad = self.get_color_gradient('#000000', '#9F2B68', len(xs))
+        # '#9F2B68'
+        # '#60D497'
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        
+        in_vis = None
+        if len(vs) > 0:
+            in_vis = [i > 0 for i in vs[0]]
+        else:
+            in_vis = [True for i in ls]
+
+        color_grad = []
+        outline_grad = []
+        for i in range(len(in_vis)):
+            can_see = in_vis[i]
+            print(can_see)
+
+            if can_see == True:
+                color_grad.append(color_grad_1[i])
+                outline_grad.append('#13678A')
+            else:
+                color_grad.append(color_grad_2[i])
+                outline_grad.append('#f4722b')
+
+        # print("VIS")
+        # print(vs[0])
+
+        # print("IN VIS")
+        # print(len(in_vis))
+        # print(in_vis)
+        # print("COLOR_GRAD")
+        # print(len(color_grad))
+        # print(color_grad)
+        # print(len(xs))
+        # print(color_grad_1)
+        # print(color_grad_2)
+        # print(outline_grad)
 
         # Draw the path itself
         ax1.plot(xs, ys, 'o--', lw=1, color='black', label="path", markersize=0)
+        ax1.scatter(xs, ys, c=outline_grad, s=20)
         ax1.scatter(xs, ys, c=color_grad, s=10)
         ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = ax1.set_xlabel("X", fontweight='bold')
@@ -822,7 +863,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             ax1.add_patch(obs)
 
             ox, oy = obs_pt
-            THETA_ARROW_RADIUS = .5
+            THETA_ARROW_RADIUS = 1
             r = THETA_ARROW_RADIUS
 
             # u, v = x * (np.cos(y), np.sin(y))
@@ -841,13 +882,13 @@ class LegiblePathQRCost(FiniteDiffCost):
             fov1_rads = fov1 * np.pi / 180
             fov2_rads = fov2 * np.pi / 180
 
-            print("fov1, angle, fov2")
-            print(fov1, angle, fov2)
+            # print("fov1, angle, fov2")
+            # print(fov1, angle, fov2)
 
-            print("arrow1")
-            print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
-            print("arrow2")
-            print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+            # print("arrow1")
+            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            # print("arrow2")
+            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
                         
             ax1.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
             ax1.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
@@ -885,8 +926,11 @@ class LegiblePathQRCost(FiniteDiffCost):
             ax3.plot(ts, scs, 'o--', lw=1, color=color, label=goal, markersize=0)
             ax4.plot(ts, tcs, 'o--', lw=1, color=color, label=goal, markersize=0)
 
-            ax3.scatter(ts, scs, c=color_grad, s=4)
-            ax4.scatter(ts, tcs, c=color_grad, s=4)
+            ax3.scatter(ts, scs, c=outline_grad, s=8)
+            ax4.scatter(ts, tcs, c=outline_grad, s=8)
+
+            # ax3.scatter(ts, scs, c=color_grad, s=4)
+            # ax4.scatter(ts, tcs, c=color_grad, s=4)
 
             # ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
             # # print("plotted ax2")
@@ -895,7 +939,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
 
             for v in vs:
-                ax7.scatter(ts, v, c=color_grad, s=5)
+                ax7.scatter(ts, v, c=outline_grad, s=8)
+                # ax7.scatter(ts, v, c=color_grad, s=5)
                 ax7.plot(ts, v, lw=1, color=color, label=goal, markersize=0)
 
                 # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
