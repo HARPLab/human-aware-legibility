@@ -76,7 +76,7 @@ class NavigationDynamics(FiniteDiffDynamics):
             xnext = x
 
         print("xnext")
-        print(str(x) + " -> " + str(xnext))
+        print(str(x) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
 
         return xnext
 
