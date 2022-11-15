@@ -1017,7 +1017,7 @@ goal_helper_pts = []
 class Restaurant: 
 	def __init__(self, generate_type, tables=None, table_pts=None, obs_pts=None, goals=None, start=None, observers=None, dim=None):
 		self.generate_type = generate_type
-		print(generate_type)
+		# print(generate_type)
 		self.observers = []
 		self.goals = []
 		self.tables = []
@@ -1860,7 +1860,7 @@ class Restaurant:
 			all_points.append(pts)
 	
 		for pt in all_points:
-			print(pt)
+			# print(pt)
 			x, y = pt
 
 			if x < xmin:
