@@ -980,7 +980,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         _ = ax7.set_xlabel("Visibility", fontweight='bold')
         _ = ax7.set_ylabel("Percent", fontweight='bold')
-        _ = ax7.set_title("Visibility to Audience over path", fontweight='bold')
+        _ = ax7.set_title("Vis over path", fontweight='bold')
         # ax7.legend() #loc="upper left")
         
         ax2.grid(False)
