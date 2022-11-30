@@ -11,19 +11,22 @@ from DirectPathQRCost import DirectPathQRCost
 from ObstaclePathQRCost import ObstaclePathQRCost
 from LegibilityOGPathQRCost import LegibilityOGPathQRCost
 from OALegiblePathQRCost import OALegiblePathQRCost
+from OAObsPathQRCost import OAObsPathQRCost
 
 PREFIX_EXPORT = 'experiment_outputs/'
 
 # OPTIONS OF F FUNCTION
 F_NONE          = 'f_none'
 F_ANCA_LINEAR   = 'f_anca_linear'
-F_VIS           = 'f_vis'
+F_VIS_LIN           = 'f_vis_lin'
+F_VIS_BIN           = 'f_vis_bin'
 
 # OPTIONS FOR COST/SOLVER TYPE
 COST_DIRECT     = 'cost_direct'
 COST_LEGIB      = 'cost_legible'
 COST_OA         = 'cost_oalegib'
 COST_OBS        = 'cost_obstacles'
+COST_OA_AND_OBS = 'cost_oa_and_obs'
 
 # # SOLVER TYPE
 # SOLVER_LEGIB        = 'Solver=Legible'
@@ -91,6 +94,9 @@ class PathingExperiment():
             return OALegiblePathQRCost(self, Xrefline, Urefline)
         elif solver_label is COST_DIRECT:
             return DirectPathQRCost(self, Xrefline, Urefline)
+        elif solver_label is COST_OA_AND_OBS:
+            return OAObsPathQRCost(self, Xrefline, Urefline)
+
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
 
