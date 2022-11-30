@@ -81,9 +81,27 @@ class ObstaclePathQRCost(LegiblePathQRCost):
         goal = self.target_goal
         thresh = .0001
 
+        scale_term  = self.exp.get_solver_scale_term() #0.01 # 1/100
+        scale_stage = self.exp.get_solver_scale_stage() #1.5
 
-        if terminal or just_term: # or abs(i - self.N) < thresh:
-            return self.term_cost(x, i) #*1000
+        if just_term:   
+            scale_stage = 0
+
+        if just_stage:
+            scale_term  = 0
+
+
+        term_cost = 0 #self.term_cost(x, i)
+        x_diff = x - self.x_path[i]
+
+        u_diff = 0
+        if i < len(self.u_path):
+            u_diff = u - self.u_path[i]
+
+
+        if terminal or just_term: #abs(i - self.N) < thresh or
+            # TODO verify not a magic number
+            return scale_term * self.term_cost(x, i) # * 1000
         else:
             if self.FLAG_DEBUG_STAGE_AND_TERM:
                 # difference between this step and the end
@@ -92,43 +110,16 @@ class ObstaclePathQRCost(LegiblePathQRCost):
                 # term_cost = self.term_cost(x, i)
                 print(term_cost)
 
-        term_cost = 0
-        
+        term_cost = 0 #self.term_cost(x, i)
+
         f_func     = self.get_f()
         f_value    = f_func(i)
-        stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
-    
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("STAGE,\t TERM")
-            print(stage_costs, term_cost)
+        J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
-        # Log of remixes of term and stage cost weightings
-        # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
-        # stage_costs    = decimal.Decimal.ln(stage_costs)
-        # if i < 30:
-        #     stage_scale = 200
-        #     term_scale = 0.1
-        # else:
-        #     stage_scale = 10
-        #     term_scale = 1
-        # stage_scale = max([(self.N - i), 20])
-        # term_scale = 100
-        # stage_scale = 10
-        # term_scale = 1
-        # stage_scale = max([self.N-i, 10])
-        # stage_scale = abs(self.N-i)
-        # term_scale = i/self.N
-        # term_scale = 1
-        # stage_scale = 50
-
-        scale_term = self.scale_term #0.01 # 1/100
-        scale_stage = self.scale_stage #1.5
-
-        if just_term:   
-            scale_stage = 0
-
-        if just_stage:
-            scale_term  = 0
+        wt_legib     = -1.0 * 5
+        wt_lam       = .00001
+        wt_control   = 3.0 * 200.0
+        wt_obstacle = self.exp.get_solver_scale_obstacle()
 
         tables = self.restaurant.get_tables()
         obstacle_penalty = 0
@@ -146,15 +137,28 @@ class ObstaclePathQRCost(LegiblePathQRCost):
                 print("obstacle dist for " + str(x) + " " + str(obs_dist))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
-                obstacle_penalty += (obs_dist)**2 * self.exp.get_solver_scale_obstacle()
+                # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
+                obstacle_penalty += (obs_dist / TABLE_RADIUS)**2
 
                 # np.inf #
-
 
         if obstacle_penalty > 0:
             print("total obstacle penalty " + str(obstacle_penalty))
     
-        term_cost += obstacle_penalty
+        J =  (wt_legib      * J)
+        J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
+        J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
+        J += (wt_obstacle)  * obstacle_penalty
+    
+        stage_costs = J
+
+        # term_cost += obstacle_penalty
+        # stage_costs += obstacle_penalty
+        # term_cost += obstacle_penalty
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("STAGE,\t TERM")
+            print(stage_costs, term_cost)
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
