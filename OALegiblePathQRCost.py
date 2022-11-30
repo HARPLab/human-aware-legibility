@@ -24,8 +24,8 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 
+import PathingExperiment as ex
 from LegiblePathQRCost import LegiblePathQRCost
-
 
 class OALegiblePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
@@ -154,12 +154,23 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         # f_value    = f_func(i)
 
         f_func     = self.get_f()
-        f_value    = visibility #f_func(i)
+        f_value    = visibility
+
+        # KEEP THE VIS VALUE IF F_VIS_LIN, OR...
+        if self.exp.get_f_label() is ex.F_VIS_BIN:
+            if f_value > 0:
+                f_value = 1.0
+            else:
+                f_value = 0.0
+        elif self.exp.get_f_label() is ex.F_NONE:
+            f_value = 1.0
+
+        # J does not need to be in a particular range, it can be any max or min
         J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
-        wt_legib     = -1.0
-        wt_lam       = .001
-        wt_control   = 3.0
+        wt_legib     = 100.0
+        wt_lam       = .0001
+        wt_control   = 10.0
 
         J =  (wt_legib       * J)
         J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
@@ -312,7 +323,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        J_g1 *= .5
+        # J_g1 *= .5
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
