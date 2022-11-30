@@ -167,7 +167,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             def f(i):
                 return self.N - i
 
-        elif f_label is ex.F_VIS:
+        elif f_label is ex.F_VIS_LIN:
             def f(i):
                 pt = self.x_path[i]
                 restaurant  = self.exp.get_restaurant()
@@ -853,7 +853,11 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         for observer in observers:
             obs_color = 'orange'
+            obs_color_outer = '#f8d568'
             obs_pt  = observer.get_center()
+            obs     = plt.Circle(obs_pt, 2*OBS_RADIUS, color=obs_color_outer, clip_on=False)
+            ax1.add_patch(obs)
+
             obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
             ax1.add_patch(obs)
 
