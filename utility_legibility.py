@@ -107,6 +107,21 @@ def f_exp_single_normalized(t, pt, aud, path):
 	val = get_visibility_of_pt_w_observers(pt, aud, normalized=True)
 	return val
 
+# OBSERVER-AWARE LEGIBILITY PAPER ROMAN VERSION
+def f_exp_single_normalized_ilqr(t, pt, aud, path):
+	# if this is the omniscient case, return the original equation
+	if len(aud) == 0 and path is not None:
+		return float(len(path) - t + 1)
+		# return float(len(path) - t)
+	elif len(aud) == 0:
+		# print('ping')
+		return 1.0
+
+	# if in the (x, y) OR (x, y, t) case we can totally 
+	# still run this equation
+	val = get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True)
+	return val
+
 
 # ADA MASTER VISIBILITY EQUATION
 # ILQR OBSERVER-AWARE EQUATION
@@ -296,12 +311,15 @@ def prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settin
 	for g in goals:
 		p_raw = unnorm_prob_function(r, p_n1, pt, g, goals, cost_path_to_here, exp_settings)
 		g_array.append(p_raw)
-		if g is goal:
+		if g == goal:
+			print('target val ' + str(p_raw))
 			g_target = p_raw
 
 	if(sum(g_array) == 0):
 		print("weird g_array")
 		return decimal.Decimal(1.0)
+
+	print(g_array)
 
 	return decimal.Decimal(g_target / (sum(g_array)))
 
@@ -400,6 +418,8 @@ def prob_array_goal_given_signals(r, p_n1, pt, goal, goals, cost_path_to_here, e
 	# only add the value to the array if it's going to be relevant
 	if legib_method in get_set_legibility_method_uses_dist():
 		val_0 = prob_goal_given_path(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings, unnormalized_prob_goal_given_path)
+
+
 	if legib_method in get_set_legibility_method_uses_heading():
 		val_1 = prob_goal_given_heading(r, p_n1, pt, goal, goals, cost_path_to_here, exp_settings)
 
@@ -539,6 +559,110 @@ def get_min_direct_path_cost_between(r, p0, p1, exp_settings):
 
 def get_min_direct_path_length(r, p0, p1, exp_settings):
 	return get_dist(p0, p1)
+
+# OLD LEGIBILITY CODE MADE FOR ILQR 
+def f_legibility_ilqr(r, goal, goals, path, aud, f_function=None, exp_settings=None):
+	print("goal is ")
+	print(goal)
+
+	FLAG_is_denominator = True
+	
+	f_function = f_exp_single_normalized_ilqr
+
+	if path is None or len(path) == 0:
+		return 0
+	
+	legibility = decimal.Decimal(0)
+	divisor = decimal.Decimal(0)
+	total_dist = decimal.Decimal(0)
+
+	if exp_settings is not None and 'lambda' in exp_settings and exp_settings['lambda'] != '':
+		LAMBDA = decimal.Decimal(exp_settings['lambda'])
+		epsilon = decimal.Decimal(exp_settings['epsilon'])
+	else:
+		# TODO verify this
+		LAMBDA = 1.0
+		epsilon = 1.0
+
+	start = path[0]
+	total_cost = decimal.Decimal(0)
+	aug_path = get_costs_along_path(path)
+
+	path_length_list, length_of_total_path = get_path_length(path)
+	length_of_total_path = decimal.Decimal(length_of_total_path)
+
+	delta_x = decimal.Decimal(1.0) #length_of_total_path / len(aug_path)
+
+	t = 1
+	p_n = path[0]
+	divisor = decimal.Decimal(epsilon)
+	numerator = decimal.Decimal(0.0)
+
+	f_log = []
+	p_log = []
+
+	for pt, cost_to_here in aug_path:
+		f = decimal.Decimal(f_function(t, pt, aud, path))
+
+		# Get this probability from all the available signals
+		probs_array_goal_given_signals = prob_array_goal_given_signals(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
+		print("PROBS ARRAY")
+		print(probs_array_goal_given_signals)
+
+		# combine them according to the exp settings
+		prob_goal_signals_fused = prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, goals, cost_to_here, exp_settings)
+
+
+		# Then do the normal methods of combining them
+		f_log.append(float(f))
+		p_log.append(prob_goal_signals_fused)
+
+
+		if len(aud) == 0: # FLAG_is_denominator or 
+			numerator += (prob_goal_signals_fused * f) # * delta_x)
+			divisor += f #* delta_x
+		else:
+			numerator += (prob_goal_signals_fused * f) # * delta_x)
+			divisor += decimal.Decimal(1.0) #* delta_x
+
+		t = t + 1
+		total_cost += decimal.Decimal(f_cost(p_n, pt))
+		p_n = pt
+
+	if divisor == 0:
+		legibility = 0
+	else:
+		legibility = (numerator / divisor)
+
+	total_cost =  - decimal.Decimal(LAMBDA)*total_cost
+	overall = legibility + total_cost
+
+	# if len(aud) == 0:
+	# 	print(numerator)
+	# 	print(divisor)
+	# 	print(f_log)
+	# 	print(p_log)
+	# 	print(legibility)
+	# 	print(overall)
+	# 	print()
+
+	if legibility > 1.0 or legibility < 0:
+		print("BAD L ==> " + str(legibility))
+		# r.get_obs_label(aud)
+		goal_index = r.get_goal_index(goal)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+	elif (legibility == 1):
+		goal_index = r.get_goal_index(goal)
+		category = r.get_obs_label(aud)
+		bug_counter[goal_index, category] += 1
+
+		# print(len(aud))
+		if exp_settings['kill_1'] == True:
+			overall = 0.0
+
+	return legibility #overall
 
 # Given a 
 def f_legibility(r, goal, goals, path, aud, f_function=None, exp_settings=None):
