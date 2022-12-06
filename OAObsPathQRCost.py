@@ -93,10 +93,10 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
     #     return terminal_cost
 
-    def get_obstacle_penalty(self, x):
+    def get_obstacle_penalty(self, x, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .1
-        GOAL_RADIUS     = .05
+        GOAL_RADIUS     = .1 #.05
 
         tables      = self.restaurant.get_tables()
         goals       = self.restaurant.get_goals_all()
@@ -133,18 +133,19 @@ class OAObsPathQRCost(LegiblePathQRCost):
                 obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
 
         for g in goals:
-            obstacle = g
-            obs_dist = obstacle - x
-            obs_dist = np.abs(np.linalg.norm(obs_dist))
-            # Flip so edges lower cost than center
+            if g is not goal:
+                obstacle = g
+                obs_dist = obstacle - x
+                obs_dist = np.abs(np.linalg.norm(obs_dist))
+                # Flip so edges lower cost than center
 
-            if obs_dist < GOAL_RADIUS:
-                obs_dist = GOAL_RADIUS - obs_dist
-                print("obs obstacle dist for " + str(x) + " " + str(obs_dist))
-                # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
+                if obs_dist < GOAL_RADIUS:
+                    obs_dist = GOAL_RADIUS - obs_dist
+                    print("obs obstacle dist for " + str(x) + " " + str(obs_dist))
+                    # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
-                # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
-                obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
+                    # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
+                    obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
 
         return obstacle_penalty
 
@@ -223,7 +224,7 @@ class OAObsPathQRCost(LegiblePathQRCost):
         # J does not need to be in a particular range, it can be any max or min
         J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
-        wt_legib     = 1.0 #100.0
+        wt_legib     = 1000.0 #100.0
         wt_lam       = .0001
         wt_control   = 1.0 #10.0
         wt_obstacle  = self.exp.get_solver_scale_obstacle()
@@ -231,7 +232,7 @@ class OAObsPathQRCost(LegiblePathQRCost):
         J =  (wt_legib       * J)
         J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
         J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
-        J += (wt_obstacle)  * self.get_obstacle_penalty(x)
+        J += (wt_obstacle)  * self.get_obstacle_penalty(x, goal)
 
     
         stage_costs = J
