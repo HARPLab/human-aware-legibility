@@ -31,6 +31,10 @@ class OAObsPathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = True
 
+    FLAG_COST_PATH_OVERALL  = True
+    FLAG_OBS_FLAT_PENALTY   = True
+
+
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
         self.make_self(
@@ -96,10 +100,10 @@ class OAObsPathQRCost(LegiblePathQRCost):
     def get_obstacle_penalty(self, x, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .1
-        GOAL_RADIUS     = .1 #.05
+        GOAL_RADIUS     = .15 #.05
 
         tables      = self.restaurant.get_tables()
-        goals       = self.restaurant.get_goals_all()
+        goals       = self.goals
         observers   = self.restaurant.get_observers()
 
         obstacle_penalty = 0
@@ -115,7 +119,10 @@ class OAObsPathQRCost(LegiblePathQRCost):
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
                 # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
+                if self.FLAG_OBS_FLAT_PENALTY:
+                    obstacle_penalty += 1.0
                 obstacle_penalty += np.abs(obs_dist / TABLE_RADIUS)
+
                 # np.inf #
 
         for obs in observers:
@@ -130,6 +137,9 @@ class OAObsPathQRCost(LegiblePathQRCost):
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
                 # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
+                if self.FLAG_OBS_FLAT_PENALTY:
+                    obstacle_penalty += 1.0
+
                 obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
 
         for g in goals:
@@ -141,13 +151,89 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
                 if obs_dist < GOAL_RADIUS:
                     obs_dist = GOAL_RADIUS - obs_dist
-                    print("obs obstacle dist for " + str(x) + " " + str(obs_dist))
+                    print("goal obstacle dist for " + str(x) + " " + str(obs_dist))
+                    print(str(g))
                     # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
                     # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
+                    if self.FLAG_OBS_FLAT_PENALTY:
+                        obstacle_penalty += 1.0
                     obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
 
         return obstacle_penalty
+
+
+    def get_angle_between(self, p2, p1):
+        # https://stackoverflow.com/questions/31735499/calculate-angle-clockwise-between-two-points
+        ang1    = np.arctan2(*p1[::-1])
+        ang2    = np.arctan2(*p2[::-1])
+        heading = np.rad2deg((ang1 - ang2) % (2 * np.pi))
+
+        # Heading is in degrees
+        return heading
+
+    def angle_diff(self, a1, a2):
+        # target - source
+        a = a1 - a2
+        diff = (a + 180) % 360 - 180
+
+        return diff
+
+    def get_heading_cost(self, x, u, i, goal):
+        if i is 0:
+            return 0
+
+        goals       = self.goals
+
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
+
+        robot_heading = self.get_angle_between(x0, x1)
+        alt_goal_headings = []
+
+        for alt_goal in goals:
+            goal_heading = self.get_angle_between(x1, alt_goal)
+
+            if alt_goal is goal:
+                target_heading = goal_heading
+            else:
+                alt_goal_headings.append(goal_heading)
+
+            print(alt_goal)
+            print(" is at heading ")
+            print(goal_heading)
+
+        good_part = 180 - np.abs(self.angle_diff(robot_heading, target_heading))
+        good_part = good_part**2
+
+        bad_parts = 0
+        total = good_part
+        alt_goal_part_log = []
+
+        for alt_head in alt_goal_headings:
+            bad_part = 180 - np.abs(self.angle_diff(robot_heading, alt_head))
+            bad_part = bad_part**2
+
+            # bad_part += 1.0 / self.angle_diff(robot_heading, alt_head)
+            bad_parts += bad_part
+            total += bad_part
+            alt_goal_part_log.append(bad_part)
+            print("For goal at alt heading " + str(alt_head))
+            print(bad_part) 
+
+        heading_clarity_cost = bad_part / (total)
+        alt_goal_part_log = alt_goal_part_log / (total)
+
+        print("Given x of " + str(x) + " and robot heading of " + str(robot_heading))
+        print("for goals " + str(goals))
+        print(alt_goal_part_log)
+        print(heading_clarity_cost)
+        print(good_part, bad_parts)
+
+        return heading_clarity_cost
 
 
     # original version for plain path following
@@ -178,6 +264,8 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
         term_cost = 0 #self.term_cost(x, i)
 
+        # # xdiff from preferred line
+        # x_path[i] is always the goal
         x_diff = x - self.x_path[i]
 
         u_diff = 0
@@ -199,7 +287,12 @@ class OAObsPathQRCost(LegiblePathQRCost):
         restaurant  = self.exp.get_restaurant()
         observers   = restaurant.get_observers()
 
-        visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+        ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
+        if len(observers) > 0:
+            visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+        else:
+            visibility  = 1.0
+
         FLAG_OA_MIN_VIS = False
 
         # if FLAG_OA_MIN_VIS:
@@ -221,20 +314,30 @@ class OAObsPathQRCost(LegiblePathQRCost):
         elif self.exp.get_f_label() is ex.F_NONE:
             f_value = 1.0
 
-        # J does not need to be in a particular range, it can be any max or min
-        J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
-
-        wt_legib     = 1000.0 #100.0
+        wt_legib     = 100.0 #100.0
         wt_lam       = .0001
         wt_control   = 1.0 #10.0
-        wt_obstacle  = self.exp.get_solver_scale_obstacle()
+        wt_obstacle  = 1000.0 #self.exp.get_solver_scale_obstacle()
+        wt_heading   = 0.0 #100000.0
 
-        J =  (wt_legib       * J)
-        J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
-        J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
+        ##### SET WEIGHTS
+
+        # NORMALIZED AROUND IN/OUT OF SIGHT
+        wt_legib     = f_value * .9 #1000.0
+        wt_lam       = .9 * (1 - wt_legib)
+        # wt_control   = .4 * (1 - wt_legib)
+        wt_heading   = .1 * (1 - wt_legib) #100000.0
+
+        wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
+
+        # J does not need to be in a particular range, it can be any max or min
+        J = 0        
+        J += (wt_legib      * self.michelle_stage_cost(start, goal, x, u, i, terminal))
+        J += (wt_lam        * u_diff.T.dot(R).dot(u_diff))
+        # J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
         J += (wt_obstacle)  * self.get_obstacle_penalty(x, goal)
+        J += (wt_heading)   * self.get_heading_cost(x, u, i, goal)
 
-    
         stage_costs = J
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
