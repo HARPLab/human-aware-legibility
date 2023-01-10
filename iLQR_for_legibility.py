@@ -296,13 +296,16 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
 
-    target_goal = goal4
     all_goals   = [goal1, goal4, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
 
     # center points of tables, circular in iLQR world
     # radius needs to be agreed upon between this definition and the Obstacle class
     table_pts = []
-    table_pts.append([1.0, 1.0])
+    # table_pts.append([1.0, 1.0])
     table_pts.append([3.0, 0.5])
 
     obs_pts = []
@@ -314,7 +317,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 21
+    N = 31
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -323,7 +326,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    obs_scale = 0.0
+    obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
 
     return exp
@@ -444,7 +447,8 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     # table_pts.append([3.0, 0.5])
 
     obs_pts = []
-    obs_pts.append([.5, -1.0, obs_angle])
+    # obs_pts.append([.5, -1.0, obs_angle])
+    obs_pts.append([1.75, -1.0, obs_angle])
     # obs_pts.append([4.5, 1.0, 180])
     # obs_pts.append([4.0, 0.5, 90])
 
@@ -679,7 +683,8 @@ def exp_plain_symmetrical(goal_index=None, obs_angle=0):
     print("Running solver")
 
     ###### COST/SOLVER OPTIONS
-    exp.set_cost_label(ex.COST_LEGIB)
+    # exp.set_cost_label(ex.COST_LEGIB)
+    exp.set_cost_label(ex.COST_OA_AND_OBS)
 
     N = 31
     dt = 0.1 #025
@@ -689,8 +694,8 @@ def exp_plain_symmetrical(goal_index=None, obs_angle=0):
 
     ###### WEIGHTING FUNCTION 
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
-    # exp.set_f_label(ex.F_VIS)
-    exp.set_f_label(ex.F_NONE)
+    # exp.set_f_label(ex.F_VIS_LIN)
+    exp.set_f_label(ex.F_VIS_BIN)
 
     run_solver(exp)
 
@@ -713,11 +718,14 @@ def exp_observers(goal_index=None, obs_angle=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
+    exp.set_solver_scale_term(10000.0)
+
     # exp.set_R(200.0 * np.eye(2))
 
     ###### WEIGHTING FUNCTION 
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
-    exp.set_f_label(ex.F_VIS)
+    # exp.set_f_label(ex.F_VIS_LIN)
+    exp.set_f_label(ex.F_VIS_BIN)
     # exp.set_f_label(ex.F_NONE)
 
     run_solver(exp)
@@ -737,16 +745,55 @@ def exp_obstacles(goal_index=None):
 
     ###### COST/SOLVER OPTIONS
     # exp.set_cost_label(ex.COST_LEGIB)
-    exp.set_cost_label(ex.COST_OBS)
-    # exp.set_cost_label(ex.COST_OA)
+    # exp.set_cost_label(ex.COST_OBS)
+    exp.set_cost_label(ex.COST_OA_AND_OBS)
 
     ###### WEIGHTING FUNCTION 
     ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
-    # exp.set_f_label(ex.F_VIS)
-    exp.set_f_label(ex.F_NONE)
-    exp.set_solver_scale_obstacle(100.0)
+    exp.set_f_label(ex.F_VIS_LIN)
+    exp.set_f_label(ex.F_VIS_BIN)
+    # exp.set_f_label(ex.F_NONE)
 
+    exp.set_solver_scale_obstacle(1000.0)
     exp.set_solver_scale_term(1000.0)
+
+    run_solver(exp)
+
+    ###### RUN ADDITIONAL REMIXES
+    # exp.set_f_label(ex.F_NONE)
+    # run_solver(exp)
+
+    # exp.set_f_label(ex.F_ANCA_LINEAR)
+    # run_solver(exp)
+
+def exp_obstacles_and_observers(goal_index=None, obs_angle=0):
+    ####################################
+    ### SET UP EXPERIMENT
+    exp = scenario_4_has_obstacles_and_observer(goal_index=goal_index)
+
+    ### STANDARD SOLVE DEFAULTS
+    print("Running solver")
+
+    ###### COST/SOLVER OPTIONS
+    # exp.set_cost_label(ex.COST_LEGIB)
+    # exp.set_cost_label(ex.COST_OBS)
+    # exp.set_cost_label(ex.COST_OA)
+    exp.set_cost_label(ex.COST_OA_AND_OBS)
+
+    ###### WEIGHTING FUNCTION 
+    ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
+    exp.set_f_label(ex.F_VIS_BIN)
+    # exp.set_f_label(ex.F_VIS_LIN)
+    # exp.set_f_label(ex.F_NONE)
+
+    # exp.set_solver_scale_obstacle(100000000.0)
+    exp.set_solver_scale_obstacle(100000.0)
+    # exp.set_solver_scale_obstacle(0.0)
+    # exp.set_solver_scale_obstacle(100000.0)
+    # exp.set_solver_scale_term(10000000000000.0)
+    exp.set_solver_scale_term(1000.0)
+ 
+    exp.set_N(30)
 
     run_solver(exp)
 
@@ -759,10 +806,11 @@ def exp_obstacles(goal_index=None):
 
 def main():
     print("Setting up experiment")
-    # exp_plain_symmetrical(goal_index=0)
-    # exp_obstacles(goal_index=2)
-    exp_observers(goal_index=0, obs_angle=120)
-    # exp_observers(goal_index=1, obs_angle=30)
+    # exp_plain_symmetrical(goal_index=1)
+    # exp_obstacles(goal_index=1)
+    exp_obstacles_and_observers(goal_index=2, obs_angle=90)
+    # exp_obstacles(goal_index=1)
+    # exp_observers(goal_index=1, obs_angle=180)
 
     print("Done")
 
