@@ -31,6 +31,8 @@ import PathingExperiment as ex
 
 PREFIX_EXPORT = 'experiment_outputs/'
 
+FLAG_SHOW_IMAGE_POPUP = False
+
 # Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
@@ -1012,7 +1014,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             plt.legend(loc="upper left")
             # plt.xlim([xmin, xmax])
             # plt.ylim([ymin, ymax])
-            plt.show()
+            if FLAG_SHOW_IMAGE_POPUP:
+                plt.show()
             plt.clf()
 
         if False:
@@ -1025,7 +1028,8 @@ class LegiblePathQRCost(FiniteDiffCost):
             _ = plt.title("Magnitude of U Over Path", fontweight='bold')
             plt.tight_layout()
             plt.savefig(self.get_export_label() + 'u_graph.png')
-            plt.show()
+            if FLAG_SHOW_IMAGE_POPUP:
+                plt.show()
             plt.clf()
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
@@ -1040,12 +1044,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         # _ = plt.xlabel("Iteration")
         # _ = plt.ylabel("Total cost")
         # _ = plt.title("Total cost-to-go")
-        # plt.show()
+        # if FLAG_SHOW_IMAGE_POPUP:
+        #      plt.show()
         # plt.clf()
 
         plt.tight_layout()
         plt.savefig(self.get_export_label() + '-overview.png')
-        plt.show()
+        if FLAG_SHOW_IMAGE_POPUP:
+            plt.show()
         plt.clf()
 
         # sys.stdout = open('output.txt','wt')
