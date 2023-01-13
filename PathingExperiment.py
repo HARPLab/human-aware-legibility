@@ -35,6 +35,7 @@ COST_OA_AND_OBS = 'cost_oa_and_obs'
 # SOLVER_DIRECT       = 'Solver=Direct'
 
 class PathingExperiment():
+    label = "needslabel"
 
     # default values for solver
     solver_coeff_terminal   = 1000000.0
@@ -50,7 +51,12 @@ class PathingExperiment():
     cost_label  = COST_LEGIB
     f_label     = F_NONE
 
-    def __init__(self, restaurant, f_label=None, cost_label=None):
+    state_size  = 2
+    action_size = 2
+
+
+    def __init__(self, label, restaurant, f_label=None, cost_label=None):
+        self.exp_label = label
         self.restaurant = restaurant
 
         self.start          = restaurant.get_start()
@@ -66,7 +72,9 @@ class PathingExperiment():
         self.setup_file_id()
 
 
-    def __init__(self, start, target_goal, all_goals, restaurant=None, observers=[], table_pts=[], f_label=None, cost_label=None):
+    def __init__(self, label, start, target_goal, all_goals, restaurant=None, observers=[], table_pts=[], f_label=None, cost_label=None):
+        self.exp_label = label
+
         self.start = start
         self.target_goal = target_goal
         self.goals = all_goals
@@ -119,6 +127,12 @@ class PathingExperiment():
     def get_f_label(self):
         return self.f_label
 
+    def get_exp_label(self):
+        return self.exp_label
+
+    def set_exp_label(self, label):
+        self.exp_label = label
+
     def set_cost_label(self, label):
         self.cost_label = label
 
@@ -142,6 +156,12 @@ class PathingExperiment():
 
     def get_observers(self):
         return self.observers
+
+    def set_tables(self, x):
+        self.tables = x
+
+    def get_tables(self):
+        return self.tables
 
     def get_restaurant(self):
         return self.restaurant
