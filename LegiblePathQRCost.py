@@ -33,6 +33,8 @@ PREFIX_EXPORT = 'experiment_outputs/'
 
 FLAG_SHOW_IMAGE_POPUP = False
 
+goal_colors = ['red', 'blue', 'purple', 'green']
+
 # Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
     FLAG_DEBUG_J = False
@@ -729,6 +731,148 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
+    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None):
+        axarr = ax
+
+        axarr.set_aspect('equal')
+        axarr.grid(axis='y')
+
+        TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
+        TABLE_RADIUS           = TABLE_RADIUS_BUFFER / 2.0
+        OBS_RADIUS      = .05
+
+        tables      = self.restaurant.get_tables()
+        observers   = self.restaurant.get_observers()
+
+        xs, ys = zip(*verts)
+        gx, gy = zip(*self.goals)
+        sx, sy = self.start
+
+        for table in tables:
+            table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
+            axarr.add_patch(table)
+
+            table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
+            axarr.add_patch(table)
+
+
+        for observer in observers:
+            obs_color = 'orange'
+            obs_color_outer = '#f8d568'
+            obs_pt  = observer.get_center()
+            obs     = plt.Circle(obs_pt, 2*OBS_RADIUS, color=obs_color_outer, clip_on=False)
+            ax1.add_patch(obs)
+
+            obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
+            axarr.add_patch(obs)
+
+            ox, oy = obs_pt
+            THETA_ARROW_RADIUS = 1
+            r = THETA_ARROW_RADIUS
+
+            # u, v = x * (np.cos(y), np.sin(y))
+
+            angle = observer.get_orientation()
+            angle_rads = angle * np.pi / 180
+            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
+
+            half_fov = 60
+            obs_color = 'yellow'
+            fov1 = (angle + half_fov) % 360
+            fov2 = (angle - half_fov) % 360
+
+            fov1_rads = fov1 * np.pi / 180
+            fov2_rads = fov2 * np.pi / 180
+
+            # print("fov1, angle, fov2")
+            # print(fov1, angle, fov2)
+
+            # print("arrow1")
+            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            # print("arrow2")
+            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+                        
+            axarr.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
+
+            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
+
+        # COLOR BASED ON VISIBILITY
+        # Color code the goals for ease of reading graphs
+
+        for j in range(len(self.goals)):
+            goal = self.goals[j]
+            color = goal_colors[j]
+            if goal is self.target_goal:
+                target_color = color
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        
+        in_vis = None
+        if len(vs) > 0:
+            in_vis = [i > 0 for i in vs[0]]
+        else:
+            in_vis = [True for i in ls]
+
+        color_grad = []
+        outline_grad = []
+        for i in range(len(in_vis)):
+            can_see = in_vis[i]
+            print(can_see)
+
+            if can_see == True:
+                color_grad.append(color_grad_1[i])
+                outline_grad.append('#13678A')
+            else:
+                color_grad.append(color_grad_2[i])
+                outline_grad.append('#f4722b')
+
+        # Draw the path itself
+        axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+        axarr.scatter(xs, ys, c=outline_grad, s=20)
+        axarr.scatter(xs, ys, c=color_grad, s=10)
+
+        axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = axarr.set_xlabel("X", fontweight='bold')
+        _ = axarr.set_ylabel("Y", fontweight='bold')
+        _ = axarr.set_title("Path through space", fontweight='bold')
+
+        # Draw the legibility over time
+
+        # Example of how to draw a polygon obstacle on the path
+        if False:
+            obs = [[.5, 1], [1, 1], [1, .5], [.5, .5], [.5, 1]]
+            oxs, oys = zip(*obs)
+            axarr.fill(oxs, oys, "c")
+
+        target = self.target_goal
+        # for each goal, graph legibility
+        for j in range(len(self.exp.get_goals())):
+            goal = self.exp.get_goals()[j]
+            color = goal_colors[j]
+
+            gx, gy = goal
+
+            if gx == target[0] and gy == target[1]:
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
+            else:
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+        axarr.legend() #loc="upper left")
+        axarr.grid(False)
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
+        axarr.set_xlim([xmin, xmax])
+        axarr.set_ylim([ymin, ymax])
+
+        return axarr
+
     def graph_legibility_over_time(self, verts, us, elapsed_time=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         sys.stdout = open('path_overview.txt','wt')
@@ -766,14 +910,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax6 = axes['F'] # U magnitude over time
         ax7 = axes['G']
 
+        ax1 = self.get_overview_pic(verts, us, elapsed_time=None, ax=ax1)
 
         ax5.axis('off')
         debug_text = self.get_debug_text(elapsed_time)
         ax5.annotate(debug_text, (0.5, 0), xycoords='axes fraction', ha="center", va="center", wrap=True, fontweight='bold') #, fontsize=6)
 
-        ax1.set_aspect('equal')
-
-        ax1.grid(axis='y')
         ax2.grid(axis='y')
         ax3.grid(axis='y')
         ax4.grid(axis='y')
@@ -787,8 +929,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         # and graph it
         # ideally even combine it into a graph with the drawing itself
 
-        # Color code the goals for ease of reading graphs
-        goal_colors = ['red', 'blue', 'purple', 'green']
+        # # Color code the goals for ease of reading graphs
+        # goal_colors = ['red', 'blue', 'purple', 'green']
 
         for j in range(len(self.goals)):
             goal = self.goals[j]
@@ -796,13 +938,13 @@ class LegiblePathQRCost(FiniteDiffCost):
             if goal is self.target_goal:
                 target_color = color
 
-        # '#9F2B68'
-        # '#60D497'
+        # # '#9F2B68'
+        # # '#60D497'
 
         color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
         color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
 
-        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        # ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
         
         in_vis = None
@@ -824,96 +966,19 @@ class LegiblePathQRCost(FiniteDiffCost):
                 color_grad.append(color_grad_2[i])
                 outline_grad.append('#f4722b')
 
-        # print("VIS")
-        # print(vs[0])
+        # # print("VIS")
+        # # print(vs[0])
 
-        # print("IN VIS")
-        # print(len(in_vis))
-        # print(in_vis)
-        # print("COLOR_GRAD")
-        # print(len(color_grad))
-        # print(color_grad)
-        # print(len(xs))
-        # print(color_grad_1)
-        # print(color_grad_2)
-        # print(outline_grad)
-
-        TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
-        TABLE_RADIUS           = TABLE_RADIUS_BUFFER / 2.0
-        OBS_RADIUS      = .05
-
-        tables      = self.restaurant.get_tables()
-        observers   = self.restaurant.get_observers()
-
-        for table in tables:
-            table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
-            ax1.add_patch(table)
-
-            table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
-            ax1.add_patch(table)
-
-
-        for observer in observers:
-            obs_color = 'orange'
-            obs_color_outer = '#f8d568'
-            obs_pt  = observer.get_center()
-            obs     = plt.Circle(obs_pt, 2*OBS_RADIUS, color=obs_color_outer, clip_on=False)
-            ax1.add_patch(obs)
-
-            obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
-            ax1.add_patch(obs)
-
-            ox, oy = obs_pt
-            THETA_ARROW_RADIUS = 1
-            r = THETA_ARROW_RADIUS
-
-            # u, v = x * (np.cos(y), np.sin(y))
-
-            angle = observer.get_orientation()
-            angle_rads = angle * np.pi / 180
-            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
-            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
-            ax1.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
-
-            half_fov = 60
-            obs_color = 'yellow'
-            fov1 = (angle + half_fov) % 360
-            fov2 = (angle - half_fov) % 360
-
-            fov1_rads = fov1 * np.pi / 180
-            fov2_rads = fov2 * np.pi / 180
-
-            # print("fov1, angle, fov2")
-            # print(fov1, angle, fov2)
-
-            # print("arrow1")
-            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
-            # print("arrow2")
-            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
-                        
-            ax1.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
-            ax1.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
-
-            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
-            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
-
-        # Draw the path itself
-        ax1.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
-        ax1.scatter(xs, ys, c=outline_grad, s=20)
-        ax1.scatter(xs, ys, c=color_grad, s=10)
-
-        ax1.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
-        _ = ax1.set_xlabel("X", fontweight='bold')
-        _ = ax1.set_ylabel("Y", fontweight='bold')
-        _ = ax1.set_title("Path through space", fontweight='bold')
-
-        # Draw the legibility over time
-
-        # Example of how to draw a polygon obstacle on the path
-        if False:
-            obs = [[.5, 1], [1, 1], [1, .5], [.5, .5], [.5, 1]]
-            oxs, oys = zip(*obs)
-            ax1.fill(oxs, oys, "c")
+        # # print("IN VIS")
+        # # print(len(in_vis))
+        # # print(in_vis)
+        # # print("COLOR_GRAD")
+        # # print(len(color_grad))
+        # # print(color_grad)
+        # # print(len(xs))
+        # # print(color_grad_1)
+        # # print(color_grad_2)
+        # # print(outline_grad)
 
         target = self.target_goal
         # for each goal, graph legibility
@@ -922,11 +987,6 @@ class LegiblePathQRCost(FiniteDiffCost):
             color = goal_colors[j]
 
             gx, gy = goal
-
-            if gx == target[0] and gy == target[1]:
-                ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
-            else:
-                ax1.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
             ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, goal)
             print(goal)
@@ -960,13 +1020,6 @@ class LegiblePathQRCost(FiniteDiffCost):
                 # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
             # print("plotted ax4")
             # print("Plotted all data")
-
-
-        ax1.legend() #loc="upper left")
-        ax1.grid(False)
-        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
-        ax1.set_xlim([xmin, xmax])
-        ax1.set_ylim([ymin, ymax])
         
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
