@@ -92,7 +92,7 @@ def scenario_0(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 def scenario_1(goal_index=None):
     label = "scenario_0"
@@ -126,7 +126,7 @@ def scenario_1(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 
 def scenario_2(goal_index=None):
@@ -161,7 +161,7 @@ def scenario_2(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 def scenario_3(goal_index=None):
     label = "scenario_3"
@@ -196,7 +196,7 @@ def scenario_3(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 def scenario_5_large_scale(goal_index=None):
     label = "scenario_5_large_scale"
@@ -231,7 +231,7 @@ def scenario_5_large_scale(goal_index=None):
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 def scenario_4_has_obstacles(goal_index=None):
     label = "scenario_4_has_obs"
@@ -278,7 +278,7 @@ def scenario_4_has_obstacles(goal_index=None):
     obs_scale = 100000.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_4_has_obstacles_and_observer(goal_index=None):
     label = "scenario_4_has_obs"
@@ -325,7 +325,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_7_observer(goal_index=None, obs_angle=0):
     label = "scenario_7_obs"
@@ -375,7 +375,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_7_observer_offset(goal_index=None):
     label = "scenario_7_offset"
@@ -425,7 +425,7 @@ def scenario_7_observer_offset(goal_index=None):
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     label = "scenario_7_obs_on_zero"
@@ -472,7 +472,7 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 
 def scenario_7_observer_rot90(goal_index=None):
@@ -523,7 +523,7 @@ def scenario_7_observer_rot90(goal_index=None):
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_7_mirrored(goal_index=None, obs_angle=0):
     label = "scenario_7_mirrored"
@@ -573,7 +573,7 @@ def scenario_7_mirrored(goal_index=None, obs_angle=0):
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
 
-    return exp
+    return label, exp
 
 def scenario_6():
     label = "scenario_6"
@@ -608,7 +608,7 @@ def scenario_6():
     exp.set_N(N)
     exp.set_dt(dt)
 
-    return exp
+    return label, exp
 
 def get_scenario_set():
 	scenarios = {}
@@ -632,41 +632,35 @@ def get_scenario_set():
 	return scenarios
 
 
+def get_scenarios():
+	return get_scenario_set()
 
-class LegibTestScenarios():
+def get_scenarios_heading():
+	return get_scenario_set()
 
-	def __init__(self):
-		scenarios = get_scenario_set()
+def get_scenarios_obstacles():
+	all_scenarios = get_scenarios()
+	new_list = {}
 
-	def get_scenarios(self):
-		return self.scenarios
+	for key in all_scenarios.keys():
+		scenario = all_scenarios[key]
 
-	def get_scenarios_heading(self):
-		return get_scenario_set()
+		if len(scenario.get_tables()) > 0:
+			new_list[key] = scenario
 
-	def get_scenarios_obstacles(self):
-		all_scenarios = self.get_scenarios()
-		new_list = {}
+	return new_list
 
-		for key in all_scenarios.keys():
-			scenario = all_scenarios[key]
+def get_scenarios_observers():
+	all_scenarios = get_scenarios()
+	new_list = {}
 
-			if len(scenario.get_tables()) > 0:
-				new_list[key] = scenario
+	for key in all_scenarios.keys():
+		scenario = all_scenarios[key]
 
-		return new_list
+		if len(scenario.get_observers()) > 0:
+			new_list[key] = scenario
 
-	def get_scenarios_observers(self):
-		all_scenarios = self.get_scenarios()
-		new_list = {}
-
-		for key in all_scenarios.keys():
-			scenario = all_scenarios[key]
-
-			if len(scenario.get_observers()) > 0:
-				new_list[key] = scenario
-
-		return new_list
+	return new_list
 
 
 
