@@ -36,6 +36,7 @@ COST_OA_AND_OBS = 'cost_oa_and_obs'
 
 class PathingExperiment():
     label = "needslabel"
+    ax = None
 
     # default values for solver
     solver_coeff_terminal   = 1000000.0
@@ -48,12 +49,17 @@ class PathingExperiment():
     obstacle_table_radius   = .5
 
     # DEFAULT COST TYPE AND F TYPE
-    cost_label  = COST_LEGIB
-    f_label     = F_NONE
+    cost_label  = COST_OA_AND_OBS
+    f_label     = F_VIS_BIN
 
     state_size  = 2
     action_size = 2
 
+    dt  = .025
+    N   = int(21 * 2)
+    Qf  = np.identity(2) * 400.0
+    Q   = 1.0 * np.eye(state_size)
+    R   = 200.0 * np.eye(action_size)
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -66,8 +72,11 @@ class PathingExperiment():
         self.observers      = restaurant.get_observers()
         self.tables         = restaurant.get_tables()
 
-        self.f_label    = cost_label
-        self.cost_label = f_label
+        if f_label is not None:
+            self.f_label    = f_label
+    
+        if cost_label is not None:
+            self.cost_label = cost_label
 
         self.setup_file_id()
 
@@ -83,8 +92,11 @@ class PathingExperiment():
             restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, obs_pts=observers, dim=None)
         self.restaurant = restaurant
 
-        self.f_label    = cost_label
-        self.cost_label = f_label
+        if f_label is not None:
+            self.f_label    = f_label
+    
+        if cost_label is not None:
+            self.cost_label = cost_label
 
         self.observers = observers
         self.table_pts = table_pts
@@ -107,10 +119,11 @@ class PathingExperiment():
 
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
+        print("''''''" + str(solver_label) + "''''''")
 
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
-        self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+        self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label
         try:
             os.mkdir(PREFIX_EXPORT + self.file_id)
         except:
@@ -161,7 +174,7 @@ class PathingExperiment():
         self.tables = x
 
     def get_tables(self):
-        return self.tables
+        return self.restaurant.get_tables()
 
     def get_restaurant(self):
         return self.restaurant
@@ -243,4 +256,15 @@ class PathingExperiment():
     def set_lambda_cost_path_coeff(self, l):
         self.lambda_cost_path_coeff = l
 
+    def set_heading_on(self, v):
+        self.heading_on = v
+
+    def get_is_heading_on(self):
+        return self.heading_on
+
+    def set_ax(self, v):
+        self.ax = v
+
+    def get_ax(self):
+        return self.ax
 
