@@ -86,3 +86,5 @@ def run_solver(exp):
 
     elapsed_time = end_time - start_time
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time)
+
+    return verts, us, cost
