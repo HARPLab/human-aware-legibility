@@ -34,7 +34,6 @@ class OAObsPathQRCost(LegiblePathQRCost):
     FLAG_COST_PATH_OVERALL  = True
     FLAG_OBS_FLAT_PENALTY   = True
 
-
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
         self.make_self(
@@ -327,8 +326,10 @@ class OAObsPathQRCost(LegiblePathQRCost):
         wt_lam       = .9 * (1 - wt_legib)
         # wt_control   = .4 * (1 - wt_legib)
         wt_heading   = .1 * (1 - wt_legib) #100000.0
-
         wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
+
+        if self.exp.get_is_heading_on() is False:
+            wt_heading = 0.0
 
         # J does not need to be in a particular range, it can be any max or min
         J = 0        
