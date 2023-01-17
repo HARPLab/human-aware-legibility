@@ -32,26 +32,26 @@ import utility_environ_descrip as resto
 
 
 def scenario_1():
-	label = "TEST1"
-	full_label = (label)
+    label = "TEST1"
+    full_label = (label)
 
 
-	restaurant      = None
-	start           = [0, 0]
+    restaurant      = None
+    start           = [0, 0]
 
-	true_goal       = [0.0, 0.0]
-	goal2           = [2.5, 1.0]
-	goal4           = [4.0, 1.5]
+    true_goal       = [0.0, 0.0]
+    goal2           = [2.5, 1.0]
+    goal4           = [4.0, 1.5]
 
-	goal1           = [5.0, 2.0]
-	goal3           = [1.0, 3.5]
+    goal1           = [5.0, 2.0]
+    goal3           = [1.0, 3.5]
 
-	target_goal = goal4
-	# start = goal3
+    target_goal = goal4
+    # start = goal3
 
-	all_goals   = [goal1, goal3, goal2, goal4]
+    all_goals   = [goal1, goal3, goal2, goal4]
 
-	return full_label, ex.PathingExperiment(start, target_goal, all_goals)
+    return full_label, ex.PathingExperiment(start, target_goal, all_goals)
 
 def scenario_0(goal_index=None):
     label = "scenario_0"
@@ -611,56 +611,59 @@ def scenario_6():
     return label, exp
 
 def get_scenario_set():
-	scenarios = {}
+    scenarios = {}
 
-	# TEST SCENARIO
-	label, exp = scenario_0()
-	scenarios[label] = exp
+    # TEST SCENARIO
+    label, exp = scenario_0()
+    scenarios[label] = exp
 
-	# TEST SCENARIO
-	label, exp = scenario_1()
-	scenarios[label] = exp
+    label, exp = scenario_4_has_obstacles_and_observer(goal_index=None)
+    scenarios[label] = exp
 
-	# TEST SCENARIO
-	label, exp = scenario_2()
-	scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_1()
+    # scenarios[label] = exp
 
-	# TEST SCENARIO
-	label, exp = scenario_3()
-	scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_2()
+    # scenarios[label] = exp
 
-	return scenarios
+    # # TEST SCENARIO
+    # label, exp = scenario_3()
+    # scenarios[label] = exp
+
+    return scenarios
 
 
 def get_scenarios():
-	return get_scenario_set()
+    return get_scenario_set()
 
 def get_scenarios_heading():
-	return get_scenario_set()
+    return get_scenario_set()
 
 def get_scenarios_obstacles():
-	all_scenarios = get_scenarios()
-	new_list = {}
+    all_scenarios = get_scenarios()
+    new_list = {}
 
-	for key in all_scenarios.keys():
-		scenario = all_scenarios[key]
+    for key in all_scenarios.keys():
+        scenario = all_scenarios[key]
 
-		if len(scenario.get_tables()) > 0:
-			new_list[key] = scenario
+        if len(scenario.get_tables()) > 0:
+            new_list[key] = scenario
 
-	return new_list
+    return new_list
 
 def get_scenarios_observers():
-	all_scenarios = get_scenarios()
-	new_list = {}
+    all_scenarios = get_scenarios()
+    new_list = {}
 
-	for key in all_scenarios.keys():
-		scenario = all_scenarios[key]
+    for key in all_scenarios.keys():
+        scenario = all_scenarios[key]
 
-		if len(scenario.get_observers()) > 0:
-			new_list[key] = scenario
+        if len(scenario.get_observers()) > 0:
+            new_list[key] = scenario
 
-	return new_list
+    return new_list
 
 
 
