@@ -287,10 +287,13 @@ class OAObsPathQRCost(LegiblePathQRCost):
         observers   = restaurant.get_observers()
 
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
-        if len(observers) > 0:
-            visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+        if self.exp.get_is_oa_on() is True:
+            if len(observers) > 0:
+                visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
+            else:
+                visibility  = 1.0
         else:
-            visibility  = 1.0
+            visibility = 1.0
 
         FLAG_OA_MIN_VIS = False
 

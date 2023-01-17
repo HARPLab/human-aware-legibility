@@ -61,6 +61,9 @@ class PathingExperiment():
     Q   = 1.0 * np.eye(state_size)
     R   = 200.0 * np.eye(action_size)
 
+    oa_on       = True
+    heading_on  = True
+
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
         self.restaurant = restaurant
@@ -261,6 +264,12 @@ class PathingExperiment():
 
     def get_is_heading_on(self):
         return self.heading_on
+
+    def set_oa_on(self, v):
+        self.oa_on = v
+
+    def get_is_oa_on(self):
+        return self.oa_on
 
     def set_ax(self, v):
         self.ax = v
