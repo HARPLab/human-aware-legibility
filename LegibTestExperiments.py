@@ -46,11 +46,12 @@ import utility_environ_descrip as resto
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
-
-    test_heading_useful_or_no(dashboard_folder)
+    test_observers_being_respected(dashboard_folder)
     exit()
     test_obstacles_being_avoided(dashboard_folder)
-    test_observers_being_respected(dashboard_folder)
+    exit()
+    test_heading_useful_or_no(dashboard_folder)
+    exit()
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -118,15 +119,44 @@ def test_heading_useful_or_no(dash_folder):
 def test_obstacles_being_avoided(dash_folder):
     scenarios = test_scenarios.get_scenarios_obstacles()
 
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        obs_scenario = copy.copy(scenario)
+
+        # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+        obs_scenario.set_heading_on(True)
+        save_location = get_file_id_for_exp(dash_folder, "obs-" + obs_scenario.get_exp_label())
+
+        verts_with_obs, us_with_obs, cost_with_obs = solver.run_solver(obs_scenario)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, (ax1) = plt.subplots(ncols=1, figsize=(4, 3))
+
+        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
+        _ = ax1.set_title("Check for Obstacle Issues", fontweight='bold')
+
+        plt.tight_layout()
+        plt.savefig(save_location + ".png")
+
 
 def test_observers_being_respected(dash_folder):
     # for each test scenario
     # compare with observer vs no
     scenarios = test_scenarios.get_scenarios_observers()
 
+    pass
+
+
 
 def test_observers_rotated(dash_folder):
     scenarios = test_scenarios.get_scenarios_observers()
+    # 3 to either side at +30, +60, +90, and minus the same
+
+    pass 
+
 
 
 def generate_scenarios_with_observer_rotating():
