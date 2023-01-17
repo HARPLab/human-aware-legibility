@@ -763,7 +763,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             obs_color_outer = '#f8d568'
             obs_pt  = observer.get_center()
             obs     = plt.Circle(obs_pt, 2*OBS_RADIUS, color=obs_color_outer, clip_on=False)
-            ax1.add_patch(obs)
+            axarr.add_patch(obs)
 
             obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
             axarr.add_patch(obs)
