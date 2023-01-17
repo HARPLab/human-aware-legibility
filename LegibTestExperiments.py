@@ -147,7 +147,38 @@ def test_observers_being_respected(dash_folder):
     # compare with observer vs no
     scenarios = test_scenarios.get_scenarios_observers()
 
-    pass
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        with_oa = copy.copy(scenario)
+        wout_oa = copy.copy(scenario)
+
+        # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+        with_oa.set_oa_on(True)
+        wout_oa.set_oa_on(False)
+        
+        save_location = get_file_id_for_exp(dash_folder, "oa-" + wout_oa.get_exp_label())
+
+        verts_with_oa, us_with_oa, cost_with_oa = solver.run_solver(with_oa)
+        verts_wout_oa, us_wout_oa, cost_wout_oa = solver.run_solver(wout_oa)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
+
+        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1)
+        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2)
+
+        # _ = ax1.set_xlabel("Time", fontweight='bold')
+        # _ = ax1.set_ylabel("Legibility", fontweight='bold')
+        _ = ax1.set_title("Omniscient", fontweight='bold')
+        _ = ax2.set_title("Observer-Aware", fontweight='bold')
+        # ax2.legend() #loc="upper left")
+        # ax2.set_ylim([-0.05, 1.05])
+
+        plt.tight_layout()
+        plt.savefig(save_location + ".png")
 
 
 
