@@ -37,6 +37,8 @@ goal_colors = ['red', 'blue', 'purple', 'green']
 
 # Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
+    PREFIX_EXPORT = PREFIX_EXPORT
+
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = False
 
