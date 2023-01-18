@@ -101,9 +101,9 @@ class OAObsPathQRCost(LegiblePathQRCost):
         OBS_RADIUS      = .1
         GOAL_RADIUS     = .15 #.05
 
-        tables      = self.restaurant.get_tables()
+        tables      = self.exp.get_tables()
         goals       = self.goals
-        observers   = self.restaurant.get_observers()
+        observers   = self.exp.get_observers()
 
         obstacle_penalty = 0
         for table in tables:
@@ -284,7 +284,7 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
         # VISIBILITY COMPONENT
         restaurant  = self.exp.get_restaurant()
-        observers   = restaurant.get_observers()
+        observers   = self.exp.get_observers()
 
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
         if self.exp.get_is_oa_on() is True:
