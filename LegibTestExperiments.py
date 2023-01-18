@@ -47,10 +47,10 @@ import utility_environ_descrip as resto
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
-    # test_observers_rotated(dashboard_folder)
+    test_observers_rotated(dashboard_folder)
     # exit()
-    test_observers_being_respected(dashboard_folder)
-    exit()
+    # test_observers_being_respected(dashboard_folder)
+    # exit()
     # test_obstacles_being_avoided(dashboard_folder)
     # exit()
     # test_heading_useful_or_no(dashboard_folder)
@@ -218,13 +218,15 @@ def test_observers_rotated(dash_folder):
         ax_mappings = {}
         ax_mappings[0] = axes['D']
 
-        ax_mappings[30] = axes['A']
-        ax_mappings[60] = axes['B']
-        ax_mappings[90] = axes['C']
+        ax_mappings[30] = axes['I']
+        ax_mappings[60] = axes['C']
+        ax_mappings[90] = axes['B']
+        ax_mappings[120] = axes['A']
         
-        ax_mappings[-30] = axes['F']
-        ax_mappings[-60] = axes['G']
-        ax_mappings[-90] = axes['H']
+        ax_mappings[-30] = axes['J']
+        ax_mappings[-60] = axes['F']
+        ax_mappings[-90] = axes['G']
+        ax_mappings[-120] = axes['H']
 
         for key in outputs.keys():
             ax = ax_mappings[key]
@@ -232,10 +234,13 @@ def test_observers_rotated(dash_folder):
 
             if key > 0:
                 amount_label = "+"
+            else:
+                amount_label = ""
             amount_label += str(key)
 
             cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax)
             _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
+            ax.get_legend().remove()
     
         plt.tight_layout()
         plt.savefig(save_location + ".png")
@@ -247,15 +252,15 @@ def generate_scenarios_with_observer_rotating(exp):
     observer = exp.get_observers()
 
     scenario_dict = {}
-    for offset in [90, 60, 30, 0, -30, -60, -90]:
+    for offset in [120, 90, 60, 30, 0, -30, -60, -90, -120]:
         rot_scenario = copy.copy(exp)
         obs = rot_scenario.get_observers()
         new_obs = copy.copy(obs[0])
 
-        new_angle = new_obs[2] + offset
+        new_angle = new_obs.get_orientation() + offset
         new_angle = new_angle % 360
 
-        new_obs[2] = new_angle
+        new_obs.set_orientation(new_angle)
         new_obs_list = [new_obs]
         rot_scenario.set_observers(new_obs_list)
 
