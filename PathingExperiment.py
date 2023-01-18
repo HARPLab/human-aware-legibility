@@ -101,7 +101,7 @@ class PathingExperiment():
         if cost_label is not None:
             self.cost_label = cost_label
 
-        self.observers = observers
+        self.observers      = restaurant.get_observers()
         self.table_pts = table_pts
 
         self.setup_file_id()
@@ -168,7 +168,13 @@ class PathingExperiment():
         return self.action_size
 
     def set_observers(self, x):
-        self.observers = x
+        if type(x[0]) is resto.Observer:
+            restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=self.table_pts, goals=self.goals, start=self.start, observers=x, dim=None)
+        else:
+            restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=self.table_pts, goals=self.goals, start=self.start, obs_pts=x, dim=None)
+        
+        self.observers      = restaurant.get_observers()
+        self.restaurant = restaurant
 
     def get_observers(self):
         return self.observers
