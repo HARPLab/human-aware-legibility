@@ -864,6 +864,9 @@ class Observer:
 	def get_orientation(self):
 		return self.orientation
 
+	def set_orientation(self, o):
+		self.orientation = o
+
 	# in degrees
 	def get_FOV(self):
 		return self.FOV_angle
