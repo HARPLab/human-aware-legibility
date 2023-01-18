@@ -20,6 +20,7 @@ from datetime import timedelta, datetime
 # from ilqr.cost import QRCost, PathQRCost
 # from ilqr.dynamics import constrain
 # from ilqr.dynamics import tensor_constrain
+import utility_environ_descrip as resto
 
 import PathingExperiment as ex
 from LegiblePathQRCost import LegiblePathQRCost
@@ -46,12 +47,14 @@ import utility_environ_descrip as resto
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
+    # test_observers_rotated(dashboard_folder)
+    # exit()
     test_observers_being_respected(dashboard_folder)
     exit()
-    test_obstacles_being_avoided(dashboard_folder)
-    exit()
-    test_heading_useful_or_no(dashboard_folder)
-    exit()
+    # test_obstacles_being_avoided(dashboard_folder)
+    # exit()
+    # test_heading_useful_or_no(dashboard_folder)
+    # exit()
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -186,13 +189,79 @@ def test_observers_rotated(dash_folder):
     scenarios = test_scenarios.get_scenarios_observers()
     # 3 to either side at +30, +60, +90, and minus the same
 
-    pass 
+    # for each test scenario
+    # compare with observer vs no
+    scenarios = test_scenarios.get_scenarios_observers()
+
+    scenario_output_list = []
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        rot_scenarios = generate_scenarios_with_observer_rotating(scenario)
+        save_location = get_file_id_for_exp(dash_folder, "rot-" + scenario.get_exp_label())
+        
+        outputs = {}
+        for rkey in rot_scenarios.keys():
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            rot_scenario = rot_scenarios[rkey]
+            rot_scenario.set_oa_on(True)
+            
+            verts_with_rot, us_with_rot, cost_with_rot = solver.run_solver(rot_scenario)
+            outputs[rkey] = verts_with_rot, us_with_rot, cost_with_rot
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+
+        ax_mappings = {}
+        ax_mappings[0] = axes['D']
+
+        ax_mappings[30] = axes['A']
+        ax_mappings[60] = axes['B']
+        ax_mappings[90] = axes['C']
+        
+        ax_mappings[-30] = axes['F']
+        ax_mappings[-60] = axes['G']
+        ax_mappings[-90] = axes['H']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_rot, us_with_rot, cost_with_rot = outputs[key]
+
+            if key > 0:
+                amount_label = "+"
+            amount_label += str(key)
+
+            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax)
+            _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
+    
+        plt.tight_layout()
+        plt.savefig(save_location + ".png")
 
 
 
-def generate_scenarios_with_observer_rotating():
+def generate_scenarios_with_observer_rotating(exp):
     # for each scenario, generate 
-    pass
+    observer = exp.get_observers()
+
+    scenario_dict = {}
+    for offset in [90, 60, 30, 0, -30, -60, -90]:
+        rot_scenario = copy.copy(exp)
+        obs = rot_scenario.get_observers()
+        new_obs = copy.copy(obs[0])
+
+        new_angle = new_obs[2] + offset
+        new_angle = new_angle % 360
+
+        new_obs[2] = new_angle
+        new_obs_list = [new_obs]
+        rot_scenario.set_observers(new_obs_list)
+
+        scenario_dict[offset] = rot_scenario
+
+    return scenario_dict
 
 def main():
     run_all_tests()
