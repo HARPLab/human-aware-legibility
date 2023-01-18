@@ -47,7 +47,8 @@ import utility_environ_descrip as resto
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
-    test_observers_rotated(dashboard_folder)
+    test_amount_of_slack(dashboard_folder)
+    # test_observers_rotated(dashboard_folder)
     # exit()
     # test_observers_being_respected(dashboard_folder)
     # exit()
@@ -184,6 +185,66 @@ def test_observers_being_respected(dash_folder):
         plt.savefig(save_location + ".png")
 
 
+def test_amount_of_slack(dash_folder):
+    scenarios = test_scenarios.get_scenarios()
+
+    scenario_output_list = []
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        base_N = scenario.get_N()
+
+        # n_scenarios = generate_8_scenarios_varying_N(scenario)
+        save_location = get_file_id_for_exp(dash_folder, "N-" + scenario.get_exp_label())
+        
+        scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
+
+        outputs = {}
+        label_dict = {}
+        for multiplier in scale_set:
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            n_scenario = copy.copy(scenario)
+            new_N = int(base_N * multiplier)
+            n_percent = int(100.0 * multiplier)
+
+            label_dict[multiplier] = n_percent
+            n_scenario.set_N(new_N)
+            
+            verts_with_n, us_with_n, cost_with_n = solver.run_solver(n_scenario)
+            outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+
+        ax_mappings = {}
+        ax_mappings[scale_set[4]] = axes['D']
+
+        ax_mappings[scale_set[3]] = axes['I']
+        ax_mappings[scale_set[2]] = axes['C']
+        ax_mappings[scale_set[1]] = axes['B']
+        ax_mappings[scale_set[0]] = axes['A']
+        
+        ax_mappings[scale_set[5]] = axes['J']
+        ax_mappings[scale_set[6]] = axes['F']
+        ax_mappings[scale_set[7]] = axes['G']
+        ax_mappings[scale_set[8]] = axes['H']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_n, us_with_n, cost_with_n = outputs[key]
+
+            label = str(label_dict[key]) + "%"
+
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax)
+            _ = ax.set_title("N= " + label, fontweight='bold')
+            ax.get_legend().remove()
+    
+        plt.tight_layout()
+        fig.suptitle("N=" + str(base_N))
+        plt.savefig(save_location + ".png")
+
 
 def test_observers_rotated(dash_folder):
     scenarios = test_scenarios.get_scenarios_observers()
@@ -191,7 +252,6 @@ def test_observers_rotated(dash_folder):
 
     # for each test scenario
     # compare with observer vs no
-    scenarios = test_scenarios.get_scenarios_observers()
 
     scenario_output_list = []
     for key in scenarios.keys():
