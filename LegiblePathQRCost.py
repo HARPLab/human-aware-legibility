@@ -648,6 +648,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         xbuffer     = .1 * xwidth
         ybuffer     = .1 * yheight
 
+        if xbuffer == 0:
+            xbuffer = 1.0
+
+        if ybuffer == 0:
+            ybuffer = 1.0
+
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
     def get_export_label(self):
@@ -733,7 +739,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
-    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None):
+    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None):
         axarr = ax
 
         axarr.set_aspect('equal')
@@ -873,9 +879,16 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.set_xlim([xmin, xmax])
         axarr.set_ylim([ymin, ymax])
 
+        # info_packet = [converged, info, iteration_count]
+        if info_packet is not None:
+            converged, info, iteration_count = info_packet
+            blurb = str(converged) + " in " + str(iteration_count) 
+        else:
+            blurb = ""
+
         return axarr
 
-    def graph_legibility_over_time(self, verts, us, elapsed_time=None):
+    def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         sys.stdout = open('path_overview.txt','wt')
 
@@ -912,7 +925,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax6 = axes['F'] # U magnitude over time
         ax7 = axes['G']
 
-        ax1 = self.get_overview_pic(verts, us, elapsed_time=None, ax=ax1)
+        ax1 = self.get_overview_pic(verts, us, elapsed_time=None, ax=ax1, info_packet=status_packet)
 
         ax5.axis('off')
         debug_text = self.get_debug_text(elapsed_time)
