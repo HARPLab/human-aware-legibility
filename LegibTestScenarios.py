@@ -31,6 +31,320 @@ import PathingExperiment as ex
 import utility_environ_descrip as resto
 
 
+def scenario_test_1(goal_index=None):
+    label = "test1_asym_g" + str(goal_index)
+
+    start           = [0.0, 3.0]
+
+    goal1           = [3.5, 4.0]
+    goal2           = [3.0, 2.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_2(goal_index=None):
+    label = "test2_colin_g" + str(goal_index)
+
+    start           = [0.0, 0.0]
+
+    goal1           = [1.0, 0] #-0.001]
+    goal2           = [1.5, 0] #-0.003]
+    # goal3           = [2.0, 0] #-0.002]
+    # goal4           = [2.5, 0] #-0.002]
+
+    # goal1           = [0.0, 0] #-0.001]
+    # goal2           = [0.0, 0] #-0.003]
+    # goal3           = [0.0, 0] #-0.002]
+
+    all_goals   = [goal1, goal2] #, goal3, goal4]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 36
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_3(goal_index=None):
+    label = "test3_colin_g" + str(goal_index)
+
+    start           = [0.0, 0.0]
+
+    goal1           = [1.0, 1.0]
+    goal2           = [2.0, 2.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_4(goal_index=None):
+    label = "test4_needle_g" + str(goal_index)
+
+    start           = [0.0, 2.0]
+
+    goal1           = [2.0, 1.0]
+    goal2           = [3.0, 4.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([1.0, 3.0])
+    table_pts.append([2.5, 2.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 40
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_4_flip(goal_index=None):
+    label = "test4_needle2_g" + str(goal_index)
+
+    start           = [0.0, 2.0]
+
+    goal1           = [2.0, 4.0]
+    goal2           = [3.0, 1.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([1.0, 2.5])
+    table_pts.append([2.5, 3.0])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 40
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_5(goal_index=None):
+    label = "test5_blocked_g" + str(goal_index)
+
+    start           = [0.0, 2.5]
+
+    goal1           = [3.0, 1.0]
+    goal2           = [3.0, 4.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([1.5, 3.0])
+    # table_pts.append([2.5, 2.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_6(goal_index=None):
+    label = "test6_obs_g" + str(goal_index)
+
+    start           = [0.0, 2.5]
+
+    goal1           = [3.0, 1.0]
+    goal2           = [3.0, 4.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([0.0, 1.5])
+    # table_pts.append([2.5, 2.5])
+
+    obs_pts = []
+    obs_pts.append([1.0, 1.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+##########################################
+
 def scenario_1():
     label = "TEST1"
     full_label = (label)
@@ -438,7 +752,7 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     all_goals   = [goal1, goal3]
 
     if goal_index is None or goal_index > len(all_goals):
-        target_goal = goal3
+        target_goal = goal1
     else:
         target_goal = all_goals[goal_index]
     
@@ -613,24 +927,78 @@ def scenario_6():
 def get_scenario_set():
     scenarios = {}
 
-    # TEST SCENARIO
-    label, exp = scenario_0()
-    scenarios[label] = exp
-
-    label, exp = scenario_4_has_obstacles_and_observer(goal_index=None)
-    scenarios[label] = exp
-
     # # TEST SCENARIO
-    # label, exp = scenario_1()
+    # label, exp = scenario_0()
     # scenarios[label] = exp
 
     # # TEST SCENARIO
+    label, exp = scenario_test_1(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_1(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_2(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_2(goal_index=1)
+    scenarios[label] = exp
+
+    # label, exp = scenario_test_2(goal_index=2)
+    # scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_3(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_3(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_4(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_4(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_4_flip(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_4_flip(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_5(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_5(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_6(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_6(goal_index=1)
+    scenarios[label] = exp
+
     # label, exp = scenario_2()
     # scenarios[label] = exp
 
     # # TEST SCENARIO
     # label, exp = scenario_3()
     # scenarios[label] = exp
+
+    # label, exp = scenario_4_has_obstacles_and_observer(goal_index=None)
+    # scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_7_observer_on_zero(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_7_observer_on_zero(goal_index=1)
+    scenarios[label] = exp
 
     return scenarios
 
