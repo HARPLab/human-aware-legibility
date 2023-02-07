@@ -15,6 +15,11 @@ J_hist = []
 # most_recent_is_complete = [converged, info, iteration_count]
 most_recent_is_complete_packet = [None, None, None]
 
+# class iLQR_plus(iLQR):
+#     def __init__(self, dynamics, cost, N, max_reg=1e10, hessians=False):
+#         iLQR.__init__(self, dynamics, cost, N, max_reg=1e10, hessians=False)
+#         self.most_recent_is_complete_packet = [None, None, None]
+
 def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
     info = "converged" if converged else ("accepted" if accepted else "failed")
@@ -22,7 +27,7 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     final_state = xs[-1]
     print("iteration", iteration_count, info, J_opt, final_state)
     
-    most_recent_is_complete = [converged, info, iteration_count]
+    most_recent_is_complete_packet = [converged, info, iteration_count]
 
 
 def run_solver(exp):
@@ -74,7 +79,7 @@ def run_solver(exp):
     tol = 1e-6
     # tol = 1e-10
 
-    num_iterations = 200
+    num_iterations = 50 #100
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration)
@@ -90,9 +95,7 @@ def run_solver(exp):
     gx, gy = zip(*exp.get_goals())
     sx, sy = zip(*[x0_raw])
 
-    is_completed = most_recent_is_complete_packet
-
     elapsed_time = end_time - start_time
-    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=is_completed)
+    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet)
 
     return verts, us, cost, most_recent_is_complete_packet
