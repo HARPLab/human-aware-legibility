@@ -178,6 +178,20 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
         return diff
 
+    def get_relative_distance_k(self, x, goal, goals):
+        max_distance = 0.0
+        for g in goals:
+            dist = g - x
+            dist = np.abs(np.linalg.norm(dist))
+
+            if dist > max_distance:
+                max_distance = dist
+
+        target_goal_dist = goal - x
+        tg_dist = np.abs(np.linalg.norm(target_goal_dist))
+
+        return 1 - (tg_dist / max_distance)
+
     def get_heading_cost(self, x, u, i, goal):
         if i is 0:
             return 0
@@ -189,6 +203,9 @@ class OAObsPathQRCost(LegiblePathQRCost):
             x0 = self.x_path[i - 1]
         else:
             x0 = x
+
+        print("Points in a row")
+        print(x0, x1)
 
         robot_heading = self.get_angle_between(x0, x1)
         alt_goal_headings = []
@@ -212,9 +229,25 @@ class OAObsPathQRCost(LegiblePathQRCost):
         total = good_part
         alt_goal_part_log = []
 
-        for alt_head in alt_goal_headings:
+        for i in range(len(alt_goal_headings)):
+            alt_head = alt_goal_headings[i]
             bad_part = 180 - np.abs(self.angle_diff(robot_heading, alt_head))
             bad_part = bad_part**2
+
+            print("Part 1")
+            print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
+            print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
+            print("Part 2 = squared")
+            print(bad_part)
+
+
+            if self.exp.get_weighted_close_on() is True:
+                k = self.get_relative_distance_k(x, goals[i], goals)
+            else:
+                k = 1.0
+
+            # scale either evenly, or proportional to closeness
+            bad_part = bad_part * k
 
             # bad_part += 1.0 / self.angle_diff(robot_heading, alt_head)
             bad_parts += bad_part
@@ -223,13 +256,23 @@ class OAObsPathQRCost(LegiblePathQRCost):
             print("For goal at alt heading " + str(alt_head))
             print(bad_part) 
 
+        print("Total is " + str(total))
+        print(type(total))
+
+        # fix to nan so there's no divide by zero error
+        if total == 0.0:
+            print("total is now 1.0 to avoid nan error")
+            total += 1.0
+
         heading_clarity_cost = bad_part / (total)
         alt_goal_part_log = alt_goal_part_log / (total)
 
+        print("Heading component of pathing ")
         print("Given x of " + str(x) + " and robot heading of " + str(robot_heading))
         print("for goals " + str(goals))
         print(alt_goal_part_log)
         print(heading_clarity_cost)
+        print("good parts, bad parts")
         print(good_part, bad_parts)
 
         return heading_clarity_cost
@@ -316,20 +359,35 @@ class OAObsPathQRCost(LegiblePathQRCost):
         elif self.exp.get_f_label() is ex.F_NONE:
             f_value = 1.0
 
-        wt_legib     = 100.0 #100.0
-        wt_lam       = .0001
-        wt_control   = 1.0 #10.0
-        wt_obstacle  = 1000.0 #self.exp.get_solver_scale_obstacle()
-        wt_heading   = 0.0 #100000.0
 
-        ##### SET WEIGHTS
+        if self.exp.get_norm_on() is False:
+            wt_legib     = 100.0 #100.0
+            wt_lam       = 0.1
+            wt_heading   = 0.1 #100000.0
+            wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
-        # NORMALIZED AROUND IN/OUT OF SIGHT
-        wt_legib     = f_value * .9 #1000.0
-        wt_lam       = .9 * (1 - wt_legib)
-        # wt_control   = .4 * (1 - wt_legib)
-        wt_heading   = .1 * (1 - wt_legib) #100000.0
-        wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
+        else:
+            ##### SET WEIGHTS
+            wt_legib     = f_value * .9 #1000.0
+            wt_lam       = .1 * (1 - wt_legib)
+            wt_heading   = .1 * (1 - wt_legib) #100000.0
+            wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
+
+        # BATCH 2
+        # # NORMALIZED AROUND IN/OUT OF SIGHT
+        # wt_legib     = f_value * .9 #1000.0
+        # wt_lam       = 1.5 * (1 - wt_legib)
+        # # wt_control   = .4 * (1 - wt_legib)
+        # wt_heading   = .5 * (1 - wt_legib) #100000.0
+        # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
+
+        # # BATCH 3 2:43pm
+        # # NORMALIZED AROUND IN/OUT OF SIGHT
+        # wt_legib     = f_value * .3 #1000.0
+        # wt_lam       = 1.5 * (1 - wt_legib)
+        # # wt_control   = .4 * (1 - wt_legib)
+        # wt_heading   = .5 * (1 - wt_legib) #100000.0
+        # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
 
         if self.exp.get_is_heading_on() is False:
             wt_heading = 0.0
@@ -515,7 +573,18 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
             this_goal = np.exp(n) / np.exp(d)
 
+            if self.exp.get_weighted_close_on() is True:
+                k = self.get_relative_distance_k(x, alt_goal, self.goals)
+            else:
+                k = 1.0
+
+            this_goal = this_goal * k
+
             total_sum += this_goal
+
+            print("n: " + str(n) + ", d: " + str(d))
+            print("thisgoal: " + str(this_goal))
+
 
             if goal != alt_goal:
                 log_sum += (1 * this_goal)
