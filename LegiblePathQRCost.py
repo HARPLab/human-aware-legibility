@@ -648,11 +648,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         xbuffer     = .1 * xwidth
         ybuffer     = .1 * yheight
 
-        if xbuffer == 0:
-            xbuffer = 1.0
+        if xbuffer < .3:
+            xbuffer = .5
 
-        if ybuffer == 0:
-            ybuffer = 1.0
+        if ybuffer < .3:
+            ybuffer = .5
 
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
@@ -873,18 +873,11 @@ class LegiblePathQRCost(FiniteDiffCost):
             else:
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
-        axarr.legend() #loc="upper left")
+        axarr.legend(loc="upper left")
         axarr.grid(False)
         xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
         axarr.set_xlim([xmin, xmax])
         axarr.set_ylim([ymin, ymax])
-
-        # info_packet = [converged, info, iteration_count]
-        if info_packet is not None:
-            converged, info, iteration_count = info_packet
-            blurb = str(converged) + " in " + str(iteration_count) 
-        else:
-            blurb = ""
 
         return axarr
 
