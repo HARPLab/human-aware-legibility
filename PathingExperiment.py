@@ -61,8 +61,10 @@ class PathingExperiment():
     Q   = 1.0 * np.eye(state_size)
     R   = 200.0 * np.eye(action_size)
 
-    oa_on       = True
-    heading_on  = True
+    oa_on               = True
+    heading_on          = True
+    norm_on             = False
+    weighted_close_on   = False
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -283,3 +285,20 @@ class PathingExperiment():
     def get_ax(self):
         return self.ax
 
+    def set_norm_on(self, v):
+        self.norm_on = v
+
+    def get_norm_on(self):
+        return self.norm_on
+
+    def set_weighted_close_on(self, v):
+        self.weighted_close_on = v
+
+    def get_weighted_close_on(self):
+        return self.weighted_close_on
+
+    def set_mode_pure_heading(self, v):
+        self.mode_pure_heading = v
+
+    def get_mode_pure_heading(self):
+        return self.mode_pure_heading
