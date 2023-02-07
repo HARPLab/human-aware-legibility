@@ -45,16 +45,29 @@ import utility_environ_descrip as resto
 # # exp.set_f_label(ex.F_VIS_LIN)
 # # exp.set_f_label(ex.F_NONE)
 
+
+def get_solver_status_blurb(info_packet):
+    # info_packet = [converged, info, iteration_count]
+    if info_packet is not None:
+        converged, info, iteration_count = info_packet
+        blurb = "" #str(converged) + " in " + str(iteration_count) 
+    else:
+        blurb = ""
+
+    return blurb
+
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
-    test_amount_of_slack(dashboard_folder)
+    # test_amount_of_slack(dashboard_folder)
     # test_observers_rotated(dashboard_folder)
     # exit()
     # test_observers_being_respected(dashboard_folder)
     # exit()
     # test_obstacles_being_avoided(dashboard_folder)
     # exit()
-    # test_heading_useful_or_no(dashboard_folder)
+    test_heading_useful_or_no(dashboard_folder)
+    test_weighted_by_distance_or_no(dashboard_folder)
+    test_normalized_or_no(dashboard_folder)
     # exit()
 
 def get_file_id_for_exp(dash_folder, label):
@@ -89,30 +102,140 @@ def test_heading_useful_or_no(dash_folder):
     for key in scenarios.keys():
         scenario = scenarios[key]
 
+        without_heading    = copy.copy(scenario)
+        mixed_heading   = copy.copy(scenario)
+        pure_heading    = copy.copy(scenario)
+
+        # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+        without_heading.set_heading_on(False)
+        without_heading.set_mode_pure_heading(False)
+
+        mixed_heading.set_heading_on(True)
+        mixed_heading.set_mode_pure_heading(False)
+        
+        pure_heading.set_heading_on(True)
+        pure_heading.set_mode_pure_heading(True)
+
+        save_location = get_file_id_for_exp(dash_folder, "headings-" + without_heading.get_exp_label())
+
+        verts_pure_heading, us_pure_heading, cost_pure_heading, info_packet1    = solver.run_solver(pure_heading)
+        verts_mixed_heading, us_mixed_heading, cost_mixed_heading, info_packet2 = solver.run_solver(mixed_heading)
+        verts_wout_heading, us_wout_heading, cost_wout_heading, info_packet3    = solver.run_solver(without_heading)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, (ax1,ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 6))
+
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet3)
+        cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2, info_packet=info_packet2)
+        cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3, info_packet=info_packet1)
+
+        blurb1 = "" #get_solver_status_blurb(info_packet1)
+        blurb2 = "" #get_solver_status_blurb(info_packet2)
+        blurb3 = ""
+
+        # _ = ax1.set_xlabel("Time", fontweight='bold')
+        # _ = ax1.set_ylabel("Legibility", fontweight='bold')
+        _ = ax1.set_title("Without Heading\n" + blurb1, fontweight='bold')
+        _ = ax2.set_title("Mixed Heading\n" + blurb2, fontweight='bold')
+        _ = ax3.set_title("Pure Heading\n" + blurb3, fontweight='bold')
+        # ax2.legend() #loc="upper left")
+        # ax2.set_ylim([-0.05, 1.05])
+
+        plt.tight_layout()
+        plt.savefig(save_location + ".png")
+
+def test_normalized_or_no(dash_folder):
+    print("TESTING IF NORMALIZED MATTERS")
+    scenarios = test_scenarios.get_scenarios_observers()
+
+    # for each test scenario
+    # run it with heading, get the image
+    # run it without heading part, get the image
+
+    # export both individually
+    # export side by side with markings
+    #    include exp settings on export
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
 
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-        without_heading.set_heading_on(False)
-        with_heading.set_heading_on(True)
+        without_heading.set_norm_on(False)
+        with_heading.set_norm_on(True)
 
-        save_location = get_file_id_for_exp(dash_folder, "heading-" + without_heading.get_exp_label())
+        save_location = get_file_id_for_exp(dash_folder, "norm-" + without_heading.get_exp_label())
 
-        verts_with_heading, us_with_heading, cost_with_heading = solver.run_solver(with_heading)
-        verts_wout_heading, us_wout_heading, cost_wout_heading = solver.run_solver(without_heading)
+        verts_with_heading, us_with_heading, cost_with_heading, info_packet1 = solver.run_solver(with_heading)
+        verts_wout_heading, us_wout_heading, cost_wout_heading, info_packet2 = solver.run_solver(without_heading)
 
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
-        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
+
+        blurb1 = get_solver_status_blurb(info_packet1)
+        blurb2 = get_solver_status_blurb(info_packet2)
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
-        _ = ax1.set_title("Without Heading", fontweight='bold')
-        _ = ax2.set_title("With Heading", fontweight='bold')
+        _ = ax1.set_title("Without OOS Normalization \n" + blurb1, fontweight='bold')
+        _ = ax2.set_title("With Norm\n" + blurb2, fontweight='bold')
+        # ax2.legend() #loc="upper left")
+        # ax2.set_ylim([-0.05, 1.05])
+
+        plt.tight_layout()
+        plt.savefig(save_location + ".png")
+
+def test_weighted_by_distance_or_no(dash_folder):
+    print("TESTING IF WEIGHTED NEAR MATTERS")
+    scenarios = test_scenarios.get_scenarios()
+
+    # for each test scenario
+    # run it with heading, get the image
+    # run it without heading part, get the image
+
+    # export both individually
+    # export side by side with markings
+    #    include exp settings on export
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        with_heading = copy.copy(scenario)
+        without_heading = copy.copy(scenario)
+
+        # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+        without_heading.set_weighted_close_on(False)
+        with_heading.set_weighted_close_on(True)
+
+        save_location = get_file_id_for_exp(dash_folder, "wt-dist-" + without_heading.get_exp_label())
+
+        verts_with_heading, us_with_heading, cost_with_heading, info_packet1 = solver.run_solver(with_heading)
+        verts_wout_heading, us_wout_heading, cost_wout_heading, info_packet2 = solver.run_solver(without_heading)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
+
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
+
+        blurb1 = get_solver_status_blurb(info_packet1)
+        blurb2 = get_solver_status_blurb(info_packet2)
+
+        # _ = ax1.set_xlabel("Time", fontweight='bold')
+        # _ = ax1.set_ylabel("Legibility", fontweight='bold')
+        _ = ax1.set_title("Even weighting of goals \n" + blurb1, fontweight='bold')
+        _ = ax2.set_title("Weight by closeness \n" + blurb2, fontweight='bold')
         # ax2.legend() #loc="upper left")
         # ax2.set_ylim([-0.05, 1.05])
 
@@ -132,15 +255,17 @@ def test_obstacles_being_avoided(dash_folder):
         obs_scenario.set_heading_on(True)
         save_location = get_file_id_for_exp(dash_folder, "obs-" + obs_scenario.get_exp_label())
 
-        verts_with_obs, us_with_obs, cost_with_obs = solver.run_solver(obs_scenario)
+        verts_with_obs, us_with_obs, cost_with_obs, info_packet = solver.run_solver(obs_scenario)
+
+        blurb = get_solver_status_blurb(info_packet)
 
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1) = plt.subplots(ncols=1, figsize=(4, 3))
 
-        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
-        _ = ax1.set_title("Check for Obstacle Issues", fontweight='bold')
+        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1, info_packet=info_packet)
+        _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
 
         plt.tight_layout()
         plt.savefig(save_location + ".png")
@@ -163,16 +288,16 @@ def test_observers_being_respected(dash_folder):
         
         save_location = get_file_id_for_exp(dash_folder, "oa-" + wout_oa.get_exp_label())
 
-        verts_with_oa, us_with_oa, cost_with_oa = solver.run_solver(with_oa)
-        verts_wout_oa, us_wout_oa, cost_wout_oa = solver.run_solver(wout_oa)
+        verts_with_oa, us_with_oa, cost_with_oa, info_packet1 = solver.run_solver(with_oa)
+        verts_wout_oa, us_wout_oa, cost_wout_oa, info_packet2 = solver.run_solver(wout_oa)
 
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
 
-        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1)
-        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2)
+        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1, info_packet=info_packet1)
+        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2, info_packet=info_packet2)
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -209,7 +334,7 @@ def test_amount_of_slack(dash_folder):
             label_dict[multiplier] = n_percent
             n_scenario.set_N(new_N)
             
-            verts_with_n, us_with_n, cost_with_n = solver.run_solver(n_scenario)
+            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(n_scenario)
             outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
 
 
@@ -237,7 +362,7 @@ def test_amount_of_slack(dash_folder):
 
             label = str(label_dict[key]) + "%"
 
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax)
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet)
             _ = ax.set_title("N= " + label, fontweight='bold')
             ax.get_legend().remove()
     
@@ -266,7 +391,7 @@ def test_observers_rotated(dash_folder):
             rot_scenario = rot_scenarios[rkey]
             rot_scenario.set_oa_on(True)
             
-            verts_with_rot, us_with_rot, cost_with_rot = solver.run_solver(rot_scenario)
+            verts_with_rot, us_with_rot, cost_with_rot, info_packet = solver.run_solver(rot_scenario)
             outputs[rkey] = verts_with_rot, us_with_rot, cost_with_rot
 
 
@@ -298,7 +423,7 @@ def test_observers_rotated(dash_folder):
                 amount_label = ""
             amount_label += str(key)
 
-            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax)
+            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax, info_packet=info_packet)
             _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
             ax.get_legend().remove()
     
