@@ -79,7 +79,7 @@ def run_solver(exp):
     tol = 1e-6
     # tol = 1e-10
 
-    num_iterations = 50 #100
+    num_iterations = 200
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration)
