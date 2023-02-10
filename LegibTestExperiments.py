@@ -65,9 +65,9 @@ def run_all_tests():
     # exit()
     # test_obstacles_being_avoided(dashboard_folder)
     # exit()
-    test_heading_useful_or_no(dashboard_folder)
     test_weighted_by_distance_or_no(dashboard_folder)
-    test_normalized_or_no(dashboard_folder)
+    # test_normalized_or_no(dashboard_folder)
+    test_heading_useful_or_no(dashboard_folder)
     # exit()
 
 def get_file_id_for_exp(dash_folder, label):
@@ -125,7 +125,7 @@ def test_heading_useful_or_no(dash_folder):
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, (ax1,ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 6))
+        fig, (ax1,ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 4))
 
         cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet3)
         cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2, info_packet=info_packet2)
@@ -176,7 +176,7 @@ def test_normalized_or_no(dash_folder):
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
+        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 4))
 
         cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
         cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
@@ -224,7 +224,7 @@ def test_weighted_by_distance_or_no(dash_folder):
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
+        fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 3.5))
 
         cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
         cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
