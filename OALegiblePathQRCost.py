@@ -24,8 +24,8 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 
-import PathingExperiment as ex
 from LegiblePathQRCost import LegiblePathQRCost
+import PathingExperiment as ex
 
 class OALegiblePathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
@@ -93,7 +93,6 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
     #     return terminal_cost
 
-
     # original version for plain path following
     def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
         """Instantaneous cost function.
@@ -122,6 +121,7 @@ class OALegiblePathQRCost(LegiblePathQRCost):
 
         term_cost = 0 #self.term_cost(x, i)
 
+        # x_diff is compared to reference path
         x_diff = x - self.x_path[i]
 
         u_diff = 0
@@ -168,9 +168,11 @@ class OALegiblePathQRCost(LegiblePathQRCost):
         # J does not need to be in a particular range, it can be any max or min
         J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
+
+
         wt_legib     = 100.0
         wt_lam       = .0001
-        wt_control   = 10.0
+        wt_control   = 0 #10.0
 
         J =  (wt_legib       * J)
         J += (wt_control    * u_diff.T.dot(R).dot(u_diff))
