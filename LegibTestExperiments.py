@@ -50,7 +50,7 @@ def get_solver_status_blurb(info_packet):
     # info_packet = [converged, info, iteration_count]
     if info_packet is not None:
         converged, info, iteration_count = info_packet
-        blurb = "" #str(converged) + " in " + str(iteration_count) 
+        blurb = str(converged) + " in " + str(iteration_count) 
     else:
         blurb = ""
 
@@ -65,7 +65,7 @@ def run_all_tests():
     # exit()
     # test_obstacles_being_avoided(dashboard_folder)
     # exit()
-    test_weighted_by_distance_or_no(dashboard_folder)
+    # test_weighted_by_distance_or_no(dashboard_folder)
     # test_normalized_or_no(dashboard_folder)
     test_heading_useful_or_no(dashboard_folder)
     # exit()
@@ -127,13 +127,18 @@ def test_heading_useful_or_no(dash_folder):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 4))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet3)
-        cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2, info_packet=info_packet2)
-        cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3, info_packet=info_packet1)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
+        cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2)
+        cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3)
 
-        blurb1 = "" #get_solver_status_blurb(info_packet1)
-        blurb2 = "" #get_solver_status_blurb(info_packet2)
-        blurb3 = ""
+        info_packet1 = without_heading.get_solver_status()
+        info_packet2 = mixed_heading.get_solver_status()
+        info_packet3 = pure_heading.get_solver_status()
+
+
+        blurb1 = get_solver_status_blurb(info_packet1)
+        blurb2 = get_solver_status_blurb(info_packet2)
+        blurb3 = get_solver_status_blurb(info_packet3)
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -178,8 +183,11 @@ def test_normalized_or_no(dash_folder):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 4))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
-        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
+
+        info_packet1 = without_heading.get_solver_status()
+        info_packet2 = with_heading.get_solver_status()
 
         blurb1 = get_solver_status_blurb(info_packet1)
         blurb2 = get_solver_status_blurb(info_packet2)
@@ -226,8 +234,8 @@ def test_weighted_by_distance_or_no(dash_folder):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 3.5))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, info_packet=info_packet1)
-        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, info_packet=info_packet2)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
 
         blurb1 = get_solver_status_blurb(info_packet1)
         blurb2 = get_solver_status_blurb(info_packet2)
@@ -257,6 +265,7 @@ def test_obstacles_being_avoided(dash_folder):
 
         verts_with_obs, us_with_obs, cost_with_obs, info_packet = solver.run_solver(obs_scenario)
 
+        info_packet = exp.get_solver_status()
         blurb = get_solver_status_blurb(info_packet)
 
         # This placement of the figure statement is actually really important
@@ -264,7 +273,7 @@ def test_obstacles_being_avoided(dash_folder):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1) = plt.subplots(ncols=1, figsize=(4, 3))
 
-        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1, info_packet=info_packet)
+        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
         _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
 
         plt.tight_layout()
@@ -296,8 +305,8 @@ def test_observers_being_respected(dash_folder):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
 
-        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1, info_packet=info_packet1)
-        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2, info_packet=info_packet2)
+        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1)
+        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2)
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
