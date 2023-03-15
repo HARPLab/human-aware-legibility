@@ -20,7 +20,7 @@ most_recent_is_complete_packet = [None, None, None]
 #         iLQR.__init__(self, dynamics, cost, N, max_reg=1e10, hessians=False)
 #         self.most_recent_is_complete_packet = [None, None, None]
 
-def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
+def on_iteration_default(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
     info = "converged" if converged else ("accepted" if accepted else "failed")
 
@@ -28,7 +28,6 @@ def on_iteration(iteration_count, xs, us, J_opt, accepted, converged):
     print("iteration", iteration_count, info, J_opt, final_state)
     
     most_recent_is_complete_packet = [converged, info, iteration_count]
-
 
 def run_solver(exp):
     exp.reinit_file_id()
@@ -79,10 +78,12 @@ def run_solver(exp):
     tol = 1e-6
     # tol = 1e-10
 
-    num_iterations = 200
+    num_iterations = 50
+
+    on_iteration_exp = exp.on_iteration_exp
 
     start_time = time.time()
-    xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration)
+    xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration_exp)
     end_time = time.time()
 
     t = np.arange(N) * dt
@@ -96,6 +97,11 @@ def run_solver(exp):
     sx, sy = zip(*[x0_raw])
 
     elapsed_time = end_time - start_time
+
+    most_recent_is_complete_packet = exp.get_solver_status()
     cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet)
+
+    fn = cost.get_export_label() + "path_for_unity"
+    exp.get_restaurant().export_paths_csv(verts, fn)
 
     return verts, us, cost, most_recent_is_complete_packet
