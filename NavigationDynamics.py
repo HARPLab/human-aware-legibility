@@ -68,15 +68,19 @@ class NavigationDynamics(FiniteDiffDynamics):
         B = np.eye(self._action_size)
         v0 = A.dot(x)
         v1 = B.dot(u)
-        xnext = v0 + v1     # A*x + B*u
 
-        # Sample code that shows what would happen if we attempted raw obstacle avoidance within dynamics
-        if False and self.in_object(xnext):
-            # Bounce
-            xnext = x
+        if np.isnan(np.linalg.norm(u)):
+            print("caught a nan")
+            xnext = v0
+        else:
+            xnext = v0 + v1     # A*x + B*u
+
+        print("u in dynamics model")
+        print(u)
 
         print("xnext")
         print(str(x) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+
 
         return xnext
 
