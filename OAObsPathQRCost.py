@@ -178,7 +178,23 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
         return diff
 
+
     def get_relative_distance_k(self, x, goal, goals):
+        total_distance = 0.0
+
+        for g in goals:
+            dist = g - x
+            dist = np.abs(np.linalg.norm(dist))
+
+            total_distance += dist
+
+        target_goal_dist = goal - x
+        tg_dist = np.abs(np.linalg.norm(target_goal_dist))
+
+        return 1.0 - (tg_dist / total_distance)
+
+
+    def get_relative_distance_k_v1(self, x, goal, goals):
         max_distance = 0.0
         for g in goals:
             dist = g - x
@@ -361,9 +377,9 @@ class OAObsPathQRCost(LegiblePathQRCost):
 
 
         if self.exp.get_norm_on() is False:
-            wt_legib     = 100.0 #100.0
-            wt_lam       = 0.1
-            wt_heading   = 0.1 #100000.0
+            wt_legib     = 0.8 #100.0
+            wt_lam       = 0.01
+            wt_heading   = 0.2 #100000.0
             wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
         else:
@@ -372,6 +388,13 @@ class OAObsPathQRCost(LegiblePathQRCost):
             wt_lam       = .1 * (1 - wt_legib)
             wt_heading   = .1 * (1 - wt_legib) #100000.0
             wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
+
+        if self.exp.get_is_heading_on() is False:
+            wt_heading = 0.0
+
+        if self.exp.get_mode_pure_heading() is True:
+            wt_legib = 0.0
+
 
         # BATCH 2
         # # NORMALIZED AROUND IN/OUT OF SIGHT
@@ -389,8 +412,6 @@ class OAObsPathQRCost(LegiblePathQRCost):
         # wt_heading   = .5 * (1 - wt_legib) #100000.0
         # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
 
-        if self.exp.get_is_heading_on() is False:
-            wt_heading = 0.0
 
         # J does not need to be in a particular range, it can be any max or min
         J = 0        
