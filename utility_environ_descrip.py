@@ -953,6 +953,36 @@ def image_to_unity(pt):
 		return (nx, ny, theta)
 	return (nx, ny)
 
+# TODO write out and add math for this
+# def world_with_corners_to_unity(pt, corners, corners2=UNITY_CORNERS):
+# 	# print(UNITY_SCALE_X) = 100.1001001001001
+# 	# print(UNITY_SCALE_Y) = -100.0
+# 	# print(UNITY_OFFSET_X) = 1.23
+# 	# print(UNITY_OFFSET_Y) = 3.05
+
+# 	if len(pt) == 3:
+# 		x, y, theta = pt
+# 	else:
+# 		x, y = pt
+
+# 	UNITY_SCALE_X = 
+# 	UNITY_SCALE_Y = 
+# 	UNITY_OFFSET_X = 
+# 	UNITY_OFFSET_Y = 
+
+# 	x = float(x)
+# 	y = float(y)
+# 	ny = (x / UNITY_SCALE_Y) + (UNITY_OFFSET_Y)
+# 	nx = (y / UNITY_SCALE_X) + (UNITY_OFFSET_X)
+	
+# 	# angle conversions (image 0 = 90 unity)
+# 	# (good range is from 30 to 150 in unity)
+	
+# 	if len(pt) == 3:
+# 		ntheta = image_to_unity_angle(theta)
+# 		return (nx, ny, theta)
+# 	return (nx, ny)
+
 def plan_to_image(pt):
 	if len(pt) == 3:
 		x, y, theta = pt
@@ -1882,6 +1912,28 @@ class Restaurant:
 		ybuffer	 = .1 * yheight
 
 		return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
+
+	def export_paths_csv(self, single_path, fn):
+		print("Exporting JSON for this path")
+		csv_name = fn + ".csv"
+		csv_file  = open(csv_name, "w")
+
+		output_string = ""
+
+		path = single_path
+		#TODO verify the waypoint added in path creation?
+		# waypoint = (6.45477, 2.57)
+		# output_string += str(waypoint[0]) + "," + str(waypoint[1]) + "\r\n"
+		unity_path = []
+		for p in path:
+			up = image_to_unity(p)
+			unity_path.append(up)
+			output_string += str(up[0]) + "," + str(up[1]) + "\r\n"
+
+
+		csv_file.write(output_string)
+		csv_file.close()
+		print("exported csv path to " + csv_name)
 
 	def generate_obstacle_map_and_img(self, observers, obs_set=None, show_cones=True):
 		obstacle_vis = np.ones((self.length, self.width,3), np.uint8)
@@ -2855,6 +2907,7 @@ def export_paths_csv(saved_paths):
 		csv_file.write(output_string)
 		csv_file.close()
 		print("exported csv path to " + csv_name)
+
 
 
 def export(r, saved_paths, export_all=False):
