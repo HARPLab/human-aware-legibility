@@ -45,17 +45,6 @@ import utility_environ_descrip as resto
 # # exp.set_f_label(ex.F_VIS_LIN)
 # # exp.set_f_label(ex.F_NONE)
 
-
-def get_solver_status_blurb(info_packet):
-    # info_packet = [converged, info, iteration_count]
-    if info_packet is not None:
-        converged, info, iteration_count = info_packet
-        blurb = str(converged) + " in " + str(iteration_count) 
-    else:
-        blurb = ""
-
-    return blurb
-
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
     # test_amount_of_slack(dashboard_folder)
@@ -131,14 +120,9 @@ def test_heading_useful_or_no(dash_folder):
         cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2)
         cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3)
 
-        info_packet1 = without_heading.get_solver_status()
-        info_packet2 = mixed_heading.get_solver_status()
-        info_packet3 = pure_heading.get_solver_status()
-
-
-        blurb1 = get_solver_status_blurb(info_packet1)
-        blurb2 = get_solver_status_blurb(info_packet2)
-        blurb3 = get_solver_status_blurb(info_packet3)
+        blurb1 = without_heading.get_solver_status_blurb()
+        blurb2 = mixed_heading.get_solver_status_blurb()
+        blurb3 = pure_heading.get_solver_status_blurb()
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -186,11 +170,8 @@ def test_normalized_or_no(dash_folder):
         cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
         cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
 
-        info_packet1 = without_heading.get_solver_status()
-        info_packet2 = with_heading.get_solver_status()
-
-        blurb1 = get_solver_status_blurb(info_packet1)
-        blurb2 = get_solver_status_blurb(info_packet2)
+        blurb1 = without_heading.get_solver_status_blurb()
+        blurb2 = with_heading.get_solver_status_blurb()
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -265,8 +246,7 @@ def test_obstacles_being_avoided(dash_folder):
 
         verts_with_obs, us_with_obs, cost_with_obs, info_packet = solver.run_solver(obs_scenario)
 
-        info_packet = exp.get_solver_status()
-        blurb = get_solver_status_blurb(info_packet)
+        blurb = exp.get_solver_status_blurb()
 
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
