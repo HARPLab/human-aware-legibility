@@ -199,11 +199,12 @@ def exp_obstacles_and_observers(goal_index=None, obs_angle=0):
 
 def main():
     print("Setting up experiment")
-    # exp_plain_symmetrical(goal_index=1)
-    # exp_obstacles(goal_index=1)
-    exp_obstacles_and_observers(goal_index=1, obs_angle=90)
-    # exp_obstacles(goal_index=1)
-    # exp_observers(goal_index=1, obs_angle=180)
+
+    # # exp_plain_symmetrical(goal_index=1)
+    # # exp_obstacles(goal_index=1)
+    # exp_obstacles_and_observers(goal_index=1, obs_angle=90)
+    # # exp_obstacles(goal_index=1)
+    # # exp_observers(goal_index=1, obs_angle=180)
 
     print("Done")
 
