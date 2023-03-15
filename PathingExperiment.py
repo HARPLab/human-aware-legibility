@@ -65,6 +65,9 @@ class PathingExperiment():
     heading_on          = True
     norm_on             = False
     weighted_close_on   = False
+    mode_pure_heading   = False
+
+    J_hist = []
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -107,6 +110,16 @@ class PathingExperiment():
         self.table_pts = table_pts
 
         self.setup_file_id()
+
+    def on_iteration_exp(self, iteration_count, xs, us, J_opt, accepted, converged):
+        self.J_hist.append(J_opt)
+        info = "converged" if converged else ("accepted" if accepted else "failed")
+
+        final_state = xs[-1]
+        print("iteration", iteration_count, info, J_opt, final_state)
+        
+        most_recent_is_complete_packet = [converged, info, iteration_count]
+        self.solve_status = most_recent_is_complete_packet
 
     def setup_cost(self, Xrefline, Urefline):
         solver_label = self.cost_label
@@ -302,3 +315,6 @@ class PathingExperiment():
 
     def get_mode_pure_heading(self):
         return self.mode_pure_heading
+
+    def get_solver_status(self):
+        return self.solve_status
