@@ -68,6 +68,7 @@ class PathingExperiment():
     mode_pure_heading   = False
 
     J_hist = []
+    solve_status = None
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -318,3 +319,22 @@ class PathingExperiment():
 
     def get_solver_status(self):
         return self.solve_status
+
+    def get_solver_status_blurb(self, info_packet=None):
+        if info_packet is None:
+            info_packet = self.get_solver_status()
+
+        # info_packet = [converged, info, iteration_count]
+        if info_packet is not None:
+            converged_text = ""
+            converged, info, iteration_count = info_packet
+            if converged is False:
+                converged_text = "INCOMPLETE after " + str(iteration_count)
+            else:
+                converged_text = "CONVERGED in " + str(iteration_count)
+            
+            blurb = converged_text
+        else:
+            blurb = ""
+
+        return blurb
