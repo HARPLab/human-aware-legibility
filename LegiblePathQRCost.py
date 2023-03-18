@@ -657,7 +657,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
     def get_export_label(self):
-        return PREFIX_EXPORT + self.file_id + "/" + self.file_id
+        note = self.exp.get_fn_note()
+        folder_name = PREFIX_EXPORT + self.file_id + note + "/" 
+        overall_name = folder_name + self.file_id
+        try:
+            os.mkdir(folder_name)
+        except:
+            print("FILE ALREADY EXISTS " + self.file_id)
+
+        return overall_name
 
     def get_legibility_of_path_to_goal(self, verts, us, goal):
         ls, scs, tcs, vs = [], [], [], []
@@ -739,7 +747,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
-    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None):
+    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None, fn_note=""):
         axarr = ax
 
         axarr.set_aspect('equal')
@@ -850,7 +858,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = axarr.set_xlabel("X", fontweight='bold')
         _ = axarr.set_ylabel("Y", fontweight='bold')
-        _ = axarr.set_title("Path through space", fontweight='bold')
+        blurb = self.exp.get_solver_status_blurb()
+        _ = axarr.set_title("Path through space\n" + blurb, fontweight='bold')
 
         # Draw the legibility over time
 
@@ -1071,7 +1080,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             plt.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
             _ = plt.xlabel("X", fontweight='bold')
             _ = plt.ylabel("Y", fontweight='bold')
-            _ = plt.title("Path through space", fontweight='bold')
+            _ = plt.title("Path through space" + blurb, fontweight='bold')
             plt.legend(loc="upper left")
             # plt.xlim([xmin, xmax])
             # plt.ylim([ymin, ymax])
