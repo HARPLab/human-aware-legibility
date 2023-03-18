@@ -91,9 +91,13 @@ def test_heading_useful_or_no(dash_folder):
     for key in scenarios.keys():
         scenario = scenarios[key]
 
-        without_heading    = copy.copy(scenario)
+        without_heading = copy.copy(scenario)
         mixed_heading   = copy.copy(scenario)
         pure_heading    = copy.copy(scenario)
+
+        without_heading.set_fn_note("wout_head")
+        mixed_heading.set_fn_note("mixd_head")
+        pure_heading.set_fn_note("pure_head")
 
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         without_heading.set_heading_on(False)
@@ -153,6 +157,9 @@ def test_normalized_or_no(dash_folder):
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
 
+        with_heading.set_fn_note("with_head")
+        without_heading.set_fn_note("wout_head")
+
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         without_heading.set_norm_on(False)
         with_heading.set_norm_on(True)
@@ -201,6 +208,9 @@ def test_weighted_by_distance_or_no(dash_folder):
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
 
+        with_heading.set_fn_note("with_head")
+        without_heading.set_fn_note("wout_head")
+
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         without_heading.set_weighted_close_on(False)
         with_heading.set_weighted_close_on(True)
@@ -240,6 +250,8 @@ def test_obstacles_being_avoided(dash_folder):
 
         obs_scenario = copy.copy(scenario)
 
+        obs_scenario.set_fn_note("obs-" + key)
+
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         obs_scenario.set_heading_on(True)
         save_location = get_file_id_for_exp(dash_folder, "obs-" + obs_scenario.get_exp_label())
@@ -249,7 +261,7 @@ def test_obstacles_being_avoided(dash_folder):
         blurb = exp.get_solver_status_blurb()
 
         # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
+        # numpy only likes to have one plot open at a time,
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1) = plt.subplots(ncols=1, figsize=(4, 3))
 
@@ -270,6 +282,9 @@ def test_observers_being_respected(dash_folder):
 
         with_oa = copy.copy(scenario)
         wout_oa = copy.copy(scenario)
+
+        with_oa.set_fn_note("with_oa")
+        wout_oa.set_fn_note("wout_oa")
 
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         with_oa.set_oa_on(True)
@@ -317,11 +332,14 @@ def test_amount_of_slack(dash_folder):
         for multiplier in scale_set:
             # RUN THE SOLVER WITH CONSTRAINTS ON EACH
             n_scenario = copy.copy(scenario)
+
             new_N = int(base_N * multiplier)
             n_percent = int(100.0 * multiplier)
 
             label_dict[multiplier] = n_percent
             n_scenario.set_N(new_N)
+
+            n_scenario.set_fn_note("n_" + str(new_N))
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(n_scenario)
             outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
@@ -437,6 +455,8 @@ def generate_scenarios_with_observer_rotating(exp):
         new_obs.set_orientation(new_angle)
         new_obs_list = [new_obs]
         rot_scenario.set_observers(new_obs_list)
+
+        rot_scenario.set_fn_note("rot_" + str(new_angle))
 
         scenario_dict[offset] = rot_scenario
 
