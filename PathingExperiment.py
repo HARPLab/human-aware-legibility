@@ -12,6 +12,7 @@ from ObstaclePathQRCost import ObstaclePathQRCost
 from LegibilityOGPathQRCost import LegibilityOGPathQRCost
 from OALegiblePathQRCost import OALegiblePathQRCost
 from OAObsPathQRCost import OAObsPathQRCost
+from SocLegPathQRCost import SocLegPathQRCost
 
 PREFIX_EXPORT = 'experiment_outputs/'
 
@@ -69,6 +70,8 @@ class PathingExperiment():
 
     J_hist = []
     solve_status = None
+
+    fn_note = ""
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -134,7 +137,7 @@ class PathingExperiment():
         elif solver_label is COST_DIRECT:
             return DirectPathQRCost(self, Xrefline, Urefline)
         elif solver_label is COST_OA_AND_OBS:
-            return OAObsPathQRCost(self, Xrefline, Urefline)
+            return SocLegPathQRCost(self, Xrefline, Urefline)
 
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
@@ -316,6 +319,12 @@ class PathingExperiment():
 
     def get_mode_pure_heading(self):
         return self.mode_pure_heading
+
+    def set_fn_note(self, label):
+        self.fn_note = "-" + label
+
+    def get_fn_note(self):
+        return self.fn_note
 
     def get_solver_status(self):
         return self.solve_status
