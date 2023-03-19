@@ -181,7 +181,110 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return 1 - (tg_dist / max_distance)
 
+    def unit_vector(self, vector):
+        """ Returns the unit vector of the vector.  """
+        return vector / np.linalg.norm(vector)
+
+    def angle_between(self, v1, v2):
+        """ Returns the angle in radians between vectors 'v1' and 'v2'::
+
+                >>> angle_between((1, 0, 0), (0, 1, 0))
+                1.5707963267948966
+                >>> angle_between((1, 0, 0), (1, 0, 0))
+                0.0
+                >>> angle_between((1, 0, 0), (-1, 0, 0))
+                3.141592653589793
+        """
+        v1_u = self.unit_vector(v1)
+        v2_u = self.unit_vector(v2)
+        
+        print("unit vecs")
+        print(v1_u)
+        print(v2_u)
+        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
     def get_heading_cost(self, x, u, i, goal):
+        if i is 0:
+            return 0
+
+        goals       = self.goals
+
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
+
+        print("Points in a row")
+        print(x0, x1)
+
+        robot_vector    = x1 - x0
+        target_vector   = None
+        all_goal_vectors    = []
+
+        for alt_goal in goals:
+            goal_vector = alt_goal - x1 #[x1, alt_goal]
+
+            if alt_goal is goal:
+                target_vector = goal_vector
+            all_goal_vectors.append(goal_vector)
+
+        print("robot vector")
+        print(robot_vector)
+
+        print("all goal vectors")
+        print(all_goal_vectors)
+
+        all_goal_angles   = []
+        for gvec in all_goal_vectors:
+            goal_angle = self.angle_between(robot_vector, gvec)
+            all_goal_angles.append(goal_angle)
+
+        target_angle = self.angle_between(robot_vector, target_vector)
+
+        print("all target angles")
+        print(all_goal_angles)
+
+        angles_squared = []
+        for i in range(len(all_goal_angles)):
+            gangle = all_goal_angles[i]
+            gang_sqr = gangle * gangle
+
+            if self.exp.get_weighted_close_on() is True:
+                k = self.get_relative_distance_k(x1, goals[i], goals)
+            else:
+                k = 1.0
+
+            angles_squared.append(k * gang_sqr)
+
+        target_angle_sqr = target_angle * target_angle
+
+        total = sum(angles_squared)
+
+        print("total")
+        print(total)
+        print("target_angle")
+        print(target_angle)
+        print("target angle sqr")
+        print(target_angle_sqr)
+
+        denominator = (180*180) * len(all_goal_angles)
+
+        heading_clarity_cost = (total - target_angle_sqr) / (total)
+        # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
+        # alt_goal_part_log = alt_goal_part_log / (total)
+
+        print("Heading component of pathing ")
+        print("Given x of " + str(x) + " and robot vector of " + str(robot_vector))
+        print("for goals " + str(goals))
+        # print(alt_goal_part_log)
+        print(heading_clarity_cost)
+        # print("good parts, bad parts")
+        # print(good_part, bad_parts)
+
+        return heading_clarity_cost
+
+    def get_heading_cost_v1(self, x, u, i, goal):
         if i is 0:
             return 0
 
