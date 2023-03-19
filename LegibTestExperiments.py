@@ -54,15 +54,15 @@ def run_all_tests():
     # exit()
     # test_obstacles_being_avoided(dashboard_folder)
     # exit()
-    # test_weighted_by_distance_or_no(dashboard_folder)
+    test_weighted_by_distance_or_no(dashboard_folder)
     # test_normalized_or_no(dashboard_folder)
-    test_heading_useful_or_no(dashboard_folder)
+    # test_heading_useful_or_no(dashboard_folder)
     # exit()
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
-    file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + label
-    sys.stdout = open(dash_folder + file_id + '_output.txt','wt')
+    file_id = label + "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+    # sys.stdout = open(dash_folder + file_id + '_output.txt','wt')
     return dash_folder + file_id
 
 def get_dashboard_folder():
@@ -228,8 +228,8 @@ def test_weighted_by_distance_or_no(dash_folder):
         cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
         cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
 
-        blurb1 = get_solver_status_blurb(info_packet1)
-        blurb2 = get_solver_status_blurb(info_packet2)
+        blurb1 = without_heading.get_solver_status_blurb()
+        blurb2 = with_heading.get_solver_status_blurb()
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
