@@ -174,7 +174,6 @@ class PathingExperiment():
     def get_goal_label(self):
         return "g" + str(self.goals.index(self.target_goal))
 
-
     def set_cost_label(self, label):
         self.cost_label = label
 
@@ -370,9 +369,9 @@ class PathingExperiment():
             converged_text = ""
             converged, info, iteration_count = info_packet
             if converged is False:
-                converged_text = "INCOMPLETE after " + str(iteration_count)
+                converged_text = "INC in " + str(iteration_count)
             else:
-                converged_text = "CONVERGED in " + str(iteration_count)
+                converged_text = "OK in " + str(iteration_count)
             
             blurb = converged_text
         else:
@@ -382,3 +381,6 @@ class PathingExperiment():
         purpose     = self.get_fn_note()[1:]
 
         return (scenario, purpose, converged_text, converged, iteration_count)
+
+    def get_solve_quality_columns(self):
+        return ('scenario', 'condition', 'status_summary', 'converged', 'num_iterations')
