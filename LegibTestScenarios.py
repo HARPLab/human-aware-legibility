@@ -391,6 +391,11 @@ def scenario_0(goal_index=None):
     target_goal = goal3
     all_goals   = [goal1, goal3]
 
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal3
+
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
     exp.set_state_size(2)
@@ -425,6 +430,12 @@ def scenario_1(goal_index=None):
 
     all_goals   = [goal1, goal3]
 
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal1
+
+
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
     exp.set_state_size(2)
@@ -457,8 +468,12 @@ def scenario_test_8(goal_index=None):
     goal3           = [1.0, 3.0]
 
     target_goal = goal4
-
     all_goals   = [goal1, goal4, goal2]
+
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal4
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
@@ -495,6 +510,11 @@ def scenario_test_9(goal_index=None):
 
     all_goals   = [goal1, goal3, goal2]
 
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal3
+
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
     exp.set_state_size(2)
@@ -526,9 +546,12 @@ def scenario_5_large_scale(goal_index=None):
     goal3           = [100.0, 300.0]
 
     target_goal = goal3
-    # start = goal3
-
     all_goals   = [goal1, goal3, goal2]
+
+    if goal_index != None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = goal3
     
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
