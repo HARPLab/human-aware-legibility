@@ -14,6 +14,7 @@ import LegibSolver as solver
 import matplotlib.pyplot as plt
 from datetime import timedelta, datetime
 import pandas as pd
+import markupsafe
 
 # import theano.tensor as T
 
@@ -55,13 +56,19 @@ def run_all_tests():
     # exit()
     # test_observers_being_respected(dashboard_folder)
     # exit()
-    # test_obstacles_being_avoided(dashboard_folder)
     # exit()
-    test_weighted_by_distance_or_no(dashboard_folder)
     # test_normalized_or_no(dashboard_folder)
-    # test_heading_useful_or_no(dashboard_folder)
-    # exit()
+    test_heading_sqr_or_no(dashboard_folder)
     collate_and_report_on_results(dashboard_folder)
+
+    test_weighted_by_distance_or_no(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
+    test_heading_useful_or_no(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
+
+    test_obstacles_being_avoided(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
+
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -80,14 +87,37 @@ def get_dashboard_folder():
     # sys.stdout = open(dash_folder + '/output.txt','wt')
     return dash_folder
 
+# def highlight_cells(value, color_true, color_false, criteria):
+#         if value == criteria:
+#             color = color_true 
+#         else:
+#             color = color_false 
+#     return 'background-color: {}'.format(color)
+
+# data.style.applymap(highlight_cells, color_true = 'green', color_false = 'yellow', criteria = 2.55)
+
 def collate_and_report_on_results(dash_folder):
-    # test_log contains [scenario, purpose] -> [packet of results info]
+    # test_log contains [scenario, purpose, packet of results info]
 
     df = pd.DataFrame(test_log, columns=['scenario', 'condition', 'status_summary', 'converged', 'num_iterations'])
     # df = df.set_index(['experiment','scenario'])
 
-    save_location = dash_folder + "/status_overview.csv" #get_file_id_for_exp(dash_folder, "status_overview.csv")
+    def highlight_cells(value):
+        if "INC" in value:
+            color = 'pink' 
+        elif "FALSE" in value or "False" in value:
+            color = 'pink' 
+        else:
+            color = 'yellow'
+            # color = 'lightcyan' 
+   
+        return 'background-color: {}'.format(color)
+
+    df.style.applymap(highlight_cells)
+
+    save_location = dash_folder + "/status_overview.xlsx" #get_file_id_for_exp(dash_folder, "status_overview.csv")
     df.to_csv(save_location)
+    df.to_excel(save_location)
 
 
 def test_heading_useful_or_no(dash_folder):
@@ -156,6 +186,58 @@ def test_heading_useful_or_no(dash_folder):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + pure_heading.get_goal_label())
+        plt.savefig(save_location + ".png")
+
+def test_heading_sqr_or_no(dash_folder):
+    print("TESTING IF HEADING PLAIN OR SQR BETTER")
+    scenarios = test_scenarios.get_scenarios_heading()
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        heading_lin = copy.copy(scenario)
+        heading_sqr = copy.copy(scenario)
+
+        heading_lin.set_fn_note("head_lin")
+        heading_sqr.set_fn_note("head_sqr")
+
+        # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+        heading_lin.set_heading_on(True)
+        heading_lin.set_mode_pure_heading(True)
+        heading_lin.set_mode_heading_err_sqr(False)
+        
+        heading_sqr.set_heading_on(True)
+        heading_sqr.set_mode_pure_heading(True)
+        heading_sqr.set_mode_heading_err_sqr(True)
+
+        save_location = get_file_id_for_exp(dash_folder, "head-sqr-" + heading_lin.get_exp_label())
+
+        verts_heading_lin, us_heading_lin, cost_heading_lin, info_packet1    = solver.run_solver(heading_lin)
+        verts_heading_sqr, us_heading_sqr, cost_heading_sqr, info_packet3    = solver.run_solver(heading_sqr)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, (ax1, ax3) = plt.subplots(ncols=2, figsize=(6, 4))
+
+        cost_heading_lin.get_overview_pic(verts_heading_lin, us_heading_lin, ax=ax1)
+        cost_heading_sqr.get_overview_pic(verts_heading_sqr, us_heading_sqr, ax=ax3)
+
+        blurb1 = heading_lin.get_solver_status_blurb()
+        blurb3 = heading_sqr.get_solver_status_blurb()
+
+        test_log.append(heading_lin.get_solve_quality_status())
+        test_log.append(heading_sqr.get_solve_quality_status())
+
+        # _ = ax1.set_xlabel("Time", fontweight='bold')
+        # _ = ax1.set_ylabel("Legibility", fontweight='bold')
+        _ = ax1.set_title("Linear Heading\n" + blurb1, fontweight='bold')
+        _ = ax3.set_title("Sqr Heading\n" + blurb3, fontweight='bold')
+        # ax2.legend() #loc="upper left")
+        # ax2.set_ylim([-0.05, 1.05])
+
+        plt.tight_layout()
+        fig.suptitle("Goal = " + heading_sqr.get_goal_label())
         plt.savefig(save_location + ".png")
 
 def test_normalized_or_no(dash_folder):
@@ -285,7 +367,7 @@ def test_obstacles_being_avoided(dash_folder):
 
         verts_with_obs, us_with_obs, cost_with_obs, info_packet = solver.run_solver(obs_scenario)
 
-        blurb = exp.get_solver_status_blurb()
+        blurb = obs_scenario.get_solver_status_blurb()
 
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time,
@@ -294,6 +376,8 @@ def test_obstacles_being_avoided(dash_folder):
 
         cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
         _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
+
+        test_log.append(obs_scenario.get_solve_quality_status())
 
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
