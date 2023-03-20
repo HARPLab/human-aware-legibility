@@ -166,7 +166,13 @@ class PathingExperiment():
         return self.exp_label
 
     def set_exp_label(self, label):
-        self.exp_label = label
+        goal_index = str(self.goals.index(self.target_goal))
+
+        self.exp_label = label + "-g" + goal_index
+
+    def get_goal_label(self):
+        return "g" + str(self.goals.index(self.target_goal))
+
 
     def set_cost_label(self, label):
         self.cost_label = label
@@ -347,3 +353,4 @@ class PathingExperiment():
             blurb = ""
 
         return blurb
+
