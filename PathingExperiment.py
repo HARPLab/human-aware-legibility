@@ -151,7 +151,7 @@ class PathingExperiment():
         except:
             print("FILE ALREADY EXISTS " + self.file_id)
         
-        sys.stdout = open(PREFIX_EXPORT + self.file_id + '/output.txt','wt')
+        # sys.stdout = open(PREFIX_EXPORT + self.file_id + '/output.txt','wt')
 
     def reinit_file_id(self):
         self.setup_file_id()
@@ -371,4 +371,7 @@ class PathingExperiment():
         else:
             blurb = ""
 
-        return (converged_text, converged, iteration_count)
+        scenario    = self.get_exp_label()
+        purpose     = self.get_fn_note()[1:]
+
+        return (scenario, purpose, converged_text, converged, iteration_count)
