@@ -256,7 +256,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         for i in range(len(all_goal_angles)):
             gval = 1.0 / all_goal_angles[i]
 
-            if self.exp.get_mode_pure_heading() is True:
+            if self.exp.get_mode_heading_err_sqr() is True:
                 gval = gval * gval
             
             if self.exp.get_weighted_close_on() is True:
@@ -268,6 +268,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
             g_vals.append(k * gval)
 
         target_val = 1.0 / target_angle
+        if self.exp.get_mode_heading_err_sqr() is True:
+            target_val = target_val * target_val
 
         total = sum(g_vals)
 
