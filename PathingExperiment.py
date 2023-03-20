@@ -67,6 +67,7 @@ class PathingExperiment():
     norm_on             = False
     weighted_close_on   = False
     mode_pure_heading   = False
+    mode_heading_err_sqr     = False
 
     J_hist = []
     solve_status = None
@@ -146,10 +147,10 @@ class PathingExperiment():
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
         self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label
-        try:
-            os.mkdir(PREFIX_EXPORT + self.file_id)
-        except:
-            print("FILE ALREADY EXISTS " + self.file_id)
+        # try:
+        #     os.mkdir(PREFIX_EXPORT + self.file_id)
+        # except:
+        #     print("FILE ALREADY EXISTS " + self.file_id)
         
         # sys.stdout = open(PREFIX_EXPORT + self.file_id + '/output.txt','wt')
 
@@ -325,6 +326,12 @@ class PathingExperiment():
 
     def get_mode_pure_heading(self):
         return self.mode_pure_heading
+
+    def set_mode_heading_err_sqr(self, v):
+        self.mode_heading_err_sqr = v
+
+    def get_mode_heading_err_sqr(self):
+        return self.mode_heading_err_sqr
 
     def set_fn_note(self, label):
         self.fn_note = "-" + label
