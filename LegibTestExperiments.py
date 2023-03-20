@@ -45,6 +45,8 @@ import utility_environ_descrip as resto
 # # exp.set_f_label(ex.F_VIS_LIN)
 # # exp.set_f_label(ex.F_NONE)
 
+test_log = {}
+
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
     # test_amount_of_slack(dashboard_folder)
@@ -137,6 +139,7 @@ def test_heading_useful_or_no(dash_folder):
         # ax2.set_ylim([-0.05, 1.05])
 
         plt.tight_layout()
+        fig.suptitle("Goal = " + pure_heading.get_goal_label())
         plt.savefig(save_location + ".png")
 
 def test_normalized_or_no(dash_folder):
@@ -188,6 +191,7 @@ def test_normalized_or_no(dash_folder):
         # ax2.set_ylim([-0.05, 1.05])
 
         plt.tight_layout()
+        fig.suptitle("Goal = " + with_heading.get_goal_label())
         plt.savefig(save_location + ".png")
 
 def test_weighted_by_distance_or_no(dash_folder):
@@ -239,6 +243,7 @@ def test_weighted_by_distance_or_no(dash_folder):
         # ax2.set_ylim([-0.05, 1.05])
 
         plt.tight_layout()
+        fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
 
@@ -269,6 +274,7 @@ def test_obstacles_being_avoided(dash_folder):
         _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
 
         plt.tight_layout()
+        fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
 
@@ -311,6 +317,7 @@ def test_observers_being_respected(dash_folder):
         # ax2.set_ylim([-0.05, 1.05])
 
         plt.tight_layout()
+        fig.suptitle("Goal = " + cost_wout_oa.get_goal_label())
         plt.savefig(save_location + ".png")
 
 
@@ -374,7 +381,7 @@ def test_amount_of_slack(dash_folder):
             ax.get_legend().remove()
     
         plt.tight_layout()
-        fig.suptitle("N=" + str(base_N))
+        fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
 
@@ -435,6 +442,7 @@ def test_observers_rotated(dash_folder):
             ax.get_legend().remove()
     
         plt.tight_layout()
+        fig.suptitle("Goal = " + rot_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
 
