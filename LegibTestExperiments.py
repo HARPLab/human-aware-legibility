@@ -142,6 +142,10 @@ def test_heading_useful_or_no(dash_folder):
         blurb2 = mixed_heading.get_solver_status_blurb()
         blurb3 = pure_heading.get_solver_status_blurb()
 
+        test_log.append(without_heading.get_solve_quality_status())
+        test_log.append(mixed_heading.get_solve_quality_status())
+        test_log.append(pure_heading.get_solve_quality_status())
+
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
         _ = ax1.set_title("Without Heading\n" + blurb1, fontweight='bold')
@@ -194,6 +198,9 @@ def test_normalized_or_no(dash_folder):
 
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
+
+        test_log.append(without_heading.get_solve_quality_status())
+        test_log.append(with_heading.get_solve_quality_status())
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
