@@ -329,7 +329,7 @@ def scenario_test_6(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 31
+    N = 41
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -368,7 +368,7 @@ def scenario_1():
     return full_label, ex.PathingExperiment(start, target_goal, all_goals)
 
 def scenario_0(goal_index=None):
-    label = "scenario_0"
+    label = "test0_g"
     
     start           = [1.0, 0.01]
 
@@ -443,8 +443,8 @@ def scenario_1(goal_index=None):
     return label, exp
 
 
-def scenario_2(goal_index=None):
-    label = "scenario_2"
+def scenario_test_8(goal_index=None):
+    label = "test_8"
 
     restaurant      = None
     start           = [0.0, 0.0]
@@ -477,8 +477,8 @@ def scenario_2(goal_index=None):
 
     return label, exp
 
-def scenario_3(goal_index=None):
-    label = "scenario_3"
+def scenario_test_9(goal_index=None):
+    label = "test_9"
 
     restaurant      = None
     start           = [8.0, 2.0]
@@ -642,7 +642,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     return label, exp
 
 def scenario_7_observer(goal_index=None, obs_angle=0):
-    label = "scenario_7_obs"
+    label = "test_7_obs_g"
 
     start           = [0.0, 2.0]
 
@@ -692,7 +692,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     return label, exp
 
 def scenario_7_observer_offset(goal_index=None):
-    label = "scenario_7_offset"
+    label = "scenario_7_offset_g"
 
     start           = [100.0, 102.0]
 
@@ -927,9 +927,13 @@ def scenario_6():
 def get_scenario_set():
     scenarios = {}
 
-    # # TEST SCENARIO
-    # label, exp = scenario_0()
-    # scenarios[label] = exp
+    # TEST SCENARIO
+    label, exp = scenario_0(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_0(goal_index=1)
+    scenarios[label] = exp
 
     # # TEST SCENARIO
     label, exp = scenario_test_1(goal_index=0)
@@ -955,6 +959,7 @@ def get_scenario_set():
     label, exp = scenario_test_3(goal_index=1)
     scenarios[label] = exp
 
+    ####### NEEDLE
     # # TEST SCENARIO
     label, exp = scenario_test_4(goal_index=0)
     scenarios[label] = exp
@@ -983,13 +988,6 @@ def get_scenario_set():
     label, exp = scenario_test_6(goal_index=1)
     scenarios[label] = exp
 
-    # label, exp = scenario_2()
-    # scenarios[label] = exp
-
-    # # TEST SCENARIO
-    # label, exp = scenario_3()
-    # scenarios[label] = exp
-
     # label, exp = scenario_4_has_obstacles_and_observer(goal_index=None)
     # scenarios[label] = exp
 
@@ -998,6 +996,25 @@ def get_scenario_set():
     scenarios[label] = exp
 
     label, exp = scenario_7_observer_on_zero(goal_index=1)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_8(goal_index=0)
+    scenarios[label] = exp
+    
+    label, exp = scenario_test_8(goal_index=1)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_8(goal_index=2)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_test_9(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_9(goal_index=1)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_9(goal_index=2)
     scenarios[label] = exp
 
     return scenarios
