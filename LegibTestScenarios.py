@@ -32,7 +32,7 @@ import utility_environ_descrip as resto
 
 
 def scenario_test_1(goal_index=None):
-    label = "test1_asym_g" + str(goal_index)
+    label = "test1_asym" + str(goal_index)
 
     start           = [0.0, 3.0]
 
@@ -60,7 +60,7 @@ def scenario_test_1(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 31
+    N = 40
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -368,7 +368,7 @@ def scenario_1():
     return full_label, ex.PathingExperiment(start, target_goal, all_goals)
 
 def scenario_0(goal_index=None):
-    label = "test0_g"
+    label = "test0"
     
     start           = [1.0, 0.01]
 
@@ -642,7 +642,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     return label, exp
 
 def scenario_7_observer(goal_index=None, obs_angle=0):
-    label = "test_7_obs_g"
+    label = "test_7_obs"
 
     start           = [0.0, 2.0]
 
@@ -692,7 +692,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     return label, exp
 
 def scenario_7_observer_offset(goal_index=None):
-    label = "scenario_7_offset_g"
+    label = "scenario_7_offset_g" + str(goal_index)
 
     start           = [100.0, 102.0]
 
@@ -941,6 +941,7 @@ def get_scenario_set():
 
     label, exp = scenario_test_1(goal_index=1)
     scenarios[label] = exp
+
 
     # # TEST SCENARIO
     label, exp = scenario_test_2(goal_index=0)
