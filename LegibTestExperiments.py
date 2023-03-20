@@ -13,6 +13,7 @@ import numpy as np
 import LegibSolver as solver
 import matplotlib.pyplot as plt
 from datetime import timedelta, datetime
+import pandas as pd
 
 # import theano.tensor as T
 
@@ -45,7 +46,7 @@ import utility_environ_descrip as resto
 # # exp.set_f_label(ex.F_VIS_LIN)
 # # exp.set_f_label(ex.F_NONE)
 
-test_log = {}
+test_log = []
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
@@ -60,11 +61,12 @@ def run_all_tests():
     # test_normalized_or_no(dashboard_folder)
     # test_heading_useful_or_no(dashboard_folder)
     # exit()
+    collate_and_report_on_results(dashboard_folder)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
     file_id = label + "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
-    # sys.stdout = open(dash_folder + file_id + '_output.txt','wt')
+    sys.stdout = open(dash_folder + file_id + '_output.txt','wt')
     return dash_folder + file_id
 
 def get_dashboard_folder():
@@ -75,8 +77,18 @@ def get_dashboard_folder():
         print("FILE ALREADY EXISTS " + file_id)
 
     dash_folder = LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + "/"
-    sys.stdout = open(dash_folder + '/output.txt','wt')
+    # sys.stdout = open(dash_folder + '/output.txt','wt')
     return dash_folder
+
+def collate_and_report_on_results(dash_folder):
+    # test_log contains [scenario, purpose] -> [packet of results info]
+
+    df = pd.DataFrame(test_log, columns=['scenario', 'condition', 'status_summary', 'converged', 'num_iterations'])
+    # df = df.set_index(['experiment','scenario'])
+
+    save_location = dash_folder + "/status_overview.csv" #get_file_id_for_exp(dash_folder, "status_overview.csv")
+    df.to_csv(save_location)
+
 
 def test_heading_useful_or_no(dash_folder):
     print("TESTING IF HEADING IS USEFUL")
@@ -234,6 +246,9 @@ def test_weighted_by_distance_or_no(dash_folder):
 
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
+
+        test_log.append(without_heading.get_solve_quality_status())
+        test_log.append(with_heading.get_solve_quality_status())
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
