@@ -68,6 +68,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             self, exp, x_path, u_path
         )
 
+    # TODO ADD TEST SUITE FOR THIS
     def get_obstacle_penalty(self, x, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .1
@@ -87,6 +88,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             if obs_dist < TABLE_RADIUS:
                 obs_dist = TABLE_RADIUS - obs_dist
                 print("table obstacle dist for " + str(x) + " " + str(obs_dist))
+                print(str(table.get_center()))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
                 # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
@@ -105,6 +107,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             if obs_dist < OBS_RADIUS:
                 obs_dist = OBS_RADIUS - obs_dist
                 print("obs obstacle dist for " + str(x) + " " + str(obs_dist))
+                print(str(obs.get_center()))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
                 # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
@@ -129,7 +132,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
                     # OBSTACLE PENALTY NOW ALWAYS SCALED TO RANGE 0 -> 1
                     if self.FLAG_OBS_FLAT_PENALTY:
                         obstacle_penalty += 1.0
-                    obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
+                    obstacle_penalty += np.abs(obs_dist / GOAL_RADIUS) #**2
 
         return obstacle_penalty
 
@@ -159,12 +162,16 @@ class SocLegPathQRCost(LegiblePathQRCost):
             dist = g - x
             dist = np.abs(np.linalg.norm(dist))
 
-            total_distance += dist
+            total_distance += 1.0 / dist
 
         target_goal_dist = goal - x
-        tg_dist = np.abs(np.linalg.norm(target_goal_dist))
+        tg_dist = 1.0 / np.abs(np.linalg.norm(target_goal_dist))
 
-        return 1.0 - (tg_dist / total_distance)
+        # rel_dist = 1.0 - (tg_dist / total_distance)
+
+        rel_dist = tg_dist / total_distance
+
+        return rel_dist
 
 
     def get_relative_distance_k_v1(self, x, goal, goals):
@@ -245,6 +252,87 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("all target angles")
         print(all_goal_angles)
 
+        g_vals = []
+        for i in range(len(all_goal_angles)):
+            gval = 1.0 / all_goal_angles[i]
+
+            if self.exp.get_mode_pure_heading() is True:
+                gval = gval * gval
+            
+            if self.exp.get_weighted_close_on() is True:
+                k = self.get_relative_distance_k(x1, goals[i], goals)
+                # k = k*k
+            else:
+                k = 1.0
+
+            g_vals.append(k * gval)
+
+        target_val = 1.0 / target_angle
+
+        total = sum(g_vals)
+
+        print("total")
+        print(total)
+        print("target_angle")
+        print(target_angle)
+        # denominator = (180*180) * len(all_goal_angles)
+
+        heading_clarity_cost = target_val / total
+        # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
+        # alt_goal_part_log = alt_goal_part_log / (total)
+
+        print("Heading component of pathing ")
+        print("Given x of " + str(x) + " and robot vector of " + str(robot_vector))
+        print("for goals " + str(goals))
+        # print(alt_goal_part_log)
+        print(heading_clarity_cost)
+        # print("good parts, bad parts")
+        # print(good_part, bad_parts)
+
+        return heading_clarity_cost
+
+    def get_heading_cost_v2_wraps(self, x, u, i, goal):
+        if i is 0:
+            return 0
+
+        goals       = self.goals
+
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
+
+        print("Points in a row")
+        print(x0, x1)
+
+        robot_vector    = x1 - x0
+        target_vector   = None
+        all_goal_vectors    = []
+
+        for alt_goal in goals:
+            goal_vector = alt_goal - x1 #[x1, alt_goal]
+
+            if alt_goal is goal:
+                target_vector = goal_vector
+            all_goal_vectors.append(goal_vector)
+
+        print("robot vector")
+        print(robot_vector)
+
+        print("all goal vectors")
+        print(all_goal_vectors)
+
+        all_goal_angles   = []
+        for gvec in all_goal_vectors:
+            goal_angle = self.angle_between(robot_vector, gvec)
+            all_goal_angles.append(goal_angle)
+
+        target_angle = self.angle_between(robot_vector, target_vector)
+
+        print("all target angles")
+        print(all_goal_angles)
+
         angles_squared = []
         for i in range(len(all_goal_angles)):
             gangle = all_goal_angles[i]
@@ -252,6 +340,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if self.exp.get_weighted_close_on() is True:
                 k = self.get_relative_distance_k(x1, goals[i], goals)
+                # k = k*k
             else:
                 k = 1.0
 
@@ -506,98 +595,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
         return float(total)
-
-    # # original version for plain path following
-    # def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
-    #     """Instantaneous cost function.
-    #     Args:
-    #         x: Current state [state_size].
-    #         u: Current control [action_size]. None if terminal.
-    #         i: Current time step.
-    #         terminal: Compute terminal cost. Default: False.
-    #     Returns:
-    #         Instantaneous cost (scalar).
-    #     """
-    #     Q = self.Qf if terminal else self.Q
-    #     R = self.R
-    #     start = self.start
-    #     goal = self.target_goal
-    #     thresh = .0001
-
-    #     term_cost = 0
-
-    #     if terminal or just_term: # or abs(i - self.N) < thresh:
-    #         return self.term_cost(x, i) #*1000
-    #     else:
-    #         if self.FLAG_DEBUG_STAGE_AND_TERM:
-    #             # difference between this step and the end
-    #             print("x, N, x_end_of_path -> inputs and then term cost")
-    #             print(x, self.N, self.x_path[self.N])
-    #             # term_cost = self.term_cost(x, i)
-
-
-    #     # VISIBILITY COMPONENT
-    #     restaurant  = self.exp.get_restaurant()
-    #     observers   = restaurant.get_observers()
-
-    #     visibility  = 1 #legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
-    #     FLAG_OA_MIN_VIS = False
-
-    #     if FLAG_OA_MIN_VIS:
-    #         if visibility == 0:
-    #             visibility = .01
-
-    #     # f_func     = self.get_f()
-    #     # f_value    = f_func(i)
-
-    #     # if f_value != visibility:
-    #     #     exit()
-
-    #     f_value    = visibility
-
-    #     # PATH COST PENALTY COMPONENT
-    #     x_diff = x - self.x_path[self.N]
-    #     Q_path_cost = np.identity(2)
-    #     path_squared_x_cost = .5 * x_diff.T.dot(Q_path_cost).dot(x_diff)
-
-    #     stage_costs = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
-    #     stage_costs = stage_costs + self.exp.get_lambda_cost_path_coeff() * path_squared_x_cost
-    
-    #     if self.FLAG_DEBUG_STAGE_AND_TERM:
-    #         print("STAGE,\t TERM")
-    #         print(stage_costs, term_cost)
-
-    #     # Log of remixes of term and stage cost weightings
-    #     # term_cost      = decimal.Decimal.ln(decimal.Decimal(term_cost)) 
-    #     # stage_costs    = decimal.Decimal.ln(stage_costs)
-    #     # if i < 30:
-    #     #     stage_scale = 200
-    #     #     term_scale = 0.1
-    #     # else:
-    #     #     stage_scale = 10
-    #     #     term_scale = 1
-    #     # stage_scale = max([(self.N - i), 20])
-    #     # term_scale = 100
-    #     # stage_scale = 10
-    #     # term_scale = 1
-    #     # stage_scale = max([self.N-i, 10])
-    #     # stage_scale = abs(self.N-i)
-    #     # term_scale = i/self.N
-    #     # term_scale = 1
-    #     # stage_scale = 50
-
-    #     scale_term  = self.scale_term #0.01 # 1/100
-    #     scale_stage = self.scale_stage #1.5
-
-    #     if just_term:   
-    #         scale_stage = 0
-
-    #     if just_stage:
-    #         scale_term  = 0
-
-    #     total = (scale_term * term_cost) + (scale_stage * stage_costs)
-
-    #     return float(total)
 
     def f(t):
         return 1.0
