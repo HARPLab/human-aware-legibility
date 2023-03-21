@@ -312,8 +312,8 @@ def test_weighted_by_distance_or_no(dash_folder):
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
 
-        with_heading.set_fn_note("not_wt")
-        without_heading.set_fn_note("is_wt")
+        with_heading.set_fn_note("even_wt")
+        without_heading.set_fn_note("dist_wt")
 
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         without_heading.set_weighted_close_on(False)
