@@ -165,6 +165,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         )
 
 
+    def init_output_log(self):
+        sys.stdout = open(self.get_export_label() + '--output.txt','wt')
+
     def get_f(self):
         f_label = self.exp.get_f_label()
         print(f_label)
@@ -753,9 +756,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.set_aspect('equal')
         axarr.grid(axis='y')
 
+        TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = .1
+        GOAL_RADIUS     = .15 #.05
+
         TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
-        TABLE_RADIUS           = TABLE_RADIUS_BUFFER / 2.0
-        OBS_RADIUS      = .05
+        TABLE_RADIUS           = TABLE_RADIUS #_BUFFER / 2.0
+        OBS_RADIUS             = OBS_RADIUS #/ 2.0
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -850,6 +857,16 @@ class LegiblePathQRCost(FiniteDiffCost):
                 color_grad.append(color_grad_2[i])
                 outline_grad.append('#f4722b')
 
+        if self.exp.best_xs is not None and verts is not self.exp.best_xs:
+            print("ALT TO PLOT")
+
+            bxs, bys = zip(*self.best_xs)
+
+            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='purple', label="path", markersize=1)
+            axarr.scatter(xs, ys, c=outline_grad, s=20)
+            axarr.scatter(xs, ys, c=color_grad, s=10)
+
+
         # Draw the path itself
         axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
         axarr.scatter(xs, ys, c=outline_grad, s=20)
@@ -892,7 +909,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None):
         print("GRAPHING LEGIBILITY OVER TIME")
-        sys.stdout = open('path_overview.txt','wt')
+        sys.stdout = open('path_overview.txt','w')
 
 
         ts = np.arange(self.N) * self.dt
@@ -1123,9 +1140,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         if FLAG_SHOW_IMAGE_POPUP:
             plt.show()
         plt.clf()
-
-        # sys.stdout = open('output.txt','wt')
-
 
 
     # def goal_efficiency_through_path(self, start, goal, path, terminal=False):
