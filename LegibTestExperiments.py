@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from datetime import timedelta, datetime
 import pandas as pd
 import markupsafe
+from random import randint
 
 # import theano.tensor as T
 
@@ -74,7 +75,9 @@ def run_all_tests():
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
     file_id = label + "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
-    sys.stdout = open(dash_folder + file_id + '_output.txt','wt')
+    n = 5
+    rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
+    sys.stdout = open(dash_folder + file_id + "_" + str(rand_id) + '_output.txt','a')
     return dash_folder + file_id
 
 def get_dashboard_folder():
@@ -85,7 +88,7 @@ def get_dashboard_folder():
         print("FILE ALREADY EXISTS " + file_id)
 
     dash_folder = LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + "/"
-    # sys.stdout = open(dash_folder + '/output.txt','wt')
+    # sys.stdout = open(dash_folder + '/output.txt','a')
     return dash_folder
 
 def collate_and_report_on_results(dash_folder):
@@ -309,8 +312,8 @@ def test_weighted_by_distance_or_no(dash_folder):
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
 
-        with_heading.set_fn_note("with_head")
-        without_heading.set_fn_note("wout_head")
+        with_heading.set_fn_note("not_wt")
+        without_heading.set_fn_note("is_wt")
 
         # RUN THE SOLVER WITH CONSTRAINTS ON EACH
         without_heading.set_weighted_close_on(False)
