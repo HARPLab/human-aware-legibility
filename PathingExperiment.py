@@ -360,7 +360,7 @@ class PathingExperiment():
 
         return blurb
 
-    def get_solve_quality_status(self, info_packet=None):
+    def get_solve_quality_status(self, test_group, info_packet=None):
         if info_packet is None:
             info_packet = self.get_solver_status()
 
@@ -380,7 +380,7 @@ class PathingExperiment():
         scenario    = self.get_exp_label()
         purpose     = self.get_fn_note()[1:]
 
-        return (scenario, purpose, converged_text, converged, iteration_count)
+        return (scenario, test_group, purpose, converged_text, converged, iteration_count)
 
     def get_solve_quality_columns(self):
-        return ('scenario', 'condition', 'status_summary', 'converged', 'num_iterations')
+        return ('scenario', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
