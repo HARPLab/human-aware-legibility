@@ -94,19 +94,22 @@ def collate_and_report_on_results(dash_folder):
 
     def _colorize(val):
         color = 'white'
-        color = 'pink' if val.contains("INC") else color
-        color = 'lightcyan' if val.contains("OK") else color
-        return 'color: %s' % color
+        color = 'pink' if "INC" in val else color
+        color = 'lightcyan' if "OK" in val else color
+        return 'background-color: %s' % color
 
     save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
     df.to_csv(save_location + ".csv")
 
     # pandas.pivot(index, columns, values)
     df_dashboard = df.pivot([df_cols[0], df_cols[1]], [df_cols[2], df_cols[3]], 'status_summary')
-    df_dashboard.style.applymap(_colorize)
+    df_dashboard = df_dashboard.style.applymap(_colorize)
 
     save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
-    df_dashboard.to_csv(save_location + ".csv")
+    df_dashboard.to_html(save_location + ".html") #sparse_index=True, sparse_columns=True
+    df_dashboard.to_latex(save_location + ".latex") #sparse_index=True, sparse_columns=True
+    df_dashboard.to_excel(save_location + ".xls", merge_cells=True, engine='openpyxl')
+    
 
 def test_heading_useful_or_no(dash_folder):
     test_group = 'heading useful?'
