@@ -36,7 +36,7 @@ def run_solver(exp):
     x_goal_raw      = exp.get_target_goal()
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
-    dynamics = NavigationDynamics(exp.get_dt())
+    dynamics = NavigationDynamics(exp.get_dt(), exp)
 
     # Note that the augmented state is not all 0.
     x0      = dynamics.augment_state(np.array(x0_raw)).T
@@ -75,7 +75,9 @@ def run_solver(exp):
     max_reg = 1e-10 #None # default value is 1e-10
     ilqr = iLQR(dynamics, cost, N, max_reg=None)
 
-    tol = 1e-6
+    cost.init_output_log()
+
+    tol = 1e-5
     # tol = 1e-10
 
     num_iterations = 50
@@ -84,6 +86,7 @@ def run_solver(exp):
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration_exp)
+
     end_time = time.time()
 
     t = np.arange(N) * dt
