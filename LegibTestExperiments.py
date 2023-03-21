@@ -89,7 +89,7 @@ def get_dashboard_folder():
     return dash_folder
 
 def collate_and_report_on_results(dash_folder):
-    df_cols = ['scenario', 'test', 'condition', 'status_summary', 'converged', 'num_iterations']
+    df_cols = ['scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations']
     df = pd.DataFrame(test_log, columns=df_cols)
 
     def _colorize(val):
@@ -102,7 +102,7 @@ def collate_and_report_on_results(dash_folder):
     df.to_csv(save_location + ".csv")
 
     # pandas.pivot(index, columns, values)
-    df_dashboard = df.pivot(df_cols[0], [df_cols[1], df_cols[2]], 'status_summary')
+    df_dashboard = df.pivot([df_cols[0], df_cols[1]], [df_cols[2], df_cols[3]], 'status_summary')
     df_dashboard.style.applymap(_colorize)
 
     save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
