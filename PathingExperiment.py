@@ -62,12 +62,12 @@ class PathingExperiment():
     Q   = 1.0 * np.eye(state_size)
     R   = 200.0 * np.eye(action_size)
 
-    oa_on               = True
-    heading_on          = True
-    norm_on             = False
-    weighted_close_on   = False
-    mode_pure_heading   = False
-    mode_heading_err_sqr     = False
+    oa_on                   = True
+    heading_on              = True
+    norm_on                 = False
+    weighted_close_on       = False
+    mode_pure_heading       = False
+    mode_heading_err_sqr    = True
 
     J_hist = []
     solve_status = None
