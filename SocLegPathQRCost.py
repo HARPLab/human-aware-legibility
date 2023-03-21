@@ -27,6 +27,9 @@ import pdb
 from LegiblePathQRCost import LegiblePathQRCost
 import PathingExperiment as ex
 
+from shapely.geometry import LineString
+from shapely.geometry import Point
+
 np.seterr(divide='raise')
 MATH_EPSILON = .0000001
 
@@ -36,6 +39,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
     FLAG_COST_PATH_OVERALL  = True
     FLAG_OBS_FLAT_PENALTY   = True
+
+    best_xs = None
+    best_us = None
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
@@ -71,8 +77,48 @@ class SocLegPathQRCost(LegiblePathQRCost):
             self, exp, x_path, u_path
         )
 
+    def across_obstacle(self, x0, x1):
+        TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = .1
+        GOAL_RADIUS     = .15 #.05
+
+        tables      = self.exp.get_tables()
+        goals       = self.exp.get_goals()
+        observers   = self.exp.get_observers()
+
+        l = LineString([x0, x1])
+
+        for t in tables:
+            ct = t.get_center()
+            p = Point(ct[0],ct[1])
+            c = p.buffer(TABLE_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                print("TELEPORTED ACROSS: table " + ct)
+                return True
+        
+        for o in observers:
+            ct = o.get_center()
+            p = Point(ct[0],ct[1])
+            c = p.buffer(OBS_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                print("TELEPORTED ACROSS: o " + ct)
+                return True
+        
+        for g in goals:
+            ct = g
+            p = Point(ct[0],ct[1])
+            c = p.buffer(GOAL_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                print("TELEPORTED ACROSS: goal " + ct)
+                return True
+
+        return False
+
     # TODO ADD TEST SUITE FOR THIS
-    def get_obstacle_penalty(self, x, goal):
+    def get_obstacle_penalty(self, x, i, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .1
         GOAL_RADIUS     = .15 #.05
@@ -80,6 +126,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
         tables      = self.exp.get_tables()
         goals       = self.goals
         observers   = self.exp.get_observers()
+
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
 
         obstacle_penalty = 0
         for table in tables:
@@ -136,6 +188,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
                     if self.FLAG_OBS_FLAT_PENALTY:
                         obstacle_penalty += 1.0
                     obstacle_penalty += np.abs(obs_dist / GOAL_RADIUS) #**2
+
+        if self.across_obstacle(x0, x1):
+            obstacle_penalty += 1.0
+            print("TELEPORT PENALTY APPLIED")
 
         return obstacle_penalty
 
@@ -602,7 +658,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         J += (wt_legib      * self.michelle_stage_cost(start, goal, x, u, i, terminal))
         J += (wt_lam        * u_diff.T.dot(R).dot(u_diff))
         # J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
-        J += (wt_obstacle)  * self.get_obstacle_penalty(x, goal)
+        J += (wt_obstacle)  * self.get_obstacle_penalty(x, i, goal)
         J += (wt_heading)   * self.get_heading_cost(x, u, i, goal)
 
         stage_costs = J
