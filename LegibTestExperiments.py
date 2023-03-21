@@ -58,16 +58,17 @@ def run_all_tests():
     # exit()
     # exit()
     # test_normalized_or_no(dashboard_folder)
-    test_heading_sqr_or_no(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
+    # test_heading_sqr_or_no(dashboard_folder)
+    # collate_and_report_on_results(dashboard_folder)
 
     test_weighted_by_distance_or_no(dashboard_folder)
     collate_and_report_on_results(dashboard_folder)
+
     test_heading_useful_or_no(dashboard_folder)
     collate_and_report_on_results(dashboard_folder)
 
-    test_obstacles_being_avoided(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
+    # test_obstacles_being_avoided(dashboard_folder)
+    # collate_and_report_on_results(dashboard_folder)
 
 
 def get_file_id_for_exp(dash_folder, label):
@@ -87,40 +88,29 @@ def get_dashboard_folder():
     # sys.stdout = open(dash_folder + '/output.txt','wt')
     return dash_folder
 
-# def highlight_cells(value, color_true, color_false, criteria):
-#         if value == criteria:
-#             color = color_true 
-#         else:
-#             color = color_false 
-#     return 'background-color: {}'.format(color)
-
-# data.style.applymap(highlight_cells, color_true = 'green', color_false = 'yellow', criteria = 2.55)
-
 def collate_and_report_on_results(dash_folder):
-    # test_log contains [scenario, purpose, packet of results info]
+    df_cols = ['scenario', 'test', 'condition', 'status_summary', 'converged', 'num_iterations']
+    df = pd.DataFrame(test_log, columns=df_cols)
 
-    df = pd.DataFrame(test_log, columns=['scenario', 'condition', 'status_summary', 'converged', 'num_iterations'])
-    # df = df.set_index(['experiment','scenario'])
+    def _colorize(val):
+        color = 'white'
+        color = 'pink' if val.contains("INC") else color
+        color = 'lightcyan' if val.contains("OK") else color
+        return 'color: %s' % color
 
-    def highlight_cells(value):
-        if "INC" in value:
-            color = 'pink' 
-        elif "FALSE" in value or "False" in value:
-            color = 'pink' 
-        else:
-            color = 'yellow'
-            # color = 'lightcyan' 
-   
-        return 'background-color: {}'.format(color)
+    save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
+    df.to_csv(save_location + ".csv")
 
-    df.style.applymap(highlight_cells)
+    # pandas.pivot(index, columns, values)
+    df_dashboard = df.pivot(df_cols[0], [df_cols[1], df_cols[2]], 'status_summary')
+    df_dashboard.style.applymap(_colorize)
 
-    save_location = dash_folder + "/status_overview.xlsx" #get_file_id_for_exp(dash_folder, "status_overview.csv")
-    df.to_csv(save_location)
-    df.to_excel(save_location)
-
+    save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
+    df_dashboard.to_csv(save_location + ".csv")
 
 def test_heading_useful_or_no(dash_folder):
+    test_group = 'heading useful?'
+
     print("TESTING IF HEADING IS USEFUL")
     scenarios = test_scenarios.get_scenarios_heading()
 
@@ -172,9 +162,9 @@ def test_heading_useful_or_no(dash_folder):
         blurb2 = mixed_heading.get_solver_status_blurb()
         blurb3 = pure_heading.get_solver_status_blurb()
 
-        test_log.append(without_heading.get_solve_quality_status())
-        test_log.append(mixed_heading.get_solve_quality_status())
-        test_log.append(pure_heading.get_solve_quality_status())
+        test_log.append(without_heading.get_solve_quality_status(test_group))
+        test_log.append(mixed_heading.get_solve_quality_status(test_group))
+        test_log.append(pure_heading.get_solve_quality_status(test_group))
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -190,6 +180,7 @@ def test_heading_useful_or_no(dash_folder):
 
 def test_heading_sqr_or_no(dash_folder):
     print("TESTING IF HEADING PLAIN OR SQR BETTER")
+    test_group = 'heading lin or sqr?'
     scenarios = test_scenarios.get_scenarios_heading()
 
     for key in scenarios.keys():
@@ -226,8 +217,8 @@ def test_heading_sqr_or_no(dash_folder):
         blurb1 = heading_lin.get_solver_status_blurb()
         blurb3 = heading_sqr.get_solver_status_blurb()
 
-        test_log.append(heading_lin.get_solve_quality_status())
-        test_log.append(heading_sqr.get_solve_quality_status())
+        test_log.append(heading_lin.get_solve_quality_status(test_group))
+        test_log.append(heading_sqr.get_solve_quality_status(test_group))
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -242,6 +233,7 @@ def test_heading_sqr_or_no(dash_folder):
 
 def test_normalized_or_no(dash_folder):
     print("TESTING IF NORMALIZED MATTERS")
+    test_group = 'normalized or no?'
     scenarios = test_scenarios.get_scenarios_observers()
 
     # for each test scenario
@@ -281,8 +273,8 @@ def test_normalized_or_no(dash_folder):
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
 
-        test_log.append(without_heading.get_solve_quality_status())
-        test_log.append(with_heading.get_solve_quality_status())
+        test_log.append(without_heading.get_solve_quality_status(test_group))
+        test_log.append(with_heading.get_solve_quality_status(test_group))
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -297,6 +289,7 @@ def test_normalized_or_no(dash_folder):
 
 def test_weighted_by_distance_or_no(dash_folder):
     print("TESTING IF WEIGHTED NEAR MATTERS")
+    test_group = "weighted by distance?"
     scenarios = test_scenarios.get_scenarios()
 
     # for each test scenario
@@ -336,8 +329,8 @@ def test_weighted_by_distance_or_no(dash_folder):
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
 
-        test_log.append(without_heading.get_solve_quality_status())
-        test_log.append(with_heading.get_solve_quality_status())
+        test_log.append(without_heading.get_solve_quality_status(test_group))
+        test_log.append(with_heading.get_solve_quality_status(test_group))
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -353,6 +346,7 @@ def test_weighted_by_distance_or_no(dash_folder):
 
 def test_obstacles_being_avoided(dash_folder):
     scenarios = test_scenarios.get_scenarios_obstacles()
+    test_group = 'obstacles avoided?'
 
     for key in scenarios.keys():
         scenario = scenarios[key]
@@ -377,7 +371,7 @@ def test_obstacles_being_avoided(dash_folder):
         cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
         _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
 
-        test_log.append(obs_scenario.get_solve_quality_status())
+        test_log.append(obs_scenario.get_solve_quality_status(test_group))
 
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
@@ -388,6 +382,7 @@ def test_observers_being_respected(dash_folder):
     # for each test scenario
     # compare with observer vs no
     scenarios = test_scenarios.get_scenarios_observers()
+    test_group = "obervers respected?"
 
     for key in scenarios.keys():
         scenario = scenarios[key]
@@ -429,6 +424,7 @@ def test_observers_being_respected(dash_folder):
 
 def test_amount_of_slack(dash_folder):
     scenarios = test_scenarios.get_scenarios()
+    test_group = "amt slack"
 
     scenario_output_list = []
     for key in scenarios.keys():
@@ -493,6 +489,7 @@ def test_amount_of_slack(dash_folder):
 
 def test_observers_rotated(dash_folder):
     scenarios = test_scenarios.get_scenarios_observers()
+    test_group = 'obs rotated ok?'
     # 3 to either side at +30, +60, +90, and minus the same
 
     # for each test scenario
