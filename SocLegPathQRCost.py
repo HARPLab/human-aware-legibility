@@ -27,6 +27,9 @@ import pdb
 from LegiblePathQRCost import LegiblePathQRCost
 import PathingExperiment as ex
 
+np.seterr(divide='raise')
+MATH_EPSILON = .0000001
+
 class SocLegPathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = True
@@ -208,7 +211,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("unit vecs")
         print(v1_u)
         print(v2_u)
-        return np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+        ang = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+
+        # TODO VERIFY THIS FIX
+        if ang < MATH_EPSILON:
+            ang = MATH_EPSILON
+
+        return ang
 
     def get_heading_cost(self, x, u, i, goal):
         if i is 0:
@@ -245,12 +254,21 @@ class SocLegPathQRCost(LegiblePathQRCost):
         all_goal_angles   = []
         for gvec in all_goal_vectors:
             goal_angle = self.angle_between(robot_vector, gvec)
+
+
             all_goal_angles.append(goal_angle)
+
+            if goal_angle < 0:
+                print(goal_angle)
+                exit()
 
         target_angle = self.angle_between(robot_vector, target_vector)
 
         print("all target angles")
         print(all_goal_angles)
+
+        if all(ele == 0.0 for ele in all_goal_angles):
+            return 1.0
 
         g_vals = []
         for i in range(len(all_goal_angles)):
