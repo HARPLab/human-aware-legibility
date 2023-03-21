@@ -31,6 +31,64 @@ import PathingExperiment as ex
 import utility_environ_descrip as resto
 
 
+def scenario_test_0(goal_index=None):
+    label = "test0_g" + str(goal_index)
+
+    start           = [1.0, 0.01]
+
+    true_goal       = [8.0, 2.0]
+    goal2           = [2.0, 1.0]
+    goal3           = [4.0, 1.0]
+
+    # goal1           = [0.0, 6.0]
+    # goal3           = [2.0, 6.0]
+    goal1 = [0.0, 18.0]
+    goal3 = [2.0, 18.0]
+
+    goal1 = [0.0, 6.0]
+    goal3 = [2.0, 6.0]
+    goal2 = [4.0, 4.0]
+
+    goal1 = [0.0, 6.0]
+    goal3 = [2.0, 9.0]
+
+    target_goal = goal3
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
 def scenario_test_1(goal_index=None):
     label = "test1_asym" + str(goal_index)
 
@@ -394,55 +452,15 @@ def scenario_0(goal_index=None):
     if goal_index != None:
         target_goal = all_goals[goal_index]
     else:
-        target_goal = goal3
-
-    exp = ex.PathingExperiment(label, start, target_goal, all_goals)
-
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
-    N = 21
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
-    exp.set_N(N)
-    exp.set_dt(dt)
-
-    return label, exp
-
-def scenario_1(goal_index=None):
-    label = "scenario_0"
-
-    restaurant      = None
-    start           = [0.0, 0.0]
-
-    true_goal       = [8.0, 2.0]
-    goal2           = [2.0, 1.0]
-    goal3           = [4.0, 1.0]
-
-    goal1           = [4.0, 2.0]
-    goal3           = [1.0, 3.0]
-
-    target_goal = goal1
-
-    all_goals   = [goal1, goal3]
-
-    if goal_index != None:
-        target_goal = all_goals[goal_index]
-    else:
         target_goal = goal1
 
-
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
     exp.set_state_size(2)
     exp.set_action_size(2)
 
     dt = .025
-    N = 21
+    N = 31
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -452,6 +470,46 @@ def scenario_1(goal_index=None):
     exp.set_dt(dt)
 
     return label, exp
+
+# def scenario_1(goal_index=None):
+#     label = "scenario_0"
+
+#     restaurant      = None
+#     start           = [0.0, 0.0]
+
+#     true_goal       = [8.0, 2.0]
+#     goal2           = [2.0, 1.0]
+#     goal3           = [4.0, 1.0]
+
+#     goal1           = [4.0, 2.0]
+#     goal3           = [1.0, 3.0]
+
+#     target_goal = goal1
+
+#     all_goals   = [goal1, goal3]
+
+#     if goal_index != None:
+#         target_goal = all_goals[goal_index]
+#     else:
+#         target_goal = goal1
+
+
+#     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
+
+#     exp.set_state_size(2)
+#     exp.set_action_size(2)
+
+#     dt = .025
+#     N = 21
+#     Q = 1.0 * np.eye(exp.get_state_size())
+#     R = 200.0 * np.eye(exp.get_action_size())
+#     Qf = np.identity(2) * 400.0
+
+#     exp.set_QR_weights(Q, R, Qf)
+#     exp.set_N(N)
+#     exp.set_dt(dt)
+
+#     return label, exp
 
 
 def scenario_test_8(goal_index=None):
@@ -951,11 +1009,11 @@ def get_scenario_set():
     scenarios = {}
 
     # TEST SCENARIO
-    label, exp = scenario_0(goal_index=0)
+    label, exp = scenario_test_0(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
-    label, exp = scenario_0(goal_index=1)
+    label, exp = scenario_test_0(goal_index=1)
     scenarios[label] = exp
 
     # # TEST SCENARIO
@@ -964,7 +1022,6 @@ def get_scenario_set():
 
     label, exp = scenario_test_1(goal_index=1)
     scenarios[label] = exp
-
 
     # # TEST SCENARIO
     label, exp = scenario_test_2(goal_index=0)
