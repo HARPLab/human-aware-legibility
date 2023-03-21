@@ -279,7 +279,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(target_angle)
         # denominator = (180*180) * len(all_goal_angles)
 
-        heading_clarity_cost = target_val / total
+        heading_clarity_cost = (total - target_val) / total
         # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
         # alt_goal_part_log = alt_goal_part_log / (total)
 
@@ -544,24 +544,23 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
 
         if self.exp.get_norm_on() is False:
-            wt_legib     = 0.8 #100.0
-            wt_lam       = 0.01
-            wt_heading   = 0.2 #100000.0
+            wt_legib     = 0.5 #100.0
+            wt_lam       = 0.015
+            wt_heading   = 0.5 #100000.0
             wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
-        else:
-            ##### SET WEIGHTS
-            wt_legib     = f_value * .9 #1000.0
-            wt_lam       = .1 * (1 - wt_legib)
-            wt_heading   = .1 * (1 - wt_legib) #100000.0
-            wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
+        # else:
+        #     ##### SET WEIGHTS
+        #     wt_legib     = f_value * .9 #1000.0
+        #     wt_lam       = .1 * (1 - wt_legib)
+        #     wt_heading   = .1 * (1 - wt_legib) #100000.0
+        #     wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
         if self.exp.get_is_heading_on() is False:
-            wt_heading = 0.0
+            wt_heading  = 0.0
 
         if self.exp.get_mode_pure_heading() is True:
-            wt_legib = 0.0
-
+            wt_legib    = 0.0
 
         # BATCH 2
         # # NORMALIZED AROUND IN/OUT OF SIGHT
