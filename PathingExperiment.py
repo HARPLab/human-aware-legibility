@@ -380,7 +380,7 @@ class PathingExperiment():
         scenario    = self.get_exp_label()
         purpose     = self.get_fn_note()[1:]
 
-        return (scenario, test_group, purpose, converged_text, converged, iteration_count)
+        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count)
 
     def get_solve_quality_columns(self):
-        return ('scenario', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
+        return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
