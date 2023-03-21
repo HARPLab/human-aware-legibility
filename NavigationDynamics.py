@@ -1,6 +1,9 @@
 import numpy as np
 from ilqr.dynamics import FiniteDiffDynamics, tensor_constrain, constrain
 
+from shapely.geometry import LineString
+from shapely.geometry import Point
+
 ### CLASS DESCRIBING THE DYNAMICS OF A SIMPLE ROBOT
 ### MOVING THOUGH SPACE
 class NavigationDynamics(FiniteDiffDynamics):
@@ -69,8 +72,13 @@ class NavigationDynamics(FiniteDiffDynamics):
         v0 = A.dot(x)
         v1 = B.dot(u)
 
+        across_obstacle = self.across_obstacle(v0, v1)
+
         if np.isnan(np.linalg.norm(u)):
             print("caught a nan")
+            xnext = v0
+        elif across_obstacle:
+            print("teleporting across an obstacle!")
             xnext = v0
         else:
             xnext = v0 + v1     # A*x + B*u
@@ -81,12 +89,12 @@ class NavigationDynamics(FiniteDiffDynamics):
         print("xnext")
         print(str(x) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
 
-
         return xnext
 
     """ Original based on inverted pendulum auto-differentiated dynamics model."""
     def __init__(self,
-                 dt,
+                 dt, 
+                 exp,
                  constrain=True,
                  min_bounds=-1.0,
                  max_bounds=1.0,
@@ -113,6 +121,8 @@ class NavigationDynamics(FiniteDiffDynamics):
 
 
         self.dt = dt
+
+        self.exp = exp
         # sin_theta = x[..., 0]
         # cos_theta = x[..., 1]
         # theta_dot = x[..., 2]
@@ -134,6 +144,43 @@ class NavigationDynamics(FiniteDiffDynamics):
         # ]).T
 
         super(NavigationDynamics, self).__init__(self.f, 2, 2)
+
+    def across_obstacle(self, x0, x1):
+        TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = .1
+        GOAL_RADIUS     = .15 #.05
+
+        tables      = self.exp.get_tables()
+        goals       = self.exp.get_goals()
+        observers   = self.exp.get_observers()
+
+        l = LineString([x0, x1])
+
+        for t in tables:
+            ct = t.get_center()
+            p = Point(ct[0],ct[1])
+            c = p.buffer(TABLE_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                return True
+        
+        for o in observers:
+            ct = o.get_center()
+            p = Point(ct[0],ct[1])
+            c = p.buffer(OBS_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                return True
+        
+        for g in goals:
+            ct = g
+            p = Point(ct[0],ct[1])
+            c = p.buffer(GOAL_RADIUS).boundary
+            i = c.intersection(l)
+            if i is True:
+                return True
+
+        return False
 
     @classmethod
     def augment_state(cls, state):
