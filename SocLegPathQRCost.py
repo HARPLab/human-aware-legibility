@@ -94,7 +94,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             c = p.buffer(TABLE_RADIUS).boundary
             i = c.intersection(l)
             if i is True:
-                print("TELEPORTED ACROSS: table " + ct)
+                print("TELEPORTED ACROSS: table " + str(ct))
                 return True
         
         for o in observers:
@@ -103,7 +103,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             c = p.buffer(OBS_RADIUS).boundary
             i = c.intersection(l)
             if i is True:
-                print("TELEPORTED ACROSS: o " + ct)
+                print("TELEPORTED ACROSS: o " + str(ct))
                 return True
         
         for g in goals:
@@ -112,7 +112,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             c = p.buffer(GOAL_RADIUS).boundary
             i = c.intersection(l)
             if i is True:
-                print("TELEPORTED ACROSS: goal " + ct)
+                print("TELEPORTED ACROSS: goal " + str(ct))
                 return True
 
         return False
@@ -120,8 +120,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
     # TODO ADD TEST SUITE FOR THIS
     def get_obstacle_penalty(self, x, i, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = .1
-        GOAL_RADIUS     = .15 #.05
+        OBS_RADIUS      = .2
+        GOAL_RADIUS     = .3 #.05
 
         tables      = self.exp.get_tables()
         goals       = self.goals
@@ -172,7 +172,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 obstacle_penalty += np.abs(obs_dist / OBS_RADIUS) #**2
 
         for g in goals:
-            if g is not goal:
+            if g is not self.exp.get_target_goal():
                 obstacle = g
                 obs_dist = obstacle - x
                 obs_dist = np.abs(np.linalg.norm(obs_dist))
@@ -188,6 +188,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
                     if self.FLAG_OBS_FLAT_PENALTY:
                         obstacle_penalty += 1.0
                     obstacle_penalty += np.abs(obs_dist / GOAL_RADIUS) #**2
+            else:
+                print("inside final goal " + str(g))
 
         if self.across_obstacle(x0, x1):
             obstacle_penalty += 1.0
@@ -316,7 +318,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if goal_angle < 0:
                 print(goal_angle)
-                exit()
+                print("eeek")
+                # exit()
 
         target_angle = self.angle_between(robot_vector, target_vector)
 
@@ -619,7 +622,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if self.exp.get_norm_on() is False:
             wt_legib     = 0.5 #100.0
-            wt_lam       = 0.015
+            wt_lam       = 0.017
             wt_heading   = 0.5 #100000.0
             wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
@@ -715,7 +718,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # (start-goal1)'*Q*(start-goal1) - (start-x)'*Q*(start-x) +  - (x-goal1)'*Q*(x-goal1) 
         J_g1 = a - b - c
-        # J_g1 *= .5
+
+        if self.exp.get_weighted_close_on() is True:
+            k = self.get_relative_distance_k(x, goal, self.goals)
+
+            J_g1 = J_g1 * k
+        
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
@@ -772,7 +780,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("Jg1, total")
             print(J_g1, total_sum)
 
-        J = J_g1 - (np.log(total_sum))
+        if total_sum < MATH_EPSILON:
+            total_sum = MATH_EPSILON
+            print("set stage cost minimum to be epsilon versus divide by 0")
+
+        total_sum = (np.log(total_sum))
+        J = J_g1 - total_sum
         J = -1.0 * J
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
