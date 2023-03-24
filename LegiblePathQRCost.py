@@ -26,6 +26,7 @@ import utility_legibility as legib
 import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
+from random import randint
 
 import PathingExperiment as ex
 
@@ -166,7 +167,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
     def init_output_log(self):
-        sys.stdout = open(self.get_export_label() + '--output.txt','wt')
+        n = 5
+        rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
+        sys.stdout = open(self.get_export_label() + str(rand_id) + '--output.txt','a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
@@ -757,8 +760,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.grid(axis='y')
 
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = .1
-        GOAL_RADIUS     = .15 #.05
+        OBS_RADIUS      = .2
+        GOAL_RADIUS     = .3 #.05
 
         TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
         TABLE_RADIUS           = TABLE_RADIUS #_BUFFER / 2.0
@@ -857,21 +860,6 @@ class LegiblePathQRCost(FiniteDiffCost):
                 color_grad.append(color_grad_2[i])
                 outline_grad.append('#f4722b')
 
-        if self.exp.best_xs is not None and verts is not self.exp.best_xs:
-            print("ALT TO PLOT")
-
-            bxs, bys = zip(*self.best_xs)
-
-            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='purple', label="path", markersize=1)
-            axarr.scatter(xs, ys, c=outline_grad, s=20)
-            axarr.scatter(xs, ys, c=color_grad, s=10)
-
-
-        # Draw the path itself
-        axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
-        axarr.scatter(xs, ys, c=outline_grad, s=20)
-        axarr.scatter(xs, ys, c=color_grad, s=10)
-
         axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = axarr.set_xlabel("X", fontweight='bold')
         _ = axarr.set_ylabel("Y", fontweight='bold')
@@ -897,7 +885,26 @@ class LegiblePathQRCost(FiniteDiffCost):
             if gx == target[0] and gy == target[1]:
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
             else:
+                g = plt.Circle(goal, GOAL_RADIUS, color='#aaaaaa', clip_on=False)
+                axarr.add_patch(g)
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+
+        if self.exp.best_xs is not None and verts is not self.exp.best_xs:
+            print("ALT TO PLOT")
+
+            bxs, bys = zip(*self.best_xs)
+
+            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='purple', label="path", markersize=1)
+            axarr.scatter(xs, ys, c=outline_grad, s=20)
+            axarr.scatter(xs, ys, c=color_grad, s=10)
+
+
+        # Draw the path itself
+        axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+        axarr.scatter(xs, ys, c=outline_grad, s=20)
+        axarr.scatter(xs, ys, c=color_grad, s=10)
+
 
         axarr.legend(loc="upper left")
         axarr.grid(False)
