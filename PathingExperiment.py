@@ -67,9 +67,11 @@ class PathingExperiment():
     norm_on                 = False
     weighted_close_on       = False
     mode_pure_heading       = False
-    mode_heading_err_sqr    = True
+    mode_heading_err_sqr    = False
 
     J_hist = []
+    best_xs = None
+    best_us = None
     solve_status = None
 
     fn_note = ""
@@ -123,6 +125,10 @@ class PathingExperiment():
         final_state = xs[-1]
         print("iteration", iteration_count, info, J_opt, final_state)
         
+        if converged:
+            self.best_xs = xs
+            self.best_us = us
+
         most_recent_is_complete_packet = [converged, info, iteration_count]
         self.solve_status = most_recent_is_complete_packet
 
@@ -147,6 +153,7 @@ class PathingExperiment():
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
         self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label
+
         # try:
         #     os.mkdir(PREFIX_EXPORT + self.file_id)
         # except:
