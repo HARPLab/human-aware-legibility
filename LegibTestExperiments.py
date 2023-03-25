@@ -56,7 +56,6 @@ def run_all_tests():
     # collate_and_report_on_results(dashboard_folder)
 
     test_mega_compare(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
     return
 
     # test_observers_rotated(dashboard_folder)
@@ -72,13 +71,10 @@ def run_all_tests():
     # collate_and_report_on_results(dashboard_folder)
 
     test_heading_useful_or_no(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
 
     test_obstacles_being_avoided(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
 
     test_weighted_by_distance_or_no(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -214,9 +210,14 @@ def test_mega_compare(dash_folder):
             ax.get_legend().remove()
             print(ax)
 
+        collate_and_report_on_results(dash_folder)
+
         plt.tight_layout()
         fig.suptitle("Goal = " + mega_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
+
 
 
 def test_heading_useful_or_no(dash_folder):
@@ -289,6 +290,9 @@ def test_heading_useful_or_no(dash_folder):
         fig.suptitle("Goal = " + pure_heading.get_goal_label())
         plt.savefig(save_location + ".png")
 
+        collate_and_report_on_results(dash_folder)
+
+
 def test_heading_sqr_or_no(dash_folder):
     print("TESTING IF HEADING PLAIN OR SQR BETTER")
     test_group = 'heading lin or sqr?'
@@ -341,6 +345,9 @@ def test_heading_sqr_or_no(dash_folder):
         plt.tight_layout()
         fig.suptitle("Goal = " + heading_sqr.get_goal_label())
         plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
+
 
 def test_normalized_or_no(dash_folder):
     print("TESTING IF NORMALIZED MATTERS")
@@ -398,6 +405,9 @@ def test_normalized_or_no(dash_folder):
         fig.suptitle("Goal = " + with_heading.get_goal_label())
         plt.savefig(save_location + ".png")
 
+        collate_and_report_on_results(dash_folder)
+
+
 def test_weighted_by_distance_or_no(dash_folder):
     print("TESTING IF WEIGHTED NEAR MATTERS")
     test_group = "weighted by distance?"
@@ -454,6 +464,9 @@ def test_weighted_by_distance_or_no(dash_folder):
         fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
+        collate_and_report_on_results(dash_folder)
+
+
 
 def test_obstacles_being_avoided(dash_folder):
     scenarios = test_scenarios.get_scenarios_obstacles()
@@ -487,6 +500,9 @@ def test_obstacles_being_avoided(dash_folder):
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
+
 
 
 def test_observers_being_respected(dash_folder):
@@ -531,6 +547,9 @@ def test_observers_being_respected(dash_folder):
         plt.tight_layout()
         fig.suptitle("Goal = " + cost_wout_oa.get_goal_label())
         plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
+
 
 
 def test_amount_of_slack(dash_folder):
@@ -598,6 +617,9 @@ def test_amount_of_slack(dash_folder):
         fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
+        collate_and_report_on_results(dash_folder)
+
+
 
 def test_observers_rotated(dash_folder):
     scenarios = test_scenarios.get_scenarios_observers()
@@ -657,6 +679,8 @@ def test_observers_rotated(dash_folder):
         plt.tight_layout()
         fig.suptitle("Goal = " + rot_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
 
 
 
