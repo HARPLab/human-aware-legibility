@@ -53,28 +53,36 @@ test_log = []
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
     # test_amount_of_slack(dashboard_folder)
+    # collate_and_report_on_results(dashboard_folder)
+
+    test_mega_compare(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
+    return
+
     # test_observers_rotated(dashboard_folder)
+    # collate_and_report_on_results(dashboard_folder)
+
     # exit()
     # test_observers_being_respected(dashboard_folder)
     # exit()
     # exit()
     # test_normalized_or_no(dashboard_folder)
+
     # test_heading_sqr_or_no(dashboard_folder)
     # collate_and_report_on_results(dashboard_folder)
-
-    test_weighted_by_distance_or_no(dashboard_folder)
-    collate_and_report_on_results(dashboard_folder)
 
     test_heading_useful_or_no(dashboard_folder)
     collate_and_report_on_results(dashboard_folder)
 
-    # test_obstacles_being_avoided(dashboard_folder)
-    # collate_and_report_on_results(dashboard_folder)
+    test_obstacles_being_avoided(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
 
+    test_weighted_by_distance_or_no(dashboard_folder)
+    collate_and_report_on_results(dashboard_folder)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
-    file_id = label + "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
+    file_id = label #+ "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
     n = 5
     rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
     sys.stdout = open(dash_folder + file_id + "_" + str(rand_id) + '_output.txt','a')
@@ -97,8 +105,8 @@ def collate_and_report_on_results(dash_folder):
 
     def _colorize(val):
         color = 'white'
-        color = 'pink' if "INC" in val else color
-        color = 'lightcyan' if "OK" in val else color
+        color = 'pink' if "INC" in str(val) else color
+        color = 'lightcyan' if "OK" in str(val) else color
         return 'background-color: %s' % color
 
     save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
@@ -113,6 +121,103 @@ def collate_and_report_on_results(dash_folder):
     df_dashboard.to_latex(save_location + ".latex") #sparse_index=True, sparse_columns=True
     df_dashboard.to_excel(save_location + ".xls", merge_cells=True, engine='openpyxl')
     
+
+def test_mega_compare(dash_folder):
+    test_group = 'all configs'
+
+    print("TESTING ALL SETTINGS")
+    scenarios = test_scenarios.get_scenarios_heading()
+
+    # for each test scenario
+    # run it with heading, get the image
+    # run it without heading part, get the image
+
+    # export both individually
+    # export side by side with markings
+    #    include exp settings on export
+
+    test_setups_og = []
+
+    new_test      = {'label':"pure dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure head lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure head sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
+    test_setups_og.append(new_test)
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        test_setups = copy.copy(test_setups_og)
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+
+        # NUMBER OF IMAGES MUST MATCH THE NUMBER OF TESTS
+        fig, (ax1,ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, figsize=(8, 4))
+        # fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(6, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1]})
+        # ax1 = axes['A']
+        # ax2 = axes['B']
+        # ax3 = axes['C']
+        # ax4 = axes['D']
+        # ax5 = axes['E']
+
+        # TODO FIGURE OUT WHY THE GRAPHS NOT PRINTING
+
+        ax_mappings     = [ax1, ax2, ax3, ax4, ax5]
+        outputs         = {}
+
+        for ti in range(len(test_setups)):
+            test    = test_setups[ti]
+            ax      = ax_mappings[ti]
+
+            mega_scenario = copy.copy(scenario)
+            mega_scenario.set_fn_note(test['label'])
+
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            mega_scenario.set_heading_on(test['heading-on'])
+            mega_scenario.set_mode_pure_heading(test['pure-heading'])
+
+            verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet    = solver.run_solver(mega_scenario)
+            outputs[ti] = verts_mega_scenario, us_mega_scenario, cost_mega_scenario
+
+            test_log.append(mega_scenario.get_solve_quality_status(test_group))
+     
+
+        save_location = get_file_id_for_exp(dash_folder, "mega-" + mega_scenario.get_exp_label())
+        print(outputs)
+        # exit()
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            print("ax is")
+            print(ax)
+            verts, us, cost = outputs[key]
+
+            cost.get_overview_pic(verts, us, ax=ax_mappings[key])
+
+            print("le key")
+            print(key)
+
+            print("Cost--")
+            print(cost)
+            _ = ax.set_title(test_setups_og[key]['label'])
+            ax.get_legend().remove()
+            print(ax)
+
+        plt.tight_layout()
+        fig.suptitle("Goal = " + mega_scenario.get_goal_label())
+        plt.savefig(save_location + ".png")
+
 
 def test_heading_useful_or_no(dash_folder):
     test_group = 'heading useful?'
@@ -432,7 +537,6 @@ def test_amount_of_slack(dash_folder):
     scenarios = test_scenarios.get_scenarios()
     test_group = "amt slack"
 
-    scenario_output_list = []
     for key in scenarios.keys():
         scenario = scenarios[key]
         base_N = scenario.get_N()
@@ -458,6 +562,8 @@ def test_amount_of_slack(dash_folder):
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(n_scenario)
             outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
+
+            test_log.append(n_scenario.get_solve_quality_status(test_group))
 
 
         # This placement of the figure statement is actually really important
@@ -500,8 +606,6 @@ def test_observers_rotated(dash_folder):
 
     # for each test scenario
     # compare with observer vs no
-
-    scenario_output_list = []
     for key in scenarios.keys():
         scenario = scenarios[key]
 
