@@ -61,10 +61,7 @@ def run_all_tests():
     # test_observers_rotated(dashboard_folder)
     # collate_and_report_on_results(dashboard_folder)
 
-    # exit()
     # test_observers_being_respected(dashboard_folder)
-    # exit()
-    # exit()
     # test_normalized_or_no(dashboard_folder)
 
     # test_heading_sqr_or_no(dashboard_folder)
@@ -134,19 +131,19 @@ def test_mega_compare(dash_folder):
 
     test_setups_og = []
 
-    new_test      = {'label':"pure dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure head lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
+    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure head sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
+    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
     test_setups_og.append(new_test)
 
     for key in scenarios.keys():
