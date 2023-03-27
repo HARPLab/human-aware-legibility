@@ -9,6 +9,8 @@ from ilqr.dynamics import constrain
 from ilqr.dynamics import tensor_constrain
 
 from NavigationDynamics import NavigationDynamics
+import LegibTestScenarios as test_scenarios
+
 
 J_hist = []
 
@@ -80,7 +82,10 @@ def run_solver(exp):
     tol = 1e-5
     # tol = 1e-10
 
-    num_iterations = 50
+    num_iterations = 50 #75
+
+    if test_scenarios.SCENARIO_FILTER_FAST_SOLVE in exp.get_run_filters():
+        num_iterations = 1
 
     on_iteration_exp = exp.on_iteration_exp
 
