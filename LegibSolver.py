@@ -32,6 +32,7 @@ def on_iteration_default(iteration_count, xs, us, J_opt, accepted, converged):
     most_recent_is_complete_packet = [converged, info, iteration_count]
 
 def run_solver(exp):
+    dash_folder = exp.get_run_filters()[test_scenarios.DASHBOARD_FOLDER]
     exp.reinit_file_id()
 
     x0_raw          = exp.get_start()    # initial state
@@ -77,14 +78,14 @@ def run_solver(exp):
     max_reg = 1e-10 #None # default value is 1e-10
     ilqr = iLQR(dynamics, cost, N, max_reg=None)
 
-    cost.init_output_log()
+    cost.init_output_log(dash_folder)
 
     tol = 1e-5
     # tol = 1e-10
 
     num_iterations = 50 #75
 
-    if test_scenarios.SCENARIO_FILTER_FAST_SOLVE in exp.get_run_filters():
+    if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
 
     on_iteration_exp = exp.on_iteration_exp
@@ -107,9 +108,9 @@ def run_solver(exp):
     elapsed_time = end_time - start_time
 
     most_recent_is_complete_packet = exp.get_solver_status()
-    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet)
+    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet, dash_folder=dash_folder)
 
-    fn = cost.get_export_label() + "path_for_unity"
-    exp.get_restaurant().export_paths_csv(verts, fn)
+    # fn = cost.get_export_label() + "path_for_unity"
+    # exp.get_restaurant().export_paths_csv(verts, fn)
 
     return verts, us, cost, most_recent_is_complete_packet
