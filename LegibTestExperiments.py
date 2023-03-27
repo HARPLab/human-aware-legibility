@@ -55,27 +55,28 @@ def run_all_tests():
     
     # SET UP OPTIONS FOR THIS RUN
     # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
-    scenario_filters = []
-    scenario_filters.append(test_scenarios.SCENARIO_FILTER_MINI)
-    scenario_filters.append(test_scenarios.SCENARIO_FILTER_FAST_SOLVE)
+    scenario_filters = {}
+    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = False
+    scenario_filters[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] = False
+    scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
     test_full_set(dashboard_folder, scenario_filters)
 
-    test_amount_of_slack(dashboard_folder, scenario_filters)
+    # test_amount_of_slack(dashboard_folder, scenario_filters)
 
-    test_observers_rotated(dashboard_folder, scenario_filters)
+    # test_observers_rotated(dashboard_folder, scenario_filters)
 
-    # test_observers_being_respected(dashboard_folder, scenario_filters)
+    # # test_observers_being_respected(dashboard_folder, scenario_filters)
 
-    test_normalized_or_no(dashboard_folder)
+    # test_normalized_or_no(dashboard_folder, scenario_filters)
 
-    test_heading_sqr_or_no(dashboard_folder, scenario_filters)
+    # test_heading_sqr_or_no(dashboard_folder, scenario_filters)
 
-    test_heading_useful_or_no(dashboard_folder, scenario_filters)
+    # test_heading_useful_or_no(dashboard_folder, scenario_filters)
 
-    test_obstacles_being_avoided(dashboard_folder, scenario_filters)
+    # test_obstacles_being_avoided(dashboard_folder, scenario_filters)
 
-    test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
+    # test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -201,7 +202,7 @@ def test_mega_compare(dash_folder, scenario_filters):
             print(ax)
             verts_mega, us_mega, cost_mega, ip_mega = outputs[key]
 
-            cost_mega.get_overview_pic(verts_mega, us_mega, ax=ax, info_packet=ip_mega)
+            cost_mega.get_overview_pic(verts_mega, us_mega, ax=ax, info_packet=ip_mega, dash_folder=dash_folder)
 
             print("le key")
             print(key)
@@ -271,9 +272,9 @@ def test_heading_useful_or_no(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2, ax3) = plt.subplots(ncols=3, figsize=(8, 4))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
-        cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2)
-        cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, dash_folder=dash_folder)
+        cost_mixed_heading.get_overview_pic(verts_mixed_heading, us_mixed_heading, ax=ax2, dash_folder=dash_folder)
+        cost_pure_heading.get_overview_pic(verts_pure_heading, us_pure_heading, ax=ax3, dash_folder=dash_folder)
 
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = mixed_heading.get_solver_status_blurb()
@@ -333,8 +334,8 @@ def test_heading_sqr_or_no(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1, ax3) = plt.subplots(ncols=2, figsize=(6, 4))
 
-        cost_heading_lin.get_overview_pic(verts_heading_lin, us_heading_lin, ax=ax1)
-        cost_heading_sqr.get_overview_pic(verts_heading_sqr, us_heading_sqr, ax=ax3)
+        cost_heading_lin.get_overview_pic(verts_heading_lin, us_heading_lin, ax=ax1, dash_folder=dash_folder)
+        cost_heading_sqr.get_overview_pic(verts_heading_sqr, us_heading_sqr, ax=ax3, dash_folder=dash_folder)
 
         blurb1 = heading_lin.get_solver_status_blurb()
         blurb3 = heading_sqr.get_solver_status_blurb()
@@ -394,8 +395,8 @@ def test_normalized_or_no(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 4))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
-        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, dash_folder=dash_folder)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, dash_folder=dash_folder)
 
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
@@ -455,8 +456,8 @@ def test_weighted_by_distance_or_no(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 3.5))
 
-        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1)
-        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2)
+        cost_wout_heading.get_overview_pic(verts_wout_heading, us_wout_heading, ax=ax1, dash_folder=dash_folder)
+        cost_with_heading.get_overview_pic(verts_with_heading, us_with_heading, ax=ax2, dash_folder=dash_folder)
 
         blurb1 = without_heading.get_solver_status_blurb()
         blurb2 = with_heading.get_solver_status_blurb()
@@ -505,7 +506,7 @@ def test_obstacles_being_avoided(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1) = plt.subplots(ncols=1, figsize=(4, 3))
 
-        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1)
+        cost_with_obs.get_overview_pic(verts_with_obs, us_with_obs, ax=ax1, dash_folder=dash_folder)
         _ = ax1.set_title("Check for Obstacle Issues\n" + blurb, fontweight='bold')
 
         test_log.append(obs_scenario.get_solve_quality_status(test_group))
@@ -549,8 +550,8 @@ def test_observers_being_respected(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         fig, (ax1,ax2) = plt.subplots(ncols=2, figsize=(8, 6))
 
-        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1)
-        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2)
+        cost_wout_oa.get_overview_pic(verts_wout_oa, us_wout_oa, ax=ax1, dash_folder=dash_folder)
+        cost_with_oa.get_overview_pic(verts_with_oa, us_with_oa, ax=ax2, dash_folder=dash_folder)
 
         # _ = ax1.set_xlabel("Time", fontweight='bold')
         # _ = ax1.set_ylabel("Legibility", fontweight='bold')
@@ -634,7 +635,7 @@ def test_full_set(dash_folder, scenario_filters):
 
             # label = str(label_dict[key]) + "%"
             
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet)
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
             _ = ax.set_title(label, fontweight='bold')
             ax.get_legend().remove()
     
@@ -704,7 +705,7 @@ def test_amount_of_slack(dash_folder, scenario_filters):
 
             label = str(label_dict[key]) + "%"
 
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet)
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
             _ = ax.set_title("N= " + label, fontweight='bold')
             ax.get_legend().remove()
     
@@ -769,7 +770,7 @@ def test_observers_rotated(dash_folder, scenario_filters):
                 amount_label = ""
             amount_label += str(key)
 
-            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax, info_packet=info_packet)
+            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
             _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
             ax.get_legend().remove()
     
