@@ -75,6 +75,7 @@ class PathingExperiment():
     solve_status = None
 
     fn_note = ""
+    run_filters = []
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -344,6 +345,12 @@ class PathingExperiment():
 
     def get_fn_note(self):
         return self.fn_note
+
+    def set_run_filters(self, v):
+        self.run_filters = v
+
+    def get_run_filters(self):
+        return self.run_filters
 
     def get_solver_status(self):
         return self.solve_status
