@@ -52,27 +52,30 @@ test_log = []
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
-    # test_amount_of_slack(dashboard_folder)
-    # collate_and_report_on_results(dashboard_folder)
+    
+    # SET UP OPTIONS FOR THIS RUN
+    # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
+    scenario_filters = []
+    # scenario_filters.append(test_scenarios.SCENARIO_FILTER_MINI)
+    scenario_filters.append(test_scenarios.SCENARIO_FILTER_FAST_SOLVE)
 
-    test_full_set(dashboard_folder)
-    # test_mega_compare(dashboard_folder)
-    return
+    test_full_set(dashboard_folder, scenario_filters)
 
-    # test_observers_rotated(dashboard_folder)
-    # collate_and_report_on_results(dashboard_folder)
+    test_amount_of_slack(dashboard_folder, scenario_filters)
 
-    # test_observers_being_respected(dashboard_folder)
-    # test_normalized_or_no(dashboard_folder)
+    test_observers_rotated(dashboard_folder, scenario_filters)
 
-    # test_heading_sqr_or_no(dashboard_folder)
-    # collate_and_report_on_results(dashboard_folder)
+    # test_observers_being_respected(dashboard_folder, scenario_filters)
 
-    test_heading_useful_or_no(dashboard_folder)
+    test_normalized_or_no(dashboard_folder)
 
-    test_obstacles_being_avoided(dashboard_folder)
+    test_heading_sqr_or_no(dashboard_folder, scenario_filters)
 
-    test_weighted_by_distance_or_no(dashboard_folder)
+    test_heading_useful_or_no(dashboard_folder, scenario_filters)
+
+    test_obstacles_being_avoided(dashboard_folder, scenario_filters)
+
+    test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -116,7 +119,7 @@ def collate_and_report_on_results(dash_folder):
     df_dashboard.to_excel(save_location + ".xls", merge_cells=True, engine='openpyxl')
     
 
-def test_mega_compare(dash_folder):
+def test_mega_compare(dash_folder, scenario_filters):
     test_group = 'all configs'
 
     test_setups_og = []
@@ -137,9 +140,10 @@ def test_mega_compare(dash_folder):
     test_setups_og.append(new_test)
 
     print("TESTING ALL SETTINGS")
-    scenarios = test_scenarios.get_scenarios_heading()
+    scenarios = test_scenarios.get_scenarios_heading(scenario_filters)
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         test_setups = copy.copy(test_setups_og)
 
@@ -173,6 +177,7 @@ def test_mega_compare(dash_folder):
             ax      = ax_mappings[ti]
 
             mega_scenario = copy.copy(scenario)
+            mega_scenario.set_run_filters(scenario_filters)
             mega_scenario.set_fn_note(test['label'])
 
             # RUN THE SOLVER WITH CONSTRAINTS ON EACH
@@ -218,11 +223,11 @@ def test_mega_compare(dash_folder):
 
 
 
-def test_heading_useful_or_no(dash_folder):
+def test_heading_useful_or_no(dash_folder, scenario_filters):
     test_group = 'heading useful?'
 
     print("TESTING IF HEADING IS USEFUL")
-    scenarios = test_scenarios.get_scenarios_heading()
+    scenarios = test_scenarios.get_scenarios_heading(scenario_filters)
 
     # for each test scenario
     # run it with heading, get the image
@@ -234,6 +239,7 @@ def test_heading_useful_or_no(dash_folder):
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         without_heading = copy.copy(scenario)
         mixed_heading   = copy.copy(scenario)
@@ -291,13 +297,14 @@ def test_heading_useful_or_no(dash_folder):
         collate_and_report_on_results(dash_folder)
 
 
-def test_heading_sqr_or_no(dash_folder):
+def test_heading_sqr_or_no(dash_folder, scenario_filters):
     print("TESTING IF HEADING PLAIN OR SQR BETTER")
     test_group = 'heading lin or sqr?'
-    scenarios = test_scenarios.get_scenarios_heading()
+    scenarios = test_scenarios.get_scenarios_heading(scenario_filters)
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         heading_lin = copy.copy(scenario)
         heading_sqr = copy.copy(scenario)
@@ -347,10 +354,10 @@ def test_heading_sqr_or_no(dash_folder):
         collate_and_report_on_results(dash_folder)
 
 
-def test_normalized_or_no(dash_folder):
+def test_normalized_or_no(dash_folder, scenario_filters):
     print("TESTING IF NORMALIZED MATTERS")
     test_group = 'normalized or no?'
-    scenarios = test_scenarios.get_scenarios_observers()
+    scenarios = test_scenarios.get_scenarios_observers(scenario_filters)
 
     # for each test scenario
     # run it with heading, get the image
@@ -362,6 +369,7 @@ def test_normalized_or_no(dash_folder):
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
@@ -406,10 +414,10 @@ def test_normalized_or_no(dash_folder):
         collate_and_report_on_results(dash_folder)
 
 
-def test_weighted_by_distance_or_no(dash_folder):
+def test_weighted_by_distance_or_no(dash_folder, scenario_filters):
     print("TESTING IF WEIGHTED NEAR MATTERS")
     test_group = "weighted by distance?"
-    scenarios = test_scenarios.get_scenarios()
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
 
     # for each test scenario
     # run it with heading, get the image
@@ -421,6 +429,7 @@ def test_weighted_by_distance_or_no(dash_folder):
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         with_heading = copy.copy(scenario)
         without_heading = copy.copy(scenario)
@@ -466,12 +475,13 @@ def test_weighted_by_distance_or_no(dash_folder):
 
 
 
-def test_obstacles_being_avoided(dash_folder):
-    scenarios = test_scenarios.get_scenarios_obstacles()
+def test_obstacles_being_avoided(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios_obstacles(scenario_filters)
     test_group = 'obstacles avoided?'
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         obs_scenario = copy.copy(scenario)
 
@@ -503,14 +513,15 @@ def test_obstacles_being_avoided(dash_folder):
 
 
 
-def test_observers_being_respected(dash_folder):
+def test_observers_being_respected(dash_folder, scenario_filters):
     # for each test scenario
     # compare with observer vs no
-    scenarios = test_scenarios.get_scenarios_observers()
+    scenarios = test_scenarios.get_scenarios_observers(scenario_filters)
     test_group = "obervers respected?"
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         with_oa = copy.copy(scenario)
         wout_oa = copy.copy(scenario)
@@ -548,8 +559,8 @@ def test_observers_being_respected(dash_folder):
 
         collate_and_report_on_results(dash_folder)
 
-def test_full_set(dash_folder):
-    scenarios = test_scenarios.get_scenarios()
+def test_full_set(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "all cross"
 
     test_setups_og = []
@@ -571,6 +582,7 @@ def test_full_set(dash_folder):
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         save_location = get_file_id_for_exp(dash_folder, "cross-" + scenario.get_exp_label())
         
@@ -626,12 +638,13 @@ def test_full_set(dash_folder):
         collate_and_report_on_results(dash_folder)
 
 
-def test_amount_of_slack(dash_folder):
-    scenarios = test_scenarios.get_scenarios()
+def test_amount_of_slack(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "amt slack"
 
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
         base_N = scenario.get_N()
 
         # n_scenarios = generate_8_scenarios_varying_N(scenario)
@@ -695,8 +708,8 @@ def test_amount_of_slack(dash_folder):
 
 
 
-def test_observers_rotated(dash_folder):
-    scenarios = test_scenarios.get_scenarios_observers()
+def test_observers_rotated(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios_observers(scenario_filters)
     test_group = 'obs rotated ok?'
     # 3 to either side at +30, +60, +90, and minus the same
 
@@ -704,6 +717,7 @@ def test_observers_rotated(dash_folder):
     # compare with observer vs no
     for key in scenarios.keys():
         scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
 
         rot_scenarios = generate_scenarios_with_observer_rotating(scenario)
         save_location = get_file_id_for_exp(dash_folder, "rot-" + scenario.get_exp_label())
