@@ -56,7 +56,7 @@ def run_all_tests():
     # SET UP OPTIONS FOR THIS RUN
     # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
     scenario_filters = []
-    # scenario_filters.append(test_scenarios.SCENARIO_FILTER_MINI)
+    scenario_filters.append(test_scenarios.SCENARIO_FILTER_MINI)
     scenario_filters.append(test_scenarios.SCENARIO_FILTER_FAST_SOLVE)
 
     test_full_set(dashboard_folder, scenario_filters)
@@ -218,6 +218,7 @@ def test_mega_compare(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + mega_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -293,6 +294,7 @@ def test_heading_useful_or_no(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + pure_heading.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -350,6 +352,7 @@ def test_heading_sqr_or_no(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + heading_sqr.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -410,6 +413,7 @@ def test_normalized_or_no(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + with_heading.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -470,6 +474,7 @@ def test_weighted_by_distance_or_no(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -508,6 +513,7 @@ def test_obstacles_being_avoided(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -556,6 +562,7 @@ def test_observers_being_respected(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + cost_wout_oa.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -635,6 +642,7 @@ def test_full_set(dash_folder, scenario_filters):
         fig.suptitle("cross=" + str("mega") + " " + mega_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
 
+
         collate_and_report_on_results(dash_folder)
 
 
@@ -703,6 +711,7 @@ def test_amount_of_slack(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
@@ -767,6 +776,7 @@ def test_observers_rotated(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("Goal = " + rot_scenario.get_goal_label())
         plt.savefig(save_location + ".png")
+        plt.close('all')
 
         collate_and_report_on_results(dash_folder)
 
