@@ -32,6 +32,7 @@ import utility_environ_descrip as resto
 
 SCENARIO_FILTER_MINI = 'mini'
 SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
+DASHBOARD_FOLDER = None
 
 def scenario_test_0(goal_index=None):
     label = "test0_g" + str(goal_index)
@@ -1125,15 +1126,12 @@ def get_scenarios(scenario_filters=[]):
 
 # All scenarios can care about heading
 def get_scenarios_heading(scenario_filters=[]):
-    scenario_filters.append('just_heading')
     scenarios = get_scenario_set(scenario_filters)
 
-    if SCENARIO_FILTER_MINI in scenario_filters:
-        return scenarios[0]
+    return scenarios
 
 # only a subset care about obstacles
 def get_scenarios_obstacles(scenario_filters=[]):
-    scenario_filters.append('just_obstacles')
     all_scenarios = get_scenarios(scenario_filters)
     new_list = {}
 
@@ -1143,13 +1141,12 @@ def get_scenarios_obstacles(scenario_filters=[]):
         if len(scenario.get_tables()) > 0:
             new_list[key] = scenario
 
-        if SCENARIO_FILTER_MINI in scenario_filters and len(new_list > 0):
+        if scenario_filters[SCENARIO_FILTER_MINI] is True and len(new_list.keys()) > 0:
             return new_list
 
     return new_list
 
 def get_scenarios_observers(scenario_filters=[]):
-    scenario_filters.append('just_observers')
     all_scenarios = get_scenarios(scenario_filters)
     new_list = {}
 
@@ -1159,7 +1156,7 @@ def get_scenarios_observers(scenario_filters=[]):
         if len(scenario.get_observers()) > 0:
             new_list[key] = scenario
 
-        if SCENARIO_FILTER_MINI in scenario_filters and len(new_list > 0):
+        if scenario_filters[SCENARIO_FILTER_MINI] is True  and len(new_list.keys()) > 0:
             return new_list
 
     return new_list
