@@ -30,6 +30,8 @@ import PathingExperiment as ex
 
 import utility_environ_descrip as resto
 
+SCENARIO_FILTER_MINI = 'mini'
+SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
 
 def scenario_test_0(goal_index=None):
     label = "test0_g" + str(goal_index)
@@ -90,7 +92,7 @@ def scenario_test_0(goal_index=None):
     return label, exp
 
 def scenario_test_1(goal_index=None):
-    label = "test1_asym" + str(goal_index)
+    label = "test1_asym_g" + str(goal_index)
 
     start           = [0.0, 3.0]
 
@@ -513,7 +515,7 @@ def scenario_0(goal_index=None):
 
 
 def scenario_test_8(goal_index=None):
-    label = "test_8"
+    label = "test_8_g" + str(goal_index)
 
     restaurant      = None
     start           = [0.0, 0.0]
@@ -551,7 +553,7 @@ def scenario_test_8(goal_index=None):
     return label, exp
 
 def scenario_test_9(goal_index=None):
-    label = "test_9"
+    label = "test_9_g" + str(goal_index)
 
     restaurant      = None
     start           = [8.0, 2.0]
@@ -591,7 +593,7 @@ def scenario_test_9(goal_index=None):
     return label, exp
 
 def scenario_10_large_scale(goal_index=None):
-    label = "test_10_large_scale"
+    label = "test_10_large_scale_g" + str(goal_index)
 
     restaurant      = None
     start           = [800.0, 200.0]
@@ -723,7 +725,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     return label, exp
 
 def scenario_7_observer(goal_index=None, obs_angle=0):
-    label = "test_7_obs"
+    label = "test_7_obs_g" + str(goal_index)
 
     start           = [0.0, 2.0]
 
@@ -1005,21 +1007,8 @@ def scenario_6():
 
     return label, exp
 
-def get_scenario_set():
+def get_scenario_set(scenario_filters=[]):
     scenarios = {}
-
-
-    # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=0)
-    scenarios[label] = exp
-
-    # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=1)
-    scenarios[label] = exp
-
-    # # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=2)
-    scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
@@ -1029,11 +1018,14 @@ def get_scenario_set():
     label, exp = scenario_test_0(goal_index=1)
     scenarios[label] = exp
 
+    # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
+    # May want to verify there's an option on the list
+    if SCENARIO_FILTER_MINI in scenario_filters:
+        return scenarios
+
     # # TEST SCENARIO
     label, exp = scenario_test_1(goal_index=0)
     scenarios[label] = exp
-
-    # return scenarios
 
     label, exp = scenario_test_1(goal_index=1)
     scenarios[label] = exp
@@ -1110,17 +1102,39 @@ def get_scenario_set():
     label, exp = scenario_test_9(goal_index=2)
     scenarios[label] = exp
 
+    # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=2)
+    scenarios[label] = exp
+
     return scenarios
 
 
-def get_scenarios():
-    return get_scenario_set()
+def get_scenarios(scenario_filters=[]):
+    options = get_scenario_set(scenario_filters)
 
-def get_scenarios_heading():
-    return get_scenario_set()
+    return options
 
-def get_scenarios_obstacles():
-    all_scenarios = get_scenarios()
+
+# All scenarios can care about heading
+def get_scenarios_heading(scenario_filters=[]):
+    scenario_filters.append('just_heading')
+    scenarios = get_scenario_set(scenario_filters)
+
+    if SCENARIO_FILTER_MINI in scenario_filters:
+        return scenarios[0]
+
+# only a subset care about obstacles
+def get_scenarios_obstacles(scenario_filters=[]):
+    scenario_filters.append('just_obstacles')
+    all_scenarios = get_scenarios(scenario_filters)
     new_list = {}
 
     for key in all_scenarios.keys():
@@ -1129,10 +1143,14 @@ def get_scenarios_obstacles():
         if len(scenario.get_tables()) > 0:
             new_list[key] = scenario
 
+        if SCENARIO_FILTER_MINI in scenario_filters and len(new_list > 0):
+            return new_list
+
     return new_list
 
-def get_scenarios_observers():
-    all_scenarios = get_scenarios()
+def get_scenarios_observers(scenario_filters=[]):
+    scenario_filters.append('just_observers')
+    all_scenarios = get_scenarios(scenario_filters)
     new_list = {}
 
     for key in all_scenarios.keys():
@@ -1140,6 +1158,9 @@ def get_scenarios_observers():
 
         if len(scenario.get_observers()) > 0:
             new_list[key] = scenario
+
+        if SCENARIO_FILTER_MINI in scenario_filters and len(new_list > 0):
+            return new_list
 
     return new_list
 
