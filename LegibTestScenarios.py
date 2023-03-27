@@ -42,17 +42,17 @@ def scenario_test_0(goal_index=None):
 
     # goal1           = [0.0, 6.0]
     # goal3           = [2.0, 6.0]
-    goal1 = [0.0, 18.0]
-    goal3 = [2.0, 18.0]
+    # goal1 = [0.0, 18.0]
+    # goal3 = [2.0, 18.0]
 
-    goal1 = [0.0, 6.0]
-    goal3 = [2.0, 6.0]
-    goal2 = [4.0, 4.0]
+    # goal1 = [0.0, 6.0]
+    # goal3 = [2.0, 6.0]
+    # goal2 = [4.0, 4.0]
 
     goal1 = [0.0, 6.0]
     goal3 = [2.0, 9.0]
 
-    target_goal = goal3
+    target_goal = goal1
     all_goals   = [goal1, goal3]
 
     if goal_index is not None:
@@ -97,7 +97,7 @@ def scenario_test_1(goal_index=None):
     goal1           = [3.5, 4.0]
     goal2           = [3.0, 2.0]
 
-    all_goals   = [goal1, goal2]
+    all_goals   = [goal2, goal1]
     if goal_index is not None:
         target_goal = all_goals[goal_index]
     else:
@@ -210,7 +210,7 @@ def scenario_test_3(goal_index=None):
     exp.set_state_size(2)
     exp.set_action_size(2)
 
-    dt = .025
+    dt = .0125
     N = 31
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
@@ -518,15 +518,15 @@ def scenario_test_8(goal_index=None):
     restaurant      = None
     start           = [0.0, 0.0]
 
-    true_goal       = [8.0, 2.0]
+    # true_goal       = [8.0, 2.0]
     goal2           = [2.0, 1.0]
     goal4           = [4.0, 1.0]
 
     goal1           = [4.0, 2.0]
-    goal3           = [1.0, 3.0]
+    # goal3           = [1.0, 3.0]
 
     target_goal = goal4
-    all_goals   = [goal1, goal4, goal2]
+    all_goals   = [goal4, goal1, goal2]
 
     if goal_index != None:
         target_goal = all_goals[goal_index]
@@ -556,9 +556,9 @@ def scenario_test_9(goal_index=None):
     restaurant      = None
     start           = [8.0, 2.0]
 
-    true_goal       = [0.0, 0.0]
+    # true_goal       = [0.0, 0.0]
     goal2           = [2.0, 1.0]
-    goal3           = [4.0, 1.0]
+    # goal3           = [4.0, 1.0]
 
     goal1           = [4.0, 2.0]
     goal3           = [1.0, 3.0]
@@ -590,8 +590,8 @@ def scenario_test_9(goal_index=None):
 
     return label, exp
 
-def scenario_5_large_scale(goal_index=None):
-    label = "scenario_5_large_scale"
+def scenario_10_large_scale(goal_index=None):
+    label = "test_10_large_scale"
 
     restaurant      = None
     start           = [800.0, 200.0]
@@ -823,7 +823,7 @@ def scenario_7_observer_offset(goal_index=None):
     return label, exp
 
 def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
-    label = "scenario_7_obs_on_zero"
+    label = "test_7_obs_on_zero"
 
     start           = [0.0, 0.0]
 
@@ -1008,6 +1008,19 @@ def scenario_6():
 def get_scenario_set():
     scenarios = {}
 
+
+    # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_10_large_scale(goal_index=2)
+    scenarios[label] = exp
+
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
     scenarios[label] = exp
@@ -1020,6 +1033,8 @@ def get_scenario_set():
     label, exp = scenario_test_1(goal_index=0)
     scenarios[label] = exp
 
+    # return scenarios
+
     label, exp = scenario_test_1(goal_index=1)
     scenarios[label] = exp
 
@@ -1030,10 +1045,7 @@ def get_scenario_set():
     label, exp = scenario_test_2(goal_index=1)
     scenarios[label] = exp
 
-    # label, exp = scenario_test_2(goal_index=2)
-    # scenarios[label] = exp
-
-    # # TEST SCENARIO
+    # TEST SCENARIO
     label, exp = scenario_test_3(goal_index=0)
     scenarios[label] = exp
 
