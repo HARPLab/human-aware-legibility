@@ -55,7 +55,8 @@ def run_all_tests():
     # test_amount_of_slack(dashboard_folder)
     # collate_and_report_on_results(dashboard_folder)
 
-    test_mega_compare(dashboard_folder)
+    test_full_set(dashboard_folder)
+    # test_mega_compare(dashboard_folder)
     return
 
     # test_observers_rotated(dashboard_folder)
@@ -118,17 +119,6 @@ def collate_and_report_on_results(dash_folder):
 def test_mega_compare(dash_folder):
     test_group = 'all configs'
 
-    print("TESTING ALL SETTINGS")
-    scenarios = test_scenarios.get_scenarios_heading()
-
-    # for each test scenario
-    # run it with heading, get the image
-    # run it without heading part, get the image
-
-    # export both individually
-    # export side by side with markings
-    #    include exp settings on export
-
     test_setups_og = []
 
     new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
@@ -146,27 +136,36 @@ def test_mega_compare(dash_folder):
     new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
     test_setups_og.append(new_test)
 
+    print("TESTING ALL SETTINGS")
+    scenarios = test_scenarios.get_scenarios_heading()
     for key in scenarios.keys():
         scenario = scenarios[key]
 
         test_setups = copy.copy(test_setups_og)
 
+        save_location = get_file_id_for_exp(dash_folder, "mega-" + scenario.get_exp_label())
+
         # This placement of the figure statement is actually really important
         # numpy only likes to have one plot open at a time, 
         # so this is a fresh one not dependent on the graphing within the solver for each
 
+
         # NUMBER OF IMAGES MUST MATCH THE NUMBER OF TESTS
-        fig, (ax1,ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, figsize=(8, 4))
-        # fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(6, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1]})
-        # ax1 = axes['A']
-        # ax2 = axes['B']
-        # ax3 = axes['C']
-        # ax4 = axes['D']
-        # ax5 = axes['E']
+        # fig, (ax1,ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, figsize=(8, 4))
+        fig, axes = plt.subplot_mosaic("ABC;DEF;GHI", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, .01], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+        ax_mappings[4] = axes['E']
+        ax_mappings[5] = axes['F']
+        ax_mappings[6] = axes['G']
+        ax_mappings[7] = axes['H']
+        ax_mappings[8] = axes['I']
 
         # TODO FIGURE OUT WHY THE GRAPHS NOT PRINTING
 
-        ax_mappings     = [ax1, ax2, ax3, ax4, ax5]
         outputs         = {}
 
         for ti in range(len(test_setups)):
@@ -181,33 +180,35 @@ def test_mega_compare(dash_folder):
             mega_scenario.set_mode_pure_heading(test['pure-heading'])
 
             verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet    = solver.run_solver(mega_scenario)
-            outputs[ti] = verts_mega_scenario, us_mega_scenario, cost_mega_scenario
+            outputs[ti] = verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet
 
             test_log.append(mega_scenario.get_solve_quality_status(test_group))
      
-
-        save_location = get_file_id_for_exp(dash_folder, "mega-" + mega_scenario.get_exp_label())
         print(outputs)
         # exit()
 
+        print("THAT WAS THE OUTPUTS")
         for key in outputs.keys():
+            print("check key of outputs")
+            print(key)
             ax = ax_mappings[key]
             print("ax is")
             print(ax)
-            verts, us, cost = outputs[key]
+            verts_mega, us_mega, cost_mega, ip_mega = outputs[key]
 
-            cost.get_overview_pic(verts, us, ax=ax_mappings[key])
+            cost_mega.get_overview_pic(verts_mega, us_mega, ax=ax, info_packet=ip_mega)
 
             print("le key")
             print(key)
 
             print("Cost--")
-            print(cost)
-            _ = ax.set_title(test_setups_og[key]['label'])
+            print(cost_mega)
+            title_mega = test_setups_og[key]['label']
+            print("Title mega")
+            print(title_mega)
+            _ = ax.set_title(title_mega)
             ax.get_legend().remove()
             print(ax)
-
-        collate_and_report_on_results(dash_folder)
 
         plt.tight_layout()
         fig.suptitle("Goal = " + mega_scenario.get_goal_label())
@@ -547,6 +548,82 @@ def test_observers_being_respected(dash_folder):
 
         collate_and_report_on_results(dash_folder)
 
+def test_full_set(dash_folder):
+    scenarios = test_scenarios.get_scenarios()
+    test_group = "all cross"
+
+    test_setups_og = []
+
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
+    test_setups_og.append(new_test)
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+
+        save_location = get_file_id_for_exp(dash_folder, "cross-" + scenario.get_exp_label())
+        
+        outputs = {}
+        label_dict = {}
+        for ti in range(len(test_setups_og)):
+            test = test_setups_og[ti]
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            n_scenario = copy.copy(scenario)
+
+            mega_scenario = copy.copy(scenario)
+            mega_scenario.set_fn_note(test['label'])
+
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            mega_scenario.set_heading_on(test['heading-on'])
+            mega_scenario.set_mode_pure_heading(test['pure-heading'])
+            
+            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+            outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+            test_log.append(mega_scenario.get_solve_quality_status(test_group))
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+        ax_mappings[4] = axes['E']
+        ax_mappings[5] = axes['F']
+        # ax_mappings[6] = axes['G']
+        # ax_mappings[7] = axes['H']
+        # ax_mappings[8] = axes['I']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_n, us_with_n, cost_with_n, label = outputs[key]
+
+            # label = str(label_dict[key]) + "%"
+            
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+    
+        plt.tight_layout()
+        fig.suptitle("cross=" + str("mega") + " " + mega_scenario.get_goal_label())
+        plt.savefig(save_location + ".png")
+
+        collate_and_report_on_results(dash_folder)
 
 
 def test_amount_of_slack(dash_folder):
