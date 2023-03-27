@@ -166,10 +166,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         )
 
 
-    def init_output_log(self):
+    def init_output_log(self, dash_folder):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
-        sys.stdout = open(self.get_export_label() + str(rand_id) + '--output.txt','a')
+        sys.stdout = open(self.get_export_label(dash_folder) + str(rand_id) + '--output.txt','a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
@@ -662,9 +662,13 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return xmin - xbuffer, xmax + xbuffer, ymin - ybuffer, ymax + ybuffer
 
-    def get_export_label(self):
+    def get_export_label(self, dash_folder=None):
         note = self.exp.get_fn_note()
-        folder_name = PREFIX_EXPORT + self.file_id + note + "/" 
+        if dash_folder is not None:
+            folder_name = dash_folder + "/" + self.file_id + note + "/"
+        else:
+            folder_name = PREFIX_EXPORT + self.file_id + note + "/" 
+    
         overall_name = folder_name + self.file_id
         try:
             os.mkdir(folder_name)
@@ -753,7 +757,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
-    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None, fn_note=""):
+    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None, fn_note="", dash_folder=None):
         axarr = ax
 
         axarr.set_aspect('equal')
@@ -914,7 +918,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
-    def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None):
+    def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         sys.stdout = open('path_overview.txt','w')
 
@@ -1143,7 +1147,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # plt.clf()
 
         plt.tight_layout()
-        plt.savefig(self.get_export_label() + '-overview.png')
+        plt.savefig(self.get_export_label(dash_folder) + '-overview.png')
         if FLAG_SHOW_IMAGE_POPUP:
             plt.show()
         plt.clf()
