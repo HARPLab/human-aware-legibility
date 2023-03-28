@@ -72,6 +72,8 @@ class NavigationDynamics(FiniteDiffDynamics):
         v0 = A.dot(x)
         v1 = B.dot(u)
 
+
+        is_in_obstacle = self.is_in_obstacle(v0, v1)
         across_obstacle = self.across_obstacle(v0, v1)
 
         if np.isnan(np.linalg.norm(u)):
@@ -79,6 +81,9 @@ class NavigationDynamics(FiniteDiffDynamics):
             xnext = v0
         elif across_obstacle:
             print("teleporting across an obstacle!")
+            xnext = v0
+        elif is_in_obstacle:
+            print("don't enter obstacle")
             xnext = v0
         else:
             xnext = v0 + v1     # A*x + B*u
@@ -144,6 +149,57 @@ class NavigationDynamics(FiniteDiffDynamics):
         # ]).T
 
         super(NavigationDynamics, self).__init__(self.f, 2, 2)
+
+    def get_obstacle_penalty_given_obj(self, x, x1, obst_center, threshold):
+        obst_dist = obst_center - x
+        obst_dist = np.abs(np.linalg.norm(obst_dist))
+
+        if obst_dist > threshold:
+            return False
+
+        return True
+
+    # Citation for future paper
+    # https://studywolf.wordpress.com/2016/11/24/full-body-obstacle-collision-avoidance/
+    def is_in_obstacle(self, x, x1):
+        TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = .2
+        GOAL_RADIUS     = .3 #.05
+
+        tables      = self.exp.get_tables()
+        goals       = self.exp.get_goals()
+        observers   = self.exp.get_observers()
+
+        obstacle_penalty = False
+        for table in tables:
+            new_obstacle_penalty = self.get_obstacle_penalty_given_obj(x, x1, table.get_center(), TABLE_RADIUS)
+            if new_obstacle_penalty:
+                return True
+
+        for obs in observers:
+            obstacle = obs.get_center()
+            new_obstacle_penalty = self.get_obstacle_penalty_given_obj(x, x1, obs.get_center(), OBS_RADIUS)
+            if new_obstacle_penalty:
+                return True
+
+        for g in goals:
+            if g is not self.exp.get_target_goal():
+                obstacle = g
+                new_obstacle_penalty = self.get_obstacle_penalty_given_obj(x, x1, g, GOAL_RADIUS)
+                if new_obstacle_penalty:
+                    return True
+
+        # x1 = x
+        # if i > 0:
+        #     x0 = self.x_path[i - 1]
+        # else:
+        #     x0 = x
+
+        # if self.across_obstacle(x0, x1):
+        #     obstacle_penalty += 1.0
+        #     print("TELEPORT PENALTY APPLIED")
+
+        return False
 
     def across_obstacle(self, x0, x1):
         TABLE_RADIUS    = self.exp.get_table_radius()
