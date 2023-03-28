@@ -764,12 +764,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.grid(axis='y')
 
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = .2
-        GOAL_RADIUS     = .3 #.05
+        OBS_RADIUS      = self.exp.get_observer_radius()
+        GOAL_RADIUS     = self.exp.get_goal_radius()
 
         TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
-        TABLE_RADIUS           = TABLE_RADIUS #_BUFFER / 2.0
-        OBS_RADIUS             = OBS_RADIUS #/ 2.0
+        # TABLE_RADIUS           = TABLE_RADIUS #_BUFFER / 2.0
+        # OBS_RADIUS             = OBS_RADIUS #/ 2.0
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
