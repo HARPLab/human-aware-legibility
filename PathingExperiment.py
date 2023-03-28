@@ -41,7 +41,7 @@ class PathingExperiment():
 
     # default values for solver
     solver_coeff_terminal   = 1000000.0
-    solver_scale_term       = 0.01
+    solver_scale_term       = .01
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
 
@@ -50,6 +50,7 @@ class PathingExperiment():
     TABLE_RADIUS            = .5
     OBSERVER_RADIUS         = .2
     GOAL_RADIUS             = .3
+    OBSTACLE_BUFFER         = .01
 
 
     # DEFAULT COST TYPE AND F TYPE
@@ -300,6 +301,9 @@ class PathingExperiment():
 
     def get_goal_radius(self):
         return self.GOAL_RADIUS
+
+    def get_obstacle_buffer(self):
+        return self.OBSTACLE_BUFFER
 
     def get_lambda_cost_path_coeff(self):
         return self.lambda_cost_path_coeff
