@@ -148,12 +148,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
         obst_dist = obst_center - x
         obst_dist = np.abs(np.linalg.norm(obst_dist))
 
-        if obst_dist > threshold:
-            return 0
-
         # rho is the distance the closest point is from the center
-        rho             = threshold - obst_dist
+        rho             = obst_dist - self.exp.get_obstacle_buffer()
         eta             = 1.0
+
+        if rho > threshold:
+            return 0
 
         # (v - closest) / rho
 
@@ -755,12 +755,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
             wt_legib     = 0 #0.5 #100.0
             wt_lam       = 0.02
             wt_heading   = 1 #100000.0
-            wt_obstacle  = 10.0 #self.exp.get_solver_scale_obstacle()
+            wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         else:
-            wt_legib     = 0.5 #100.0
-            wt_lam       = 0.017
+            wt_legib     = 5.0 #100.0
+            wt_lam       = 0.001
             wt_heading   = 0.5 #100000.0
-            wt_obstacle  = 10.0 #self.exp.get_solver_scale_obstacle()
+            wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
 
 
 
