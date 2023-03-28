@@ -47,7 +47,10 @@ class PathingExperiment():
 
     lambda_cost_path_coeff  = 1.0
 
-    obstacle_table_radius   = .5
+    TABLE_RADIUS            = .5
+    OBSERVER_RADIUS         = .2
+    GOAL_RADIUS             = .3
+
 
     # DEFAULT COST TYPE AND F TYPE
     cost_label  = COST_OA_AND_OBS
@@ -291,6 +294,12 @@ class PathingExperiment():
 
     def set_table_radius(self, trad):
         self.obstacle_table_radius = trad
+
+    def get_observer_radius(self):
+        return self.OBSERVER_RADIUS
+
+    def get_goal_radius(self):
+        return self.GOAL_RADIUS
 
     def get_lambda_cost_path_coeff(self):
         return self.lambda_cost_path_coeff
