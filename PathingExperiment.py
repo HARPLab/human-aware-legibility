@@ -290,7 +290,7 @@ class PathingExperiment():
         return {}
 
     def get_table_radius(self):
-        return self.obstacle_table_radius
+        return self.TABLE_RADIUS
 
     def set_table_radius(self, trad):
         self.obstacle_table_radius = trad
