@@ -163,8 +163,8 @@ class NavigationDynamics(FiniteDiffDynamics):
     # https://studywolf.wordpress.com/2016/11/24/full-body-obstacle-collision-avoidance/
     def is_in_obstacle(self, x, x1):
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = .2
-        GOAL_RADIUS     = .3 #.05
+        OBS_RADIUS      = self.exp.get_observer_radius()
+        GOAL_RADIUS     = self.exp.get_goal_radius()
 
         tables      = self.exp.get_tables()
         goals       = self.exp.get_goals()
