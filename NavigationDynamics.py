@@ -154,6 +154,16 @@ class NavigationDynamics(FiniteDiffDynamics):
         obst_dist = obst_center - x
         obst_dist = np.abs(np.linalg.norm(obst_dist))
 
+        obst_dist = obst_center - x
+        obst_dist = np.abs(np.linalg.norm(obst_dist))
+
+        # rho is the distance the closest point is from the center
+        rho             = obst_dist - self.exp.get_obstacle_buffer()
+        eta             = 1.0
+
+        # if rho > threshold:
+        #     return 0
+
         if obst_dist > threshold:
             return False
 
