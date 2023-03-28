@@ -83,7 +83,7 @@ def run_solver(exp):
     tol = 1e-5
     # tol = 1e-10
 
-    num_iterations = 50 #75
+    num_iterations = 75
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
