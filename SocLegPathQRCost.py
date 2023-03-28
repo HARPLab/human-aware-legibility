@@ -31,7 +31,7 @@ from shapely.geometry import LineString
 from shapely.geometry import Point
 
 np.seterr(divide='raise')
-MATH_EPSILON = .0000001
+MATH_EPSILON = 0 #.0000001
 
 class SocLegPathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
@@ -117,8 +117,110 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return False
 
-    # TODO ADD TEST SUITE FOR THIS
+    def get_closest_point_on_line(self, x, i):
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
+
+
+        vec_line = p2 - p1
+        # the vector from the obstacle to the first line point
+        vec_ob_line = v - p1
+        # calculate the projection normalized by length of arm segment
+        projection = (np.dot(vec_ob_line, vec_line) /
+                      np.sum((vec_line)**2))
+        if projection < 0:         
+            # then closest point is the start of the segment
+            closest = p1
+        elif projection > 1:
+            # then closest point is the end of the segment
+            closest = p2
+        else:
+            closest = p1 + projection * vec_line
+        # calculate distance from obstacle vertex to the closest point
+        dist = np.sqrt(np.sum((v - closest)**2))
+
+        return dist
+
+    def get_obstacle_penalty_given_obj(self, x, i, obst_center, threshold):
+        obst_dist = obst_center - x
+        obst_dist = np.abs(np.linalg.norm(obst_dist))
+
+        if obst_dist > threshold:
+            return 0
+
+        # rho is the distance the closest point is from the center
+        rho             = threshold - obst_dist
+        eta             = 1.0
+
+        # (v - closest) / rho
+
+        # value = ((1.0 / rho)**2)
+        # value = value * ((1.0 - rho) - (1.0 / threshold))
+        print("Obstacle intersection!")
+        print("Given " + str(x) + " -> " + str(obst_center) + " we are dist of " + str(rho))
+
+        # vector component
+        drhodx = (obst_dist) / rho
+
+        print("drhodx")
+        print(drhodx)
+
+        # value = (eta * ((1.0/rho) - (1.0/threshold)) *
+        #         1.0/(rho**2))
+
+        # print("without vector")
+        # print(value)
+
+        value = (eta * ((1.0/rho) - (1.0/threshold)) *
+                1.0/(rho**2) * drhodx)
+
+        print("with vector")
+        print(value)
+
+        return value
+
+    # Citation for future paper
+    # https://studywolf.wordpress.com/2016/11/24/full-body-obstacle-collision-avoidance/
     def get_obstacle_penalty(self, x, i, goal):
+        TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = self.exp.get_observer_radius() #.2
+        GOAL_RADIUS     = self.exp.get_goal_radius() #.3 #.05
+
+        tables      = self.exp.get_tables()
+        goals       = self.goals
+        observers   = self.exp.get_observers()
+
+        obstacle_penalty = 0
+        for table in tables:
+            obstacle_penalty += self.get_obstacle_penalty_given_obj(x, i, table.get_center(), TABLE_RADIUS)
+
+        for obs in observers:
+            obstacle = obs.get_center()
+            obstacle_penalty += self.get_obstacle_penalty_given_obj(x, i, obs.get_center(), OBS_RADIUS)
+
+        for g in goals:
+            if g is not self.exp.get_target_goal():
+                obstacle = g
+                obstacle_penalty += self.get_obstacle_penalty_given_obj(x, i, g, GOAL_RADIUS)
+
+        x1 = x
+        if i > 0:
+            x0 = self.x_path[i - 1]
+        else:
+            x0 = x
+
+        if self.across_obstacle(x0, x1):
+            obstacle_penalty += 1.0
+            print("TELEPORT PENALTY APPLIED")
+
+        return obstacle_penalty
+
+
+    # TODO ADD TEST SUITE FOR THIS
+    def get_obstacle_penalty_v1(self, x, i, goal):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = .2
         GOAL_RADIUS     = .3 #.05
@@ -142,7 +244,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if obs_dist < TABLE_RADIUS:
                 obs_dist = TABLE_RADIUS - obs_dist
-                print("table obstacle dist for " + str(x) + " " + str(obs_dist))
+                print("PENALTY: table obstacle dist for " + str(x) + " " + str(obs_dist))
                 print(str(table.get_center()))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
@@ -161,7 +263,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if obs_dist < OBS_RADIUS:
                 obs_dist = OBS_RADIUS - obs_dist
-                print("obs obstacle dist for " + str(x) + " " + str(obs_dist))
+                print("PENALTY: obs obstacle dist for " + str(x) + " " + str(obs_dist))
                 print(str(obs.get_center()))
                 # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
@@ -180,7 +282,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
                 if obs_dist < GOAL_RADIUS:
                     obs_dist = GOAL_RADIUS - obs_dist
-                    print("goal obstacle dist for " + str(x) + " " + str(obs_dist))
+                    print("PENALTY: goal obstacle dist for " + str(x) + " " + str(obs_dist))
                     print(str(g))
                     # obstacle_penalty += (obs_dist)**2 * self.scale_obstacle
 
@@ -188,13 +290,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
                     if self.FLAG_OBS_FLAT_PENALTY:
                         obstacle_penalty += 1.0
                     obstacle_penalty += np.abs(obs_dist / GOAL_RADIUS) #**2
-            else:
-                print("inside final goal " + str(g))
+            # else:
+            #     print("inside final goal " + str(g))
 
         if self.across_obstacle(x0, x1):
             obstacle_penalty += 1.0
             print("TELEPORT PENALTY APPLIED")
 
+        obstacle_penalty = obstacle_penalty * np.Inf
         return obstacle_penalty
 
 
@@ -216,6 +319,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         return diff
 
 
+    def inversely_proportional_to_distance(self, x):
+        if x == 0:
+            return np.Inf
+        return 1.0 / (x + MATH_EPSILON)
+
     def get_relative_distance_k(self, x, goal, goals):
         total_distance = 0.0
 
@@ -223,10 +331,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
             dist = g - x
             dist = np.abs(np.linalg.norm(dist))
 
-            total_distance += 1.0 / dist
+            total_distance += self.inversely_proportional_to_distance(x)
 
         target_goal_dist = goal - x
-        tg_dist = 1.0 / np.abs(np.linalg.norm(target_goal_dist))
+        tg_dist = self.inversely_proportional_to_distance(target_goal_dist)
 
         # rel_dist = 1.0 - (tg_dist / total_distance)
 
@@ -271,11 +379,17 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(v2_u)
         ang = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
 
-        # TODO VERIFY THIS FIX
-        if ang < MATH_EPSILON:
-            ang = MATH_EPSILON
+        # # TODO VERIFY THIS FIX
+        # if ang < MATH_EPSILON:
+        #     ang = MATH_EPSILON
 
         return ang
+
+    def inversely_proportional_to_angle(self, angle):
+        if angle == 0:
+            return np.Inf
+
+        return 1.0 / (angle + MATH_EPSILON)
 
     def get_heading_cost(self, x, u, i, goal):
         if i is 0:
@@ -331,7 +445,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         g_vals = []
         for i in range(len(all_goal_angles)):
-            gval = 1.0 / all_goal_angles[i]
+            gval = self.inversely_proportional_to_angle(all_goal_angles[i])
 
             if self.exp.get_mode_heading_err_sqr() is True:
                 gval = gval * gval
@@ -344,7 +458,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             g_vals.append(k * gval)
 
-        target_val = 1.0 / target_angle
+        target_val = self.inversely_proportional_to_angle(target_angle)
+
         if self.exp.get_mode_heading_err_sqr() is True:
             target_val = target_val * target_val
 
@@ -370,12 +485,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return heading_clarity_cost
 
-    def get_heading_cost_v2_wraps(self, x, u, i, goal):
-        if i is 0:
-            return 0
-
-        goals       = self.goals
-
+    def get_robot_vector(self, x, i):
         x1 = x
         if i > 0:
             x0 = self.x_path[i - 1]
@@ -385,12 +495,31 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("Points in a row")
         print(x0, x1)
 
-        robot_vector    = x1 - x0
+        if x1 == x0:
+            print("Robot has no diff, so no heading")
+            print(i)
+            while j > 0 and x1 == x0:
+                j = j - 1
+                x0 = self.x_path[j - 1]
+
+        if x1 == x0:
+            print("Still a problem here with heading diff")
+
+        return x1 - x0
+
+
+    def get_heading_cost_v2_wraps(self, x, u, i, goal):
+        if i is 0:
+            return 0
+
+        goals       = self.goals
+
+        robot_vector    = self.get_robot_vector(x, i)
         target_vector   = None
         all_goal_vectors    = []
 
         for alt_goal in goals:
-            goal_vector = alt_goal - x1 #[x1, alt_goal]
+            goal_vector = alt_goal - x #[x1, alt_goal]
 
             if alt_goal is goal:
                 target_vector = goal_vector
@@ -418,7 +547,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             gang_sqr = gangle * gangle
 
             if self.exp.get_weighted_close_on() is True:
-                k = self.get_relative_distance_k(x1, goals[i], goals)
+                k = self.get_relative_distance_k(x, goals[i], goals)
                 # k = k*k
             else:
                 k = 1.0
@@ -568,7 +697,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # # xdiff from preferred line
         # x_path[i] is always the goal
-        x_diff = x - self.x_path[i]
+        # x_diff = x - self.x_path[i]
 
         u_diff = 0
         if i < len(self.u_path):
@@ -620,11 +749,20 @@ class SocLegPathQRCost(LegiblePathQRCost):
             f_value = 1.0
 
 
-        if self.exp.get_norm_on() is False:
+        # if self.exp.get_norm_on() is False:
+
+        if self.exp.get_mode_pure_heading():
+            wt_legib     = 0 #0.5 #100.0
+            wt_lam       = 0.02
+            wt_heading   = 1 #100000.0
+            wt_obstacle  = 10.0 #self.exp.get_solver_scale_obstacle()
+        else:
             wt_legib     = 0.5 #100.0
             wt_lam       = 0.017
             wt_heading   = 0.5 #100000.0
-            wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
+            wt_obstacle  = 10.0 #self.exp.get_solver_scale_obstacle()
+
+
 
         # else:
         #     ##### SET WEIGHTS
