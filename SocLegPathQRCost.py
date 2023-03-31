@@ -117,7 +117,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return False
 
-    def get_closest_point_on_line(self, x, i):
+    def get_closest_point_on_line(self, x, i, obst_center):
         x1 = x
         if i > 0:
             x0 = self.x_path[i - 1]
@@ -125,60 +125,73 @@ class SocLegPathQRCost(LegiblePathQRCost):
             x0 = x
 
 
-        vec_line = p2 - p1
+        vec_line = x1 - x0
         # the vector from the obstacle to the first line point
-        vec_ob_line = v - p1
+        vec_ob_line = obst_center - x0
         # calculate the projection normalized by length of arm segment
         projection = (np.dot(vec_ob_line, vec_line) /
                       np.sum((vec_line)**2))
+
         if projection < 0:         
             # then closest point is the start of the segment
-            closest = p1
+            closest = x0
         elif projection > 1:
             # then closest point is the end of the segment
-            closest = p2
+            closest = x1
         else:
-            closest = p1 + projection * vec_line
-        # calculate distance from obstacle vertex to the closest point
-        dist = np.sqrt(np.sum((v - closest)**2))
+            closest = x0 + projection * vec_line
 
+        print("ptclosest")
+        print(closest)
+        # calculate distance from obstacle vertex to the closest point
+        dist = np.abs(np.linalg.norm(obst_center - closest)) #np.sqrt(np.sum((obst_center - closest)**2))
+
+        print("Closest point dist")
+        print(dist)
         return dist
 
-    def get_obstacle_penalty_given_obj(self, x, i, obst_center, threshold):
+    def get_obstacle_penalty_given_obj(self, x, i, obst_center, obstacle_radius):
+        obstacle_radius = obstacle_radius # the physical obj size
+        obstacle_buffer = self.exp.get_obstacle_buffer() # the area in which the force will apply
+        threshold       = obstacle_buffer
+
         obst_dist = obst_center - x
         obst_dist = np.abs(np.linalg.norm(obst_dist))
+        # obst_dist = self.get_closest_point_on_line(x, i, obst_center)
 
         # rho is the distance the closest point is from the center
-        rho             = obst_dist - self.exp.get_obstacle_buffer()
+        rho             = obst_dist - obstacle_radius #- self.exp.get_obstacle_buffer()
         eta             = 1.0
 
-        if rho > threshold:
+        if rho < threshold:
             return 0
 
-        # (v - closest) / rho
-
-        # value = ((1.0 / rho)**2)
-        # value = value * ((1.0 - rho) - (1.0 / threshold))
         print("Obstacle intersection!")
-        print("Given " + str(x) + " -> " + str(obst_center) + " we are dist of " + str(rho))
+        print("Given " + str(x) + " -> " + str(obst_center) + " we are dist of " + str(rho) + " vs " + str(obst_dist))
 
         # vector component
         drhodx = (obst_dist) / rho
 
         print("drhodx")
-        print(drhodx)
-
+        # print(drhodx)
         # value = (eta * ((1.0/rho) - (1.0/threshold)) *
         #         1.0/(rho**2))
-
         # print("without vector")
         # print(value)
+
+        print("rho")
+        print(rho)
 
         value = (eta * ((1.0/rho) - (1.0/threshold)) *
                 1.0/(rho**2) * drhodx)
 
-        print("with vector")
+        print("obspenalty is: ")
         print(value)
+
+        if value is np.nan:
+            value = np.Inf
+            print("oh no")
+            exit()
 
         return value
 
@@ -206,15 +219,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 obstacle = g
                 obstacle_penalty += self.get_obstacle_penalty_given_obj(x, i, g, GOAL_RADIUS)
 
-        x1 = x
-        if i > 0:
-            x0 = self.x_path[i - 1]
-        else:
-            x0 = x
+        # x1 = x
+        # if i > 0:
+        #     x0 = self.x_path[i - 1]
+        # else:
+        #     x0 = x
 
-        if self.across_obstacle(x0, x1):
-            obstacle_penalty += 1.0
-            print("TELEPORT PENALTY APPLIED")
+        # if self.across_obstacle(x0, x1):
+        #     obstacle_penalty += 1.0
+        #     print("TELEPORT PENALTY APPLIED")
 
         return obstacle_penalty
 
@@ -666,6 +679,39 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return heading_clarity_cost
 
+    # How far away is the final step in the path from the goal?
+    def term_cost(self, x, i):
+        start = self.start
+        goal1 = self.target_goal
+        
+        # Qf = self.Q_terminal
+        Qf = self.Qf
+        R = self.R
+
+        # x_diff = x - self.x_path[i]
+        x_diff = x - self.exp.get_target_goal() #self.x_path[self.N]
+        squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
+        # squared_x_cost = squared_x_cost * squared_x_cost
+
+        terminal_cost = squared_x_cost
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("term cost squared x cost")
+            print(squared_x_cost)
+
+        # We want to value this highly enough that we don't not end at the goal
+        # terminal_coeff = 100.0
+        coeff_terminal = self.exp.get_solver_coeff_terminal()
+        terminal_cost = terminal_cost * coeff_terminal
+
+        # Once we're at the goal, the terminal cost is 0
+        
+        # Attempted fix for paths which do not hit the final mark
+        # if squared_x_cost > .001:
+        #     terminal_cost *= 1000.0
+
+        return terminal_cost
+
 
     # original version for plain path following
     def l(self, x, u, i, terminal=False, just_term=False, just_stage=False):
@@ -757,12 +803,23 @@ class SocLegPathQRCost(LegiblePathQRCost):
             wt_heading   = 1 #100000.0
             wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         else:
-            wt_legib     = 5.0 #100.0
-            wt_lam       = 0.001
-            wt_heading   = 0.5 #100000.0
+            # wt_legib     = 5.0 #100.0
+            # wt_lam       = 10.0 #0.1 #001
+            # wt_heading   = 0.5 #100000.0
+            # wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
+            print("BLAH IT'S THE EVIL ONE")
+            wt_legib     = 1.0 #-(1/30.0) #100.0
+            wt_lam       = 1.0
+            wt_heading   = 1.0 #0.5 #100000.0
             wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
 
+            # wt_legib     = 1.0 #0.5 #100.0
+            # wt_lam       = 10.0
+            # wt_heading   = 1.0 #100000.0
+            # wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
 
+        # print([wt_legib])
+        # print(['wt_lam:', wt_lam, ])
 
         # else:
         #     ##### SET WEIGHTS
@@ -793,6 +850,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # wt_heading   = .5 * (1 - wt_legib) #100000.0
         # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
 
+        val_legib       = self.michelle_stage_cost(start, goal, x, u, i, terminal)
+        val_lam         = u_diff.T.dot(R).dot(u_diff)
+        val_obstacle    = self.get_obstacle_penalty(x, i, goal)
+        val_heading     = self.get_heading_cost(x, u, i, goal)
+
 
         # J does not need to be in a particular range, it can be any max or min
         J = 0        
@@ -807,6 +869,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
             print(stage_costs, term_cost)
+
+            print("[wt_legib, wt_lam, wt_obstacle, wt_heading]")
+            print([wt_legib, wt_lam, wt_obstacle, wt_heading])            
+            print("[val_legib, val_lam, val_obstacle, val_heading]")
+            print([val_legib, val_lam, val_obstacle, val_heading])
+            print("==")
+            print([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])
+
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
@@ -929,7 +999,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("overall J " + str(J))
 
-        J += (0.5 * u_diff.T.dot(R).dot(u_diff))
+        # J += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
         # # We want the path to be smooth, so we incentivize small and distributed u
 

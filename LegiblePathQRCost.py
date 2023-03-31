@@ -767,9 +767,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         OBS_RADIUS      = self.exp.get_observer_radius()
         GOAL_RADIUS     = self.exp.get_goal_radius()
 
-        TABLE_RADIUS_BUFFER    = self.exp.get_table_radius()
-        # TABLE_RADIUS           = TABLE_RADIUS #_BUFFER / 2.0
-        # OBS_RADIUS             = OBS_RADIUS #/ 2.0
+        TABLE_RADIUS_BUFFER     = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER  = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER             = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -790,7 +790,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             obs_color = 'orange'
             obs_color_outer = '#f8d568'
             obs_pt  = observer.get_center()
-            obs     = plt.Circle(obs_pt, 2*OBS_RADIUS, color=obs_color_outer, clip_on=False)
+            obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
             axarr.add_patch(obs)
 
             obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
@@ -889,7 +889,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             if gx == target[0] and gy == target[1]:
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
             else:
-                g = plt.Circle(goal, GOAL_RADIUS, color='#aaaaaa', clip_on=False)
+                g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
+                axarr.add_patch(g)
+
+                g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
                 axarr.add_patch(g)
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
