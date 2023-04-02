@@ -316,6 +316,51 @@ def scenario_test_4_flip(goal_index=None):
 
     return label, exp
 
+
+def scenario_test_4_flip_inverse(goal_index=None):
+    label = "test4_needle3_inv_g" + str(goal_index)
+
+    start           = [-0.0, 2.0]
+
+    goal1           = [-2.0, 4.0]
+    goal2           = [-3.0, 1.0]
+    # goal3           = [4.0, 0.0]
+
+    all_goals   = [goal1, goal2]
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    table_pts.append([-1.0, 2.5])
+    table_pts.append([-2.5, 3.0])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 40
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
 def scenario_test_5(goal_index=None):
     label = "test5_blocked_g" + str(goal_index)
 
@@ -1021,7 +1066,26 @@ def get_scenario_set(scenario_filters=[]):
 
     # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
     # May want to verify there's an option on the list
-    if SCENARIO_FILTER_MINI in scenario_filters:
+    if scenario_filters[SCENARIO_FILTER_MINI]:
+        return scenarios
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_4_flip(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_4_flip(goal_index=1)
+    scenarios[label] = exp
+
+    # # TEST SCENARIO
+    label, exp = scenario_test_4_flip_inverse(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_4_flip_inverse(goal_index=1)
+    scenarios[label] = exp
+
+    # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
+    # May want to verify there's an option on the list
+    if scenario_filters[SCENARIO_FILTER_MINI]:
         return scenarios
 
     # # TEST SCENARIO
@@ -1101,18 +1165,6 @@ def get_scenario_set(scenario_filters=[]):
     scenarios[label] = exp
 
     label, exp = scenario_test_9(goal_index=2)
-    scenarios[label] = exp
-
-    # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=0)
-    scenarios[label] = exp
-
-    # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=1)
-    scenarios[label] = exp
-
-    # # TEST SCENARIO
-    label, exp = scenario_10_large_scale(goal_index=2)
     scenarios[label] = exp
 
     return scenarios
