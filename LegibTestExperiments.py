@@ -56,26 +56,19 @@ def run_all_tests():
     # SET UP OPTIONS FOR THIS RUN
     # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
     scenario_filters = {}
-    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = False
+    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = True
     scenario_filters[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] = False
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
     test_full_set(dashboard_folder, scenario_filters)
 
     # test_amount_of_slack(dashboard_folder, scenario_filters)
-
     # test_observers_rotated(dashboard_folder, scenario_filters)
-
     # # test_observers_being_respected(dashboard_folder, scenario_filters)
-
     # test_normalized_or_no(dashboard_folder, scenario_filters)
-
     # test_heading_sqr_or_no(dashboard_folder, scenario_filters)
-
     # test_heading_useful_or_no(dashboard_folder, scenario_filters)
-
     # test_obstacles_being_avoided(dashboard_folder, scenario_filters)
-
     # test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
 
 def get_file_id_for_exp(dash_folder, label):
@@ -83,7 +76,7 @@ def get_file_id_for_exp(dash_folder, label):
     file_id = label #+ "-" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p")
     n = 5
     rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
-    sys.stdout = open(dash_folder + file_id + "_" + str(rand_id) + '_output.txt','a')
+    # sys.stdout = open(dash_folder + file_id + "_" + str(rand_id) + '_output.txt','a')
     return dash_folder + file_id
 
 def get_dashboard_folder():
@@ -125,19 +118,22 @@ def test_mega_compare(dash_folder, scenario_filters):
 
     test_setups_og = []
 
-    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
+    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False}
     test_setups_og.append(new_test)
 
     print("TESTING ALL SETTINGS")
@@ -180,6 +176,7 @@ def test_mega_compare(dash_folder, scenario_filters):
             mega_scenario = copy.copy(scenario)
             mega_scenario.set_run_filters(scenario_filters)
             mega_scenario.set_fn_note(test['label'])
+            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
 
             # RUN THE SOLVER WITH CONSTRAINTS ON EACH
             mega_scenario.set_heading_on(test['heading-on'])
@@ -573,19 +570,22 @@ def test_full_set(dash_folder, scenario_filters):
 
     test_setups_og = []
 
-    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False}
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True}
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False}
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True}
+    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False}
     test_setups_og.append(new_test)
 
     for key in scenarios.keys():
@@ -641,6 +641,7 @@ def test_full_set(dash_folder, scenario_filters):
     
         plt.tight_layout()
         fig.suptitle("cross=" + str("mega") + " " + mega_scenario.get_goal_label())
+        plt.subplots_adjust(top=0.9)
         plt.savefig(save_location + ".png")
 
 
