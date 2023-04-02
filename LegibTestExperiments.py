@@ -60,7 +60,8 @@ def run_all_tests():
     scenario_filters[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] = False
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
-    test_full_set(dashboard_folder, scenario_filters)
+    # test_full_set(dashboard_folder, scenario_filters)
+    test_vanilla_set(dashboard_folder, scenario_filters)
 
     # test_amount_of_slack(dashboard_folder, scenario_filters)
     # test_observers_rotated(dashboard_folder, scenario_filters)
@@ -607,6 +608,7 @@ def test_full_set(dash_folder, scenario_filters):
             # RUN THE SOLVER WITH CONSTRAINTS ON EACH
             mega_scenario.set_heading_on(test['heading-on'])
             mega_scenario.set_mode_pure_heading(test['pure-heading'])
+            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
             outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
@@ -647,6 +649,74 @@ def test_full_set(dash_folder, scenario_filters):
 
         collate_and_report_on_results(dash_folder)
 
+
+def test_vanilla_set(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
+    test_group = "vanilla"
+
+    test_setups_og = []
+
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
+    test_setups_og.append(new_test)
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+
+        save_location = get_file_id_for_exp(dash_folder, "vanil-" + scenario.get_exp_label())
+        
+        outputs = {}
+        label_dict = {}
+        for ti in range(len(test_setups_og)):
+            test = test_setups_og[ti]
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            n_scenario = copy.copy(scenario)
+
+            mega_scenario = copy.copy(scenario)
+            mega_scenario.set_fn_note(test['label'])
+
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            mega_scenario.set_heading_on(test['heading-on'])
+            mega_scenario.set_mode_pure_heading(test['pure-heading'])
+            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
+            
+            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+            outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+            test_log.append(mega_scenario.get_solve_quality_status(test_group))
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("AB", figsize=(8, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        # ax_mappings[6] = axes['G']
+        # ax_mappings[7] = axes['H']
+        # ax_mappings[8] = axes['I']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_n, us_with_n, cost_with_n, label = outputs[key]
+
+            # label = str(label_dict[key]) + "%"
+            
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+    
+        plt.tight_layout()
+        fig.suptitle("legib=" + " " + mega_scenario.get_goal_label())
+        plt.subplots_adjust(top=0.9)
+        plt.savefig(save_location + ".png")
+
+
+        collate_and_report_on_results(dash_folder)
 
 def test_amount_of_slack(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
