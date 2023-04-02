@@ -155,43 +155,70 @@ class SocLegPathQRCost(LegiblePathQRCost):
         obstacle_buffer = self.exp.get_obstacle_buffer() # the area in which the force will apply
         threshold       = obstacle_buffer
 
+        # obst_dist is the distance between the point and the center of the obj
         obst_dist = obst_center - x
         obst_dist = np.abs(np.linalg.norm(obst_dist))
         # obst_dist = self.get_closest_point_on_line(x, i, obst_center)
 
-        # rho is the distance the closest point is from the center
+        # rho is the distance between the object's edge and the pt
         rho             = obst_dist - obstacle_radius #- self.exp.get_obstacle_buffer()
+        # if rho is negative, we are inside the sphere
         eta             = 1.0
 
-        if rho < threshold:
+        # if obst_dist < (threshold + obstacle_radius)
+        if rho > obstacle_buffer:
             return 0
 
-        print("Obstacle intersection!")
-        print("Given " + str(x) + " -> " + str(obst_center) + " we are dist of " + str(rho) + " vs " + str(obst_dist))
+        # if rho is positive, in the force zone
+        # if rho is negative, in the 
 
+
+        rho = rho
         # vector component
-        drhodx = (obst_dist) / rho
-
-        print("drhodx")
-        # print(drhodx)
-        # value = (eta * ((1.0/rho) - (1.0/threshold)) *
-        #         1.0/(rho**2))
-        # print("without vector")
-        # print(value)
+        d_rho_top = np.linalg.norm(obst_center - x)
+        d_rho_dx = d_rho_top / rho
 
         print("rho")
         print(rho)
 
-        value = (eta * ((1.0/rho) - (1.0/threshold)) *
-                1.0/(rho**2) * drhodx)
+        a = 1.0 / (rho)
+        b = (1.0 / obstacle_buffer)
+        c = 1.0/(rho**2)
+
+        print("a, b, c, a-b, d_rho_x")
+        print(str([a, b, c, a-b, d_rho_dx]))
+
+        print("a - b, c, d_rho_x")
+        print(str([a-b, c, d_rho_dx]))
+
+        # value = (a - b) * (c)
+
+        # value = (eta * ((1.0/rho) - (1.0/threshold)) *
+        #         1.0/(rho**2) * d_rho_dx)
+
+        value = eta * (a - b) * c * d_rho_dx
+
+        print("d_rho_dx")
+        print(d_rho_dx)
+
+        # if value is np.nan:
+        #     value = np.Inf
+        #     print("oh no")
+        #     exit()
+
+        print("Obstacle intersection!")
+        print("Given " + str(x) + " -> " + str(obst_center))
+        print("We at a dist of " + str(rho) + " from the surface (rho)")
+        print(str(obst_dist) + " minus " + str(obstacle_radius))
+
+        if obst_dist < (threshold + self.exp.get_obstacle_buffer()):
+            print("Inside the overall force diagram")
+
+        if obst_dist < threshold:
+            print("Inside the actual obj")
 
         print("obspenalty is: ")
         print(value)
-
-        if value is np.nan:
-            value = np.Inf
-            print("oh no")
-            exit()
 
         return value
 
@@ -774,14 +801,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
             visibility = 1.0
 
         FLAG_OA_MIN_VIS = False
-
-        # if FLAG_OA_MIN_VIS:
-        #     if visibility == 0:
-        #         visibility = .01
-
-        # f_func     = self.get_f()
-        # f_value    = f_func(i)
-
         f_func     = self.get_f()
         f_value    = visibility
 
@@ -794,14 +813,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         elif self.exp.get_f_label() is ex.F_NONE:
             f_value = 1.0
 
-
-        # if self.exp.get_norm_on() is False:
-
         if self.exp.get_mode_pure_heading():
             wt_legib     = 0 #0.5 #100.0
             wt_lam       = 0.02
             wt_heading   = 1 #100000.0
-            wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
+            wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
         else:
             # wt_legib     = 5.0 #100.0
             # wt_lam       = 10.0 #0.1 #001
@@ -809,30 +825,24 @@ class SocLegPathQRCost(LegiblePathQRCost):
             # wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
             print("BLAH IT'S THE EVIL ONE")
             wt_legib     = 1.0 #-(1/30.0) #100.0
-            wt_lam       = 1.0
+            wt_lam       = .02
             wt_heading   = 1.0 #0.5 #100000.0
-            wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
+            wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
 
             # wt_legib     = 1.0 #0.5 #100.0
             # wt_lam       = 10.0
             # wt_heading   = 1.0 #100000.0
             # wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
 
-        # print([wt_legib])
-        # print(['wt_lam:', wt_lam, ])
-
-        # else:
-        #     ##### SET WEIGHTS
-        #     wt_legib     = f_value * .9 #1000.0
-        #     wt_lam       = .1 * (1 - wt_legib)
-        #     wt_heading   = .1 * (1 - wt_legib) #100000.0
-        #     wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
-
         if self.exp.get_is_heading_on() is False:
             wt_heading  = 0.0
 
         if self.exp.get_mode_pure_heading() is True:
             wt_legib    = 0.0
+
+        if self.exp.get_mode_dist_legib_on() is False:
+            wt_legib = 0
+
 
         # BATCH 2
         # # NORMALIZED AROUND IN/OUT OF SIGHT
@@ -860,7 +870,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         J = 0        
         J += (wt_legib      * self.michelle_stage_cost(start, goal, x, u, i, terminal))
         J += (wt_lam        * u_diff.T.dot(R).dot(u_diff))
-        # J += (wt_lam        * x_diff.T.dot(Q).dot(x_diff))
         J += (wt_obstacle)  * self.get_obstacle_penalty(x, i, goal)
         J += (wt_heading)   * self.get_heading_cost(x, u, i, goal)
 
@@ -876,6 +885,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print([val_legib, val_lam, val_obstacle, val_heading])
             print("==")
             print([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])
+
+            print(str(sum([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])))
 
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
@@ -905,7 +916,77 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return stage_costs
 
+    def get_relative_distance_value(self, start, goal, x, terminal):
+        Q = self.Q_terminal if terminal else self.Q
+
+        goal_diff   = start - goal
+        start_diff  = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        diff_curr   = start - x
+        diff_goal   = x - goal
+        diff_all    = start - goal
+
+        diff_curr   = diff_curr.T
+        diff_goal   = diff_goal.T
+        diff_all    = diff_all.T
+
+        n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
+        d = (diff_all).T.dot(Q).dot(diff_all)
+
+        J = n / d #np.exp(n) / np.exp(d)
+
+        if self.exp.get_weighted_close_on() is True:
+            k = self.get_relative_distance_k(x, goal, self.goals)
+        else:
+            k = 1.0
+
+        J = k*J
+
+        return J
+
     def michelle_stage_cost(self, start, goal, x, u, i, terminal=False):
+        all_goals = self.goals
+        u_diff = u - self.u_path[i]
+        if len(self.u_path) == 0:
+            return 0
+
+        J_g1 = self.get_relative_distance_value(start, goal, x, terminal) 
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("For point at x -> " + str(x))
+
+        total_alt_sum = 0.0
+        all_alt_vals = []
+
+        for alt_goal in all_goals:
+            this_goal = self.get_relative_distance_value(start, alt_goal, x, terminal)
+
+            if goal != alt_goal:
+                total_alt_sum += this_goal
+                all_alt_vals.append(this_goal)
+
+            print(alt_goal)
+            print("thisgoal: " + str(this_goal) + " aka log is " + str(np.log(this_goal)))    
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("Jg1, total")
+            print(J_g1, total_alt_sum, str(all_alt_vals))
+
+        print("total sum " + str(total_alt_sum))
+
+        # J = J_g1 / (total_sum + J_g1)
+        J = (total_alt_sum) / (total_alt_sum + J_g1)
+
+        J = (J_g1) / (total_alt_sum + J_g1)
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("overall J " + str(J))
+
+        return J
+
+
+    def michelle_stage_cost_v1(self, start, goal, x, u, i, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
         R = self.R
 
@@ -939,6 +1020,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         log_sum = 0.0
         total_sum = 0.0
+        all_vals = []
+
         for alt_goal in all_goals:
             # n = - ((start-x)'*Q*(start-x) + 5) - ((x-goal)'*Q*(x-goal)+10)
             # d = (start-goal)'*Q*(start-goal)
@@ -960,12 +1043,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if self.exp.get_weighted_close_on() is True:
                 k = self.get_relative_distance_k(x, alt_goal, self.goals)
+                print("weighted by k" + str(k))
             else:
                 k = 1.0
 
             this_goal = this_goal * k
 
             total_sum += this_goal
+            all_vals.append((n/d) * k)
 
             print("n: " + str(n) + ", d: " + str(d))
             print("thisgoal: " + str(this_goal))
@@ -988,18 +1073,23 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("Jg1, total")
             print(J_g1, total_sum)
 
-        if total_sum < MATH_EPSILON:
-            total_sum = MATH_EPSILON
-            print("set stage cost minimum to be epsilon versus divide by 0")
+        # # TODO ISSUE - NO MORE MATH EPSILON
+        # if total_sum < MATH_EPSILON:
+        #     total_sum = MATH_EPSILON
+        #     print("set stage cost minimum to be epsilon versus divide by 0")
+        #     print("total sum " + str(total_sum))
+        # else:
+        print("total sum " + str(total_sum))
 
-        total_sum = (np.log(total_sum))
+        # total_sum = (np.log(total_sum))
+        total_sum = sum(all_vals)
         J = J_g1 - total_sum
         J = -1.0 * J
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("overall J " + str(J))
 
-        # J += (0.5 * u_diff.T.dot(R).dot(u_diff))
+        J += (0.5 * u_diff.T.dot(R).dot(u_diff))
 
         # # We want the path to be smooth, so we incentivize small and distributed u
 
