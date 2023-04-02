@@ -41,16 +41,16 @@ class PathingExperiment():
 
     # default values for solver
     solver_coeff_terminal   = 1000000.0
-    solver_scale_term       = .01
+    solver_scale_term       = 1 #.01
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
 
     lambda_cost_path_coeff  = 1.0
 
-    TABLE_RADIUS            = .5
-    OBSERVER_RADIUS         = .2
-    GOAL_RADIUS             = .3
-    OBSTACLE_BUFFER         = .01
+    TABLE_RADIUS            = .25
+    OBSERVER_RADIUS         = .1
+    GOAL_RADIUS             = .15
+    OBSTACLE_BUFFER         = .25 #05
 
 
     # DEFAULT COST TYPE AND F TYPE
@@ -80,6 +80,7 @@ class PathingExperiment():
 
     fn_note = ""
     run_filters = []
+    mode_dist_legib_on = True
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
@@ -334,6 +335,12 @@ class PathingExperiment():
 
     def get_norm_on(self):
         return self.norm_on
+
+    def set_mode_dist_legib_on(self, v):
+        self.mode_dist_legib_on = v
+
+    def get_mode_dist_legib_on(self):
+        return self.mode_dist_legib_on
 
     def set_weighted_close_on(self, v):
         self.weighted_close_on = v
