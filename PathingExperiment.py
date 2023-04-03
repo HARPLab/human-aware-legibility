@@ -136,6 +136,8 @@ class PathingExperiment():
             self.best_us = us
 
         most_recent_is_complete_packet = [converged, info, iteration_count]
+
+        print("FINAL PATH IS " + str(xs))
         self.solve_status = most_recent_is_complete_packet
 
     def setup_cost(self, Xrefline, Urefline):
