@@ -813,52 +813,24 @@ class SocLegPathQRCost(LegiblePathQRCost):
         elif self.exp.get_f_label() is ex.F_NONE:
             f_value = 1.0
 
-        if self.exp.get_mode_pure_heading():
-            wt_legib     = 0 #0.5 #100.0
-            wt_lam       = 0.02
-            wt_heading   = 1 #100000.0
-            wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
-        else:
-            # wt_legib     = 5.0 #100.0
-            # wt_lam       = 10.0 #0.1 #001
-            # wt_heading   = 0.5 #100000.0
-            # wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
-            print("BLAH IT'S THE EVIL ONE")
-            wt_legib     = 1.0 #-(1/30.0) #100.0
-            wt_lam       = .02
-            wt_heading   = 1.0 #0.5 #100000.0
-            wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
+        visibility_coeff = f_value
 
-            # wt_legib     = 1.0 #0.5 #100.0
-            # wt_lam       = 10.0
-            # wt_heading   = 1.0 #100000.0
-            # wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
+        wt_legib     = 1.0 #-(1/30.0) #100.0
+        wt_lam       = 0.03 #.05 #also tried .1
+        wt_heading   = 1.0 #0.5 #100000.0
+        wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
 
+        
         if self.exp.get_is_heading_on() is False:
+            wt_legib    = wt_legib + wt_heading
             wt_heading  = 0.0
 
         if self.exp.get_mode_pure_heading() is True:
+            wt_heading  = wt_heading + wt_legib
             wt_legib    = 0.0
 
         if self.exp.get_mode_dist_legib_on() is False:
             wt_legib = 0
-
-
-        # BATCH 2
-        # # NORMALIZED AROUND IN/OUT OF SIGHT
-        # wt_legib     = f_value * .9 #1000.0
-        # wt_lam       = 1.5 * (1 - wt_legib)
-        # # wt_control   = .4 * (1 - wt_legib)
-        # wt_heading   = .5 * (1 - wt_legib) #100000.0
-        # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
-
-        # # BATCH 3 2:43pm
-        # # NORMALIZED AROUND IN/OUT OF SIGHT
-        # wt_legib     = f_value * .3 #1000.0
-        # wt_lam       = 1.5 * (1 - wt_legib)
-        # # wt_control   = .4 * (1 - wt_legib)
-        # wt_heading   = .5 * (1 - wt_legib) #100000.0
-        # wt_obstacle  = 10000.0 #self.exp.get_solver_scale_obstacle()
 
         val_legib       = self.michelle_stage_cost(start, goal, x, u, i, terminal)
         val_lam         = u_diff.T.dot(R).dot(u_diff)
@@ -868,10 +840,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # J does not need to be in a particular range, it can be any max or min
         J = 0        
-        J += (wt_legib      * self.michelle_stage_cost(start, goal, x, u, i, terminal))
-        J += (wt_lam        * u_diff.T.dot(R).dot(u_diff))
-        J += (wt_obstacle)  * self.get_obstacle_penalty(x, i, goal)
-        J += (wt_heading)   * self.get_heading_cost(x, u, i, goal)
+        J += wt_legib       * self.michelle_stage_cost(start, goal, x, u, i, terminal) * visibility_coeff
+        J += wt_lam         * u_diff.T.dot(R).dot(u_diff)
+        J += wt_heading     * self.get_heading_cost(x, u, i, goal) * visibility_coeff
+        J += wt_obstacle    * self.get_obstacle_penalty(x, i, goal)
 
         stage_costs = J
 
@@ -896,26 +868,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
     def f(t):
         return 1.0
 
-    def get_total_stage_cost(self, start, goal, x, u, i, terminal):
-        N = self.N
-        R = self.R
-
-        stage_costs = 0.0 #u_diff.T.dot(R).dot(u_diff)
-        
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("u = " + str(u))
-            print("Getting stage cost")
-
-        for j in range(i):
-            u_diff = u - self.u_path[j]
-
-            stage_costs += (0.5 * u_diff.T.dot(R).dot(u_diff))
-
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("total stage cost " + str(stage_costs))
-
-        return stage_costs
-
     def get_relative_distance_value(self, start, goal, x, terminal):
         Q = self.Q_terminal if terminal else self.Q
 
@@ -934,14 +886,18 @@ class SocLegPathQRCost(LegiblePathQRCost):
         n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
         d = (diff_all).T.dot(Q).dot(diff_all)
 
-        J = n / d #np.exp(n) / np.exp(d)
+        n = decimal.Decimal(n)
+        d = decimal.Decimal(d)
+
+        J = n / d
+        # J = np.exp(n) / np.exp(d)
 
         if self.exp.get_weighted_close_on() is True:
             k = self.get_relative_distance_k(x, goal, self.goals)
         else:
             k = 1.0
 
-        J = k*J
+        J = decimal.Decimal(k)*J
 
         return J
 
@@ -956,7 +912,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
 
-        total_alt_sum = 0.0
+        total_alt_sum = decimal.Decimal(0.0)
         all_alt_vals = []
 
         for alt_goal in all_goals:
@@ -967,7 +923,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 all_alt_vals.append(this_goal)
 
             print(alt_goal)
-            print("thisgoal: " + str(this_goal) + " aka log is " + str(np.log(this_goal)))    
+            print("thisgoal: " + str(float(this_goal)) + " aka log is " + str(np.log(float(this_goal))))    
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("Jg1, total")
@@ -982,6 +938,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("overall J " + str(J))
+
+        J = float(J)
 
         return J
 
@@ -1073,15 +1031,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("Jg1, total")
             print(J_g1, total_sum)
 
-        # # TODO ISSUE - NO MORE MATH EPSILON
-        # if total_sum < MATH_EPSILON:
-        #     total_sum = MATH_EPSILON
-        #     print("set stage cost minimum to be epsilon versus divide by 0")
-        #     print("total sum " + str(total_sum))
-        # else:
         print("total sum " + str(total_sum))
 
-        # total_sum = (np.log(total_sum))
         total_sum = sum(all_vals)
         J = J_g1 - total_sum
         J = -1.0 * J
@@ -1090,8 +1041,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("overall J " + str(J))
 
         J += (0.5 * u_diff.T.dot(R).dot(u_diff))
-
         # # We want the path to be smooth, so we incentivize small and distributed u
+        # This is separated into its own function in the next part
 
         return J
 
