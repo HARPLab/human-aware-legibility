@@ -182,7 +182,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(rho)
 
         a = 1.0 / (rho)
-        b = (1.0 / obstacle_buffer)
+        b = (1.0 / obstacle_radius) #TODO Not obstacle_buffer?
         c = 1.0/(rho**2)
 
         print("a, b, c, a-b, d_rho_x")
@@ -362,7 +362,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
     def inversely_proportional_to_distance(self, x):
         if x == 0:
             return np.Inf
-        return 1.0 / (x + MATH_EPSILON)
+        return 1.0 / (x)
 
     def get_relative_distance_k(self, x, goal, goals):
         total_distance = 0.0
@@ -371,9 +371,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
             dist = g - x
             dist = np.abs(np.linalg.norm(dist))
 
-            total_distance += self.inversely_proportional_to_distance(x)
+            total_distance += self.inversely_proportional_to_distance(dist)
 
-        target_goal_dist = goal - x
+        target_goal_dist = np.abs(np.linalg.norm(goal - x))
         tg_dist = self.inversely_proportional_to_distance(target_goal_dist)
 
         # rel_dist = 1.0 - (tg_dist / total_distance)
@@ -418,30 +418,31 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(v1_u)
         print(v2_u)
         ang = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
-
-        # # TODO VERIFY THIS FIX
-        # if ang < MATH_EPSILON:
-        #     ang = MATH_EPSILON
-
         return ang
 
     def inversely_proportional_to_angle(self, angle):
         if angle == 0:
+            print("There's an infinity involved here")
             return np.Inf
 
-        return 1.0 / (angle + MATH_EPSILON)
+        return 1.0 / (angle)
 
-    def get_heading_cost(self, x, u, i, goal):
+    def get_heading_cost(self, x, u, i, goal, force_mode=None, x_prev=None):
         if i is 0:
             return 0
 
         goals       = self.goals
 
         x1 = x
-        if i > 0:
+        if x_prev is not None:
+            x0 = x_prev
+        elif i > 0:
             x0 = self.x_path[i - 1]
         else:
             x0 = x
+
+        print("Get heading cost test packet: ")
+        print((x, u, i, goal, x0, x1))
 
         print("Points in a row")
         print(x0, x1)
@@ -451,10 +452,17 @@ class SocLegPathQRCost(LegiblePathQRCost):
         all_goal_vectors    = []
 
         for alt_goal in goals:
+            print("Get heading cost debug")
+            print(alt_goal)
+            print(goal)
+            print(x1)
             goal_vector = alt_goal - x1 #[x1, alt_goal]
 
-            if alt_goal is goal:
+            if np.array_equal(alt_goal, goal):
+                print("Yes, is target")
                 target_vector = goal_vector
+            else:
+                print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
             all_goal_vectors.append(goal_vector)
 
         print("robot vector")
@@ -465,8 +473,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         all_goal_angles   = []
         for gvec in all_goal_vectors:
-            goal_angle = self.angle_between(robot_vector, gvec)
-
+            goal_angle = self.get_angle_between(robot_vector, gvec)
 
             all_goal_angles.append(goal_angle)
 
@@ -475,33 +482,46 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 print("eeek")
                 # exit()
 
-        target_angle = self.angle_between(robot_vector, target_vector)
+        print(robot_vector)
+        print(target_vector)
+        target_angle = self.get_angle_between(robot_vector, target_vector)
 
         print("all target angles")
         print(all_goal_angles)
 
         if all(ele == 0.0 for ele in all_goal_angles):
+            print("Eeeek, all values were 0")
             return 1.0
 
         g_vals = []
+        g_vals_if_infinity = []
         for i in range(len(all_goal_angles)):
             gval = self.inversely_proportional_to_angle(all_goal_angles[i])
-
-            if self.exp.get_mode_heading_err_sqr() is True:
+            if self.exp.get_mode_heading_err_sqr() is True or force_mode is 'sqr':
                 gval = gval * gval
             
             if self.exp.get_weighted_close_on() is True:
                 k = self.get_relative_distance_k(x1, goals[i], goals)
-                # k = k*k
             else:
                 k = 1.0
 
             g_vals.append(k * gval)
+            g_vals_if_infinity.append((k, gval == np.Inf))
 
+        # Do this math for the target
+        # TODO, blend this with the previous code better
         target_val = self.inversely_proportional_to_angle(target_angle)
-
-        if self.exp.get_mode_heading_err_sqr() is True:
+        if self.exp.get_mode_heading_err_sqr() is True or force_mode is 'sqr':
             target_val = target_val * target_val
+
+        if self.exp.get_weighted_close_on() is True:
+            k = self.get_relative_distance_k(x, goal, goals)
+        else:
+            k = 1.0
+
+        target_val = target_val * k
+
+        target_inf_val = (k, target_val == np.Inf)
 
         total = sum(g_vals)
 
@@ -511,13 +531,37 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(target_angle)
         # denominator = (180*180) * len(all_goal_angles)
 
-        heading_clarity_cost = (total - target_val) / total
+        # MANUALLY HANDLING THE MATH FOR COLINEAR CASES
+        if np.Inf in g_vals:
+            # if there is an infinity involved, we value all infinities equally (ie, all 1/0 looking directly at goal))
+            total = 0
+            for k, value in g_vals_if_infinity:
+                if value is True:
+                    total += k
+                else:
+                    total += 0
+
+            if target_inf_val[1]:
+                target_val = target_inf_val[0]
+            else:
+                target_val = 0
+
+            # along with their corresponding ks
+            heading_clarity_cost = (total - target_val) / (total)
+
+        else:
+            heading_clarity_cost = (total - target_val) / (total)
+    
         # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
         # alt_goal_part_log = alt_goal_part_log / (total)
+
+        if target_val > total:
+            return "Error, target greater than total in heading cost"
 
         print("Heading component of pathing ")
         print("Given x of " + str(x) + " and robot vector of " + str(robot_vector))
         print("for goals " + str(goals))
+        print(target_val, total)
         # print(alt_goal_part_log)
         print(heading_clarity_cost)
         # print("good parts, bad parts")
@@ -573,10 +617,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         all_goal_angles   = []
         for gvec in all_goal_vectors:
-            goal_angle = self.angle_between(robot_vector, gvec)
+            goal_angle = self.get_angle_between(robot_vector, gvec)
             all_goal_angles.append(goal_angle)
 
-        target_angle = self.angle_between(robot_vector, target_vector)
+        target_angle = self.get_angle_between(robot_vector, target_vector)
 
         print("all target angles")
         print(all_goal_angles)
@@ -847,6 +891,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         stage_costs = J
 
+        stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])
+
+        if stage_costs != J:
+            print("alert! j math is off")
+
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
             print(stage_costs, term_cost)
@@ -889,7 +938,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         n = decimal.Decimal(n)
         d = decimal.Decimal(d)
 
-        J = n / d
+        J = np.abs(n / d)
         # J = np.exp(n) / np.exp(d)
 
         if self.exp.get_weighted_close_on() is True:
