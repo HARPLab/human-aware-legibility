@@ -56,19 +56,19 @@ def run_all_tests():
     # SET UP OPTIONS FOR THIS RUN
     # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
     scenario_filters = {}
-    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = True
+    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = False
     scenario_filters[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] = False
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
-    # test_full_set(dashboard_folder, scenario_filters)
-    test_vanilla_set(dashboard_folder, scenario_filters)
+    test_full_set(dashboard_folder, scenario_filters)
+    # test_vanilla_set(dashboard_folder, scenario_filters)
 
     # test_amount_of_slack(dashboard_folder, scenario_filters)
     # test_observers_rotated(dashboard_folder, scenario_filters)
     # # test_observers_being_respected(dashboard_folder, scenario_filters)
-    # test_normalized_or_no(dashboard_folder, scenario_filters)
-    # test_heading_sqr_or_no(dashboard_folder, scenario_filters)
-    # test_heading_useful_or_no(dashboard_folder, scenario_filters)
+    # # test_normalized_or_no(dashboard_folder, scenario_filters)
+    # # test_heading_sqr_or_no(dashboard_folder, scenario_filters)
+    # # test_heading_useful_or_no(dashboard_folder, scenario_filters)
     # test_obstacles_being_avoided(dashboard_folder, scenario_filters)
     # test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
 
@@ -182,6 +182,7 @@ def test_mega_compare(dash_folder, scenario_filters):
             # RUN THE SOLVER WITH CONSTRAINTS ON EACH
             mega_scenario.set_heading_on(test['heading-on'])
             mega_scenario.set_mode_pure_heading(test['pure-heading'])
+            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
 
             verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet    = solver.run_solver(mega_scenario)
             outputs[ti] = verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet
@@ -609,6 +610,7 @@ def test_full_set(dash_folder, scenario_filters):
             mega_scenario.set_heading_on(test['heading-on'])
             mega_scenario.set_mode_pure_heading(test['pure-heading'])
             mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
+            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
             outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
@@ -682,6 +684,7 @@ def test_vanilla_set(dash_folder, scenario_filters):
             mega_scenario.set_heading_on(test['heading-on'])
             mega_scenario.set_mode_pure_heading(test['pure-heading'])
             mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
+            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
             outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
@@ -850,7 +853,7 @@ def test_observers_rotated(dash_folder, scenario_filters):
         plt.savefig(save_location + ".png")
         plt.close('all')
 
-        collate_and_report_on_results(dash_folder)
+    # collate_and_report_on_results(dash_folder)
 
 
 
