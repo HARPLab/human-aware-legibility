@@ -461,7 +461,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print(alt_goal)
             print(goal)
             print(x1)
-            goal_vector = alt_goal - x1 #[x1, alt_goal]
+            goal_vector = alt_goal - x1
 
             if np.array_equal(alt_goal, goal):
                 print("Yes, is target")
@@ -947,7 +947,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if force_mode is not None:
             if force_mode is 'exp':
-                J = np.exp(n) / np.exp(d)
+                J = np.exp(np.abs(n)) / np.exp(np.abs(d))
             elif force_mode is 'sqr':
                 J = n / (d)
                 J = J * J
