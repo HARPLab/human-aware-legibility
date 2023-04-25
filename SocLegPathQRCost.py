@@ -383,7 +383,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # rel_dist = 1.0 - (tg_dist / total_distance)
 
-        rel_dist = tg_dist / total_distance
+        rel_dist = (total_distance - tg_dist) / total_distance
 
         return rel_dist
 
