@@ -591,7 +591,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         num_goals   = len(goals)
         P_oa        = ((1.0/num_goals)*(1 - visibility_coeff)) + (visibility_coeff * heading_clarity_cost)
 
-        return heading_clarity_cost
+        return P_oa
 
     def get_robot_vector(self, x, i):
         x1 = x
