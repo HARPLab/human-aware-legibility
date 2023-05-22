@@ -348,6 +348,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         ang2    = np.arctan2(*p2[::-1])
         heading = np.rad2deg((ang1 - ang2) % (2 * np.pi))
 
+        heading = self.get_minimum_rotation_to(heading)
+
         # Heading is in degrees
         return heading
 
@@ -387,6 +389,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return rel_dist
 
+
+    def get_minimum_rotation_to(self, angle):
+        if angle < 180:
+            return angle
+        else:
+            angle = 360 - angle
+
+        return angle
 
     def get_relative_distance_k_v1(self, x, goal, goals):
         max_distance = 0.0
@@ -432,7 +442,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return 1.0 / (angle)
 
-    def get_heading_cost(self, x, u, i, goal, force_mode=None, x_prev=None):
+    def get_heading_cost(self, x, u, i, goal, visibility_coeff, force_mode=None, x_prev=None):
         if i is 0:
             return (1.0 / len(self.goals))
 
@@ -530,15 +540,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         total = sum(g_vals)
 
-        print("total")
-        print(total)
-        print("target_angle")
-        print(target_angle)
         # denominator = (180*180) * len(all_goal_angles)
 
         # MANUALLY HANDLING THE MATH FOR COLINEAR CASES
         if np.Inf in g_vals:
             # if there is an infinity involved, we value all infinities equally (ie, all 1/0 looking directly at goal))
+            print("handling an infinity")
             total = 0
             for k, value in g_vals_if_infinity:
                 if value is True:
@@ -557,6 +564,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
         else:
             heading_clarity_cost = (total - target_val) / (total)
     
+        print("target_val")
+        print(target_val)
+        print("total")
+        print(total)
+        print("target_angle")
+        print(target_angle)
+        print("heading clarity")
+        print(heading_clarity_cost)
+
         # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
         # alt_goal_part_log = alt_goal_part_log / (total)
 
@@ -571,6 +587,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(heading_clarity_cost)
         # print("good parts, bad parts")
         # print(good_part, bad_parts)
+
+        num_goals   = len(goals)
+        P_oa        = ((1.0/num_goals)*(1 - visibility_coeff)) + (visibility_coeff * heading_clarity_cost)
 
         return heading_clarity_cost
 
@@ -881,17 +900,18 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.exp.get_mode_dist_legib_on() is False:
             wt_legib = 0
 
-        val_legib       = self.michelle_stage_cost(start, goal, x, u, i, terminal)
+        val_legib       = self.legibility_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
         val_lam         = u_diff.T.dot(R).dot(u_diff)
         val_obstacle    = self.get_obstacle_penalty(x, i, goal)
-        val_heading     = self.get_heading_cost(x, u, i, goal)
+        val_heading     = self.get_heading_cost(x, u, i, goal, visibility_coeff)
 
 
         # J does not need to be in a particular range, it can be any max or min
         J = 0        
-        J += wt_legib       * self.michelle_stage_cost(start, goal, x, u, i, terminal) * visibility_coeff
+        J += wt_legib       * self.legibility_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
+        J += wt_heading     * self.get_heading_cost(x, u, i, goal, visibility_coeff)
+
         J += wt_lam         * u_diff.T.dot(R).dot(u_diff)
-        J += wt_heading     * self.get_heading_cost(x, u, i, goal) * visibility_coeff
         J += wt_obstacle    * self.get_obstacle_penalty(x, i, goal)
 
         stage_costs = J
@@ -965,7 +985,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return J
 
-    def michelle_stage_cost(self, start, goal, x, u, i, terminal=False, force_mode=None):
+    def legibility_stage_cost(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None):
+        # visibility coeff is 1.0 if in vision, 0 if no
+
         all_goals = self.goals
         
         J_g1 = self.get_relative_distance_value(start, goal, x, terminal, force_mode=force_mode) 
@@ -1002,7 +1024,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         J = float(J)
 
-        return J
+        num_goals   = len(all_goals)
+        P_oa        = ((1.0/num_goals)*(1 - visibility_coeff)) + (visibility_coeff * J)
+
+        return P_oa
 
 
     def michelle_stage_cost_v1(self, start, goal, x, u, i, terminal=False):
