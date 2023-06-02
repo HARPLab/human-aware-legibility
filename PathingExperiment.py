@@ -72,6 +72,7 @@ class PathingExperiment():
     weighted_close_on       = False
     mode_pure_heading       = False
     mode_heading_err_sqr    = False
+    mode_dist_type          = 'exp'
 
     J_hist = []
     best_xs = None
@@ -361,6 +362,12 @@ class PathingExperiment():
 
     def get_mode_heading_err_sqr(self):
         return self.mode_heading_err_sqr
+
+    def set_mode_dist_type(self, v):
+        self.mode_dist_type = v
+
+    def get_mode_dist_type(self):
+        return self.mode_dist_type
 
     def set_fn_note(self, label):
         self.fn_note = "-" + label
