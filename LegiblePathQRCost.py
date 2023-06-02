@@ -677,6 +677,46 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return overall_name
 
+    def get_prob_of_path_to_goal(self, verts, us, goal, label):
+        prob_list = []
+
+        start = self.start
+        u = None
+        terminal = False
+        if len(verts) != self.N + 1:
+            print("points in path does not match the solve N")
+
+        resto_envir = self.restaurant
+        goals = self.goals
+
+        for i in range(len(verts)):
+            # print(str(i) + " out of " + str(len(verts)))
+            x = verts[i]
+            if i is 0:
+                u = [0, 0]
+            else:
+                u = us[i - 1]
+
+
+            aud = resto_envir.get_observers()
+            bin_visibility = legib.get_visibility_of_pt_w_observers_ilqr(x, aud, normalized=True)
+
+            if label is 'dist_exp':
+                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='exp', pure_prob=True)
+            elif label is 'dist_sqr':
+                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='sqr', pure_prob=True)
+            elif label is 'dist_lin':
+                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='lin', pure_prob=True)
+            elif label is 'head_sqr':
+                p = float(self.get_heading_stage_cost(x, u, i, goal, bin_visibility, force_mode='sqr', pure_prob=True))
+            elif label is 'head_lin':
+                p = float(self.get_heading_stage_cost(x, u, i, goal, bin_visibility, force_mode='lin', pure_prob=True))
+
+            
+            prob_list.append(p)
+
+        return prob_list
+
     def get_legibility_of_path_to_goal(self, verts, us, goal):
         ls, scs, tcs, vs = [], [], [], []
         start = self.start
@@ -948,15 +988,24 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # Ummm, incredible plot layout system for numpy
         # https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.subplot_mosaic.html
-        fig, axes = plt.subplot_mosaic("AAF;AAB;CDG;EEE", figsize=(8, 6), gridspec_kw={'height_ratios':[36, 36, 36, 1], 'width_ratios':[1, 1, 1]})
+        # fig, axes = plt.subplot_mosaic("AAB;AAC;DEF;GHI;JKL;MMM", figsize=(8, 6), gridspec_kw={'height_ratios':[36, 36, 36, 36, 36, 1], 'width_ratios':[1, 1, 1]})
+        fig, axes = plt.subplot_mosaic("AADEF;AAGHI;BCJKL;MMMMM", figsize=(12, 6), gridspec_kw={'height_ratios':[36, 36, 36, 1], 'width_ratios':[1, 1, 1, 1, 1]})
         # fig, axes = plt.subplot_mosaic("AAB;AAC;DEF")
         ax1 = axes['A'] # plot of movements in space
-        ax2 = axes['B'] # 
-        ax3 = axes['C'] # 
-        ax4 = axes['D'] # 
-        ax5 = axes['E'] # error text box
+        ax2 = axes['B'] # old legibility
+        ax3 = axes['D'] # stage cost
+        ax4 = axes['E'] # terminal cost
+        ax5 = axes['M'] # error text box
         ax6 = axes['F'] # U magnitude over time
-        ax7 = axes['G']
+        ax7 = axes['J'] # visibility
+        ax_p_dist_exp    = axes['G'] # p_dist_exp
+        ax_p_dist_sqr    = axes['H'] # p_dist_sqr
+        ax_p_dist_lin    = axes['I'] # p_dist_lin
+        ax_p_head_sqr    = axes['K'] # p_head_sqr
+        ax_p_head_lin    = axes['L'] # p_head_lin
+
+        ax_none = axes['C']
+        ax_none.axis('off')
 
         ax1 = self.get_overview_pic(verts, us, elapsed_time=None, ax=ax1, info_packet=status_packet)
 
@@ -969,8 +1018,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax4.grid(axis='y')
         ax7.grid(axis='y')
 
-        ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
-        ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
+        # ax3.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
+        # ax4.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.e'))
 
         # each set of xs, ys happens at time t
         # we want to find the legibility at time t
@@ -994,6 +1043,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+
+        p_dist_exp    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_exp')
+        p_dist_sqr    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_sqr')
+        p_dist_lin    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_lin')
+        p_head_sqr    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'head_sqr')
+        p_head_lin    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'head_lin')
         
         in_vis = None
         if len(vs) > 0:
@@ -1013,20 +1068,6 @@ class LegiblePathQRCost(FiniteDiffCost):
             else:
                 color_grad.append(color_grad_2[i])
                 outline_grad.append('#f4722b')
-
-        # # print("VIS")
-        # # print(vs[0])
-
-        # # print("IN VIS")
-        # # print(len(in_vis))
-        # # print(in_vis)
-        # # print("COLOR_GRAD")
-        # # print(len(color_grad))
-        # # print(color_grad)
-        # # print(len(xs))
-        # # print(color_grad_1)
-        # # print(color_grad_2)
-        # # print(outline_grad)
 
         target = self.target_goal
         # for each goal, graph legibility
@@ -1069,6 +1110,44 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print("plotted ax4")
             # print("Plotted all data")
         
+
+        ax_p_dist_exp.scatter(ts, p_dist_exp, c=outline_grad, s=8)
+        ax_p_dist_exp.plot(ts, p_dist_exp, lw=1, color=color, label=goal, markersize=0)
+    
+        ax_p_dist_sqr.scatter(ts, p_dist_sqr, c=outline_grad, s=8)
+        ax_p_dist_sqr.plot(ts, p_dist_sqr, lw=1, color=color, label=goal, markersize=0)
+
+        ax_p_dist_lin.scatter(ts, p_dist_lin, c=outline_grad, s=8)
+        ax_p_dist_lin.plot(ts, p_dist_lin, lw=1, color=color, label=goal, markersize=0)
+
+        ax_p_head_sqr.scatter(ts, p_head_sqr, c=outline_grad, s=8)
+        ax_p_head_sqr.plot(ts, p_head_sqr, lw=1, color=color, label=goal, markersize=0)
+
+        ax_p_head_lin.scatter(ts, p_head_lin, c=outline_grad, s=8)
+        ax_p_head_lin.plot(ts, p_head_lin, lw=1, color=color, label=goal, markersize=0)
+
+        _ = ax_p_dist_exp.set_xlabel("Time", fontweight='bold')
+        _ = ax_p_dist_exp.set_ylabel("P(G | xi)", fontweight='bold')
+        _ = ax_p_dist_exp.set_title("P dist exp", fontweight='bold')
+
+        _ = ax_p_dist_sqr.set_xlabel("Time", fontweight='bold')
+        _ = ax_p_dist_sqr.set_ylabel("P(G | xi)", fontweight='bold')
+        _ = ax_p_dist_sqr.set_title("P dist sqr", fontweight='bold')
+
+        _ = ax_p_dist_lin.set_xlabel("Time", fontweight='bold')
+        _ = ax_p_dist_lin.set_ylabel("P(G | xi)", fontweight='bold')
+        _ = ax_p_dist_lin.set_title("P dist lin", fontweight='bold')
+
+        _ = ax_p_head_sqr.set_xlabel("Time", fontweight='bold')
+        _ = ax_p_head_sqr.set_ylabel("P(G | xi)", fontweight='bold')
+        _ = ax_p_head_sqr.set_title("P head sqr", fontweight='bold')
+
+        _ = ax_p_head_lin.set_xlabel("Time", fontweight='bold')
+        _ = ax_p_head_lin.set_ylabel("P(G | xi)", fontweight='bold')
+        _ = ax_p_head_lin.set_title("P head lin", fontweight='bold')
+
+        #####
+
         _ = ax2.set_xlabel("Time", fontweight='bold')
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
         _ = ax2.set_title("Legibility according to old", fontweight='bold')
