@@ -692,14 +692,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         for i in range(len(verts)):
             # print(str(i) + " out of " + str(len(verts)))
             x = verts[i]
-            if i is 0:
-                u = [0, 0]
-            else:
+            if i < len(us):
                 u = us[i - 1]
-
+            else:
+                u = [0, 0]
 
             aud = resto_envir.get_observers()
             bin_visibility = legib.get_visibility_of_pt_w_observers_ilqr(x, aud, normalized=True)
+            if bin_visibility > 0:
+                bin_visibility = 1.0
 
             if label is 'dist_exp':
                 p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='exp', pure_prob=True)
@@ -961,7 +962,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
-    def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None):
+    def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None, suptitle=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         sys.stdout = open('path_overview.txt','w')
 
@@ -1012,6 +1013,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax5.axis('off')
         debug_text = self.get_debug_text(elapsed_time)
         ax5.annotate(debug_text, (0.5, 0), xycoords='axes fraction', ha="center", va="center", wrap=True, fontweight='bold') #, fontsize=6)
+
+        fig.suptitle(str(suptitle))
 
         ax2.grid(axis='y')
         ax3.grid(axis='y')
