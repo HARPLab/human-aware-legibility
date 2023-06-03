@@ -41,7 +41,7 @@ class PathingExperiment():
 
     # default values for solver
     solver_coeff_terminal   = 1000000.0
-    solver_scale_term       = 1 #.01
+    solver_scale_term       = 1000000 #.01
     solver_scale_stage      = 2
     solver_scale_obstacle   = 0
 
