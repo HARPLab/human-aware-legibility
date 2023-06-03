@@ -427,3 +427,23 @@ class PathingExperiment():
 
     def get_solve_quality_columns(self):
         return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
+
+    def get_suptitle(self):
+        if self.mode_pure_heading:
+            if self.mode_heading_err_sqr:
+                title = "Heading: Square"
+            else:
+                title = "Heading: Linear"
+        elif self.get_mode_dist_legib_on() == False:
+            title = "No legibility"
+        else:
+            if self.get_mode_dist_type() is 'exp':
+                title = "Dist: Exponential"
+            elif self.get_mode_dist_type() is 'sqr':
+                title = "Dist: Squared"
+            elif self.get_mode_dist_type() is 'lin':
+                title = "Dist: Linear"
+
+        return title
+
+
