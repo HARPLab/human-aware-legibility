@@ -83,7 +83,7 @@ def run_solver(exp):
     tol = 1e-5
     # tol = 1e-10
 
-    num_iterations = 75
+    num_iterations = 100
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
@@ -107,8 +107,10 @@ def run_solver(exp):
 
     elapsed_time = end_time - start_time
 
+    suptitle = exp.get_suptitle()
+
     most_recent_is_complete_packet = exp.get_solver_status()
-    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet, dash_folder=dash_folder)
+    cost.graph_legibility_over_time(verts, us, elapsed_time=elapsed_time, status_packet=most_recent_is_complete_packet, dash_folder=dash_folder, suptitle=suptitle)
 
     # fn = cost.get_export_label() + "path_for_unity"
     # exp.get_restaurant().export_paths_csv(verts, fn)
