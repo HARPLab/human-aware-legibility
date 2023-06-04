@@ -523,6 +523,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
     def get_heading_stage_cost(self, x, u, i, goal, visibility_coeff, force_mode=None, pure_prob=False):
         all_goals = self.goals
 
+        # if we are at the goal, we by definition are arriving correctly
         if np.array_equal(x, goal):
             return 0.0
 
@@ -627,6 +628,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         num_goals   = len(all_goals)
         P_oa        = decimal.Decimal((1.0/num_goals)*(1 - visibility_coeff)) + (decimal.Decimal(visibility_coeff) * P_target)
+
+        return P_oa
 
         if pure_prob:
             return P_oa
@@ -1220,37 +1223,49 @@ class SocLegPathQRCost(LegiblePathQRCost):
         J = decimal.Decimal(k)*J
         return J
 
+    # def legibility_stage_cost_wrapper(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
+    #     # print("Compare between modes")
+    #     # prob_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=True)
+    #     # prob_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=True)
+    #     # prob_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=True)
+
+    #     # print("PROBS")
+    #     # print(prob_exp, prob_sqr, prob_lin)
+
+    #     # pen_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=False)
+    #     # pen_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=False)
+    #     # pen_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=False)
+
+    #     # print("PENALTIES")
+    #     # print(pen_exp, pen_sqr, pen_lin)
+
+        
+    #     return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
+
     def legibility_stage_cost(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
-        # print("Compare between modes")
-        # prob_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=True)
-        # prob_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=True)
-        # prob_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=True)
+        # TODO verify force mode is happy and correct
+        if force_mode is None:
+            force_mode = self.exp.get_mode_dist_type()
 
-        # print("PROBS")
-        # print(prob_exp, prob_sqr, prob_lin)
-
-        # pen_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=False)
-        # pen_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=False)
-        # pen_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=False)
-
-        # print("PENALTIES")
-        # print(pen_exp, pen_sqr, pen_lin)
+        if visibility_coeff == 1 or visibility_coeff == 0:
+            pass
+        else:
+            exit()
 
         debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x, 'u': u, 'i':i, 'goal': goal, 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob}
         print("DIST COST INPUTS")
         print(debug_dict)
 
-        return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
-
-    def legibility_stage_cost_helper(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
-        # TODO verify force mode is happy and correct
-        if force_mode is None:
-            force_mode = self.exp.get_mode_dist_type()
+        if np.array_equal(x, goal):
+            if pure_prob:
+                return 1.0
+            else:
+                return 0.0
 
         # visibility coeff is 1.0 if in vision, 0 if no
         all_goals = self.goals
         
-        J_g1 = self.get_relative_distance_value(start, goal, x, terminal, force_mode=force_mode) 
+        target_val = self.get_relative_distance_value(start, goal, x, terminal, force_mode=force_mode) 
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
@@ -1260,26 +1275,29 @@ class SocLegPathQRCost(LegiblePathQRCost):
             goal_val = self.get_relative_distance_value(start, alt_goal, x, terminal, force_mode=force_mode) 
             goal_values.append(goal_val)
 
-        # we want to minimize the error squared
-        # dist_prob = (total - J_g1) / (total)
-        # if force_mode is 'exp':
-        #     dist_prob = (J_g1) / (total)
-        # else:
-        #     dist_prob = (total - J_g1) / total
-
-        # if force_mode is 'exp':
-        #     dist_prob = (J_g1) / (total)
-        # else:
-
+        print(goal_values)
         total = sum([abs(ele) for ele in goal_values])
-        dist_prob = (total - J_g1) / (total)
+        print(total)
 
-        P_dist      = dist_prob
+        # This should be covered by the "if at the goal" case above, but still
+        if total == np.Inf:
+            if target_val is np.Inf:
+                dist_prob = 1.0
+            else:
+                dist_prob = 0.0
+
+        else:
+            # dist_prob = (total - target_val) / (total)
+            dist_prob = target_val / total
+
+        P_dist      = decimal.Decimal(dist_prob)
         num_goals   = len(all_goals)
-        P_oa        = decimal.Decimal((1.0/num_goals)*(1 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
+        P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
 
         if pure_prob:
             return P_oa
+
+        return decimal.Decimal(1.0) - P_oa
 
         visibility_coeff = decimal.Decimal(visibility_coeff)
 
@@ -1291,11 +1309,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # err_penalty_with_vis    = err_if_out_of_vis + err_if_in_vis
 
 
-        # err_penalty_with_vis =  P_oa #decimal.Decimal(1.0) - P_oa
         print("err penalty wout vis, then with")
         print(err_penalty)
-        print(err_penalty_with_vis)
-        return err_penalty_with_vis
+        return err_penalty
 
     def michelle_stage_cost(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None):
         # visibility coeff is 1.0 if in vision, 0 if no
