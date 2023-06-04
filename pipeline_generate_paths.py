@@ -1192,7 +1192,7 @@ def fn_export_from_exp_settings(exp_settings):
 	lam 		= lam_to_str(lam)
 	prob_og 	= str(int(prob_og))
 
-	unique_title = str(title) + "" + exp_layout + "-" + f_legibility + "_" + r_key
+	unique_title = str(title) + "" + str(exp_layout) + "-" + str(f_legibility) + "_" + str(r_key)
 	unique_title += str(sampling_type) + "-rez" + str(rez) + "_" + str(chunking_type) + "-" + str(n_chunks) 
 	unique_title += "-as-" + str(astr) + 'fov=' + str(fov) +  "-la" + lam
 	unique_title += "-rb" + str(right_bound)
@@ -1383,6 +1383,10 @@ def get_envir_cache(r, exp_settings):
 
 	return envir_cache
 
+def get_min_direct_path_cost_between(r, pt, pt_goal, exp_settings):
+	# TODO broken
+	return 1.0
+
 def get_dict_cost_here_to_goals_all(r, exp_settings):
 	goals = r.get_goals_all()
 	all_goals = {}
@@ -1437,7 +1441,7 @@ def get_dict_vis_per_obs_set(r, exp_settings, f_vis):
 	# f_vis = f_exp_single(t, pt, aud, path)
 	
 	if f_vis == "" or True:
-		f_vis = f_exp_single_normalized
+		f_vis = legib.f_exp_single_normalized
 
 	obs_sets = r.get_obs_sets()
 	all_vis_dict = {}
@@ -2290,6 +2294,8 @@ def export_table_all_viewers(r, best_paths, exp_settings):
 
 	goals_list = r.get_goals_all()
 
+	print(df)
+
 	df['legibility'] = df['legibility'].astype(float)
 	df['env'] = df['env'].astype(int)
 
@@ -2664,7 +2670,7 @@ def export_best_options():
 
 	# print(fn_export_from_exp_settings(exp_settings))
 
-	export_table_all_viewers(r, best_paths, exp_settings)
+	# export_table_all_viewers(r, best_paths, exp_settings)
 
 
 	# print(best_paths)
@@ -2775,5 +2781,10 @@ def get_default_exp_settings(unique_key = ""):
 
 	return exp_settings
 
+def main():
+	export_best_options()
+
+if __name__ == "__main__":
+    main()
 
 
