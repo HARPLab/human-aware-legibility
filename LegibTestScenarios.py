@@ -34,6 +34,96 @@ SCENARIO_FILTER_MINI = 'mini'
 SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
 DASHBOARD_FOLDER = None
 
+def scenario_test_a(goal_index=None):
+    label = "testa_g" + str(goal_index)
+
+    start           = [1.0, 3.0]
+
+    goal1 = [4.0, 5.0]
+    goal3 = [4.0, 1.0]
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 36
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_b(goal_index=None):
+    label = "testb_g" + str(goal_index)
+
+    start           = [3.0, 1.0]
+
+    goal1 = [5.0, 4.0]
+    goal3 = [1.0, 4.0]
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    exp.set_state_size(2)
+    exp.set_action_size(2)
+
+    dt = .025
+    N = 31
+    Q = 1.0 * np.eye(exp.get_state_size())
+    R = 200.0 * np.eye(exp.get_action_size())
+    Qf = np.identity(2) * 400.0
+
+    exp.set_QR_weights(Q, R, Qf)
+    exp.set_N(N)
+    exp.set_dt(dt)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
 def scenario_test_0(goal_index=None):
     label = "test0_g" + str(goal_index)
 
@@ -435,7 +525,7 @@ def scenario_test_6(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 41
+    N = 31
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -587,7 +677,7 @@ def scenario_test_8(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 11 #42 #21
+    N = 21 #42 #21
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -627,7 +717,7 @@ def scenario_test_9(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 21
+    N = 31
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -785,7 +875,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     all_goals   = [goal1, goal3]
 
     if goal_index is None or goal_index > len(all_goals):
-        target_goal = goal3
+        target_goal = goal1
     else:
         target_goal = all_goals[goal_index]
 
@@ -903,7 +993,7 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
     exp.set_action_size(2)
 
     dt = .025
-    N = int(21)
+    N = int(31)
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -1057,6 +1147,22 @@ def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
     # TEST SCENARIO
+    label, exp = scenario_test_a(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_test_a(goal_index=1)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_test_b(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_test_b(goal_index=1)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
     scenarios[label] = exp
 
@@ -1064,12 +1170,20 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_0(goal_index=1)
     scenarios[label] = exp
 
+    # TEST SCENARIO
+    label, exp = scenario_test_1(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_test_1(goal_index=1)
+    scenarios[label] = exp
+
+
     # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
     # May want to verify there's an option on the list
     if scenario_filters[SCENARIO_FILTER_MINI]:
         return scenarios
 
-    # # TEST SCENARIO
+    # TEST SCENARIO
     label, exp = scenario_test_4_flip(goal_index=0)
     scenarios[label] = exp
 
@@ -1088,14 +1202,7 @@ def get_scenario_set(scenario_filters=[]):
     if scenario_filters[SCENARIO_FILTER_MINI]:
         return scenarios
 
-    # # TEST SCENARIO
-    label, exp = scenario_test_1(goal_index=0)
-    scenarios[label] = exp
-
-    label, exp = scenario_test_1(goal_index=1)
-    scenarios[label] = exp
-
-    # # TEST SCENARIO
+    # TEST SCENARIO
     label, exp = scenario_test_2(goal_index=0)
     scenarios[label] = exp
 
@@ -1147,6 +1254,19 @@ def get_scenario_set(scenario_filters=[]):
 
     label, exp = scenario_7_observer_on_zero(goal_index=1)
     scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_7_observer_rot90(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_7_observer_rot90(goal_index=1)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_7_observer_offset(goal_index=0)
+    scenarios[label] = exp
+
+    label, exp = scenario_7_observer_offset(goal_index=1)
 
     label, exp = scenario_test_8(goal_index=0)
     scenarios[label] = exp
