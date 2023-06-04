@@ -551,7 +551,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             if np.array_equal(alt_goal, goal):
                 print("Yes, is target")
-                target_index = i
+                target_index = j
             else:
                 print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
             all_goal_vectors.append(goal_vector)
