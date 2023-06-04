@@ -65,7 +65,7 @@ def scenario_test_a(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 36
+    N = 26
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -110,7 +110,7 @@ def scenario_test_b(goal_index=None):
     exp.set_action_size(2)
 
     dt = .025
-    N = 31
+    N = 26
     Q = 1.0 * np.eye(exp.get_state_size())
     R = 200.0 * np.eye(exp.get_action_size())
     Qf = np.identity(2) * 400.0
@@ -1161,6 +1161,8 @@ def get_scenario_set(scenario_filters=[]):
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=1)
     scenarios[label] = exp
+
+    return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
