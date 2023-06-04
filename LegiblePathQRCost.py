@@ -1149,6 +1149,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax_p_head_lin.set_ylabel("P(G | xi)", fontweight='bold')
         _ = ax_p_head_lin.set_title("P head lin", fontweight='bold')
 
+        ax_p_dist_exp.set_ylim(0, 1)
+        ax_p_dist_sqr.set_ylim(0, 1)
+        ax_p_dist_lin.set_ylim(0, 1)
+        ax_p_head_sqr.set_ylim(0, 1)
+        ax_p_head_lin.set_ylim(0, 1)
+
         #####
 
         _ = ax2.set_xlabel("Time", fontweight='bold')
