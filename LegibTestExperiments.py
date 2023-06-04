@@ -642,7 +642,7 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[7] = axes['H']
             ax_mappings[8] = axes['I']
         else:
-            fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+            fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
             ax_mappings = {}
             ax_mappings[0] = axes['A']
             ax_mappings[1] = axes['B']
