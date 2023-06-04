@@ -365,7 +365,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
     def inversely_proportional_to_distance(self, x):
         if x == 0:
             return np.Inf
-        return 1.0 / (x)
+        return 1.0 / float(x)
 
     def get_relative_distance_k(self, x, goal=None, goals=None):
         total_distance = 0.0
@@ -500,8 +500,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         g_vals = []
         g_vals_if_infinity = []
-        for i in range(len(all_goal_angles)):
-            gval = self.inversely_proportional_to_angle(all_goal_angles[i])
+        for j in range(len(all_goal_angles)):
+            gval = self.inversely_proportional_to_angle(all_goal_angles[j])
 
             if self.exp.get_mode_heading_err_sqr() is True or force_mode is 'sqr':
                 gval = gval * gval
@@ -545,8 +545,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         target_index = -1
 
-        for i in range(len(all_goals)):
-            alt_goal = all_goals[i]
+        for j in range(len(all_goals)):
+            alt_goal = all_goals[j]
             goal_vector = alt_goal - x1
 
             if np.array_equal(alt_goal, goal):
@@ -569,8 +569,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         g_vals = []
         g_vals_if_infinity = []
-        for i in range(len(all_goal_angles)):
-            gval = self.inversely_proportional_to_angle(all_goal_angles[i])
+        for j in range(len(all_goal_angles)):
+            gval = self.inversely_proportional_to_angle(all_goal_angles[j])
 
             if self.exp.get_mode_heading_err_sqr() is True or force_mode is 'sqr':
                 gval = gval * gval
@@ -704,13 +704,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         g_vals = []
         g_vals_if_infinity = []
-        for i in range(len(all_goal_angles)):
-            gval = self.inversely_proportional_to_angle(all_goal_angles[i])
+        for j in range(len(all_goal_angles)):
+            gval = self.inversely_proportional_to_angle(all_goal_angles[j])
             if self.exp.get_mode_heading_err_sqr() is True or force_mode is 'sqr':
                 gval = gval * gval
             
             if self.exp.get_weighted_close_on() is True:
-                k = self.get_relative_distance_k(x1, goals[i], goals)
+                k = self.get_relative_distance_k(x1, goals[j], goals)
             else:
                 k = 1.0
 
@@ -1115,20 +1115,20 @@ class SocLegPathQRCost(LegiblePathQRCost):
             wt_legib = 0
 
         wt_legib     = decimal.Decimal(wt_legib)
-        wt_lam_h     = decimal.Decimal(wt_lam_h)
         wt_lam       = decimal.Decimal(wt_lam)
+        # wt_lam_h     = decimal.Decimal(wt_lam_h)
         wt_heading   = decimal.Decimal(wt_heading)
         wt_obstacle  = decimal.Decimal(wt_obstacle)
 
         val_legib       = self.legibility_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
         val_lam         = val_u_diff
-        val_lam_h       = val_angle_diff
+        # val_lam_h       = val_angle_diff
         val_obstacle    = self.get_obstacle_penalty(x, i, goal)
         val_heading     = self.get_heading_stage_cost(x, u, i, goal, visibility_coeff)
 
         val_legib     = decimal.Decimal(val_legib)
         val_lam       = decimal.Decimal(val_lam)
-        val_lam_h     = decimal.Decimal(val_lam_h)
+        # val_lam_h     = decimal.Decimal(val_lam_h)
         val_heading   = decimal.Decimal(val_heading)
         val_obstacle  = decimal.Decimal(val_obstacle)
 
@@ -1140,8 +1140,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         J += wt_lam         * val_lam           #u_diff.T.dot(R).dot(u_diff)
         # J += wt_lam_h       * val_lam_h         #u_diff.T.dot(R).dot(u_diff)
         J += wt_obstacle    * val_obstacle      #self.get_obstacle_penalty(x, i, goal)
-
-        stage_costs = J
 
         stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])
         stage_costs = float(stage_costs)
@@ -1172,9 +1170,18 @@ class SocLegPathQRCost(LegiblePathQRCost):
     def f(t):
         return 1.0
 
+    def dist_between(self, x1, x2):
+        distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
+        return distance
+
     def get_relative_distance_value(self, start, goal, x, terminal, force_mode=None):
         Q = self.Q_terminal if terminal else self.Q
-        dist = np.linalg.norm(x - goal)
+        dist = self.dist_between(x, goal)
+
+        print("dist to goal " + str(goal))
+        print(dist)
+        if dist < 0:
+            exit()
 
         if force_mode is 'sqr':
             return decimal.Decimal(self.inversely_proportional_to_distance(dist)**2)
@@ -1242,7 +1249,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         
     #     return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
 
-    def legibility_stage_cost(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
+    def legibility_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff, force_mode=None, pure_prob=False):
         # TODO verify force mode is happy and correct
         if force_mode is None:
             force_mode = self.exp.get_mode_dist_type()
@@ -1252,7 +1259,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         else:
             exit()
 
-        debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x, 'u': u, 'i':i, 'goal': goal, 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob}
+        debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x, 'u': u, 'i':i_step, 'goal': goal, 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob}
         print("DIST COST INPUTS")
         print(debug_dict)
 
@@ -1265,8 +1272,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # visibility coeff is 1.0 if in vision, 0 if no
         all_goals = self.goals
         
-        target_val = self.get_relative_distance_value(start, goal, x, terminal, force_mode=force_mode) 
-
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("For point at x -> " + str(x))
 
@@ -1275,6 +1280,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
             goal_val = self.get_relative_distance_value(start, alt_goal, x, terminal, force_mode=force_mode) 
             goal_values.append(goal_val)
 
+            if np.array_equal(goal, alt_goal):
+                target_val = goal_val
+
+        print("Target val")
+        print(target_val)
+        print("All values")
         print(goal_values)
         total = sum([abs(ele) for ele in goal_values])
         print(total)
