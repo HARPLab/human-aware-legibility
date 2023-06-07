@@ -520,7 +520,99 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return {'robot_vec': robot_vector, 'x0': x0, 'x1':x1, 'target_angle': target_angle, 'target_val': target_val, 'all_angles':all_goal_angles}
 
-    def get_heading_stage_cost(self, x, u, i, goal, visibility_coeff, force_mode=None, pure_prob=False):
+    def get_legibility_heading_stage_cost(self, x, u, i, goal, visibility_coeff, force_mode=None, pure_prob=False):
+        P_oa = self.prob_heading(x, u, i, goal, visibility_coeff, force_mode, pure_prob)
+
+        if pure_prob:
+            return P_oa
+
+        cost = decimal.Decimal(1.0) - P_oa
+        return cost
+
+    def prob_heading(self, x, u, i, goal, visibility_coeff, force_mode=None, pure_prob=False):
+        all_goals = self.goals
+
+        x_current = x
+        x1 = x
+        x0 = x - u
+
+        debug_dict = {'x': x, 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob, 'x0': x0}
+        print("HEADING COST INPUTS")
+        print(debug_dict)
+
+
+        if not np.array_equal(goal, self.exp.get_target_goal()):
+            print("Goal and exp goal not the same in prob heading")
+            print(goal, self.exp.get_target_goal())
+            # exit()
+
+        # if we are at the goal, we by definition are arriving correctly
+        if np.array_equal(x, goal):
+            P_heading = decimal.Decimal(1.0)
+
+            num_goals   = len(all_goals)
+            P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_heading))
+
+        # # If on first timestep and no angle yet, even prior on all
+        # # This is also the case where u is None
+        # if i is 0:
+        #     return decimal.Decimal(1.0 / len(self.goals))
+
+        robot_vector    = u
+        target_vector   = None
+        all_goal_vectors    = []
+
+        target_index = -1
+
+        for j in range(len(all_goals)):
+            alt_goal = all_goals[j]
+            goal_vector = alt_goal - x_current
+
+            if np.array_equal(alt_goal, goal):
+                print("Yes, is target")
+                target_index = j
+            else:
+                print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
+
+            all_goal_vectors.append(goal_vector)
+
+        all_effort_measures     = []
+        all_offset_angles        = []
+        for gvec in all_goal_vectors:
+            goal_angle = self.get_angle_between(robot_vector, gvec)
+            effort_made = decimal.Decimal(180.0 - goal_angle)
+
+            if float(effort_made) > 180 or float(effort_made) < 0:
+                print("Get angle between needs some work")
+                exit()
+            if goal_angle < 0:
+                print(goal_angle)
+                print("eeek negative angle")
+                # exit()
+
+            if force_mode is 'sqr':
+                effort_made = effort_made**2
+
+            all_offset_angles.append(goal_angle)
+            all_effort_measures.append(effort_made)
+
+        print("All angle vectors to goals")
+        print(all_goal_vectors)
+        print(all_offset_angles)
+        print(all_effort_measures)
+
+        target_val  = all_effort_measures[target_index]
+        total       = sum(all_effort_measures)
+        P_heading   = (target_val) / total
+
+        num_goals   = len(all_goals)
+        P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_heading))
+
+        return P_oa
+
+
+
+    def get_heading_stage_cost_pure_inverse(self, x, u, i, goal, visibility_coeff, force_mode=None, pure_prob=False):
         all_goals = self.goals
 
         # if we are at the goal, we by definition are arriving correctly
@@ -533,6 +625,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         x1 = x
         x0 = x - u
+        x_current = x
 
         debug_dict = {'x': x, 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob, 'x0': x0}
         print("HEADING COST INPUTS")
@@ -547,13 +640,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         for j in range(len(all_goals)):
             alt_goal = all_goals[j]
-            goal_vector = alt_goal - x1
+            goal_vector = alt_goal - x_current
 
             if np.array_equal(alt_goal, goal):
                 print("Yes, is target")
                 target_index = j
             else:
                 print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
+
             all_goal_vectors.append(goal_vector)
 
         all_goal_angles   = []
@@ -977,8 +1071,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         Qf = self.Qf
         R = self.R
 
-        # x_diff = x - self.x_path[i]
-        x_diff = x - self.exp.get_target_goal() #self.x_path[self.N]
+        x_diff = x - self.x_path[i]
         squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
         # squared_x_cost = squared_x_cost * squared_x_cost
 
@@ -1019,7 +1112,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
         goal = self.target_goal
         thresh = .0001
 
-        scale_term = self.exp.get_solver_scale_term() #0.01 # 1/100
+        input_u = u
+        print("INPUT U IS " + str(u))
+
+        scale_term  = self.exp.get_solver_scale_term() #0.01 # 1/100
         scale_stage = self.exp.get_solver_scale_stage() #1.5
 
         if just_term:   
@@ -1033,29 +1129,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # # xdiff from preferred line
         # x_path[i] is always the goal
         # x_diff = x - self.x_path[i]
-
-        if i < len(self.u_path):
-            u_diff = u # - self.u_path[i]
-        else:
-            u_diff = self.u_path[0]
-
-
-        # jk, angle diff can be found from u
-        # if i < 2 or u is None:
-        #     ang_diff = 0
-        # else:
-        #     x0 = (x - u)
-        #     x1 = (x)
-        #     x2 = self.x_path[i - 1] - self.u_path[i - 1]
-        #     print(x0, x1, x2)
-
-        #     angle_prev  = self.get_angle_between(x1, x0)
-        #     angle_now   = self.get_angle_between(x2, x1)
-
-        #     ang_diff    = self.angle_diff(angle_prev, angle_now)
-
-        val_u_diff      = u_diff.T.dot(R).dot(u_diff)
-        val_angle_diff  = 0 #ang_diff * ang_diff
 
         if terminal or just_term: #abs(i - self.N) < thresh or
             # TODO verify not a magic number
@@ -1071,6 +1144,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # VISIBILITY COMPONENT
         restaurant  = self.exp.get_restaurant()
         observers   = self.exp.get_observers()
+
+        u_diff = u - self.u_path[i]
+        val_u_diff      = u_diff.T.dot(R).dot(u_diff)
+        val_angle_diff  = 0 #ang_diff * ang_diff
 
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
         if self.exp.get_is_oa_on() is True:
@@ -1096,12 +1173,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         visibility_coeff = f_value
 
-        wt_legib     = .5 #-(1/30.0) #100.0
-        wt_lam       = 0.025 #2 #.05 #also tried .1
-        wt_lam_h     = 1
-        wt_heading   = .5 #0.5 #100000.0
-        wt_obstacle  = 100.0 #self.exp.get_solver_scale_obstacle()
+        wt_legib     = 10 #-(1/30.0) #100.0
+        wt_lam       = 1 #2 #.05 #also tried .1
+        # wt_lam_h     = 1
+        wt_heading   = 10 #0.5 #100000.0
+        wt_obstacle  = 100000.0 #self.exp.get_solver_scale_obstacle()
 
+
+        x_diff = x - self.x_path[i]
+        squared_x_cost = .5 * x_diff.T.dot(Q).dot(x_diff)
         
         if self.exp.get_is_heading_on() is False:
             wt_legib    = wt_legib + wt_heading
@@ -1110,6 +1190,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.exp.get_mode_pure_heading() is True:
             wt_heading  = wt_heading + wt_legib
             wt_legib    = 0.0
+            wt_lam      = wt_lam * 5
 
         if self.exp.get_mode_dist_legib_on() is False:
             wt_legib = 0
@@ -1120,11 +1201,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         wt_heading   = decimal.Decimal(wt_heading)
         wt_obstacle  = decimal.Decimal(wt_obstacle)
 
-        val_legib       = self.legibility_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
-        val_lam         = val_u_diff
+        val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
+        val_lam         = val_u_diff + (.00001 * squared_x_cost)
         # val_lam_h       = val_angle_diff
         val_obstacle    = self.get_obstacle_penalty(x, i, goal)
-        val_heading     = self.get_heading_stage_cost(x, u, i, goal, visibility_coeff)
+        val_heading     = self.get_legibility_heading_stage_cost(x, u, i, goal, visibility_coeff)
 
         val_legib     = decimal.Decimal(val_legib)
         val_lam       = decimal.Decimal(val_lam)
@@ -1156,12 +1237,16 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("[wt_legib, wt_lam, wt_obstacle, wt_heading]")
             print([wt_legib, wt_lam, wt_obstacle, wt_heading])            
             print("[val_legib, val_lam, val_obstacle, val_heading]")
-            print([val_legib, val_lam, val_obstacle, val_heading])
+            print([float(val_legib), float(val_lam), float(val_obstacle), float(val_heading)])
             print("==")
             print([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])
 
             print(str(sum([wt_legib*val_legib, wt_lam*val_lam, wt_obstacle*val_obstacle, wt_heading*val_heading])))
 
+            print('u_path')
+            print(self.u_path)
+            print('x_path')
+            print(self.x_path)
 
         total = (scale_term * term_cost) + (scale_stage * stage_costs)
 
@@ -1181,6 +1266,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("dist to goal " + str(goal))
         print(dist)
         if dist < 0:
+            print("dist to goal less than 0!")
             exit()
 
         if force_mode is 'sqr':
@@ -1249,31 +1335,46 @@ class SocLegPathQRCost(LegiblePathQRCost):
         
     #     return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
 
-    def legibility_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff, force_mode=None, pure_prob=False):
+    def get_legibility_dist_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff, force_mode=None, pure_prob=False):
+        P_oa = self.prob_distance(start, goal, x, u, i_step, terminal, visibility_coeff, force_mode=None, pure_prob=False)
+
+        return decimal.Decimal(1.0) - P_oa
+
+
+    def prob_distance(self, start, goal, x, u, i_step, terminal, visibility_coeff, force_mode=None, pure_prob=False):
         # TODO verify force mode is happy and correct
         if force_mode is None:
             force_mode = self.exp.get_mode_dist_type()
 
+        if not np.array_equal(goal, self.exp.get_target_goal()):
+            print("Goal and exp goal not the same in prob_distance")
+            print(goal, self.exp.get_target_goal())      
+            # exit()
+
         if visibility_coeff == 1 or visibility_coeff == 0:
+            print("vis is not 1 or 0")
             pass
         else:
             exit()
 
-        debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x, 'u': u, 'i':i_step, 'goal': goal, 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob}
-        print("DIST COST INPUTS")
-        print(debug_dict)
+        all_goals = self.goals
+
+        if self.FLAG_DEBUG_STAGE_AND_TERM:
+            print("For point at x -> " + str(x))
+            debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x, 'u': u, 'i':i_step, 'goal': goal, 'visibility_coeff': visibility_coeff, 'force_mode':force_mode, 'pure_prob':pure_prob}
+            print("DIST COST INPUTS")
+            print(debug_dict)
 
         if np.array_equal(x, goal):
             if pure_prob:
-                return 1.0
+                P_dist = decimal.Decimal(1.0)
             else:
-                return 0.0
+                P_dist = decimal.Decimal(0.0)
 
-        # visibility coeff is 1.0 if in vision, 0 if no
-        all_goals = self.goals
-        
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("For point at x -> " + str(x))
+            num_goals   = len(all_goals)
+            P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
+            return P_oa
+
 
         goal_values = []
         for alt_goal in all_goals:
@@ -1290,39 +1391,16 @@ class SocLegPathQRCost(LegiblePathQRCost):
         total = sum([abs(ele) for ele in goal_values])
         print(total)
 
-        # This should be covered by the "if at the goal" case above, but still
-        if total == np.Inf:
-            if target_val is np.Inf:
-                dist_prob = 1.0
-            else:
-                dist_prob = 0.0
-
-        else:
-            # dist_prob = (total - target_val) / (total)
-            dist_prob = target_val / total
+        # dist_prob = (total - target_val) / (total)
+        dist_prob = (target_val) / total
 
         P_dist      = decimal.Decimal(dist_prob)
         num_goals   = len(all_goals)
         P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
 
-        if pure_prob:
-            return P_oa
-
-        return decimal.Decimal(1.0) - P_oa
-
-        visibility_coeff = decimal.Decimal(visibility_coeff)
-
-        # err_penalty             = (err_total - J_g1) / err_total
-        # err_penalty             = float(err_penalty)
-        err_penalty             = decimal.Decimal(1.0) - P_oa
-        # err_if_out_of_vis       = decimal.Decimal(((num_goals - 1.0)/num_goals))*(decimal.Decimal(1) - visibility_coeff)
-        # err_if_in_vis           = (decimal.Decimal(visibility_coeff) * err_penalty)
-        # err_penalty_with_vis    = err_if_out_of_vis + err_if_in_vis
+        return P_oa
 
 
-        print("err penalty wout vis, then with")
-        print(err_penalty)
-        return err_penalty
 
     def michelle_stage_cost(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None):
         # visibility coeff is 1.0 if in vision, 0 if no
