@@ -1894,7 +1894,7 @@ class Restaurant:
 	
 		for pt in all_points:
 			# print(pt)
-			x, y = pt
+			x, y = pt[0], pt[1]
 
 			if x < xmin:
 				xmin = x
@@ -2012,7 +2012,10 @@ class Restaurant:
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
-			print(to_xy(goal))
+			FLAG_PRINT_GOAL = True
+			if FLAG_PRINT_GOAL:
+				print(to_xy(goal))
+			pass
 
 			cv2.circle(img, to_xy(goal), goal_radius + 1, (0,0,0), goal_radius + 1)
 			cv2.circle(img, to_xy(goal), goal_radius, COLOR_GOAL, goal_radius)
@@ -2766,7 +2769,7 @@ def export_goal_options_from_assessment(img, target_index, saved_paths, fn=None)
 		type_img = img.copy()
 		img_deck[str(i)] = type_img
 
-	print(img_deck.keys())
+	# print(img_deck.keys())
 
 	for pkey in saved_paths.keys():
 		paths = saved_paths[pkey]
