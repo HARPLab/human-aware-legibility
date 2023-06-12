@@ -57,14 +57,14 @@ class PathingExperiment():
     cost_label  = COST_OA_AND_OBS
     f_label     = F_VIS_BIN
 
-    state_size  = 2
+    state_size  = 3
     action_size = 2
 
     dt  = .025
     N   = int(21 * 2)
-    Qf  = np.identity(2) * 400.0
+    Qf  = np.identity(state_size) # * 400.0
     Q   = 1.0 * np.eye(state_size)
-    R   = 200.0 * np.eye(action_size)
+    R   = np.eye(action_size) # * 100
 
     oa_on                   = True
     heading_on              = True
@@ -429,6 +429,8 @@ class PathingExperiment():
         return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
 
     def get_suptitle(self):
+        title = self.exp_label + "\t"
+
         if self.mode_pure_heading:
             if self.mode_heading_err_sqr:
                 title = "Heading: Square"
