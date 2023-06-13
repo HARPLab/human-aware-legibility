@@ -49,6 +49,7 @@ import utility_environ_descrip as resto
 # # exp.set_f_label(ex.F_NONE)
 
 test_log = []
+np.set_printoptions(suppress=True)
 
 def run_all_tests():
     dashboard_folder = get_dashboard_folder()
@@ -581,19 +582,19 @@ def test_full_set(dash_folder, scenario_filters):
     # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
     # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'exp'}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_exp", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'exp'}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'sqr'}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'sqr'}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
+    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
+    # test_setups_og.append(new_test)
+
+    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False, 'dist-mode':'lin'}
     test_setups_og.append(new_test)
 
     new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False, 'dist-mode':'lin'}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False, 'dist-mode':'lin'}
     test_setups_og.append(new_test)
 
     for key in scenarios.keys():
@@ -641,6 +642,12 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[6] = axes['G']
             ax_mappings[7] = axes['H']
             ax_mappings[8] = axes['I']
+        elif len(test_setups_og) < 4:
+            fig, axes = plt.subplot_mosaic("ABC", figsize=(8, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1]})
+            ax_mappings = {}
+            ax_mappings[0] = axes['A']
+            ax_mappings[1] = axes['B']
+            ax_mappings[2] = axes['C']
         else:
             fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
             ax_mappings = {}
@@ -650,6 +657,8 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[3] = axes['D']
             ax_mappings[4] = axes['E']
             ax_mappings[5] = axes['F']
+            axes['E'].axis('off')
+            axes['F'].axis('off')
 
 
         for key in outputs.keys():
