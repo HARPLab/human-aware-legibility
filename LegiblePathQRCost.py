@@ -49,18 +49,34 @@ class LegiblePathQRCost(FiniteDiffCost):
     scale_stage = 2
     scale_obstacle = 0
 
-    state_size = 2
+    state_size  = 3
     action_size = 2
 
     # The coefficients weigh how much your state error is worth to you vs
     # the size of your controls. You can favor a solution that uses smaller
     # controls by increasing R's coefficient.
-    Q = 1.0 * np.eye(state_size)
-    R = 200.0 * np.eye(action_size)
-    Qf = np.identity(state_size) * 400.0
+    # Q = 1.0 * np.eye(state_size)
+    # R = 200.0 * np.eye(action_size)
+    # Qf = np.identity(state_size) * 400.0
 
     """Quadratic Regulator Instantaneous Cost for trajectory following."""
     def __init__(self, exp, x_path, u_path):
+        # print(exp,
+        #     exp.get_Q(),
+        #     exp.get_R(),
+        #     exp.get_Qf(),
+        #     x_path,
+        #     u_path,
+        #     exp.get_start(),
+        #     exp.get_target_goal(),
+        #     exp.get_goals(),
+        #     exp.get_N(),
+        #     exp.get_dt())
+
+        # print(exp.get_Q().shape,
+        #     exp.get_R().shape,
+        #     exp.get_Qf().shape)
+
         self.legib_path_cost_make_self(
             exp,
             exp.get_Q(),
@@ -89,9 +105,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         """
 
         self.exp = exp
-        self.Q = np.array(Q)
+        self.Q  = np.array(Q)
         self.Qf = np.array(Qf)
-        self.R = np.array(R)
+        self.R  = np.array(R)
 
         # self.R = np.eye(2)*10000
 
@@ -119,11 +135,11 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         state_size = self.Q.shape[0]
         action_size = self.R.shape[0]
+
         path_length = self.x_path.shape[0]
 
         x_eps = .05 #05
         u_eps = .01 #05
-
 
         # self._x_eps_hess = np.sqrt(self._x_eps)
         # self._u_eps_hess = np.sqrt(self._u_eps)
@@ -703,15 +719,15 @@ class LegiblePathQRCost(FiniteDiffCost):
                 bin_visibility = 1.0
 
             if label is 'dist_exp':
-                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='exp', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='exp', pure_prob=True)
             elif label is 'dist_sqr':
-                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='sqr', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='sqr', pure_prob=True)
             elif label is 'dist_lin':
-                p = self.legibility_stage_cost(start, goal, x, u, i, terminal, bin_visibility, force_mode='lin', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='lin', pure_prob=True)
             elif label is 'head_sqr':
-                p = float(self.get_heading_stage_cost(x, u, i, goal, bin_visibility, force_mode='sqr', pure_prob=True))
+                p = float(self.prob_heading(x, u, i, goal, bin_visibility, force_mode='sqr', pure_prob=True))
             elif label is 'head_lin':
-                p = float(self.get_heading_stage_cost(x, u, i, goal, bin_visibility, force_mode='lin', pure_prob=True))
+                p = float(self.prob_heading(x, u, i, goal, bin_visibility, force_mode='lin', pure_prob=True))
 
             
             prob_list.append(p)
@@ -815,9 +831,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
 
-        xs, ys = zip(*verts)
+        xs, ys, thetas = zip(*verts)
         gx, gy = zip(*self.goals)
-        sx, sy = self.start
+        sx, sy = self.start[0], self.start[1]
 
         for table in tables:
             table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
@@ -973,9 +989,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(verts)
         print("Attempt to display this path")
 
-        xs, ys = zip(*verts)
+        xs, ys, thetas = zip(*verts)
         gx, gy = zip(*self.goals)
-        sx, sy = self.start
+        sx, sy = self.start[0], self.start[1]
 
         # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
         
