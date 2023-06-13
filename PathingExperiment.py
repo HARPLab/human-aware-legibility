@@ -428,6 +428,21 @@ class PathingExperiment():
     def get_solve_quality_columns(self):
         return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
 
+
+    def get_heading_code(self):
+        hm = 'none'
+
+        if self.mode_pure_heading:
+            if self.mode_heading_err_sqr:
+                hm = 'sqr'
+            else:
+                hm = 'lin'
+        elif self.get_mode_dist_legib_on() == False:
+            hm = 'none'
+
+        return hm
+
+
     def get_suptitle(self):
         title = self.exp_label + "\t"
 
