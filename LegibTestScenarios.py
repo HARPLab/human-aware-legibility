@@ -37,13 +37,25 @@ DASHBOARD_FOLDER = None
 def scenario_test_a(goal_index=None):
     label = "testa_g" + str(goal_index)
 
-    start           = [1.0, 3.0]
+    # start           = [1.0, 3.0]
 
-    goal1 = [4.0, 5.0]
-    goal3 = [4.0, 1.0]
+    # goal1 = [3.0, 4.0]
+    # goal3 = [3.0, 2.0]
+
+    start = [0.0, 0.0]
+    goal1 = [-1.0, 2.0]
+    goal3 = [1.0, 2.0]
+
+    # start           = [0.0, 0.0]
+    # goal1 = [-1.0, 2.0]
+    # goal3 = [1.0, 2.0]
+
+    # start = [0.0, 0.0]
+    # goal1 = [-2, 1.0]
+    # goal3 = [-2, -1.0]
 
     target_goal = goal1
-    all_goals   = [goal1, goal3]
+    all_goals   = [goal3, goal1]
 
     if goal_index is not None:
         target_goal = all_goals[goal_index]
@@ -66,11 +78,6 @@ def scenario_test_a(goal_index=None):
 
     dt = .025
     N = 26
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -84,8 +91,8 @@ def scenario_test_b(goal_index=None):
 
     start           = [3.0, 1.0]
 
-    goal1 = [5.0, 4.0]
-    goal3 = [1.0, 4.0]
+    goal1 = [4.0, 3.0]
+    goal3 = [2.0, 3.0]
 
     target_goal = goal1
     all_goals   = [goal1, goal3]
@@ -111,11 +118,6 @@ def scenario_test_b(goal_index=None):
 
     dt = .025
     N = 26
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -169,12 +171,6 @@ def scenario_test_0(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
-    exp.set_N(N)
     exp.set_dt(dt)
 
     obs_scale = 10000.0
@@ -212,11 +208,7 @@ def scenario_test_1(goal_index=None):
 
     dt = .025
     N = 40
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
 
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -261,11 +253,6 @@ def scenario_test_2(goal_index=None):
 
     dt = .025
     N = 36
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -305,11 +292,6 @@ def scenario_test_3(goal_index=None):
 
     dt = .0125
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -349,11 +331,6 @@ def scenario_test_4(goal_index=None):
 
     dt = .025
     N = 40
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -393,11 +370,6 @@ def scenario_test_4_flip(goal_index=None):
 
     dt = .025
     N = 40
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -438,11 +410,6 @@ def scenario_test_4_flip_inverse(goal_index=None):
 
     dt = .025
     N = 40
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -482,11 +449,6 @@ def scenario_test_5(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -526,11 +488,6 @@ def scenario_test_6(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -599,11 +556,6 @@ def scenario_0(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -678,11 +630,6 @@ def scenario_test_8(goal_index=None):
 
     dt = .025
     N = 21 #42 #21
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -718,11 +665,6 @@ def scenario_test_9(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -756,11 +698,6 @@ def scenario_10_large_scale(goal_index=None):
 
     dt = .025
     N = 21
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -798,13 +735,6 @@ def scenario_4_has_obstacles(goal_index=None):
 
     dt = .025
     N = int(41)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 1.0 * np.eye(exp.get_action_size())
-    Qf = 1.0 * np.identity(2)
-
-    # print(Q, R, Qf)
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -847,11 +777,6 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
 
     dt = .025
     N = 31
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -897,11 +822,6 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
 
     dt = .025
     N = int(21 * 2)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -947,11 +867,6 @@ def scenario_7_observer_offset(goal_index=None):
 
     dt = .025
     N = int(21 * 2)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -994,11 +909,6 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
 
     dt = .025
     N = int(31)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -1045,11 +955,6 @@ def scenario_7_observer_rot90(goal_index=None):
 
     dt = .025
     N = int(21 * 2)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -1095,11 +1000,6 @@ def scenario_7_mirrored(goal_index=None, obs_angle=0):
 
     dt = .025
     N = int(21 * 2)
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -1133,11 +1033,6 @@ def scenario_6():
 
     dt = .025
     N = 21
-    Q = 1.0 * np.eye(exp.get_state_size())
-    R = 200.0 * np.eye(exp.get_action_size())
-    Qf = np.identity(2) * 400.0
-
-    exp.set_QR_weights(Q, R, Qf)
     exp.set_N(N)
     exp.set_dt(dt)
 
@@ -1153,6 +1048,7 @@ def get_scenario_set(scenario_filters=[]):
     # TEST SCENARIO
     label, exp = scenario_test_a(goal_index=1)
     scenarios[label] = exp
+    return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=0)
@@ -1162,7 +1058,7 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_b(goal_index=1)
     scenarios[label] = exp
 
-    return scenarios
+    # return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
