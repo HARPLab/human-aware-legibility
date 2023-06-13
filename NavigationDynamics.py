@@ -4,11 +4,13 @@ from ilqr.dynamics import FiniteDiffDynamics, tensor_constrain, constrain
 from shapely.geometry import LineString
 from shapely.geometry import Point
 
+import math
+
 ### CLASS DESCRIBING THE DYNAMICS OF A SIMPLE ROBOT
 ### MOVING THOUGH SPACE
 class NavigationDynamics(FiniteDiffDynamics):
 
-    _state_size  = 2
+    _state_size  = 3    # state is x_x, x_y, x_theta
     _action_size = 2
 
     x_eps = .1
@@ -18,7 +20,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         return self.dynamics(x, u)
 
     # hardcoded test function for being within an obstacle
-    def in_object(self, x):
+    def in_object(self, x_double):
 
         obstacle = .5, 1.0
         xx, xy = x
@@ -28,9 +30,80 @@ class NavigationDynamics(FiniteDiffDynamics):
 
         return False
 
+    def get_angle_between_triplet(self, a, b, c):
+        ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+        return ang + 360 if ang < 0 else ang
+
+    # Returns the degrees clockwise from the 0 of east
+    def get_heading_of_pt_diff_p2_p1(self, p2, p1):
+        unit_vec    = [p1[0] + 1.0, p1[1]]
+        heading     = self.get_angle_between_triplet(p2, p1, unit_vec)
+        return heading
+
+    ##### METHODS FOR ANGLE MATH - Should match SocLegPathQRCost
+    def get_heading_moving_between(self, p2, p1):
+        print("Get heading moving in nav from " + str(p1) + " to " + str(p2))
+        print(p2)
+        print(p1)
+
+        # https://stackoverflow.com/questions/31735499/calculate-angle-clockwise-between-two-points
+        ang1    = np.arctan2(*p1[::-1])
+        ang2    = np.arctan2(*p2[::-1])
+        heading = np.rad2deg((ang1 - ang2) % (2 * np.pi))
+        
+        # heading = self.get_minimum_rotation_to(heading)
+        # Heading is in degrees
+        return heading
+
     # Combine the existing state with 
-    def dynamics(self, x, u, max_u=5.0):
+    def dynamics(self, x_triplet, u, max_u=5.0):
         # TODO raise max_u to experimental settings
+        print("IN DYNAMICS")
+        if u is None:
+            return x_triplet
+
+        # This is the distance we go in dt time
+        dt          = self.dt # seconds
+        xy       = [x_triplet[0], x_triplet[1]]
+
+        if False: #constrain:
+            min_bounds, max_bounds = -1.0 * max_u, max_u
+            if np.linalg.norm(u) > max_u:
+                scalar = max_u / np.linalg.norm(u)
+                u = u * scalar
+
+        # Moving a square
+        # We only apply this to the x y parts of the matrix 
+        A = np.eye(self._action_size)       #(self._state_size)
+        B = np.eye(self._action_size)
+        v0 = A.dot(xy)
+        v1 = B.dot(u)
+
+        xnext_wout_theta   = xy + u
+        print(xy)
+        print(xnext_wout_theta)
+        
+        xtheta_old  = x_triplet[2]
+        # Heading is clockwise degrees from EAST
+        xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+
+        if xtheta_old == xtheta_old:
+            print("Robot maintained the same heading, but that's fine")
+
+        print("u in dynamics model")
+        print(u)
+
+        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]
+        print("xnext heading notes")
+        print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
+        print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+
+        return xnext
+
+    # Combine the existing state with 
+    def dynamics_v1(self, x_triplet, u, max_u=5.0):
+        # TODO raise max_u to experimental settings
+        print("IN DYNAMICS")
 
         # This is the distance we go in dt time
         dt          = self.dt # seconds
@@ -39,7 +112,8 @@ class NavigationDynamics(FiniteDiffDynamics):
         max_u       = dt * max_speed # = 
 
         # # Constrain action space.
-        if True: #constrain:
+        # Apply a constraint that limits how much the robot can move per-timestep
+        if False: #constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
             
             # If we want to constrain movements to manhattan 
@@ -63,36 +137,54 @@ class NavigationDynamics(FiniteDiffDynamics):
 
             # u = tensor_constrain(u, min_bounds, max_bounds)
 
-        # Apply a constraint that limits how much the robot can move per-timestep
-        # TODO: apply to overall vector magnitude rather than x and y components alone
+
+        xy       = [x_triplet[0], x_triplet[1]]
 
         # Moving a square
-        A = np.eye(self._state_size)
+        # We only apply this to the x y parts of the matrix 
+        A = np.eye(2)       #(self._state_size)
         B = np.eye(self._action_size)
-        v0 = A.dot(x)
+        v0 = A.dot(xy)
         v1 = B.dot(u)
 
+        xnext_wout_theta   = xy + u*dt
+        print(xy)
+        print(xnext_wout_theta)
+        print("then")
 
-        is_in_obstacle = self.is_in_obstacle(v0, v1)
-        across_obstacle = self.across_obstacle(v0, v1)
+        xtheta_old  = x_triplet[2]
+        xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
-        if np.isnan(np.linalg.norm(u)):
-            print("caught a nan")
-            xnext = v0
-        elif across_obstacle:
-            print("teleporting across an obstacle!")
-            xnext = v0
-        elif is_in_obstacle:
-            print("don't enter obstacle")
-            xnext = v0
-        else:
-            xnext = v0 + v1     # A*x + B*u
+
+        if xnext_wout_theta[0] == np.nan or xnext_wout_theta[1] == np.nan:
+            xnext_wout_theta = xy
+            xtheta_new = xtheta_old
+    
+        if xtheta_old == xtheta_old:
+            print("Robot maintained the same heading, but that's fine")
 
         print("u in dynamics model")
         print(u)
 
-        print("xnext")
-        print(str(x) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]
+        print("xnext heading notes")
+        print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
+        print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+
+        # is_in_obstacle = self.is_in_obstacle(v0, v1)
+        # across_obstacle = self.across_obstacle(v0, v1)
+
+        # if np.isnan(np.linalg.norm(u)):
+        #     print("caught a nan")
+        #     xnext = v0
+        # elif across_obstacle:
+        #     print("teleporting across an obstacle!")
+        #     xnext = v0
+        # elif is_in_obstacle:
+        #     print("don't enter obstacle")
+        #     xnext = v0
+        # else:
+        #     xnext = v0 + v1     # A*x + B*u
 
         return xnext
 
@@ -128,27 +220,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         self.dt = dt
 
         self.exp = exp
-        # sin_theta = x[..., 0]
-        # cos_theta = x[..., 1]
-        # theta_dot = x[..., 2]
-        # torque = u[..., 0]
-
-        # # Deal with angle wrap-around.
-        # theta = T.arctan2(sin_theta, cos_theta)
-
-        # # Define acceleration.
-        # theta_dot_dot = -3.0 * g / (2 * l) * T.sin(theta + np.pi)
-        # theta_dot_dot += 3.0 / (m * l**2) * torque
-
-        # next_theta = theta + theta_dot * dt
-
-        # return T.stack([
-        #     T.sin(next_theta),
-        #     T.cos(next_theta),
-        #     theta_dot + theta_dot_dot * dt,
-        # ]).T
-
-        super(NavigationDynamics, self).__init__(self.f, 2, 2)
+        super(NavigationDynamics, self).__init__(self.f, self._state_size, self._action_size)
 
     def get_obstacle_penalty_given_obj(self, x, x1, obst_center, threshold):
         obst_dist = obst_center - x
