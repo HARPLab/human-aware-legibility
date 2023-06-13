@@ -32,11 +32,18 @@ def on_iteration_default(iteration_count, xs, us, J_opt, accepted, converged):
     most_recent_is_complete_packet = [converged, info, iteration_count]
 
 def run_solver(exp):
+    STATIC_ANGLE_DEFAULT = 0
     dash_folder = exp.get_run_filters()[test_scenarios.DASHBOARD_FOLDER]
     exp.reinit_file_id()
 
-    x0_raw          = exp.get_start()    # initial state
-    x_goal_raw      = exp.get_target_goal()
+    state_size  = 3 #
+    action_size = 2 #
+
+    start   = exp.get_start()
+    goal    = exp.get_target_goal()
+
+    x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
+    x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
     dynamics = NavigationDynamics(exp.get_dt(), exp)
@@ -48,16 +55,16 @@ def run_solver(exp):
     N       = exp.get_N()
     dt      = exp.get_dt()
 
-    x_T     = N
+    x_T      = N
     Xrefline = np.tile(x_goal_raw, (N+1, 1))
-    Xrefline = np.reshape(Xrefline, (-1, 2))
+    Xrefline = np.reshape(Xrefline, (-1, 3))
 
-    u_blank = np.asarray([0.0, 0.0])
+    u_blank  = np.asarray([0.0, 0.0])
     Urefline = np.tile(u_blank, (N, 1))
     Urefline = np.reshape(Urefline, (-1, 2))
 
-    state_size  = 2 #
-    action_size = 2 # 
+    # print(Xrefline)
+    # print(Urefline)
 
     ### EXP IS USED AFTER THIS POINT
     cost = exp.setup_cost(Xrefline, Urefline)
@@ -101,9 +108,9 @@ def run_solver(exp):
 
     # Plot of the path through space
     verts = xs
-    xs, ys = zip(*verts)
+    xs, ys, thetas = zip(*verts)
     gx, gy = zip(*exp.get_goals())
-    sx, sy = zip(*[x0_raw])
+    sx, sy, stheta = zip(*[x0_raw])
 
     elapsed_time = end_time - start_time
 
