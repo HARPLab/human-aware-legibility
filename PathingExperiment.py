@@ -60,7 +60,7 @@ class PathingExperiment():
     state_size  = 3
     action_size = 2
 
-    dt  = .025
+    dt  = .5 #.025
     N   = int(21 * 2)
     Qf  = np.identity(state_size) # * 400.0
     Q   = 1.0 * np.eye(state_size)
@@ -411,10 +411,12 @@ class PathingExperiment():
         if info_packet is not None:
             converged_text = ""
             converged, info, iteration_count = info_packet
-            if converged is False:
-                converged_text = "INC in " + str(iteration_count)
-            else:
+            if converged is True:
+                converged_text = "CONV in " + str(iteration_count)
+            elif info is 'accepted':
                 converged_text = "OK in " + str(iteration_count)
+            else:
+                converged_text = "INC in " + str(iteration_count)
             
             blurb = converged_text
         else:
@@ -423,10 +425,10 @@ class PathingExperiment():
         scenario    = self.get_exp_label()
         purpose     = self.get_fn_note()[1:]
 
-        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count)
+        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count, info)
 
     def get_solve_quality_columns(self):
-        return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations')
+        return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info')
 
 
     def get_heading_code(self):
@@ -443,6 +445,7 @@ class PathingExperiment():
         return hm
 
 
+    # TODO make this more consistent
     def get_suptitle(self):
         title = self.exp_label + "\t"
 
@@ -454,12 +457,17 @@ class PathingExperiment():
         elif self.get_mode_dist_legib_on() == False:
             title = "No legibility"
         else:
+            if 'mixed' in self.get_exp_label():
+                title = 'mixed '
+            else:
+                title = ""
+
             if self.get_mode_dist_type() is 'exp':
-                title = "Dist: Exponential"
+                title += " Dist: Exponential"
             elif self.get_mode_dist_type() is 'sqr':
-                title = "Dist: Squared"
+                title += " Dist: Squared"
             elif self.get_mode_dist_type() is 'lin':
-                title = "Dist: Linear"
+                title += " Dist: Linear"
 
         return title
 
