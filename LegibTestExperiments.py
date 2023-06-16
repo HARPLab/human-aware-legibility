@@ -578,28 +578,28 @@ def test_full_set(dash_folder, scenario_filters):
 
     test_setups_og = []
 
-    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False, 'dist-mode':'lin'}
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False, 'dist-mode':'lin'}
+    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-mode':'sqr', 'dist-mode':'sqr', 'blend-type': 'min'}
     # test_setups_og.append(new_test)
 
-    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False, 'dist-mode':'lin'}
-    # test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'exp'}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'sqr'}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
-    test_setups_og.append(new_test)
-
-    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True, 'dist-mode':'sqr'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
+    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-mode':'lin', 'dist-mode':'lin', 'blend-type': 'min'}
     # test_setups_og.append(new_test)
 
 
@@ -618,13 +618,7 @@ def test_full_set(dash_folder, scenario_filters):
 
             mega_scenario = copy.copy(scenario)
             mega_scenario.set_fn_note(test['label'])
-
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            mega_scenario.set_heading_on(test['heading-on'])
-            mega_scenario.set_mode_pure_heading(test['pure-heading'])
-            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
-            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
-            mega_scenario.set_mode_dist_type(test['dist-mode'])
+            mega_scenario.set_test_options(test)
             
             verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
             outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
@@ -675,9 +669,6 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[3] = axes['D']
             ax_mappings[4] = axes['E']
             ax_mappings[5] = axes['F']
-            axes['E'].axis('off')
-            axes['F'].axis('off')
-
 
         for key in outputs.keys():
             ax = ax_mappings[key]
@@ -688,7 +679,11 @@ def test_full_set(dash_folder, scenario_filters):
             cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
             _ = ax.set_title(label, fontweight='bold')
             ax.get_legend().remove()
-    
+            max_key = key
+
+        for ax_index in range(max_key, len(ax_mappings)):
+            ax_mappings[ax_index].axis('off')
+
         fig.suptitle("cross=" + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         plt.tight_layout()
