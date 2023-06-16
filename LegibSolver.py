@@ -32,7 +32,7 @@ def on_iteration_default(iteration_count, xs, us, J_opt, accepted, converged):
     most_recent_is_complete_packet = [converged, info, iteration_count]
 
 def run_solver(exp):
-    STATIC_ANGLE_DEFAULT = 0
+    STATIC_ANGLE_DEFAULT = 360
     dash_folder = exp.get_run_filters()[test_scenarios.DASHBOARD_FOLDER]
     exp.reinit_file_id()
 
@@ -49,8 +49,8 @@ def run_solver(exp):
     dynamics = NavigationDynamics(exp.get_dt(), exp)
 
     # Note that the augmented state is not all 0.
-    x0      = dynamics.augment_state(np.array(x0_raw)).T
-    x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
+    # x0      = dynamics.augment_state(np.array(x0_raw)).T
+    # x_goal  = dynamics.augment_state(np.array(x_goal_raw)).T
 
     N       = exp.get_N()
     dt      = exp.get_dt()
@@ -63,15 +63,8 @@ def run_solver(exp):
     Urefline = np.tile(u_blank, (N, 1))
     Urefline = np.reshape(Urefline, (-1, 2))
 
-    # print(Xrefline)
-    # print(Urefline)
-
     ### EXP IS USED AFTER THIS POINT
     cost = exp.setup_cost(Xrefline, Urefline)
-
-    # l = leg_cost.l
-    # l_terminal = leg_cost.term_cost
-    # cost = AutoDiffCost(l, l_terminal, x_inputs, u_inputs)
 
     FLAG_JUST_PATH = False
     if FLAG_JUST_PATH:
@@ -79,17 +72,14 @@ def run_solver(exp):
         us_init     = Urefline
         cost        = PathQRCost(Q, R, traj, us_init)
         print("Set to old school pathing")
-        exit()
 
     # default value from text
     max_reg = 1e-10 #None # default value is 1e-10
-    ilqr = iLQR(dynamics, cost, N, max_reg=None)
+    ilqr = iLQR(dynamics, cost, N, max_reg=max_reg)
 
     cost.init_output_log(dash_folder)
 
     tol = 1e-5
-    # tol = 1e-10
-
     num_iterations = 100
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
@@ -103,8 +93,6 @@ def run_solver(exp):
     end_time = time.time()
 
     t = np.arange(N) * dt
-    theta = np.unwrap(xs[:, 0])  # Makes for smoother plots.
-    theta_dot = xs[:, 1]
 
     # Plot of the path through space
     verts = xs
