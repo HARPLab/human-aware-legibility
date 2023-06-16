@@ -576,26 +576,27 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False, 'dist-mode':'lin'}
     test_setups_og.append(new_test)
 
-    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True, 'dist-mode':'sqr'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"dist_exp", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'exp'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'sqr'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
-    # test_setups_og.append(new_test)
-
     new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False, 'dist-mode':'lin'}
     test_setups_og.append(new_test)
 
     new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False, 'dist-mode':'lin'}
     test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'exp'}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'sqr'}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True, 'dist-mode':'sqr'}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True, 'dist-mode':'lin'}
+    test_setups_og.append(new_test)
+
 
     for key in scenarios.keys():
         scenario = scenarios[key]
@@ -631,7 +632,7 @@ def test_full_set(dash_folder, scenario_filters):
         # so this is a fresh one not dependent on the graphing within the solver for each
         
         if len(test_setups_og) > 6:
-            fig, axes = plt.subplot_mosaic("ABC;DEF;GHI", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+            fig, axes = plt.subplot_mosaic("ABC;DEF;IHG", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
             ax_mappings = {}
             ax_mappings[0] = axes['A']
             ax_mappings[1] = axes['B']
@@ -642,6 +643,7 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[6] = axes['G']
             ax_mappings[7] = axes['H']
             ax_mappings[8] = axes['I']
+            axes['I'].axis('off')
         elif len(test_setups_og) < 4:
             fig, axes = plt.subplot_mosaic("ABC", figsize=(8, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1]})
             ax_mappings = {}
@@ -671,9 +673,9 @@ def test_full_set(dash_folder, scenario_filters):
             _ = ax.set_title(label, fontweight='bold')
             ax.get_legend().remove()
     
-        # plt.tight_layout()
         fig.suptitle("cross=" + str("mega") + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
+        plt.tight_layout()
         plt.savefig(save_location + ".png")
 
 

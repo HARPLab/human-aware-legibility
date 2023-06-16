@@ -3,8 +3,10 @@ from ilqr.dynamics import FiniteDiffDynamics, tensor_constrain, constrain
 
 from shapely.geometry import LineString
 from shapely.geometry import Point
+import decimal
 
 import math
+import copy
 
 ### CLASS DESCRIBING THE DYNAMICS OF A SIMPLE ROBOT
 ### MOVING THOUGH SPACE
@@ -13,8 +15,8 @@ class NavigationDynamics(FiniteDiffDynamics):
     _state_size  = 3    # state is x_x, x_y, x_theta
     _action_size = 2
 
-    x_eps = .1
-    u_eps = .1
+    x_eps = .1 #.05
+    u_eps = .1 #.05
 
     def f(self, x, u, i):
         return self.dynamics(x, u)
@@ -30,21 +32,32 @@ class NavigationDynamics(FiniteDiffDynamics):
 
         return False
 
-    def get_angle_between_triplet(self, a, b, c):
-        ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
-        return ang + 360 if ang < 0 else ang
+    def get_angle_between_triplet(self, a_in, b_in, c_in):
+        a = copy.copy(a_in)
+        b = copy.copy(b_in)
+        c = copy.copy(c_in)
 
+        ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
+        if ang < 0:
+            return ang + 360
+        else:
+            return ang
+        
     # Returns the degrees clockwise from the 0 of east
-    def get_heading_of_pt_diff_p2_p1(self, p2, p1):
-        unit_vec    = [p1[0] + 1.0, p1[1]]
+    def get_heading_of_pt_diff_p2_p1(self, p2_in, p1_in):
+        p1 = copy.copy(p1_in)[:2]
+        p2 = copy.copy(p2_in)[:2]
+
+        unit_vec    = np.asarray([p1[0] + 1.0, p1[1]])
         heading     = self.get_angle_between_triplet(p2, p1, unit_vec)
+
         return heading
 
     ##### METHODS FOR ANGLE MATH - Should match SocLegPathQRCost
     def get_heading_moving_between(self, p2, p1):
-        print("Get heading moving in nav from " + str(p1) + " to " + str(p2))
-        print(p2)
-        print(p1)
+        # print("Get heading moving in nav from " + str(p1) + " to " + str(p2))
+        # print(p2)
+        # print(p1)
 
         # https://stackoverflow.com/questions/31735499/calculate-angle-clockwise-between-two-points
         ang1    = np.arctan2(*p1[::-1])
@@ -53,18 +66,22 @@ class NavigationDynamics(FiniteDiffDynamics):
         
         # heading = self.get_minimum_rotation_to(heading)
         # Heading is in degrees
+
         return heading
 
     # Combine the existing state with 
-    def dynamics(self, x_triplet, u, max_u=5.0):
+    def dynamics(self, x_triplet, u_input, max_u=5.0):
         # TODO raise max_u to experimental settings
-        print("IN DYNAMICS")
-        if u is None:
+        # print("IN DYNAMICS")
+        if u_input is None:
+            # print("if u is none, don't go anywhere")
+            # if none, don't move anywhere
             return x_triplet
 
         # This is the distance we go in dt time
         dt          = self.dt # seconds
-        xy       = [x_triplet[0], x_triplet[1]]
+        u           = copy.copy(u_input)
+        xy          = [x_triplet[0], x_triplet[1]]
 
         if False: #constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
@@ -75,41 +92,50 @@ class NavigationDynamics(FiniteDiffDynamics):
         # Moving a square
         # We only apply this to the x y parts of the matrix 
         A = np.eye(self._action_size)       #(self._state_size)
-        B = np.eye(self._action_size)
+        B = np.eye(self._action_size).dot(dt)
         v0 = A.dot(xy)
         v1 = B.dot(u)
 
-        xnext_wout_theta   = xy + u
-        print(xy)
-        print(xnext_wout_theta)
+        xnext_wout_theta   = v0 + v1
+        # print("dynams")
+        # print(x_triplet.shape, u_input.shape)
+
+        # print(x_triplet.shape, x_triplet, xnext_wout_theta)
+        # print(xy, v0)
+        # print(u, dt, v1)
+
+        # print(xy, u*dt)
+        # print("then")
         
-        xtheta_old  = x_triplet[2]
         # Heading is clockwise degrees from EAST
         xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
-        if xtheta_old == xtheta_old:
-            print("Robot maintained the same heading, but that's fine")
+        # if xtheta_old == xtheta_old:
+        #     print("Robot maintained the same heading, but that's fine")
 
-        print("u in dynamics model")
-        print(u)
+        # print("u in dynamics model")
+        # print(u)
 
         xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]
-        print("xnext heading notes")
-        print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
-        print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+        # print("xnext heading notes")
+        # print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
+        # print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+
+        # print("After step, location is:")
+        # print(xnext)
 
         return xnext
 
     # Combine the existing state with 
-    def dynamics_v1(self, x_triplet, u, max_u=5.0):
+    def dynamics_v1(self, x_triplet, u, max_u=10.0):
         # TODO raise max_u to experimental settings
         print("IN DYNAMICS")
 
         # This is the distance we go in dt time
         dt          = self.dt # seconds
         # if the max speed is .5 m/s
-        max_speed   = 20 #15 #m
-        max_u       = dt * max_speed # = 
+        max_speed   = 20.0 #15 #m
+        max_u       = dt * max_speed
 
         # # Constrain action space.
         # Apply a constraint that limits how much the robot can move per-timestep
@@ -145,12 +171,8 @@ class NavigationDynamics(FiniteDiffDynamics):
         A = np.eye(2)       #(self._state_size)
         B = np.eye(self._action_size)
         v0 = A.dot(xy)
-        v1 = B.dot(u)
+        v1 = B.dot(u) * dt
 
-        xnext_wout_theta   = xy + u*dt
-        print(xy)
-        print(xnext_wout_theta)
-        print("then")
 
         xtheta_old  = x_triplet[2]
         xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
@@ -159,6 +181,8 @@ class NavigationDynamics(FiniteDiffDynamics):
         if xnext_wout_theta[0] == np.nan or xnext_wout_theta[1] == np.nan:
             xnext_wout_theta = xy
             xtheta_new = xtheta_old
+
+            u = np.asarray([0, 0])
     
         if xtheta_old == xtheta_old:
             print("Robot maintained the same heading, but that's fine")
@@ -166,7 +190,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         print("u in dynamics model")
         print(u)
 
-        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]
+        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], 0] #xtheta_new]
         print("xnext heading notes")
         print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
         print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
