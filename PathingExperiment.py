@@ -67,12 +67,15 @@ class PathingExperiment():
     R   = np.eye(action_size) # * 100
 
     oa_on                   = True
-    heading_on              = True
+    # heading_on              = True
     norm_on                 = False
     weighted_close_on       = False
-    mode_pure_heading       = False
-    mode_heading_err_sqr    = False
-    mode_dist_type          = 'exp'
+    # mode_pure_heading       = False
+    # mode_heading_err_sqr    = False
+
+    mode_type_dist          = 'exp' # 'exp', 'sqr', 'lin'
+    mode_type_heading       = None
+    mode_type_blend         = None
 
     J_hist = []
     best_xs = None
@@ -351,23 +354,11 @@ class PathingExperiment():
     def get_weighted_close_on(self):
         return self.weighted_close_on
 
-    def set_mode_pure_heading(self, v):
-        self.mode_pure_heading = v
-
-    def get_mode_pure_heading(self):
-        return self.mode_pure_heading
-
-    def set_mode_heading_err_sqr(self, v):
-        self.mode_heading_err_sqr = v
-
-    def get_mode_heading_err_sqr(self):
-        return self.mode_heading_err_sqr
-
     def set_mode_dist_type(self, v):
-        self.mode_dist_type = v
+        self.mode_type_dist
 
     def get_mode_dist_type(self):
-        return self.mode_dist_type
+        return self.mode_type_dist
 
     def set_fn_note(self, label):
         self.fn_note = "-" + label
@@ -392,16 +383,42 @@ class PathingExperiment():
         if info_packet is not None:
             converged_text = ""
             converged, info, iteration_count = info_packet
-            if converged is False:
-                converged_text = "INCOMPLETE after " + str(iteration_count)
+            if converged is True:
+                converged_text = "CONVERGED after " + str(iteration_count)
+            elif info is 'accepted':
+                converged_text = "ACCEPTED in " + str(iteration_count)
             else:
-                converged_text = "CONVERGED in " + str(iteration_count)
-            
+                converged_text = "INCOMPLETE after " + str(iteration_count)
+
             blurb = converged_text
         else:
             blurb = ""
 
         return blurb
+
+    def set_test_options(self, test_setup):
+        # 'heading-mode':'none', 'dist-mode':'lin', 'blend-type': 'none'
+        KEY_HEADING_MODE = 'mode_heading'
+        if KEY_HEADING_MODE in test_setup.keys():
+            self.mode_type_heading = test_setup[KEY_HEADING_MODE]
+
+        KEY_DIST_MODE = 'mode_dist'
+        if KEY_DIST_MODE in test_setup.keys():
+            self.mode_type_dist = test_setup[KEY_DIST_MODE]
+
+        KEY_TYPE_BLEND = 'mode_blend'
+        if KEY_TYPE_BLEND in test_setup.keys():
+            self.mode_type_blend = test_setup[KEY_TYPE_BLEND]
+
+    def get_mode_type_heading(self):
+        return self.mode_type_heading
+
+    def get_mode_type_dist(self):
+        return self.mode_type_dist
+
+    def get_mode_type_blend(self):
+        return self.mode_type_blend
+
 
     def get_solve_quality_status(self, test_group, info_packet=None):
         if info_packet is None:
@@ -431,43 +448,39 @@ class PathingExperiment():
         return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info')
 
 
-    def get_heading_code(self):
+    # def get_heading_code(self):
+    #     return self.get_heading_mode()
+
+    def get_dist_code(self):
         hm = 'none'
 
-        if self.mode_pure_heading:
-            if self.mode_heading_err_sqr:
-                hm = 'sqr'
-            else:
-                hm = 'lin'
-        elif self.get_mode_dist_legib_on() == False:
-            hm = 'none'
+        if self.mode_dist_legib_on == False:
+            return 'none'
 
-        return hm
+        return self.get_mode_dist_type()
 
 
     # TODO make this more consistent
     def get_suptitle(self):
-        title = self.exp_label + "\t"
+        title = self.exp_label + "  "
 
-        if self.mode_pure_heading:
-            if self.mode_heading_err_sqr:
-                title = "Heading: Square"
-            else:
-                title = "Heading: Linear"
-        elif self.get_mode_dist_legib_on() == False:
-            title = "No legibility"
-        else:
-            if 'mixed' in self.get_exp_label():
-                title = 'mixed '
-            else:
-                title = ""
+        if self.mode_type_heading is None and self.mode_type_dist is None:
+            title += "No legibility"
 
-            if self.get_mode_dist_type() is 'exp':
-                title += " Dist: Exponential"
-            elif self.get_mode_dist_type() is 'sqr':
-                title += " Dist: Squared"
-            elif self.get_mode_dist_type() is 'lin':
-                title += " Dist: Linear"
+        if self.get_mode_type_heading() is 'sqr':
+                title += "Heading: Square"
+        elif self.get_mode_type_heading() is 'lin':
+                title += "Heading: Linear"
+
+        if self.get_mode_type_dist() is 'exp':
+            title += " Dist: Exponential"
+        elif self.get_mode_type_dist() is 'sqr':
+            title += " Dist: Squared"
+        elif self.get_mode_type_dist() is 'lin':
+            title += " Dist: Linear"
+
+        if self.mode_type_blend is 'mixed':
+            title += " blended"
 
         return title
 
