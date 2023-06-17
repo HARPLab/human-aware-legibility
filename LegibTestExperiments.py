@@ -581,11 +581,11 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
     new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
