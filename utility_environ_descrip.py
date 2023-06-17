@@ -1229,8 +1229,8 @@ class Restaurant:
 			# # unity_goal_options.append((5.6, -9.3))
 			# unity_goal_options.append((6.9, 	-7.0, 	DIR_NORTH))
 
-			print(unity_goal_stop_options)
-			print(unity_table_pts)
+			# print(unity_goal_stop_options)
+			# print(unity_table_pts)
 
 			table_pts = []
 			for t in unity_table_pts:
@@ -2012,7 +2012,7 @@ class Restaurant:
 		for goal in self.goals:
 			# if goal[0] == 1035 and goal[1] != 307:
 			# Draw person
-			FLAG_PRINT_GOAL = True
+			FLAG_PRINT_GOAL = False
 			if FLAG_PRINT_GOAL:
 				print(to_xy(goal))
 			pass
