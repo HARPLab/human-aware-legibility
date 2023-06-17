@@ -928,8 +928,8 @@ def get_costs(path, target, obs_sets):
 
 
 def angle_between_points(p1, p2):
-	x1, y1 = p1
-	x2, y2 = p2
+	x1, y1 = p1[:2]
+	x2, y2 = p2[:2]
 	angle = np.arctan2(y2 - y1, x2 - x1)
 
 	# ang1 = np.arctan2(*p1[::-1])
