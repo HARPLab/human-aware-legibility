@@ -10,24 +10,8 @@ if module_path not in sys.path:
     sys.path.append(module_path)
 
 import numpy as np
-# import matplotlib.pyplot as plt
-# from datetime import timedelta, datetime
-
-# import theano.tensor as T
-
-# from ilqr import iLQR
-# from ilqr.cost import QRCost, PathQRCost
-# from ilqr.dynamics import constrain
-# from ilqr.dynamics import tensor_constrain
 
 import PathingExperiment as ex
-# from LegiblePathQRCost import LegiblePathQRCost
-# from DirectPathQRCost import DirectPathQRCost
-# from ObstaclePathQRCost import ObstaclePathQRCost
-# from LegibilityOGPathQRCost import LegibilityOGPathQRCost
-# from OALegiblePathQRCost import OALegiblePathQRCost
-# from NavigationDynamics import NavigationDynamics
-
 import utility_environ_descrip as resto
 
 SCENARIO_FILTER_MINI = 'mini'
@@ -43,8 +27,8 @@ def scenario_test_a(goal_index=None):
     # goal3 = [3.0, 2.0]
 
     start = [0.0, 0.0]
-    goal1 = [-1.0, 2.0]
-    goal3 = [1.0, 2.0]
+    goal1 = [2.0, -1.0]
+    goal3 = [2.0, 1.0]
 
     # start           = [0.0, 0.0]
     # goal1 = [-1.0, 2.0]
@@ -73,13 +57,8 @@ def scenario_test_a(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 26
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -89,10 +68,10 @@ def scenario_test_a(goal_index=None):
 def scenario_test_b(goal_index=None):
     label = "testb_g" + str(goal_index)
 
-    start           = [3.0, 1.0]
+    start           = [0.0, 0.0]
 
-    goal1 = [4.0, 3.0]
-    goal3 = [2.0, 3.0]
+    goal1 = [-1.0, 2.0]
+    goal3 = [1.0, 2.0]
 
     target_goal = goal1
     all_goals   = [goal1, goal3]
@@ -113,13 +92,8 @@ def scenario_test_b(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 26
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -166,12 +140,7 @@ def scenario_test_0(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -203,14 +172,10 @@ def scenario_test_1(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
+    # dt = .025
     N = 40
 
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -248,13 +213,9 @@ def scenario_test_2(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
+    # dt = .025
     N = 36
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -287,13 +248,9 @@ def scenario_test_3(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .0125
+    # dt = .0125
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -326,13 +283,8 @@ def scenario_test_4(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 40
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -365,13 +317,8 @@ def scenario_test_4_flip(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 40
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -405,13 +352,8 @@ def scenario_test_4_flip_inverse(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 40
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -444,13 +386,8 @@ def scenario_test_5(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -483,13 +420,8 @@ def scenario_test_6(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -551,13 +483,8 @@ def scenario_0(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     return label, exp
 
@@ -625,13 +552,8 @@ def scenario_test_8(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 21 #42 #21
     exp.set_N(N)
-    exp.set_dt(dt)
 
     return label, exp
 
@@ -660,13 +582,8 @@ def scenario_test_9(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     return label, exp
 
@@ -693,13 +610,8 @@ def scenario_10_large_scale(goal_index=None):
     
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 21
     exp.set_N(N)
-    exp.set_dt(dt)
 
     return label, exp
 
@@ -730,13 +642,8 @@ def scenario_4_has_obstacles(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(41)
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 100000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -772,13 +679,8 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 31
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 10000.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -817,13 +719,8 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(21 * 2)
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -862,16 +759,8 @@ def scenario_7_observer_offset(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(21 * 2)
     exp.set_N(N)
-    exp.set_dt(dt)
-
-    obs_scale = 0.0
-    exp.set_solver_scale_obstacle(obs_scale)
 
     return label, exp
 
@@ -904,16 +793,8 @@ def scenario_7_observer_on_zero(goal_index=None, obs_angle=0):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(31)
     exp.set_N(N)
-    exp.set_dt(dt)
-
-    obs_scale = 0.0
-    exp.set_solver_scale_obstacle(obs_scale)
 
     return label, exp
 
@@ -950,16 +831,8 @@ def scenario_7_observer_rot90(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(21 * 2)
     exp.set_N(N)
-    exp.set_dt(dt)
-
-    obs_scale = 0.0
-    exp.set_solver_scale_obstacle(obs_scale)
 
     return label, exp
 
@@ -995,13 +868,8 @@ def scenario_7_mirrored(goal_index=None, obs_angle=0):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = int(21 * 2)
     exp.set_N(N)
-    exp.set_dt(dt)
 
     obs_scale = 0.0
     exp.set_solver_scale_obstacle(obs_scale)
@@ -1028,13 +896,8 @@ def scenario_6():
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals)
 
-    exp.set_state_size(2)
-    exp.set_action_size(2)
-
-    dt = .025
     N = 21
     exp.set_N(N)
-    exp.set_dt(dt)
 
     return label, exp
 
@@ -1045,10 +908,11 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_a(goal_index=0)
     scenarios[label] = exp
 
+    return scenarios
+    
     # TEST SCENARIO
     label, exp = scenario_test_a(goal_index=1)
     scenarios[label] = exp
-    return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=0)
@@ -1057,8 +921,6 @@ def get_scenario_set(scenario_filters=[]):
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=1)
     scenarios[label] = exp
-
-    # return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
