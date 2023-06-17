@@ -572,6 +572,49 @@ def test_observers_being_respected(dash_folder, scenario_filters):
 
         collate_and_report_on_results(dash_folder)
 
+def setup_axes_for_test_setups(test_setups_og):
+    if len(test_setups_og) > 6:
+        fig, axes = plt.subplot_mosaic("ABC;DEF;IGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+        ax_mappings[4] = axes['E']
+        ax_mappings[5] = axes['F']
+        ax_mappings[6] = axes['G']
+        ax_mappings[7] = axes['H']
+        ax_mappings[8] = axes['I']
+        axes['I'].axis('off')
+    elif len(test_setups_og) == 4:
+        fig, axes = plt.subplot_mosaic("ABCD", figsize=(8, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+    elif len(test_setups_og) == 1:
+        fig, axes = plt.subplot_mosaic("A", figsize=(4, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+    elif len(test_setups_og) < 4:
+        fig, axes = plt.subplot_mosaic("ABC", figsize=(8, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+    else:
+        fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+        ax_mappings[4] = axes['E']
+        ax_mappings[5] = axes['F']
+
+    return fig, axes, ax_mappings
+
 def test_full_set(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "all cross"
@@ -590,11 +633,11 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
     # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-mode':'sqr', 'dist-mode':'sqr', 'blend-type': 'min'}
     # test_setups_og.append(new_test)
@@ -606,91 +649,92 @@ def test_full_set(dash_folder, scenario_filters):
     for key in scenarios.keys():
         scenario = scenarios[key]
         scenario.set_run_filters(scenario_filters)
-
-        save_location = get_file_id_for_exp(dash_folder, "cross-" + scenario.get_exp_label())
         
         outputs = {}
         label_dict = {}
+
         for ti in range(len(test_setups_og)):
-            test = test_setups_og[ti]
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            n_scenario = copy.copy(scenario)
+            for g_index in range(len(scenario.get_goals())):
+                test = test_setups_og[ti]
+                # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+                n_scenario = copy.copy(scenario)
 
-            mega_scenario = copy.copy(scenario)
-            mega_scenario.set_fn_note(test['label'])
-            mega_scenario.set_test_options(test)
-            
-            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
-            outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
+                mega_scenario = copy.copy(scenario)
+                mega_scenario.set_fn_note(test['label'])
+                mega_scenario.set_exp_label(test['label'])
+                mega_scenario.set_test_options(test)
+                mega_scenario.set_target_goal_index(g_index)
 
-            test_log.append(mega_scenario.get_solve_quality_status(test_group))
+                save_location = get_file_id_for_exp(dash_folder, "cross-" + scenario.get_exp_label())
+
+                verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+                outputs[(ti, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+                test_log.append(mega_scenario.get_solve_quality_status(test_group))
 
 
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-        
-        if len(test_setups_og) > 6:
-            fig, axes = plt.subplot_mosaic("ABC;DEF;IGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
-            ax_mappings = {}
-            ax_mappings[0] = axes['A']
-            ax_mappings[1] = axes['B']
-            ax_mappings[2] = axes['C']
-            ax_mappings[3] = axes['D']
-            ax_mappings[4] = axes['E']
-            ax_mappings[5] = axes['F']
-            ax_mappings[6] = axes['G']
-            ax_mappings[7] = axes['H']
-            ax_mappings[8] = axes['I']
-            axes['I'].axis('off')
-        elif len(test_setups_og) == 4:
-            fig, axes = plt.subplot_mosaic("ABCD", figsize=(8, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1, 1]})
-            ax_mappings = {}
-            ax_mappings[0] = axes['A']
-            ax_mappings[1] = axes['B']
-            ax_mappings[2] = axes['C']
-            ax_mappings[3] = axes['D']
-        elif len(test_setups_og) == 1:
-            fig, axes = plt.subplot_mosaic("A", figsize=(4, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1]})
-            ax_mappings = {}
-            ax_mappings[0] = axes['A']
-        elif len(test_setups_og) < 4:
-            fig, axes = plt.subplot_mosaic("ABC", figsize=(8, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1]})
-            ax_mappings = {}
-            ax_mappings[0] = axes['A']
-            ax_mappings[1] = axes['B']
-            ax_mappings[2] = axes['C']
-        else:
-            fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
-            ax_mappings = {}
-            ax_mappings[0] = axes['A']
-            ax_mappings[1] = axes['B']
-            ax_mappings[2] = axes['C']
-            ax_mappings[3] = axes['D']
-            ax_mappings[4] = axes['E']
-            ax_mappings[5] = axes['F']
-
+    # This placement of the figure statement is actually really important
+    # numpy only likes to have one plot open at a time, 
+    # so this is a fresh one not dependent on the graphing within the solver for each
+    
+    # EXPORT PATHS FOR EACH GOAL
+    print("Exporting paths pic for each goal")
+    goal_indexes = range(len(scenario.get_goals()))
+    for gi in goal_indexes:
+        fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
+        # EXPORT GRAPH ACROSS ALL GOALS
         for key in outputs.keys():
-            ax = ax_mappings[key]
-            verts_with_n, us_with_n, cost_with_n, label = outputs[key]
+            ax_key, goal_key = key
+            if goal_key == gi:
+                ax = ax_mappings[ax_key]
+                verts, us, cost, label = outputs[key]
+                
+                cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+                _ = ax.set_title(label, fontweight='bold')
+                ax.get_legend().remove()
+                max_key = key
 
-            # label = str(label_dict[key]) + "%"
-            
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-            _ = ax.set_title(label, fontweight='bold')
-            ax.get_legend().remove()
-            max_key = key
-
-        for ax_index in range(max_key, len(ax_mappings)):
+        for ax_index in range(len(test_setups_og), len(ax_mappings)):
             ax_mappings[ax_index].axis('off')
 
-        fig.suptitle("cross=" + " " + mega_scenario.get_goal_label())
+        mega_scenario.set_target_goal_index(gi)
+        save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label())
+
+        fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         plt.tight_layout()
         plt.savefig(save_location + ".png")
+        plt.close()
+        plt.clf()
 
 
-        collate_and_report_on_results(dash_folder)
+    print("Exporting paths pic for all goals")
+    fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
+    # EXPORT GRAPH ACROSS ALL GOALS
+    for key in outputs.keys():
+        ax_key, goal_key = key
+        ax = ax_mappings[ax_key]
+        verts, us, cost, label = outputs[key]
+        
+        cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+        _ = ax.set_title(label, fontweight='bold')
+        ax.get_legend().remove()
+        max_key = key
+
+    for ax_index in range(len(test_setups_og), len(ax_mappings)):
+        ax_mappings[ax_index].axis('off')
+
+    save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label(overview=True) + "-all")
+
+    fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
+    plt.subplots_adjust(top=0.9)
+    plt.tight_layout()
+    plt.savefig(save_location + ".png")
+    plt.close()
+    plt.clf()
+
+
+    collate_and_report_on_results(dash_folder)
 
 
 def test_vanilla_set(dash_folder, scenario_filters):
@@ -753,7 +797,7 @@ def test_vanilla_set(dash_folder, scenario_filters):
             cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
             _ = ax.set_title(label, fontweight='bold')
             ax.get_legend().remove()
-    
+
         plt.tight_layout()
         fig.suptitle("legib=" + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
