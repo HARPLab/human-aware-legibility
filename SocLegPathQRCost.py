@@ -189,39 +189,40 @@ class SocLegPathQRCost(LegiblePathQRCost):
         closest = x
         threshold = obstacle_radius + obstacle_buffer
 
-        print("Are we in it?")
-        print("dist, threshold, rho")
-        print(obst_dist, threshold, rho)
+        # print("Are we in it?")
+        # print("dist, threshold, rho")
+        # print(obst_dist, threshold, rho)
 
         Fpsp = 0
         if rho < obstacle_radius:
-            rho = rho
+            # rho = rho
             # vector component
             # drhodx = (v - closest) / rho
-            d_rho_top = obst_center - x
-            d_rho_dx = d_rho_top / rho
+            # d_rho_top = obst_center - x
+            # d_rho_dx = d_rho_top / rho
 
 
-            print("Rho says yes")
+            # print("Rho says yes")
             eta = 1.0
             drhodx = (v - closest) / rho
             Fpsp = (eta * (1.0/rho - 1.0/threshold) *
                     1.0/rho**2 * d_rho_dx)
 
-            print("Fpsp")
-            print(Fpsp)
+            # print("Fpsp")
+            # print(Fpsp)
 
-            print(1.0/rho)
-            print(1.0/threshold)
-            print(1.0 / rho**2)
-            print(drhodx)
-            print("~~~~~")
+            # print(1.0/rho)
+            # print(1.0/threshold)
+            # print(1.0 / rho**2)
+            # print(drhodx)
+            # print("~~~~~")
         else:
-            print("rho says no")
+            # print("rho says no")
+            pass
 
         Fpsp = np.linalg.norm(Fpsp)
-        print("obspenalty is: ")
-        print(Fpsp)
+        # print("obspenalty is: ")
+        # print(Fpsp)
 
         if Fpsp < 0:
             print("ALERT: REWARD FOR ENTERING OBSTACLE!")
@@ -240,90 +241,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 print("ALERT obstacle penalty when not in object")
 
         return Fpsp
-
-    # # https://studywolf.wordpress.com/2016/11/24/full-body-obstacle-collision-avoidance/
-    # def get_obstacle_penalty_given_obj(self, x_triplet, i, obst_center, obstacle_radius):
-    #     obstacle_radius = obstacle_radius # the physical obj size
-    #     obstacle_buffer = self.exp.get_obstacle_buffer() # the area in which the force will apply
-    #     threshold       = obstacle_buffer
-    #     x               = x_triplet[:2]
-
-    #     # obst_dist is the distance between the point and the center of the obj
-    #     obst_dist = obst_center - x
-    #     obst_dist = np.abs(np.linalg.norm(obst_dist))
-    #     # obst_dist = self.get_closest_point_on_line(x, i, obst_center)
-
-    #     # rho is the distance between the object's edge and the pt
-    #     rho             = obst_dist - obstacle_radius #- self.exp.get_obstacle_buffer()
-    #     # if rho is negative, we are inside the sphere
-    #     eta             = 1.0
-
-    #     # if obst_dist < (threshold + obstacle_radius)
-    #     if rho > obstacle_buffer:
-    #         return 0
-
-    #     # if rho is positive, in the force zone
-    #     # if rho is negative, in the 
-
-
-    #     rho = rho
-    #     # vector component
-    #     d_rho_top = np.linalg.norm(x - obst_center)
-    #     d_rho_dx = d_rho_top / rho
-
-    #     print("distance from center to pt is " + str(d_rho_top))
-    #     print("obstacle radius is " + str(obstacle_radius))
-    #     print("obstacle buffer is " + str(obstacle_buffer))
-
-
-    #     a = 1.0 / (rho)
-    #     b = (1.0 / obstacle_radius) #TODO Not obstacle_buffer?
-    #     c = 1.0/(rho**2)
-
-
-    #     # value = (a - b) * (c)
-
-    #     # value = (eta * ((1.0/rho) - (1.0/threshold)) *
-    #     #         1.0/(rho**2) * d_rho_dx)
-
-    #     value = eta * (a - b) * c * d_rho_dx
-
-    #     # if value is np.nan:
-    #     #     value = np.Inf
-    #     #     print("oh no")
-    #     #     exit()
-
-    #     print("Obstacle intersection!")
-    #     print("Given " + str(x) + " -> " + str(obst_center))
-    #     print("We at a dist of " + str(rho) + " from the surface (rho)")
-    #     print(str(obst_dist) + " minus " + str(obstacle_radius))
-
-    #     print("rho")
-    #     print(rho)
-
-    #     print("d_rho_dx")
-    #     print(d_rho_dx)
-
-    #     print("a, b, c, a-b, d_rho_x")
-    #     print(str([a, b, c, a-b, d_rho_dx]))
-
-    #     print("a - b, c, d_rho_x")
-    #     print(str([a-b, c, d_rho_dx]))
-
-
-    #     if obst_dist < (threshold + self.exp.get_obstacle_buffer()):
-    #         print("Inside the overall force diagram")
-
-    #     if obst_dist < threshold:
-    #         print("Inside the actual obj")
-
-    #     print("obspenalty is: ")
-    #     print(value)
-
-    #     if value < 0:
-    #         print("ALERT: REWARD FOR ENTERING OBSTACLE!")
-
-    #     return value
 
     # Citation for future paper
     # https://studywolf.wordpress.com/2016/11/24/full-body-obstacle-collision-avoidance/
@@ -1345,13 +1262,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
         return terminal_cost
 
     def get_u_diff(self, u, i):
-        print("incoming " + str(u))
+        # print("incoming " + str(u))
         R = np.eye(2)
         u_diff      = np.abs(u - self.u_path[i])
         val_u_diff  = u_diff.T.dot(R).dot(u_diff)
 
-        # if u[0] is np.nan or u[1] is np.nan:
-        #     return 100.0
+        if u[0] is np.nan or u[1] is np.nan:
+            print("FLAT PENALTY FOR NANS")
+            return val_u_diff * 1000.0
 
         print("udiff calc")
         print(u, "-", self.u_path[i], u_diff, val_u_diff)
@@ -1453,25 +1371,28 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 10
-        wt_lam       = 5 * (1.0 / self.exp.get_dt())
+        wt_lam       = 10 * (1.0 / self.exp.get_dt())
         wt_heading   = 10
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
         # If heading is not on, set the weight to not on
         if self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is not None:
-            wt_legib    = wt_legib + wt_heading
+            # wt_legib    = wt_legib + wt_heading
             wt_heading  = 0.0
 
         # If a heading-only scenario, shift weighting to that
         if self.exp.get_mode_type_heading() is not None and self.exp.get_mode_type_dist() is None:
-            wt_heading  = wt_heading + wt_legib
+            # wt_heading  = wt_heading + wt_legib
             wt_legib    = 0.0
             # wt_lam      = wt_lam * 5
 
         if self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is None:
             wt_legib    = 0
             wt_heading  = 0
-            wt_lam      = wt_lam * 10.0
+            wt_lam      = wt_lam
+
+        # if self.exp.get_mode_type_dist() is 'sqr':
+        #     wt_lam *= 2.0
 
         if self.exp.get_mode_type_heading():
             wt_lam *= 1.0 #3
@@ -1569,10 +1490,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
             exit()
 
         if mode_dist is 'sqr':
+            print("mode dist is sqr, dist inv value is")
             val = decimal.Decimal(self.inversely_proportional_to_distance(dist)**2)
             return val
             # return decimal.Decimal(self.get_relative_distance_k_sqr(x, goal, self.goals))
         elif mode_dist is 'lin':
+            print("mode dist is sqr, dist inv value is")
             val = decimal.Decimal(self.inversely_proportional_to_distance(dist))
             return val
             # return decimal.Decimal(self.get_relative_distance_k(x, goal, self.goals))
