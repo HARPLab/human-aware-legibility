@@ -27,6 +27,7 @@ import utility_environ_descrip as resto
 import pipeline_generate_paths as pipeline
 import pdb
 from random import randint
+import pandas as pd
 
 import PathingExperiment as ex
 
@@ -228,7 +229,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         squared_x_cost = .5 * x_diff.T.dot(Qf).dot(x_diff)
         # squared_x_cost = squared_x_cost * squared_x_cost
 
-        terminal_cost = squared_x_cost
+        scaler = 1.0 / self.exp.get_dt()
+
+        terminal_cost = squared_x_cost * scaler
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("term cost squared x cost")
@@ -719,15 +722,15 @@ class LegiblePathQRCost(FiniteDiffCost):
                 bin_visibility = 1.0
 
             if label is 'dist_exp':
-                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='exp', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
             elif label is 'dist_sqr':
-                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='sqr', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'sqr', 'mode_blend':None})
             elif label is 'dist_lin':
-                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, force_mode='lin', pure_prob=True)
+                p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
             elif label is 'head_sqr':
-                p = float(self.prob_heading(x, u, i, goal, bin_visibility, force_mode='sqr', pure_prob=True))
+                p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
             elif label is 'head_lin':
-                p = float(self.prob_heading(x, u, i, goal, bin_visibility, force_mode='lin', pure_prob=True))
+                p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
 
             
             prob_list.append(p)
@@ -783,7 +786,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     def get_debug_text(self, elapsed_time):
         debug_text_a = "stage scale: " + str(self.exp.get_solver_scale_stage()) + "        "
         debug_text_b = "term scale: " + str(self.exp.get_solver_scale_term()) + "        "
-        debug_text_c = "coeff_terminal: " + str(self.exp.get_solver_coeff_terminal()) + "\n        "
+        debug_text_c = "\n        "
         debug_text_d = "obstacle scale: " + str(self.exp.get_solver_scale_obstacle()) + "        " # + "\n"
         debug_text_e = "dt: " + str(self.exp.get_dt()) + "        "
         debug_text_f = "N: " + str(self.exp.get_N()) # + "\n"
@@ -954,14 +957,15 @@ class LegiblePathQRCost(FiniteDiffCost):
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
 
-        if self.exp.best_xs is not None and verts is not self.exp.best_xs:
-            print("ALT TO PLOT")
+        # if self.exp.best_xs is not None and verts is not self.exp.best_xs:
+        #     print("ALT TO PLOT")
+        #     print("best_xs")
+        #     print(self.exp.best_xs)
+        #    bxs, bys, bthetas = zip(*self.best_xs)
 
-            bxs, bys = zip(*self.best_xs)
-
-            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='purple', label="path", markersize=1)
-            axarr.scatter(xs, ys, c=outline_grad, s=20)
-            axarr.scatter(xs, ys, c=color_grad, s=10)
+        #    axarr.plot(xs, ys, linestyle='dashed', lw=1, color='purple', label="path", markersize=1)
+        #    axarr.scatter(xs, ys, c=outline_grad, s=20)
+        #    axarr.scatter(xs, ys, c=color_grad, s=10)
 
 
         # Draw the path itself
@@ -980,9 +984,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None, suptitle=None):
         print("GRAPHING LEGIBILITY OVER TIME")
-        sys.stdout = open('path_overview.txt','w')
-
-
         ts = np.arange(self.N) * self.dt
 
         print("verts")
@@ -1258,6 +1259,18 @@ class LegiblePathQRCost(FiniteDiffCost):
         if FLAG_SHOW_IMAGE_POPUP:
             plt.show()
         plt.clf()
+
+        # EXPORT CSV OF DATAPOINTS: 
+        # NOTE ALL ENTRIES NEED TO BE SAME LENGTH, SO WE PAD
+        ts          = np.arange(len(xs)) * self.dt
+        u_filler    = [0, 0]
+        us          = np.vstack([us, u_filler])
+
+        zipped = list(zip(ts, xs, us, p_dist_exp, p_dist_sqr, p_dist_lin, p_head_sqr, p_head_lin))
+
+        df = pd.DataFrame(zipped, columns=['ts', 'xs', 'us', 'p_dist_exp', 'p_dist_sqr', 'p_dist_lin', 'p_head_sqr', 'p_head_lin'])
+        df.to_csv(self.get_export_label(dash_folder) + '-overview.csv')
+
 
 
     # def goal_efficiency_through_path(self, start, goal, path, terminal=False):
