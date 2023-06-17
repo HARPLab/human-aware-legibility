@@ -40,17 +40,16 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_coeff_terminal   = 1000000.0
-    solver_scale_term       = 1000000 #.01
-    solver_scale_stage      = 2
-    solver_scale_obstacle   = 0
+    solver_scale_term       = 1000.0 #.01
+    solver_scale_stage      = 1.0
+    solver_scale_obstacle   = 1.0
 
     lambda_cost_path_coeff  = 1.0
 
     TABLE_RADIUS            = .25
     OBSERVER_RADIUS         = .1
-    GOAL_RADIUS             = .15
-    OBSTACLE_BUFFER         = .25 #05
+    GOAL_RADIUS             = .2
+    OBSTACLE_BUFFER         = .1 #05
 
 
     # DEFAULT COST TYPE AND F TYPE
