@@ -40,7 +40,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = 1000.0 #.01
+    solver_scale_term       = 1000000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -59,7 +59,7 @@ class PathingExperiment():
     state_size  = 3
     action_size = 2
 
-    dt  = .5 #.025
+    dt  = 1 #.025
     N   = int(21 * 2)
     Qf  = np.identity(state_size) # * 400.0
     Q   = 1.0 * np.eye(state_size)
@@ -140,7 +140,7 @@ class PathingExperiment():
 
         most_recent_is_complete_packet = [converged, info, iteration_count]
 
-        print("FINAL PATH IS " + str(xs))
+        print("PATH IS " + str(xs))
         self.solve_status = most_recent_is_complete_packet
 
     def setup_cost(self, Xrefline, Urefline):
@@ -181,12 +181,18 @@ class PathingExperiment():
     def get_f_label(self):
         return self.f_label
 
-    def get_exp_label(self):
+    def get_exp_label(self, overview=None):
+        if overview == True:
+            return self.label
         return self.exp_label
+
+    def refresh_exp_label(self):
+        goal_index = str(self.goals.index(self.target_goal))
+        self.exp_label = self.label + "-g" + goal_index        
 
     def set_exp_label(self, label):
         goal_index = str(self.goals.index(self.target_goal))
-
+        self.label = label
         self.exp_label = label + "-g" + goal_index
 
     def get_goal_label(self):
@@ -236,6 +242,14 @@ class PathingExperiment():
 
     def get_goals(self):
         return self.goals
+
+    def set_target_goal_index(self, index):
+        if index < len(self.get_goals()):
+            self.target_goal = self.get_goals()[index]
+        else:
+            print("ALERT: GOAL SET OUT OF INDEX")
+
+        self.refresh_exp_label()
 
     def get_target_goal(self):
         return self.target_goal
@@ -361,6 +375,7 @@ class PathingExperiment():
 
     def set_fn_note(self, label):
         self.fn_note = "-" + label
+        self.label = label
 
     def get_fn_note(self):
         return self.fn_note
