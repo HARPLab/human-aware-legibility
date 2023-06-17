@@ -21,21 +21,22 @@ class NavigationDynamics(FiniteDiffDynamics):
     def f(self, x, u, i):
         return self.dynamics(x, u)
 
-    # hardcoded test function for being within an obstacle
-    def in_object(self, x_double):
-
-        obstacle = .5, 1.0
-        xx, xy = x
-        if xx > .5 and xx < 1.0 and xy > .5 and xy < 1.0:
-            return True
-
-
-        return False
-
     def get_angle_between_triplet(self, a_in, b_in, c_in):
         a = copy.copy(a_in)
         b = copy.copy(b_in)
         c = copy.copy(c_in)
+
+        # A debugging check for shape across these objects
+        # format_check = str((a.shape, b.shape, c.shape))
+        # if format_check == "((2,), (2,), (2,))":
+        #     pass
+        # else:
+        #     print("abt check")
+        #     print("!" + format_check + "!")
+        #     # print(type(a), type(b), type(c))
+        #     print(a.shape, b.shape, c.shape)
+        #     print(a, b, c)
+        #     exit()
 
         ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
         if ang < 0:
@@ -45,12 +46,12 @@ class NavigationDynamics(FiniteDiffDynamics):
         
     # Returns the degrees clockwise from the 0 of east
     def get_heading_of_pt_diff_p2_p1(self, p2_in, p1_in):
+        # print("heading looking from ")
         p1 = copy.copy(p1_in)[:2]
         p2 = copy.copy(p2_in)[:2]
-
         unit_vec    = np.asarray([p1[0] + 1.0, p1[1]])
-        heading     = self.get_angle_between_triplet(p2, p1, unit_vec)
 
+        heading     = self.get_angle_between_triplet(p2, p1, unit_vec)
         return heading
 
     ##### METHODS FOR ANGLE MATH - Should match SocLegPathQRCost
@@ -70,7 +71,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         return heading
 
     # Combine the existing state with 
-    def dynamics(self, x_triplet, u_input, max_u=5.0):
+    def dynamics(self, x_triplet, u_input, max_u=8.0):
         # TODO raise max_u to experimental settings
         # print("IN DYNAMICS")
         if u_input is None:
@@ -81,22 +82,39 @@ class NavigationDynamics(FiniteDiffDynamics):
         # This is the distance we go in dt time
         dt          = self.dt # seconds
         u           = copy.copy(u_input)
-        xy          = [x_triplet[0], x_triplet[1]]
+        xy          = np.asarray([x_triplet[0], x_triplet[1]])
+        max_speed   = max_u / self.dt
 
-        if False: #constrain:
+        if np.isnan(u[0]) or np.isnan(u[1]):
+            print("ALERT U IS NAN")
+            pass
+
+        if True: #constrain:
             min_bounds, max_bounds = -1.0 * max_u, max_u
             if np.linalg.norm(u) > max_u:
+                print("Speed limit applied")
                 scalar = max_u / np.linalg.norm(u)
                 u = u * scalar
+                if np.isnan(u[0]) or np.isnan(u[1]):
+                    print("ALERT SPEED LIMIT ADDED A NAN")
 
-        # Moving a square
-        # We only apply this to the x y parts of the matrix 
-        A = np.eye(self._action_size)       #(self._state_size)
-        B = np.eye(self._action_size).dot(dt)
-        v0 = A.dot(xy)
-        v1 = B.dot(u)
+        u = u * dt
+        xnext_wout_theta   = xy + (u)
 
-        xnext_wout_theta   = v0 + v1
+        if np.isnan(u[0]) or np.isnan(u[1]):
+            # print("ALERT NAN after math")
+            xnext_wout_theta = xy
+
+        print("dynams")
+        print(xy, u, "->", xnext_wout_theta)
+
+        # # Moving a square
+        # # We only apply this to the x y parts of the matrix 
+        # A = np.eye(self._action_size)       #(self._state_size)
+        # B = np.eye(self._action_size).dot(dt)
+        # v0 = A.dot(xy)
+        # v1 = B.dot(u)
+
         # print("dynams")
         # print(x_triplet.shape, u_input.shape)
 
@@ -108,7 +126,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         # print("then")
         
         # Heading is clockwise degrees from EAST
-        xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+        xtheta_new  = 10 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
         # if xtheta_old == xtheta_old:
         #     print("Robot maintained the same heading, but that's fine")
@@ -163,6 +181,9 @@ class NavigationDynamics(FiniteDiffDynamics):
 
             # u = tensor_constrain(u, min_bounds, max_bounds)
 
+        if x_triplet.shape < 3:
+            print("Eeeek! shape is wrong!")
+            # exit()
 
         xy       = [x_triplet[0], x_triplet[1]]
 
@@ -173,14 +194,13 @@ class NavigationDynamics(FiniteDiffDynamics):
         v0 = A.dot(xy)
         v1 = B.dot(u) * dt
 
-
         xtheta_old  = x_triplet[2]
         xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
 
         if xnext_wout_theta[0] == np.nan or xnext_wout_theta[1] == np.nan:
-            xnext_wout_theta = xy
-            xtheta_new = xtheta_old
+            xnext_wout_theta     = xy
+            xtheta_new           = xtheta_old
 
             u = np.asarray([0, 0])
     
@@ -190,7 +210,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         print("u in dynamics model")
         print(u)
 
-        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], 0] #xtheta_new]
+        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new].T
         print("xnext heading notes")
         print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
         print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
@@ -341,6 +361,17 @@ class NavigationDynamics(FiniteDiffDynamics):
             i = c.intersection(l)
             if i is True:
                 return True
+
+        return False
+
+    # hardcoded test function for being within an obstacle
+    def in_object(self, x_double):
+
+        obstacle = .5, 1.0
+        xx, xy = x
+        if xx > .5 and xx < 1.0 and xy > .5 and xy < 1.0:
+            return True
+
 
         return False
 
