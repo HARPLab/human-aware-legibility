@@ -1266,9 +1266,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         u_filler    = [0, 0]
         us          = np.vstack([us, u_filler])
 
-        zipped = list(zip(ts, xs, us, p_dist_exp, p_dist_sqr, p_dist_lin, p_head_sqr, p_head_lin))
+        zipped = list(zip(ts, verts, us, p_dist_exp, p_dist_sqr, p_dist_lin, p_head_sqr, p_head_lin))
 
-        df = pd.DataFrame(zipped, columns=['ts', 'xs', 'us', 'p_dist_exp', 'p_dist_sqr', 'p_dist_lin', 'p_head_sqr', 'p_head_lin'])
+        df = pd.DataFrame(zipped, columns=['ts', 'verts', 'us', 'p_dist_exp', 'p_dist_sqr', 'p_dist_lin', 'p_head_sqr', 'p_head_lin'])
         df.to_csv(self.get_export_label(dash_folder) + '-overview.csv')
 
 
