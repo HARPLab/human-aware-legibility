@@ -194,7 +194,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         f_label = self.exp.get_f_label()
         print(f_label)
 
-        if f_label is ex.F_ANCA_LINEAR:
+        if f_label is ex.F_OG_LINEAR:
             def f(i):
                 return self.N - i
 
