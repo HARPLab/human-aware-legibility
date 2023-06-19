@@ -35,6 +35,34 @@ COST_OA_AND_OBS = 'cost_oa_and_obs'
 # SOLVER_OA           = 'Solver=OALegible'
 # SOLVER_DIRECT       = 'Solver=Direct'
 
+dupline = np.asarray([[ 0.,          0.        ],
+    [-0.49906399, 0.26825858],
+    [-0.98855055, 0.56214198],
+    [-1.45796738, 0.8661427 ],
+    [-1.89646097, 1.16553758],
+    [-2.29334226, 1.4466766 ],
+    [-2.63857395, 1.69727316],
+    [-2.92320919, 1.90668009],
+    [-3.13977168, 2.06613778],
+    [-3.28256842, 2.16898242],
+    [-3.34792763, 2.21080467],
+    [-3.33435616, 2.18955116],
+    [-3.2426128,  2.10556408],
+    [-3.07569609, 1.96155635],
+    [-2.83874743, 1.76252279],
+    [-2.53887275, 1.51558997],
+    [-2.18488811, 1.22981025],
+    [-1.78699649, 0.91590764],
+    [-1.35640491, 0.58598542],
+    [-0.90489235, 0.25320699],
+    [-0.44433972,  -0.06853642],
+    [ 0.013766,    -0.36495693],
+    [ 0.45884194,  -0.62168443],
+    [ 0.88172235,  -0.82454814],
+    [ 1.27516455,  -0.95980898],
+    [ 1.63433941,  -1.01432608],
+    [ 1.95730056,  -0.97564123]])
+
 class PathingExperiment():
     label = "needslabel"
     ax = None
@@ -56,10 +84,10 @@ class PathingExperiment():
     cost_label  = COST_OA_AND_OBS
     f_label     = F_VIS_BIN
 
-    state_size  = 3
+    state_size  = 2 #3
     action_size = 2
 
-    dt  = .5 #.025
+    dt  = 1.0  #.5 #.025
     N   = int(21 * 2)
     Qf  = np.identity(state_size) # * 400.0
     Q   = 1.0 * np.eye(state_size)
@@ -143,19 +171,31 @@ class PathingExperiment():
         print("FINAL PATH IS " + str(xs))
         self.solve_status = most_recent_is_complete_packet
 
-    def setup_cost(self, Xrefline, Urefline):
+    def setup_cost(self, state_size, action_size, x_goal_raw, N):
+        self.state_size = state_size
+        self.action_size = action_size
+
+        Xrefline = np.tile(x_goal_raw, (N+1, 1))
+        Xrefline = np.reshape(Xrefline, (-1, state_size))
+
+        # Xrefline = dupline
+
+        u_blank  = np.asarray([0.0, 0.0])
+        Urefline = np.tile(u_blank, (N, 1))
+        Urefline = np.reshape(Urefline, (-1, action_size))
+
         solver_label = self.cost_label
 
         if solver_label is COST_LEGIB:
-            return LegiblePathQRCost(self, Xrefline, Urefline)
+            return LegiblePathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_OBS:
-            return ObstaclePathQRCost(self, Xrefline, Urefline)
+            return ObstaclePathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_OA:
-            return OALegiblePathQRCost(self, Xrefline, Urefline)
+            return OALegiblePathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_DIRECT:
-            return DirectPathQRCost(self, Xrefline, Urefline)
+            return DirectPathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_OA_AND_OBS:
-            return SocLegPathQRCost(self, Xrefline, Urefline)
+            return SocLegPathQRCost(self, Xrefline, Urefline), Urefline
 
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
@@ -247,13 +287,13 @@ class PathingExperiment():
         self.Qf = Qf
 
     def get_Q(self):
-        return self.Q
+        return np.eye(self.state_size)
 
     def get_R(self):
-        return self.R
+        return np.eye(self.action_size)
 
     def get_Qf(self):
-        return self.Qf
+        return np.eye(self.state_size)
 
     def set_N(self, N):
         self.N = N
