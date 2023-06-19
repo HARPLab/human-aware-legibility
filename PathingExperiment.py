@@ -17,8 +17,8 @@ from SocLegPathQRCost import SocLegPathQRCost
 PREFIX_EXPORT = 'experiment_outputs/'
 
 # OPTIONS OF F FUNCTION
-F_NONE          = 'f_none'
-F_ANCA_LINEAR   = 'f_anca_linear'
+F_NONE              = 'f_none'
+F_OG_LINEAR         = 'f_og_linear'
 F_VIS_LIN           = 'f_vis_lin'
 F_VIS_BIN           = 'f_vis_bin'
 
@@ -84,7 +84,7 @@ class PathingExperiment():
     cost_label  = COST_OA_AND_OBS
     f_label     = F_VIS_BIN
 
-    state_size  = 2 #3
+    state_size  = 3
     action_size = 2
 
     dt  = 1.0  #.5 #.025
