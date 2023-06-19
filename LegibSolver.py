@@ -39,11 +39,18 @@ def run_solver(exp):
     state_size  = 3 #
     action_size = 2 #
 
+    exp.set_state_size(state_size)
+    exp.set_action_size(action_size)
+
     start   = exp.get_start()
     goal    = exp.get_target_goal()
 
     x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
     x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
+
+    if state_size == 2:
+        x_goal_raw = x_goal_raw[:2]
+        x0_raw = x0_raw[:2]
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
     dynamics = NavigationDynamics(exp.get_dt(), exp)
@@ -56,15 +63,9 @@ def run_solver(exp):
     dt      = exp.get_dt()
 
     x_T      = N
-    Xrefline = np.tile(x_goal_raw, (N+1, 1))
-    Xrefline = np.reshape(Xrefline, (-1, 3))
-
-    u_blank  = np.asarray([0.0, 0.0])
-    Urefline = np.tile(u_blank, (N, 1))
-    Urefline = np.reshape(Urefline, (-1, 2))
 
     ### EXP IS USED AFTER THIS POINT
-    cost = exp.setup_cost(Xrefline, Urefline)
+    cost, Urefline = exp.setup_cost(state_size, action_size, x_goal_raw, N)
 
     FLAG_JUST_PATH = False
     if FLAG_JUST_PATH:
@@ -74,12 +75,13 @@ def run_solver(exp):
         print("Set to old school pathing")
 
     # default value from text
-    max_reg = 1e-10 #None # default value is 1e-10
+    # If this is set to none, it will over-search to find stuff
+    max_reg = None # default value is 1e-10
     ilqr = iLQR(dynamics, cost, N, max_reg=max_reg)
 
     cost.init_output_log(dash_folder)
 
-    tol = 1e-5
+    tol = 1e-4 #8 #1e-5
     num_iterations = 100
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
@@ -89,6 +91,8 @@ def run_solver(exp):
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration_exp)
+    xs_best = exp.best_xs
+    us_best = exp.best_us
 
     end_time = time.time()
 
@@ -96,9 +100,16 @@ def run_solver(exp):
 
     # Plot of the path through space
     verts = xs
-    xs, ys, thetas = zip(*verts)
+
+    if state_size == 3:
+        xs, ys, thetas = zip(*verts)
+        sx, sy, stheta = zip(*[x0_raw])
+    else:
+        xs, ys = zip(*verts)
+        sx, sy = zip(*[x0_raw])
+  
     gx, gy = zip(*exp.get_goals())
-    sx, sy, stheta = zip(*[x0_raw])
+
 
     elapsed_time = end_time - start_time
 
