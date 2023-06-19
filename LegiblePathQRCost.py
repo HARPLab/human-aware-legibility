@@ -107,6 +107,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         """
 
         self.exp = exp
+
         self.Q  = np.array(Q)
         self.Qf = np.array(Qf)
         self.R  = np.array(R)
@@ -732,7 +733,6 @@ class LegiblePathQRCost(FiniteDiffCost):
                 p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
             elif label is 'head_lin':
                 p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
-
             
             prob_list.append(p)
 
@@ -842,7 +842,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
 
-        xs, ys, thetas = zip(*verts)
+        if self.exp.get_state_size() == 3:
+            xs, ys, thetas = zip(*verts)
+        else:
+            xs, ys = zip(*verts)
+
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
 
@@ -918,9 +922,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
         # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
 
-        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(xs))
-        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(xs))
-
 
         ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
@@ -930,6 +931,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             in_vis = [i > 0 for i in vs[0]]
         else:
             in_vis = [True for i in ls]
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
 
         color_grad = []
         outline_grad = []
@@ -1016,7 +1020,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(verts)
         print("Attempt to display this path")
 
-        xs, ys, thetas = zip(*verts)
+        if self.exp.get_state_size() == 3:
+            xs, ys, thetas = zip(*verts)
+        else:
+            xs, ys = zip(*verts)
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
 
@@ -1097,9 +1104,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
         color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
 
-        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(xs))
-        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(xs))
-
         # ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
 
@@ -1114,6 +1118,9 @@ class LegiblePathQRCost(FiniteDiffCost):
             in_vis = [i > 0 for i in vs[0]]
         else:
             in_vis = [True for i in ls]
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
 
         color_grad = []
         outline_grad = []
