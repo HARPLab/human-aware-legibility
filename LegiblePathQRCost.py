@@ -28,6 +28,7 @@ import pipeline_generate_paths as pipeline
 import pdb
 from random import randint
 import pandas as pd
+from matplotlib import colors
 
 import PathingExperiment as ex
 
@@ -186,7 +187,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     def init_output_log(self, dash_folder):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
-        sys.stdout = open(self.get_export_label(dash_folder) + str(rand_id) + '--output.txt','a')
+        sys.stdout = open(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt','a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
@@ -811,8 +812,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         with n colors.
         """
         assert n > 1
-        c1_rgb = np.array(self.hex_to_RGB(c1))/255
-        c2_rgb = np.array(self.hex_to_RGB(c2))/255
+        if '#' in c1:
+            c1_rgb = np.array(self.hex_to_RGB(c1))/255
+        else:
+            c1_rgb = np.array(colors.to_rgba(c1)[:3]) / 255
+        if '#' in c2:
+            c2_rgb = np.array(self.hex_to_RGB(c2))/255
+        else:
+            c2_rgb = np.array(colors.to_rgba(c2)[:3]) / 255
+
         mix_pcts = [x/(n-1) for x in range(n)]
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
@@ -827,9 +835,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         OBS_RADIUS      = self.exp.get_observer_radius()
         GOAL_RADIUS     = self.exp.get_goal_radius()
 
-        TABLE_RADIUS_BUFFER     = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
-        OBSERVER_RADIUS_BUFFER  = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
-        GOAL_RADIUS_BUFFER             = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+        TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -893,14 +901,26 @@ class LegiblePathQRCost(FiniteDiffCost):
         # COLOR BASED ON VISIBILITY
         # Color code the goals for ease of reading graphs
 
+        target = self.target_goal
+        path_color = '#000000'
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
             if goal is self.target_goal:
                 target_color = color
 
-        color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
-        color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+            gx, gy = goal[:2]
+            if gx == target[0] and gy == target[1]:
+                path_color = color
+            if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
+                path_color = color
+
+        # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(xs))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(xs))
+
 
         ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
@@ -919,10 +939,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             if can_see == True:
                 color_grad.append(color_grad_1[i])
-                outline_grad.append('#13678A')
+                outline_grad.append(color_grad_2[i])
+                # outline_grad.append('#13678A')
             else:
                 color_grad.append(color_grad_2[i])
-                outline_grad.append('#f4722b')
+                outline_grad.append(color_grad_1[i])
+                # outline_grad.append('#f4722b')
 
         axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = axarr.set_xlabel("X", fontweight='bold')
@@ -1049,17 +1071,30 @@ class LegiblePathQRCost(FiniteDiffCost):
         # # Color code the goals for ease of reading graphs
         # goal_colors = ['red', 'blue', 'purple', 'green']
 
+        target = self.target_goal
+        path_color = '#000000'
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
             if goal is self.target_goal:
                 target_color = color
 
+            if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
+                path_color = color
+
+            gx, gy = goal[:2]
+            if gx == target[0] and gy == target[1]:
+                path_color = color
+
         # # '#9F2B68'
         # # '#60D497'
 
+        # default coloration
         color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
         color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(xs))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(xs))
 
         # ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
@@ -1084,10 +1119,12 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             if can_see == True:
                 color_grad.append(color_grad_1[i])
-                outline_grad.append('#13678A')
+                outline_grad.append(color_grad_2[i])
+                # outline_grad.append('#13678A')
             else:
                 color_grad.append(color_grad_2[i])
-                outline_grad.append('#f4722b')
+                outline_grad.append(color_grad_1[i])
+                # outline_grad.append('#f4722b')
 
         target = self.target_goal
         # for each goal, graph legibility
