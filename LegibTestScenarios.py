@@ -19,7 +19,7 @@ SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
 DASHBOARD_FOLDER = None
 
 def scenario_test_a(goal_index=None):
-    label = "testa_g" + str(goal_index)
+    label = "testa" # _g" + str(goal_index)
 
     # start           = [1.0, 3.0]
 
@@ -66,7 +66,7 @@ def scenario_test_a(goal_index=None):
     return label, exp
 
 def scenario_test_b(goal_index=None):
-    label = "testb_g" + str(goal_index)
+    label = "testb" # _g" + str(goal_index)
 
     start           = [0.0, 0.0]
 
@@ -101,7 +101,7 @@ def scenario_test_b(goal_index=None):
     return label, exp
 
 def scenario_test_0(goal_index=None):
-    label = "test0_g" + str(goal_index)
+    label = "test0" # _g" + str(goal_index)
 
     start           = [1.0, 0.01]
 
@@ -148,7 +148,7 @@ def scenario_test_0(goal_index=None):
     return label, exp
 
 def scenario_test_1(goal_index=None):
-    label = "test1_asym_g" + str(goal_index)
+    label = "test1_asym" # _g" + str(goal_index)
 
     start           = [0.0, 3.0]
 
@@ -183,7 +183,7 @@ def scenario_test_1(goal_index=None):
     return label, exp
 
 def scenario_test_2(goal_index=None):
-    label = "test2_colin_g" + str(goal_index)
+    label = "test2_colin" # _g" + str(goal_index)
 
     start           = [0.0, 0.0]
 
@@ -223,7 +223,7 @@ def scenario_test_2(goal_index=None):
     return label, exp
 
 def scenario_test_3(goal_index=None):
-    label = "test3_colin_g" + str(goal_index)
+    label = "test3_colin" # _g" + str(goal_index)
 
     start           = [0.0, 0.0]
 
@@ -258,7 +258,7 @@ def scenario_test_3(goal_index=None):
     return label, exp
 
 def scenario_test_4(goal_index=None):
-    label = "test4_needle_g" + str(goal_index)
+    label = "test4_needle" # _g" + str(goal_index)
 
     start           = [0.0, 2.0]
 
@@ -292,7 +292,7 @@ def scenario_test_4(goal_index=None):
     return label, exp
 
 def scenario_test_4_flip(goal_index=None):
-    label = "test4_needle2_g" + str(goal_index)
+    label = "test4_needle" # 2_g" + str(goal_index)
 
     start           = [0.0, 2.0]
 
@@ -327,7 +327,7 @@ def scenario_test_4_flip(goal_index=None):
 
 
 def scenario_test_4_flip_inverse(goal_index=None):
-    label = "test4_needle3_inv_g" + str(goal_index)
+    label = "test4_needle3_inv" # _g" + str(goal_index)
 
     start           = [-0.0, 2.0]
 
@@ -361,7 +361,7 @@ def scenario_test_4_flip_inverse(goal_index=None):
     return label, exp
 
 def scenario_test_5(goal_index=None):
-    label = "test5_blocked_g" + str(goal_index)
+    label = "test5_blocked" # _g" + str(goal_index)
 
     start           = [0.0, 2.5]
 
@@ -395,7 +395,7 @@ def scenario_test_5(goal_index=None):
     return label, exp
 
 def scenario_test_6(goal_index=None):
-    label = "test6_obs_g" + str(goal_index)
+    label = "test6_obs" # _g" + str(goal_index)
 
     start           = [0.0, 2.5]
 
@@ -530,7 +530,7 @@ def scenario_0(goal_index=None):
 
 
 def scenario_test_8(goal_index=None):
-    label = "test_8_g" + str(goal_index)
+    label = "test_8" # _g" + str(goal_index)
 
     restaurant      = None
     start           = [0.0, 0.0]
@@ -558,7 +558,7 @@ def scenario_test_8(goal_index=None):
     return label, exp
 
 def scenario_test_9(goal_index=None):
-    label = "test_9_g" + str(goal_index)
+    label = "test_9" # _g" + str(goal_index)
 
     restaurant      = None
     start           = [8.0, 2.0]
@@ -588,7 +588,7 @@ def scenario_test_9(goal_index=None):
     return label, exp
 
 def scenario_10_large_scale(goal_index=None):
-    label = "test_10_large_scale_g" + str(goal_index)
+    label = "test_10_large_scale" # _g" + str(goal_index)
 
     restaurant      = None
     start           = [800.0, 200.0]
@@ -688,7 +688,7 @@ def scenario_4_has_obstacles_and_observer(goal_index=None):
     return label, exp
 
 def scenario_7_observer(goal_index=None, obs_angle=0):
-    label = "test_7_obs_g" + str(goal_index)
+    label = "test_7_obs" # _g" + str(goal_index)
 
     start           = [0.0, 2.0]
 
@@ -728,7 +728,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     return label, exp
 
 def scenario_7_observer_offset(goal_index=None):
-    label = "scenario_7_offset_g" + str(goal_index)
+    label = "scenario_7_offset" # _g" + str(goal_index)
 
     start           = [100.0, 102.0]
 
@@ -908,34 +908,35 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_a(goal_index=0)
     scenarios[label] = exp
 
-    return scenarios
-    
-    # TEST SCENARIO
-    label, exp = scenario_test_a(goal_index=1)
-    scenarios[label] = exp
+    # return scenarios
+
+    # # TEST SCENARIO
+    # label, exp = scenario_test_a(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=0)
     scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_test_b(goal_index=1)
-    scenarios[label] = exp
+    # return scenarios
+    # # TEST SCENARIO
+    # label, exp = scenario_test_b(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_0(goal_index=0)
     scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_test_0(goal_index=1)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_test_0(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_1(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_1(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_1(goal_index=1)
+    # scenarios[label] = exp
 
 
     # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
@@ -947,15 +948,15 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_4_flip(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_4_flip(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_4_flip(goal_index=1)
+    # scenarios[label] = exp
 
     # # TEST SCENARIO
     label, exp = scenario_test_4_flip_inverse(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_4_flip_inverse(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_4_flip_inverse(goal_index=1)
+    # scenarios[label] = exp
 
     # NOTE this doesn't guarantee that scenario 0 has obstacles, heading and all else
     # May want to verify there's an option on the list
@@ -966,44 +967,44 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_2(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_2(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_2(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_3(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_3(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_3(goal_index=1)
+    # scenarios[label] = exp
 
     ####### NEEDLE
     # # TEST SCENARIO
     label, exp = scenario_test_4(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_4(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_4(goal_index=1)
+    # scenarios[label] = exp
 
     # # TEST SCENARIO
     label, exp = scenario_test_4_flip(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_4_flip(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_4_flip(goal_index=1)
+    # scenarios[label] = exp
 
     # # TEST SCENARIO
     label, exp = scenario_test_5(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_5(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_5(goal_index=1)
+    # scenarios[label] = exp
 
     # # TEST SCENARIO
     label, exp = scenario_test_6(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_6(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_6(goal_index=1)
+    # scenarios[label] = exp
 
     # label, exp = scenario_4_has_obstacles_and_observer(goal_index=None)
     # scenarios[label] = exp
@@ -1012,40 +1013,40 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_7_observer_on_zero(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_7_observer_on_zero(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_7_observer_on_zero(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_7_observer_rot90(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_7_observer_rot90(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_7_observer_rot90(goal_index=1)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_7_observer_offset(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_7_observer_offset(goal_index=1)
+    # label, exp = scenario_7_observer_offset(goal_index=1)
 
     label, exp = scenario_test_8(goal_index=0)
     scenarios[label] = exp
     
-    label, exp = scenario_test_8(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_8(goal_index=1)
+    # scenarios[label] = exp
 
-    label, exp = scenario_test_8(goal_index=2)
-    scenarios[label] = exp
+    # label, exp = scenario_test_8(goal_index=2)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_9(goal_index=0)
     scenarios[label] = exp
 
-    label, exp = scenario_test_9(goal_index=1)
-    scenarios[label] = exp
+    # label, exp = scenario_test_9(goal_index=1)
+    # scenarios[label] = exp
 
-    label, exp = scenario_test_9(goal_index=2)
-    scenarios[label] = exp
+    # label, exp = scenario_test_9(goal_index=2)
+    # scenarios[label] = exp
 
     return scenarios
 
