@@ -998,9 +998,13 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         axarr.legend(loc="upper left")
         axarr.grid(False)
-        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
-        axarr.set_xlim([xmin, xmax])
-        axarr.set_ylim([ymin, ymax])
+
+        # Deprecated method because this only accounts for one set of points, 
+        # and since we only add them by each run, it's better to autoscale
+        # it was useful for the colinear case, however- maybe add a case for this
+        # xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
+        # axarr.set_xlim([xmin, xmax])
+        # axarr.set_ylim([ymin, ymax])
 
         return axarr
 
