@@ -15,8 +15,8 @@ class NavigationDynamics(FiniteDiffDynamics):
     _state_size  = 3    # state is x_x, x_y, x_theta
     _action_size = 2
 
-    x_eps = .1 #.05
-    u_eps = .1 #.05
+    x_eps = .05
+    u_eps = .05
 
     def f(self, x, u, i):
         return self.dynamics(x, u)
@@ -105,9 +105,6 @@ class NavigationDynamics(FiniteDiffDynamics):
             # print("ALERT NAN after math")
             xnext_wout_theta = xy
 
-        print("dynams")
-        print(xy, u, "->", xnext_wout_theta)
-
         # # Moving a square
         # # We only apply this to the x y parts of the matrix 
         # A = np.eye(self._action_size)       #(self._state_size)
@@ -124,9 +121,13 @@ class NavigationDynamics(FiniteDiffDynamics):
 
         # print(xy, u*dt)
         # print("then")
+        if self._state_size == 3:
+            xtheta_old = x_triplet[2]
+        else:
+            xtheta_old = 0
         
         # Heading is clockwise degrees from EAST
-        xtheta_new  = 10 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+        xtheta_new = 19.3 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
         # if xtheta_old == xtheta_old:
         #     print("Robot maintained the same heading, but that's fine")
@@ -134,7 +135,12 @@ class NavigationDynamics(FiniteDiffDynamics):
         # print("u in dynamics model")
         # print(u)
 
-        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]
+        if self._state_size == 3:
+            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]).T
+        else:
+            xnext = xnext_wout_theta
+
+
         # print("xnext heading notes")
         # print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
         # print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
@@ -142,95 +148,104 @@ class NavigationDynamics(FiniteDiffDynamics):
         # print("After step, location is:")
         # print(xnext)
 
+        print("dynams")
+        print("x_triplet, u_input, ->, xnext")
+        print(x_triplet, u_input, "->", xnext)
+        print("xy, xtheta_old, xtheta_new")
+        print(xy, xtheta_old, xtheta_new)
+
+
         return xnext
 
-    # Combine the existing state with 
-    def dynamics_v1(self, x_triplet, u, max_u=10.0):
-        # TODO raise max_u to experimental settings
-        print("IN DYNAMICS")
+    # # Combine the existing state with 
+    # def dynamics_v1(self, x_triplet, u, max_u=10.0):
+    #     # TODO raise max_u to experimental settings
+    #     print("IN DYNAMICS")
 
-        # This is the distance we go in dt time
-        dt          = self.dt # seconds
-        # if the max speed is .5 m/s
-        max_speed   = 20.0 #15 #m
-        max_u       = dt * max_speed
+    #     # This is the distance we go in dt time
+    #     dt          = self.dt # seconds
+    #     # if the max speed is .5 m/s
+    #     max_speed   = 20.0 #15 #m
+    #     max_u       = dt * max_speed
 
-        # # Constrain action space.
-        # Apply a constraint that limits how much the robot can move per-timestep
-        if False: #constrain:
-            min_bounds, max_bounds = -1.0 * max_u, max_u
+    #     # # Constrain action space.
+    #     # Apply a constraint that limits how much the robot can move per-timestep
+    #     if False: #constrain:
+    #         min_bounds, max_bounds = -1.0 * max_u, max_u
             
-            # If we want to constrain movements to manhattan 
-            # (straight lines and diagonals)
-            # if False:
-            #     diff = (max_bounds - min_bounds) / 2.0
-            #     mean = (max_bounds + min_bounds) / 2.0
-            #     ux = diff * np.tanh(u[0]) + mean
-            #     uy = diff * np.tanh(u[1]) + mean
-            #     u = ux, uy
+    #         # If we want to constrain movements to manhattan 
+    #         # (straight lines and diagonals)
+    #         # if False:
+    #         #     diff = (max_bounds - min_bounds) / 2.0
+    #         #     mean = (max_bounds + min_bounds) / 2.0
+    #         #     ux = diff * np.tanh(u[0]) + mean
+    #         #     uy = diff * np.tanh(u[1]) + mean
+    #         #     u = ux, uy
 
-            # norm1 = u / np.linalg.norm(u)
-            # norm2 = normalize(u[:,np.newaxis], axis=0).ravel()
-            # u = norm2 * max_u
+    #         # norm1 = u / np.linalg.norm(u)
+    #         # norm2 = normalize(u[:,np.newaxis], axis=0).ravel()
+    #         # u = norm2 * max_u
 
-            # downscaling the u
-            if np.linalg.norm(u) > max_u:
-                scalar = max_u / np.linalg.norm(u)
-                u = u * scalar
-                # print(u)
+    #         # downscaling the u
+    #         if np.linalg.norm(u) > max_u:
+    #             scalar = max_u / np.linalg.norm(u)
+    #             u = u * scalar
+    #             # print(u)
 
-            # u = tensor_constrain(u, min_bounds, max_bounds)
+    #         # u = tensor_constrain(u, min_bounds, max_bounds)
 
-        if x_triplet.shape < 3:
-            print("Eeeek! shape is wrong!")
-            # exit()
+    #     if x_triplet.shape < 3:
+    #         print("Eeeek! shape is wrong!")
+    #         # exit()
 
-        xy       = [x_triplet[0], x_triplet[1]]
+    #     xy       = [x_triplet[0], x_triplet[1]]
 
-        # Moving a square
-        # We only apply this to the x y parts of the matrix 
-        A = np.eye(2)       #(self._state_size)
-        B = np.eye(self._action_size)
-        v0 = A.dot(xy)
-        v1 = B.dot(u) * dt
-
-        xtheta_old  = x_triplet[2]
-        xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+    #     # Moving a square
+    #     # We only apply this to the x y parts of the matrix 
+    #     A = np.eye(2)       #(self._state_size)
+    #     B = np.eye(self._action_size)
+    #     v0 = A.dot(xy)
+    #     v1 = B.dot(u) * dt
 
 
-        if xnext_wout_theta[0] == np.nan or xnext_wout_theta[1] == np.nan:
-            xnext_wout_theta     = xy
-            xtheta_new           = xtheta_old
 
-            u = np.asarray([0, 0])
+    #     xtheta_old  = x_triplet[2]
+    #     xtheta_new  = self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+
+
+    #     if xnext_wout_theta[0] == np.nan or xnext_wout_theta[1] == np.nan:
+    #         xnext_wout_theta     = xy
+    #         xtheta_new           = xtheta_old
+
+    #         u = np.asarray([0, 0])
     
-        if xtheta_old == xtheta_old:
-            print("Robot maintained the same heading, but that's fine")
+    #     if xtheta_old == xtheta_old:
+    #         print("Robot maintained the same heading, but that's fine")
 
-        print("u in dynamics model")
-        print(u)
+    #     print("u in dynamics model")
+    #     print(u)
 
-        xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new].T
-        print("xnext heading notes")
-        print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
-        print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+    #     xnext = [xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new].T
+    #     print("xnext heading notes")
+    #     print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
+    #     print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
 
-        # is_in_obstacle = self.is_in_obstacle(v0, v1)
-        # across_obstacle = self.across_obstacle(v0, v1)
+    #     # is_in_obstacle = self.is_in_obstacle(v0, v1)
+    #     # across_obstacle = self.across_obstacle(v0, v1)
 
-        # if np.isnan(np.linalg.norm(u)):
-        #     print("caught a nan")
-        #     xnext = v0
-        # elif across_obstacle:
-        #     print("teleporting across an obstacle!")
-        #     xnext = v0
-        # elif is_in_obstacle:
-        #     print("don't enter obstacle")
-        #     xnext = v0
-        # else:
-        #     xnext = v0 + v1     # A*x + B*u
+    #     # if np.isnan(np.linalg.norm(u)):
+    #     #     print("caught a nan")
+    #     #     xnext = v0
+    #     # elif across_obstacle:
+    #     #     print("teleporting across an obstacle!")
+    #     #     xnext = v0
+    #     # elif is_in_obstacle:
+    #     #     print("don't enter obstacle")
+    #     #     xnext = v0
+    #     # else:
+    #     #     xnext = v0 + v1     # A*x + B*u
 
-        return xnext
+    #     return xnext
 
     """ Original based on inverted pendulum auto-differentiated dynamics model."""
     def __init__(self,
@@ -264,6 +279,9 @@ class NavigationDynamics(FiniteDiffDynamics):
         self.dt = dt
 
         self.exp = exp
+        self._state_size    = exp.get_state_size()
+        self._action_size   = exp.get_action_size()
+
         super(NavigationDynamics, self).__init__(self.f, self._state_size, self._action_size)
 
     def get_obstacle_penalty_given_obj(self, x, x1, obst_center, threshold):
