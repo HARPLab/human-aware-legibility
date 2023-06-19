@@ -601,9 +601,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("HEADING COST INPUTS")
         print(debug_dict)
 
-        robot_theta = x_triplet[2]
+        if self.exp.get_state_size() == 3:
+            robot_theta = x_triplet[2]
+        else:
+            robot_theta = None
+
         if robot_theta is None:
             print("Robot theta not yet set, is that a problem?")
+            return 0.0
 
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
@@ -1229,7 +1234,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         squared_x_cost  = self.get_x_diff(x, i)
 
         print("IS TERM EVIL?")
-        print(x_triplet, x, squared_x_cost)
+        print(x_triplet, self.x_path[i], squared_x_cost)
 
         terminal_cost = squared_x_cost
 
@@ -1279,9 +1284,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
         x_ref   = np.asarray([self.x_path[i][0], self.x_path[i][1]])
         x_cur   = np.asarray([x_input[0], x_input[1]])
         x_diff  = x_cur - x_ref
+        print("xdiff detail")
+        print("x_input, x_ref, x_cur, x_diff")
+        print(x_input, x_ref, x_cur, x_diff)
         Q = np.eye(2)
         squared_x_cost = .5 * x_diff.T.dot(Q).dot(x_diff)
 
+        print(squared_x_cost)
         # print("xdiff")
         # print(x_cur, x_ref, x_diff, squared_x_cost)
 
@@ -1298,6 +1307,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         Returns:
             Instantaneous cost (scalar).
         """
+        print("77777777777777")
+        print("L: ")
+        print("x, u, i")
+        print(input_x, input_u, input_i)
+
         Q = self.Qf if terminal else self.Q
         R = self.R
         start   = self.start
@@ -1309,7 +1323,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         i = copy.copy(input_i)
         print("INPUT U IS " + str(u))
         if u is None:
-            u = np.asarray([0, 0])
+            u = np.asarray([np.inf, np.inf])
 
 
         scale_term  = self.exp.get_solver_scale_term() #0.01 # 1/100
@@ -1437,8 +1451,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             val_legib   = max_val
             val_heading = max_val
-            wt_legib    = .5 * wt_legib
-            wt_heading  = .5*wt_heading
+            wt_legib    = decimal.Decimal(.5) * wt_legib
+            wt_heading  = decimal.Decimal(.5) * wt_heading
 
 
         # J does not need to be in a particular range, it can be any max or min
