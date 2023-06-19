@@ -730,6 +730,7 @@ def test_full_set(dash_folder, scenario_filters):
             ax_mappings[ax_index].axis('off')
 
         save_location = get_file_id_for_exp(dash_folder, "cross-" + "-" + mega_scenario.get_exp_label() + "-all")
+        save_location = get_file_id_for_exp(dash_folder, "all-cross-" + "-" + mega_scenario.get_exp_label() + "-all")
 
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
