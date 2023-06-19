@@ -118,7 +118,7 @@ class PathingExperiment():
         self.restaurant = restaurant
 
         self.start          = restaurant.get_start()
-        self.target_goal    = restaurant.get_goals_all()
+        self.target_goal    = restaurant.get_target_goal()
         self.goals          = restaurant.get_goals()
 
         self.observers      = restaurant.get_observers()
@@ -136,9 +136,9 @@ class PathingExperiment():
     def __init__(self, label, start, target_goal, all_goals, restaurant=None, observers=[], table_pts=[], f_label=None, cost_label=None):
         self.exp_label = label
 
-        self.start = start
-        self.target_goal = target_goal
-        self.goals = all_goals
+        self.start          = start
+        self.target_goal    = target_goal
+        self.goals          = all_goals
 
         if restaurant is None:
             restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=table_pts, goals=all_goals, start=start, obs_pts=observers, dim=None)
@@ -197,13 +197,12 @@ class PathingExperiment():
         elif solver_label is COST_OA_AND_OBS:
             return SocLegPathQRCost(self, Xrefline, Urefline), Urefline
 
-
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
         print("''''''" + str(solver_label) + "''''''")
 
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
-        g_index = self.goals.index(self.target_goal)
+        g_index = self.get_g_index()
         self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label + "-" + str(g_index)
 
         # try:
@@ -215,6 +214,15 @@ class PathingExperiment():
 
     def reinit_file_id(self):
         self.setup_file_id()
+
+    def get_g_index(self):
+        # g_index = self.goals.index(self.target_goal)
+        g_index = -1
+        for g in self.goals:
+            if self.target_goal[0] == g[0] and self.target_goal[1] == g[1]:
+                return g
+
+        return g_index
 
     def set_f_label(self, label):
         self.f_label = label
