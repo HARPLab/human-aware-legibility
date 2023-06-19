@@ -16,8 +16,7 @@ from datetime import timedelta, datetime
 import pandas as pd
 import markupsafe
 from random import randint
-
-
+from matplotlib import colors
 
 # import theano.tensor as T
 
@@ -107,10 +106,14 @@ def collate_and_report_on_results(dash_folder):
 
     save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
     df.to_csv(save_location + ".csv")
+    df_shiny = df.style.applymap(_colorize)
+    df_shiny.to_html(save_location + ".html")
 
     # pandas.pivot(index, columns, values)
-    df_dashboard = df.pivot([df_cols[0], df_cols[1]], [df_cols[2], df_cols[3]], 'status_summary')
+    df_dashboard = df.pivot_table([df_cols[0], df_cols[1]], [df_cols[2], df_cols[3]], 'status_summary')
     df_dashboard = df_dashboard.style.applymap(_colorize)
+
+    return
 
     save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
     df_dashboard.to_html(save_location + ".html") #sparse_index=True, sparse_columns=True
@@ -226,7 +229,7 @@ def test_mega_compare(dash_folder, scenario_filters):
         plt.savefig(save_location + ".png")
         plt.close('all')
 
-        collate_and_report_on_results(dash_folder)
+    collate_and_report_on_results(dash_folder)
 
 
 
@@ -624,26 +627,26 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
 
-    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
 
     new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    test_setups_og.append(new_test)
 
-    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    test_setups_og.append(new_test)
 
-    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-mode':'sqr', 'dist-mode':'sqr', 'blend-type': 'min'}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
+    test_setups_og.append(new_test)
 
-    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-mode':'lin', 'dist-mode':'lin', 'blend-type': 'min'}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'mode_heading':'lin', 'mode_dist':'lin', 'mode_blend': 'min'}
+    test_setups_og.append(new_test)
 
 
     for key in scenarios.keys():
@@ -661,80 +664,80 @@ def test_full_set(dash_folder, scenario_filters):
 
                 mega_scenario = copy.copy(scenario)
                 mega_scenario.set_fn_note(test['label'])
-                mega_scenario.set_exp_label(test['label'])
                 mega_scenario.set_test_options(test)
                 mega_scenario.set_target_goal_index(g_index)
 
-                save_location = get_file_id_for_exp(dash_folder, "cross-" + scenario.get_exp_label())
+                save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
 
                 verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
                 outputs[(ti, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
 
                 test_log.append(mega_scenario.get_solve_quality_status(test_group))
 
+        collate_and_report_on_results(dash_folder)
 
-    # This placement of the figure statement is actually really important
-    # numpy only likes to have one plot open at a time, 
-    # so this is a fresh one not dependent on the graphing within the solver for each
-    
-    # EXPORT PATHS FOR EACH GOAL
-    print("Exporting paths pic for each goal")
-    goal_indexes = range(len(scenario.get_goals()))
-    for gi in goal_indexes:
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        
+        # EXPORT PATHS FOR EACH GOAL
+        print("Exporting paths pic for each goal")
+        goal_indexes = range(len(mega_scenario.get_goals()))
+        for gi in goal_indexes:
+            fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
+            # EXPORT GRAPH ACROSS ALL GOALS
+            for key in outputs.keys():
+                ax_key, goal_key = key
+                if goal_key == gi:
+                    ax = ax_mappings[ax_key]
+                    verts, us, cost, label = outputs[key]
+                    
+                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+                    _ = ax.set_title(label, fontweight='bold')
+                    ax.set_aspect('equal')
+                    ax.get_legend().remove()
+                    max_key = key
+
+            for ax_index in range(len(test_setups_og), len(ax_mappings)):
+                ax_mappings[ax_index].axis('off')
+
+            mega_scenario.set_target_goal_index(gi)
+            save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(gi))
+
+            fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
+            plt.subplots_adjust(top=0.9)
+            # plt.tight_layout()
+            plt.savefig(save_location + ".png")
+            plt.close()
+            plt.clf()
+
+
+        print("Exporting paths pic for all goals")
         fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
         # EXPORT GRAPH ACROSS ALL GOALS
         for key in outputs.keys():
             ax_key, goal_key = key
-            if goal_key == gi:
-                ax = ax_mappings[ax_key]
-                verts, us, cost, label = outputs[key]
-                
-                cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-                _ = ax.set_title(label, fontweight='bold')
-                ax.get_legend().remove()
-                max_key = key
+            ax = ax_mappings[ax_key]
+            verts, us, cost, label = outputs[key]
+            
+            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+            max_key = key
 
         for ax_index in range(len(test_setups_og), len(ax_mappings)):
             ax_mappings[ax_index].axis('off')
 
-        mega_scenario.set_target_goal_index(gi)
-        save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label())
+        save_location = get_file_id_for_exp(dash_folder, "cross-" + "-" + mega_scenario.get_exp_label() + "-all")
 
-        fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
+        fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
-        plt.tight_layout()
+        # plt.tight_layout()
         plt.savefig(save_location + ".png")
         plt.close()
         plt.clf()
 
-
-    print("Exporting paths pic for all goals")
-    fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
-    # EXPORT GRAPH ACROSS ALL GOALS
-    for key in outputs.keys():
-        ax_key, goal_key = key
-        ax = ax_mappings[ax_key]
-        verts, us, cost, label = outputs[key]
-        
-        cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-        _ = ax.set_title(label, fontweight='bold')
-        ax.get_legend().remove()
-        max_key = key
-
-    for ax_index in range(len(test_setups_og), len(ax_mappings)):
-        ax_mappings[ax_index].axis('off')
-
-    save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label(overview=True) + "-all")
-
-    fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
-    plt.subplots_adjust(top=0.9)
-    plt.tight_layout()
-    plt.savefig(save_location + ".png")
-    plt.close()
-    plt.clf()
-
-
-    collate_and_report_on_results(dash_folder)
 
 
 def test_vanilla_set(dash_folder, scenario_filters):
