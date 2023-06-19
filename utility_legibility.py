@@ -606,8 +606,8 @@ def f_legibility_ilqr(r, goal, goals, path, aud, f_function=None, exp_settings=N
 
 		# Get this probability from all the available signals
 		probs_array_goal_given_signals = prob_array_goal_given_signals(r, p_n, pt, goal, goals, cost_to_here, exp_settings)
-		print("PROBS ARRAY")
-		print(probs_array_goal_given_signals)
+		# print("PROBS ARRAY")
+		# print(probs_array_goal_given_signals)
 
 		# combine them according to the exp settings
 		prob_goal_signals_fused = prob_overall_fuse_signals(probs_array_goal_given_signals, r, p_n, pt, goal, goals, cost_to_here, exp_settings)
