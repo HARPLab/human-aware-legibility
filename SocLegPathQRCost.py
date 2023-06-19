@@ -198,8 +198,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
             # rho = rho
             # vector component
             # drhodx = (v - closest) / rho
-            # d_rho_top = obst_center - x
-            # d_rho_dx = d_rho_top / rho
+            d_rho_top = obst_center - x
+            d_rho_dx = d_rho_top / rho
 
 
             # print("Rho says yes")
@@ -1225,8 +1225,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         start = self.start
         goal1 = self.target_goal
 
-        x           = x_triplet[:2]
-        squared_x_cost = self.get_x_diff(x, i)
+        x               = x_triplet[:2]
+        squared_x_cost  = self.get_x_diff(x, i)
 
         print("IS TERM EVIL?")
         print(x_triplet, x, squared_x_cost)
@@ -1371,7 +1371,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 10
-        wt_lam       = 10 * (1.0 / self.exp.get_dt())
+        wt_lam       = 8 * (1.0 / self.exp.get_dt())
         wt_heading   = 10
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
@@ -1391,11 +1391,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
             wt_heading  = 0
             wt_lam      = wt_lam
 
-        # if self.exp.get_mode_type_dist() is 'sqr':
-        #     wt_lam *= 2.0
+        if self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
+            wt_lam      *= 3.0
+            wt_legib    *= 1.0
 
-        if self.exp.get_mode_type_heading():
-            wt_lam *= 1.0 #3
+        elif self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
+            wt_lam      *= 2.0
+            wt_legib    *= 1.0
 
         val_legib       = 0
         val_lam         = 0
@@ -1404,7 +1406,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # Get the values if necessary
         if wt_legib > 0:
-            val_legib       = self.get_legibility_dist_stage_cost(start, goal, x[:2], u, i, terminal, visibility_coeff)
+            val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
         if wt_heading > 0:
            val_heading     = self.get_legibility_heading_stage_cost(x, u, i, goal, visibility_coeff)
 
@@ -1435,6 +1437,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
             val_legib   = max_val
             val_heading = max_val
+            wt_legib    = .5 * wt_legib
+            wt_heading  = .5*wt_heading
 
 
         # J does not need to be in a particular range, it can be any max or min
@@ -1466,6 +1470,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print([str(wt_legib*val_legib), str(wt_lam*val_lam), str(wt_heading*val_heading), str(wt_obstacle*val_obstacle)])
 
             print(str(sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])))
+            print("~~~~~~~~~~~~")
 
         # Don't return term cost here ie (scale_term * term_cost) 
         total = (scale_stage * stage_costs)
@@ -1593,7 +1598,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
             print("Goal and exp goal not the same in prob_distance")
             print(goal, self.exp.get_target_goal())      
-            # exit()
 
         if visibility_coeff == 1 or visibility_coeff == 0:
             pass
@@ -1606,14 +1610,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
             debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x_triplet, 'u': u, 'i':i_step, 'goal': goal, 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(),'override':override, 'mode_dist': mode_dist}
             print("DIST COST INPUTS")
             print(debug_dict)
+            # print("TYPE OF DIST: " + str(mode_dist))
 
-        if np.array_equal(x, goal):
-            print("We are on the goal")
-            P_dist = decimal.Decimal(1.0)
+        # if np.array_equal(x, goal):
+        #     print("We are on the goal")
+        #     P_dist = decimal.Decimal(1.0)
 
-            num_goals   = len(all_goals)
-            P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
-            return P_oa
+        #     num_goals   = len(all_goals)
+        #     P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
+        #     return P_oa
 
 
         goal_values = []
@@ -1629,10 +1634,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("Target val")
         print(target_val)
         print("All values")
-        print(goal_values)
-        total = sum([abs(ele) for ele in goal_values])
-        # print(total)
+        print([str(ele) for ele in goal_values])
 
+        total = sum([abs(ele) for ele in goal_values])
+        
         if total == 0:
             print("Uh oh, total was 0, why is this?")
             dist_prob = 1.0 / (len(all_goals))
