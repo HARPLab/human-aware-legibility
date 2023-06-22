@@ -570,7 +570,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         P_oa = self.prob_heading(x, u, i, goal, visibility_coeff)
 
-        cost = decimal.Decimal(1.0) - P_oa
+        cost = decimal.Decimal(1.0) - decimal.Decimal(P_oa)
         return cost
 
     def prob_heading_from_pt_seq(self, x_cur, x_prev, i, goal, visibility_coeff, override=None):
@@ -608,7 +608,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if robot_theta is None:
             print("Robot theta not yet set, is that a problem?")
-            return 0.0
+            return decimal.Decimal(0.0)
 
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
@@ -1139,90 +1139,90 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return heading_clarity_cost
 
-    def get_heading_cost_v1(self, x, u, i, goal):
-        if i is 0:
-            return 0
+    # def get_heading_cost_v1(self, x, u, i, goal):
+    #     if i is 0:
+    #         return 0
 
-        goals       = self.goals
+    #     goals       = self.goals
 
-        x1 = x
-        if i > 0:
-            x0 = self.x_path[i - 1]
-        else:
-            x0 = x
+    #     x1 = x
+    #     if i > 0:
+    #         x0 = self.x_path[i - 1]
+    #     else:
+    #         x0 = x
 
-        print("Points in a row")
-        print(x0, x1)
+    #     print("Points in a row")
+    #     print(x0, x1)
 
-        robot_heading = self.get_angle_between(x0, x1)
-        alt_goal_headings = []
+    #     robot_heading = self.get_angle_between(x0, x1)
+    #     alt_goal_headings = []
 
-        for alt_goal in goals:
-            goal_heading = self.get_angle_between(x1, alt_goal)
+    #     for alt_goal in goals:
+    #         goal_heading = self.get_angle_between(x1, alt_goal)
 
-            if alt_goal is goal:
-                target_heading = goal_heading
-            else:
-                alt_goal_headings.append(goal_heading)
+    #         if alt_goal is goal:
+    #             target_heading = goal_heading
+    #         else:
+    #             alt_goal_headings.append(goal_heading)
 
-            print(alt_goal)
-            print(" is at heading ")
-            print(goal_heading)
+    #         print(alt_goal)
+    #         print(" is at heading ")
+    #         print(goal_heading)
 
-        good_part = 180 - np.abs(self.angle_diff(robot_heading, target_heading))
-        good_part = good_part**2
+    #     good_part = 180 - np.abs(self.angle_diff(robot_heading, target_heading))
+    #     good_part = good_part**2
 
-        bad_parts = 0
-        total = good_part
-        alt_goal_part_log = []
+    #     bad_parts = 0
+    #     total = good_part
+    #     alt_goal_part_log = []
 
-        for i in range(len(alt_goal_headings)):
-            alt_head = alt_goal_headings[i]
-            bad_part = 180 - np.abs(self.angle_diff(robot_heading, alt_head))
-            bad_part = bad_part**2
+    #     for i in range(len(alt_goal_headings)):
+    #         alt_head = alt_goal_headings[i]
+    #         bad_part = 180 - np.abs(self.angle_diff(robot_heading, alt_head))
+    #         bad_part = bad_part**2
 
-            print("Part 1")
-            print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
-            print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
-            print("Part 2 = squared")
-            print(bad_part)
+    #         print("Part 1")
+    #         print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
+    #         print(180 - np.abs(self.angle_diff(robot_heading, alt_head)))
+    #         print("Part 2 = squared")
+    #         print(bad_part)
 
 
-            if self.exp.get_weighted_close_on() is True:
-                k = self.get_relative_distance_k(x, goals[i], goals)
-            else:
-                k = 1.0
+    #         if self.exp.get_weighted_close_on() is True:
+    #             k = self.get_relative_distance_k(x, goals[i], goals)
+    #         else:
+    #             k = 1.0
 
-            # scale either evenly, or proportional to closeness
-            bad_part = bad_part * k
+    #         # scale either evenly, or proportional to closeness
+    #         bad_part = bad_part * k
 
-            # bad_part += 1.0 / self.angle_diff(robot_heading, alt_head)
-            bad_parts += bad_part
-            total += bad_part
-            alt_goal_part_log.append(bad_part)
-            print("For goal at alt heading " + str(alt_head))
-            print(bad_part) 
+    #         # bad_part += 1.0 / self.angle_diff(robot_heading, alt_head)
+    #         bad_parts += bad_part
+    #         total += bad_part
+    #         alt_goal_part_log.append(bad_part)
+    #         print("For goal at alt heading " + str(alt_head))
+    #         print(bad_part) 
 
-        print("Total is " + str(total))
-        print(type(total))
+    #     print("Total is " + str(total))
+    #     print(type(total))
 
-        # fix to nan so there's no divide by zero error
-        if total == 0.0:
-            print("total is now 1.0 to avoid nan error")
-            total += 1.0
+    #     # fix to nan so there's no divide by zero error
+    #     if total == 0.0:
+    #         print("total is now 1.0 to avoid nan error")
+    #         total += 1.0
 
-        heading_clarity_cost = bad_part / (total)
-        alt_goal_part_log = alt_goal_part_log / (total)
+    #     heading_clarity_cost = bad_part / (total)
+    #     alt_goal_part_log = alt_goal_part_log / (total)
 
-        print("Heading component of pathing ")
-        print("Given x of " + str(x) + " and robot heading of " + str(robot_heading))
-        print("for goals " + str(goals))
-        print(alt_goal_part_log)
-        print(heading_clarity_cost)
-        print("good parts, bad parts")
-        print(good_part, bad_parts)
+    #     print("Heading component of pathing ")
+    #     print("Given x of " + str(x) + " and robot heading of " + str(robot_heading))
+    #     print("for goals " + str(goals))
+    #     print(alt_goal_part_log)
+    #     print(heading_clarity_cost)
+    #     print("good parts, bad parts")
+    #     print(good_part, bad_parts)
 
-        return heading_clarity_cost
+    #     return heading_clarity_cost
 
     # How far away is the final step in the path from the goal?
     # Note we only constrain the xy, not the theta
@@ -1412,6 +1412,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
         elif self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
             wt_lam      *= 2.0
             wt_legib    *= 1.0
+        
+        elif self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is 'exp':
+            wt_legib    *= 10.0
+            wt_heading  *= 10.0
+            wt_lam      *= 10.0
+
 
         val_legib       = 0
         val_lam         = 0
@@ -1509,13 +1515,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
             exit()
 
         if mode_dist is 'sqr':
-            print("mode dist is sqr, dist inv value is")
             val = decimal.Decimal(self.inversely_proportional_to_distance(dist)**2)
+            print("mode dist is sqr, dist inv value is " + str(val))
             return val
             # return decimal.Decimal(self.get_relative_distance_k_sqr(x, goal, self.goals))
         elif mode_dist is 'lin':
-            print("mode dist is sqr, dist inv value is")
             val = decimal.Decimal(self.inversely_proportional_to_distance(dist))
+            print("mode dist is lin, dist inv value is " + str(val))
             return val
             # return decimal.Decimal(self.get_relative_distance_k(x, goal, self.goals))
 
@@ -1547,12 +1553,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if mode_dist is 'exp':
             J = np.exp(n) / np.exp(d)
-            # elif force_mode is 'sqr':
-            #     pass
-            #     # J = n / (d * d)
-            # elif force_mode is 'lin':
-            #     pass
-            #     # J = n / (d)
         else:
             J = np.abs(n / d)
             print("ALERT: UNKNOWN MODE = " + str(mode_dist))
@@ -1626,13 +1626,13 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print(debug_dict)
             # print("TYPE OF DIST: " + str(mode_dist))
 
-        # if np.array_equal(x, goal):
-        #     print("We are on the goal")
-        #     P_dist = decimal.Decimal(1.0)
+        if np.array_equal(x, goal):
+            print("We are on the goal")
+            P_dist = decimal.Decimal(1.0)
 
-        #     num_goals   = len(all_goals)
-        #     P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
-        #     return P_oa
+            num_goals   = len(all_goals)
+            P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_dist))
+            return P_oa
 
 
         goal_values = []
@@ -1651,13 +1651,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print([str(ele) for ele in goal_values])
 
         total = sum([abs(ele) for ele in goal_values])
-        
-        if total == 0:
-            print("Uh oh, total was 0, why is this?")
-            dist_prob = 1.0 / (len(all_goals))
-        else:
+
+        try:        
             # dist_prob = (total - target_val) / (total)
+            print(target_val, total)
             dist_prob = (target_val) / total
+        except:
+            print("ALERT: in prob distance division")
+            dist_prob = decimal.Decimal((1.0/num_goals))
 
         print("Dist prob " + str(dist_prob))
 
