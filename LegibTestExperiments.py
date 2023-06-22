@@ -107,11 +107,14 @@ def collate_and_report_on_results(dash_folder):
     save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
     df.to_csv(save_location + ".csv")
     df_shiny = df.style.applymap(_colorize)
-    df_shiny.to_html(save_location + ".html")
+    df_shiny.to_html(save_location + "-flat.html")
 
     # pandas.pivot(index, columns, values)
-    df_dashboard = df.pivot_table([df_cols[0], df_cols[1]], [df_cols[2], df_cols[3]], 'status_summary')
+    df_dashboard = df.pivot_table(index=[df_cols[0], df_cols[1]], columns=[df_cols[2], df_cols[3]], values='status_summary', fill_value=None, aggfunc=lambda x: ' '.join(x))
     df_dashboard = df_dashboard.style.applymap(_colorize)
+
+    save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
+    df_dashboard.to_html(save_location + ".html") #sparse_index=True, sparse_columns=True
 
     return
 
@@ -119,118 +122,6 @@ def collate_and_report_on_results(dash_folder):
     df_dashboard.to_html(save_location + ".html") #sparse_index=True, sparse_columns=True
     df_dashboard.to_latex(save_location + ".latex") #sparse_index=True, sparse_columns=True
     df_dashboard.to_excel(save_location + ".xls", merge_cells=True, engine='openpyxl')
-    
-
-def test_mega_compare(dash_folder, scenario_filters):
-    test_group = 'all configs'
-
-    test_setups_og = []
-
-    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'heading-on':True, 'pure-heading':False, 'heading_sqr':True, 'dist-legib-on':True}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"pure_head_lin", 'title':'Pure linear heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':False, 'dist-legib-on':False}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"pure_head_sqr", 'title':'Pure squared heading', 'heading-on':True, 'pure-heading':True, 'heading_sqr':True, 'dist-legib-on':False}
-    test_setups_og.append(new_test)
-
-    print("TESTING ALL SETTINGS")
-    scenarios = test_scenarios.get_scenarios_heading(scenario_filters)
-    for key in scenarios.keys():
-        scenario = scenarios[key]
-        scenario.set_run_filters(scenario_filters)
-
-        test_setups = copy.copy(test_setups_og)
-
-        save_location = get_file_id_for_exp(dash_folder, "mega-" + scenario.get_exp_label())
-
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-
-
-        # NUMBER OF IMAGES MUST MATCH THE NUMBER OF TESTS
-        # fig, (ax1,ax2, ax3, ax4, ax5) = plt.subplots(ncols=5, figsize=(8, 4))
-        fig, axes = plt.subplot_mosaic("ABC;DEF;GHI", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, .01], 'width_ratios':[1, 1, 1]})
-        ax_mappings = {}
-        ax_mappings[0] = axes['A']
-        ax_mappings[1] = axes['B']
-        ax_mappings[2] = axes['C']
-        ax_mappings[3] = axes['D']
-        ax_mappings[4] = axes['E']
-        ax_mappings[5] = axes['F']
-        ax_mappings[6] = axes['G']
-        ax_mappings[7] = axes['H']
-        ax_mappings[8] = axes['I']
-
-        # TODO FIGURE OUT WHY THE GRAPHS NOT PRINTING
-
-        outputs         = {}
-
-        for ti in range(len(test_setups)):
-            test    = test_setups[ti]
-            ax      = ax_mappings[ti]
-
-            mega_scenario = copy.copy(scenario)
-            mega_scenario.set_run_filters(scenario_filters)
-            mega_scenario.set_fn_note(test['label'])
-            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
-
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            mega_scenario.set_heading_on(test['heading-on'])
-            mega_scenario.set_mode_pure_heading(test['pure-heading'])
-            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
-
-            verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet    = solver.run_solver(mega_scenario)
-            outputs[ti] = verts_mega_scenario, us_mega_scenario, cost_mega_scenario, info_packet
-
-            test_log.append(mega_scenario.get_solve_quality_status(test_group))
-     
-        print(outputs)
-        # exit()
-
-        print("THAT WAS THE OUTPUTS")
-        for key in outputs.keys():
-            print("check key of outputs")
-            print(key)
-            ax = ax_mappings[key]
-            print("ax is")
-            print(ax)
-            verts_mega, us_mega, cost_mega, ip_mega = outputs[key]
-
-            cost_mega.get_overview_pic(verts_mega, us_mega, ax=ax, info_packet=ip_mega, dash_folder=dash_folder)
-
-            print("le key")
-            print(key)
-
-            print("Cost--")
-            print(cost_mega)
-            title_mega = test_setups_og[key]['label']
-            print("Title mega")
-            print(title_mega)
-            ax.set_aspect('equal')
-
-            _ = ax.set_title(title_mega)
-            ax.get_legend().remove()
-            print(ax)
-
-        plt.tight_layout()
-        fig.suptitle("Goal = " + mega_scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
-        plt.close('all')
-
-    collate_and_report_on_results(dash_folder)
-
 
 
 def test_heading_useful_or_no(dash_folder, scenario_filters):
@@ -620,7 +511,7 @@ def setup_axes_for_test_setups(test_setups_og):
 
 def test_full_set(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
-    test_group = "all cross"
+    test_group = "all-cross"
 
     test_setups_og = []
 
@@ -630,23 +521,23 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
     new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'mode_heading':'lin', 'mode_dist':'lin', 'mode_blend': 'min'}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'mode_heading':'lin', 'mode_dist':'lin', 'mode_blend': 'min'}
+    # test_setups_og.append(new_test)
 
 
     for key in scenarios.keys():
@@ -674,7 +565,7 @@ def test_full_set(dash_folder, scenario_filters):
 
                 test_log.append(mega_scenario.get_solve_quality_status(test_group))
 
-        collate_and_report_on_results(dash_folder)
+            collate_and_report_on_results(dash_folder)
 
 
         # This placement of the figure statement is actually really important
