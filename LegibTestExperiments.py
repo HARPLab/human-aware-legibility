@@ -102,6 +102,7 @@ def collate_and_report_on_results(dash_folder):
         color = 'pink' if "INC" in str(val) else color
         color = 'lightgreen' if "CONV" in str(val) else color
         color = 'lightcyan' if "OK" in str(val) else color
+        color = 'lightgrey' if "TODO" in str(val) else color
         return 'background-color: %s' % color
 
     save_location = dash_folder + "/status_overview" #get_file_id_for_exp(dash_folder, "status_overview.csv")
@@ -110,7 +111,7 @@ def collate_and_report_on_results(dash_folder):
     df_shiny.to_html(save_location + "-flat.html")
 
     # pandas.pivot(index, columns, values)
-    df_dashboard = df.pivot_table(index=[df_cols[0], df_cols[1]], columns=[df_cols[2], df_cols[3]], values='status_summary', fill_value=None, aggfunc=lambda x: ' '.join(x))
+    df_dashboard = df.pivot_table(index=[df_cols[0], df_cols[1]], columns=[df_cols[2], df_cols[3]], values='status_summary', fill_value="TODO", aggfunc=lambda x: ' '.join(x))
     df_dashboard = df_dashboard.style.applymap(_colorize)
 
     save_location = dash_folder + "/dashboard" #get_file_id_for_exp(dash_folder, "status_overview.csv")
@@ -565,7 +566,7 @@ def test_full_set(dash_folder, scenario_filters):
 
                 test_log.append(mega_scenario.get_solve_quality_status(test_group))
 
-            collate_and_report_on_results(dash_folder)
+                collate_and_report_on_results(dash_folder)
 
 
         # This placement of the figure statement is actually really important
