@@ -170,9 +170,9 @@ class PathingExperiment():
             self.best_xs = xs
             self.best_us = us
 
-        most_recent_is_complete_packet = [converged, info, iteration_count]
+        most_recent_is_complete_packet = [converged, info, iteration_count, J_opt]
 
-        print("FINAL PATH IS " + str(xs))
+        print("TESTED PATH IS " + str(xs))
         self.solve_status = most_recent_is_complete_packet
 
     def setup_cost(self, state_size, action_size, x_goal_raw, N):
@@ -430,10 +430,10 @@ class PathingExperiment():
         if info_packet is None:
             info_packet = self.get_solver_status()
 
-        # info_packet = [converged, info, iteration_count]
+        # info_packet = [converged, info, iteration_count, J_opt]
         if info_packet is not None:
             converged_text = ""
-            converged, info, iteration_count = info_packet
+            converged, info, iteration_count, J_opt = info_packet
             if converged is True:
                 converged_text = "CONVERGED after " + str(iteration_count)
             elif info is 'accepted':
@@ -444,6 +444,8 @@ class PathingExperiment():
             blurb = converged_text
         else:
             blurb = ""
+
+        blurb += " J=" + str(J_opt)
 
         return blurb
 
@@ -481,7 +483,7 @@ class PathingExperiment():
         # info_packet = [converged, info, iteration_count]
         if info_packet is not None:
             converged_text = ""
-            converged, info, iteration_count = info_packet
+            converged, info, iteration_count, J_opt = info_packet
             if converged is True:
                 converged_text = "CONV in " + str(iteration_count)
             elif info is 'accepted':
@@ -496,10 +498,10 @@ class PathingExperiment():
         scenario    = self.get_exp_label()
         purpose     = self.get_fn_note()[1:]
 
-        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count, info)
+        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count, info, J_opt)
 
     def get_solve_quality_columns(self):
-        return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info')
+        return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info', 'J_opt')
 
 
     # def get_heading_code(self):

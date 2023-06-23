@@ -94,7 +94,7 @@ def get_dashboard_folder():
     return dash_folder
 
 def collate_and_report_on_results(dash_folder):
-    df_cols = ['scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info']
+    df_cols = ['scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info', 'J_opt']
     df = pd.DataFrame(test_log, columns=df_cols)
 
     def _colorize(val):
