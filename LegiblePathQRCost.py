@@ -712,7 +712,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         for i in range(len(verts)):
             # print(str(i) + " out of " + str(len(verts)))
-            x = verts[i]
+            x_input = verts[i]
+            x = x_input[:2]
+            if len(x_input) == 4:
+                x_prev = x_input[2:]
+
+            print(x)
+            print(x_prev)
+
             if i < len(us):
                 u = us[i - 1]
             else:
@@ -730,9 +737,15 @@ class LegiblePathQRCost(FiniteDiffCost):
             elif label is 'dist_lin':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
             elif label is 'head_sqr':
-                p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
+                if len(x_input) == 4:
+                    p = self.prob_heading_from_pt_seq(x, x_prev, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
+                else:
+                    p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
             elif label is 'head_lin':
-                p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+                if len(x_input) == 4:
+                    p = self.prob_heading_from_pt_seq(x, x_prev, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+                else:
+                    p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
             
             prob_list.append(p)
 
@@ -842,7 +855,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
 
-        if self.exp.get_state_size() == 3:
+        if self.exp.get_state_size() == 4:
+            xs, ys, x_o, y_o = zip(*verts)
+        elif self.exp.get_state_size() == 3:
             xs, ys, thetas = zip(*verts)
         else:
             xs, ys = zip(*verts)
@@ -1020,7 +1035,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(verts)
         print("Attempt to display this path")
 
-        if self.exp.get_state_size() == 3:
+        if self.exp.get_state_size() == 4:
+            xs, ys, x_o, y_o = zip(*verts)
+        elif self.exp.get_state_size() == 3:
             xs, ys, thetas = zip(*verts)
         else:
             xs, ys = zip(*verts)
