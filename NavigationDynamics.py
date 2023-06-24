@@ -21,6 +21,76 @@ class NavigationDynamics(FiniteDiffDynamics):
     def f(self, x, u, i):
         return self.dynamics(x, u)
 
+
+        # Combine the existing state with 
+    def dynamics(self, x_triplet, u_input, max_u=6.0):
+        dt          = self.dt # seconds
+        u           = copy.copy(u_input)
+        xy          = np.asarray([x_triplet[0], x_triplet[1]])
+        max_speed   = max_u / self.dt
+
+        if np.isnan(u[0]) or np.isnan(u[1]):
+            print("ALERT U IS NAN")
+            pass
+
+        if True: #constrain:
+            min_bounds, max_bounds = -1.0 * max_u, max_u
+            if np.linalg.norm(u) > max_u:
+                print("Speed limit applied")
+                scalar = max_u / np.linalg.norm(u)
+                u = u * scalar
+                if np.isnan(u[0]) or np.isnan(u[1]):
+                    print("ALERT SPEED LIMIT ADDED A NAN")
+
+        u = u * dt
+        xnext_wout_theta   = xy + (u)
+        xtheta_old = 0
+        
+        if np.isnan(u[0]) or np.isnan(u[1]):
+            # print("ALERT NAN after math")
+            xnext_wout_theta = xy
+
+        if self._state_size == 2:
+            xnext = xnext_wout_theta
+
+        # CASE WHERE STATE SIZE IS 3
+        elif self._state_size == 3:
+            xtheta_old = x_triplet[2]
+        
+            # Heading is clockwise degrees from EAST
+            xtheta_new = 0 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+
+        # if xtheta_old == xtheta_old:
+        #     print("Robot maintained the same heading, but that's fine")
+
+        # print("u in dynamics model")
+        # print(u)
+
+        if self._state_size == 3:
+            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new])
+        
+        if self._state_size == 4:
+            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xy[0], xy[1]])
+
+
+        # print("xnext heading notes")
+        # print("from " + str(xy) + " to " + str(xnext_wout_theta) + " is a heading of " + str(xtheta_new))
+        # print(str(xy) + " -> " + str(xnext) + " step of magnitude " + str(np.linalg.norm(u)))
+
+        # print("After step, location is:")
+        # print(xnext)
+
+        print("dynams")
+        print("x_input, u_input, ->, xnext")
+        print(x_triplet, u_input, "->\n", xnext)
+        # print("xy, xtheta_old, xtheta_new")
+        # print(xy, xtheta_old, xtheta_new)
+
+
+        return xnext
+
+
+
     def get_angle_between_triplet(self, a_in, b_in, c_in):
         a = copy.copy(a_in)
         b = copy.copy(b_in)
@@ -71,7 +141,7 @@ class NavigationDynamics(FiniteDiffDynamics):
         return heading
 
     # Combine the existing state with 
-    def dynamics(self, x_triplet, u_input, max_u=8.0):
+    def dynamics_autodiff(self, x_triplet, u_input, max_u=6.0):
         # TODO raise max_u to experimental settings
         # print("IN DYNAMICS")
         if u_input is None:
@@ -100,34 +170,21 @@ class NavigationDynamics(FiniteDiffDynamics):
 
         u = u * dt
         xnext_wout_theta   = xy + (u)
-
+        xtheta_old = 0
+        
         if np.isnan(u[0]) or np.isnan(u[1]):
             # print("ALERT NAN after math")
             xnext_wout_theta = xy
 
-        # # Moving a square
-        # # We only apply this to the x y parts of the matrix 
-        # A = np.eye(self._action_size)       #(self._state_size)
-        # B = np.eye(self._action_size).dot(dt)
-        # v0 = A.dot(xy)
-        # v1 = B.dot(u)
+        if self._state_size == 2:
+            xnext = xnext_wout_theta
 
-        # print("dynams")
-        # print(x_triplet.shape, u_input.shape)
-
-        # print(x_triplet.shape, x_triplet, xnext_wout_theta)
-        # print(xy, v0)
-        # print(u, dt, v1)
-
-        # print(xy, u*dt)
-        # print("then")
-        if self._state_size == 3:
+        # CASE WHERE STATE SIZE IS 3
+        elif self._state_size == 3:
             xtheta_old = x_triplet[2]
-        else:
-            xtheta_old = 0
         
-        # Heading is clockwise degrees from EAST
-        xtheta_new = 19.3 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
+            # Heading is clockwise degrees from EAST
+            xtheta_new = 0 #self.get_heading_of_pt_diff_p2_p1(xnext_wout_theta, xy)
 
         # if xtheta_old == xtheta_old:
         #     print("Robot maintained the same heading, but that's fine")
@@ -136,9 +193,10 @@ class NavigationDynamics(FiniteDiffDynamics):
         # print(u)
 
         if self._state_size == 3:
-            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new]).T
-        else:
-            xnext = xnext_wout_theta
+            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xtheta_new])
+        
+        if self._state_size == 4:
+            xnext = np.asarray([xnext_wout_theta[0], xnext_wout_theta[1], xy[0], xy[1]])
 
 
         # print("xnext heading notes")
@@ -149,13 +207,30 @@ class NavigationDynamics(FiniteDiffDynamics):
         # print(xnext)
 
         print("dynams")
-        print("x_triplet, u_input, ->, xnext")
-        print(x_triplet, u_input, "->", xnext)
-        print("xy, xtheta_old, xtheta_new")
-        print(xy, xtheta_old, xtheta_new)
+        print("x_input, u_input, ->, xnext")
+        print(x_triplet, u_input, "->\n", xnext)
+        # print("xy, xtheta_old, xtheta_new")
+        # print(xy, xtheta_old, xtheta_new)
 
 
         return xnext
+
+    # # Moving a square
+    # # We only apply this to the x y parts of the matrix 
+    # A = np.eye(self._action_size)       #(self._state_size)
+    # B = np.eye(self._action_size).dot(dt)
+    # v0 = A.dot(xy)
+    # v1 = B.dot(u)
+
+    # print("dynams")
+    # print(x_triplet.shape, u_input.shape)
+
+    # print(x_triplet.shape, x_triplet, xnext_wout_theta)
+    # print(xy, v0)
+    # print(u, dt, v1)
+
+    # print(xy, u*dt)
+    # print("then")
 
     # # Combine the existing state with 
     # def dynamics_v1(self, x_triplet, u, max_u=10.0):
