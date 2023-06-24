@@ -552,34 +552,163 @@ class SocLegPathQRCost(LegiblePathQRCost):
     #     return {'robot_vec': robot_vector, 'x0': x0, 'x1':x1, 'target_angle': target_angle, 'target_val': target_val, 'all_angles':all_goal_angles}
 
     def get_angle_between_triplet(self, a, b, c):
-        print("soc math check")
-        print(a, b, c)
-        print(type(a), type(b), type(c))
+        # print(type(a), type(b), type(c))
 
         ang = math.degrees(math.atan2(c[1]-b[1], c[0]-b[0]) - math.atan2(a[1]-b[1], a[0]-b[0]))
-        return ang + 360 if ang < 0 else ang
+        ang = ang + 360 if ang < 0 else ang
+
+        # Alternate implementation for comparison
+        a = np.asarray(a)
+        b = np.asarray(b)
+        c = np.asarray(c)
+
+        ba = a - b
+        bc = c - b
+
+        cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+        angle = np.arccos(cosine_angle)
+
+        alt_check = np.degrees(angle)
+
+        if ang > 180:
+            ang = 360.0 - ang
+
+        print("soc math check")
+        print(a, b, c, str(ang) + " degrees", alt_check)
+
+        if np.abs(ang - alt_check) > 1.0:
+            print("ALERT: HEADING ANGLE MATH MAY BE INCONSISTENT")
+
+        return ang
 
     def get_heading_of_pt_diff_p2_p1(self, p2, p1):
         unit_vec    = [p1[0] + 1.0, p1[1]]
         heading     = self.get_angle_between_triplet(p2, p1, unit_vec)
         return heading
 
-    def get_legibility_heading_stage_cost(self, x, u, i, goal, visibility_coeff):
+    def get_legibility_heading_stage_cost(self, x, u, i, goal, visibility_coeff, override=None):
         # if len(x) > 2 and x[2] is None:
         #     return 1.0
 
-        P_oa = self.prob_heading(x, u, i, goal, visibility_coeff)
+        P_oa = self.prob_heading(x, u, i, goal, visibility_coeff, override=override)
 
         cost = decimal.Decimal(1.0) - decimal.Decimal(P_oa)
         return cost
 
-    def prob_heading_from_pt_seq(self, x_cur, x_prev, i, goal, visibility_coeff, override=None):
-        x_theta = self.get_heading_of_pt_diff_p2_p1(x_cur[:2], x_prev[:2])
+    def get_legibility_heading_stage_cost_from_pt_seq(self, x_cur, x_prev, i, goal, visibility_coeff, u=None, override=None):
+        P_oa = self.prob_heading_from_pt_seq(x_cur, x_prev, i, goal, visibility_coeff, u=u, override=override)
+
+        cost = decimal.Decimal(1.0) - decimal.Decimal(P_oa)
+        cost = decimal.Decimal(P_oa)
+        return cost
+
+    def prob_heading_from_pt_seq(self, x_cur, x_prev, i_in, goal_in, visibility_coeff, u=None, override=None):
+        if not np.array_equal(x_cur, x_prev):
+            x_theta = self.get_heading_of_pt_diff_p2_p1(x_cur[:2], x_prev[:2])
+        else:
+            x_theta = None
+
+        print("PRECALC heading angle")
+        print(x_cur, x_prev, x_theta)
+
         x_triplet = [x_cur[0], x_cur[1], x_theta]
 
-        u = np.asarray([0,0]) #x - x_prev
-        return self.prob_heading(x_triplet, u, i, goal, visibility_coeff, override=override)
+        u_output = u
+        # return self.prob_heading(x_triplet, u_output, i_in, goal_in, visibility_coeff, override=override)
 
+        # Version that uses pt differences
+        return self.prob_heading_from_pt_seq_alt(x_cur, x_prev, u_output, i_in, goal_in, visibility_coeff, override=override)
+
+    # This function only takes size 3 vectors
+    def prob_heading_from_pt_seq_alt(self, x_cur, x_prev, u_in, i_in, goal_in, visibility_coeff, override=None):
+        all_goals   = self.goals
+        goal        = goal_in[:2]
+
+        mode_dist    = self.exp.get_mode_type_dist()
+        mode_heading = self.exp.get_mode_type_heading()
+        mode_blend   = self.exp.get_mode_type_blend()
+
+        if override != None:
+            if 'mode_heading' in override.keys():
+                mode_heading = override['mode_heading']
+                print("OO: override to do heading mode")
+
+        if u_in is not None:
+            u = copy.copy(u_in)
+        else:
+            u = None
+        i = copy.copy(i_in)
+
+        if override is not None:
+            if 'mode_heading' in override:
+                mode_dist = override['mode_heading']
+
+        debug_dict = {'x': [x_cur, x_prev], 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(), 'override': override, 'mode_heading': mode_heading}
+        print("HEADING EFFORT COST INPUTS")
+        print(debug_dict)
+
+        if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
+            print("Goal and exp goal not the same in prob heading")
+            print(goal, self.exp.get_target_goal())
+            # exit()
+
+
+        target_vector           = None
+        all_goal_headings       = []
+
+        target_index = -1
+        x       = x_cur
+        x_prev  = x_prev
+
+        all_effort_measures         = []
+        for j in range(len(self.goals)):
+            # print("Goal angle diff for " + str(robot_theta) + " -> " + str(ghead))
+            # goal_angle_diff  = self.get_min_rotate_angle_diff(robot_theta, ghead)
+            # print("goal angle diff " + str(goal_angle_diff))
+            # effort_made = decimal.Decimal(180.0 - goal_angle_diff)
+            # print("effort made " + str(effort_made))
+
+            alt_goal = all_goals[j]
+            # goal_vector = alt_goal - x_current
+            # all_goal_vectors.append(goal_vector)
+
+            if np.array_equal(alt_goal[:2], goal[:2]):
+                print("Yes, is target")
+                target_index = j
+
+            effort_made = self.get_angle_between_triplet(x_prev, x, alt_goal)
+
+            if float(effort_made) > 180 or float(effort_made) < 0:
+                print("ALERT: Get angle between needs some work")
+                # exit()
+
+            if mode_heading is 'sqr':
+                effort_made = effort_made**2
+
+            all_effort_measures.append(effort_made)
+
+        print("All effort measures")
+        print(all_effort_measures)
+
+        target_val  = all_effort_measures[target_index]
+        total       = sum(all_effort_measures)
+
+        try:
+            all_probs = [x/total for x in all_effort_measures]
+            print(all_probs)
+
+            P_heading   = decimal.Decimal((target_val) / total)
+        except (ValueError, decimal.InvalidOperation):
+            print("Error! ...")
+            P_heading = decimal.Decimal(1.0 / num_goals)
+
+
+        num_goals   = len(all_goals)
+        P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_heading))
+
+        return P_oa
+
+    # This function only takes size 3 vectors
     def prob_heading(self, x_triplet, u_in, i_in, goal_in, visibility_coeff, override=None):
         all_goals   = self.goals
         goal        = goal_in[:2]
@@ -588,7 +717,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
         mode_heading = self.exp.get_mode_type_heading()
         mode_blend   = self.exp.get_mode_type_blend()
 
-        u = copy.copy(u_in)[:2]
+        if override != None:
+            if 'mode_heading' in override.keys():
+                mode_heading = override['mode_heading']
+                print("OO: override to do heading mode")
+
+        if u_in is not None:
+            u = copy.copy(u_in)
+        else:
+            u = None
         i = copy.copy(i_in)
 
         if override is not None:
@@ -601,15 +738,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("HEADING COST INPUTS")
         print(debug_dict)
 
-        if self.exp.get_state_size() == 3:
-            robot_theta = x_triplet[2]
-        else:
-            robot_theta = None
-
-        if robot_theta is None:
-            print("Robot theta not yet set, is that a problem?")
+        if x_triplet[2] == None:
+            print("Robot theta not yet set in theta solve mode, is that a problem?")
             return decimal.Decimal(0.0)
-
+        else:
+            robot_theta = x_triplet[2]
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
             print("Goal and exp goal not the same in prob heading")
@@ -655,8 +788,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
             effort_made = decimal.Decimal(180.0 - goal_angle_diff)
             print("effort made " + str(effort_made))
 
+            # effort_two = self.get_angle_between_triplet(a, b, c)
+
             if float(effort_made) > 180 or float(effort_made) < 0:
-                print("Get angle between needs some work")
+                print("ALERT: Get angle between needs some work")
                 # exit()
             if goal_angle_diff < 0:
                 print(goal_angle_diff)
@@ -1266,15 +1401,30 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return terminal_cost
 
-    def get_u_diff(self, u, i):
+    def get_u_diff(self, x, u, i):
+        u_calc = x[:2] - x[2:]
+
+        if np.array_equal(u_calc, u):
+            print("NA: U calc as promised!")
+        else:
+            print("ALERT: U is wrong?")
+            print(x, u, u_calc)
+            print(x[:2], x[2:])
+            
+        # u = u_calc
+
+        if u.any() == None:
+            return 0.0
+
         # print("incoming " + str(u))
         R = np.eye(2)
         u_diff      = np.abs(u - self.u_path[i])
+        u_diff      = np.abs(u - np.asarray([0, 0]))
         val_u_diff  = u_diff.T.dot(R).dot(u_diff)
 
         if u[0] is np.nan or u[1] is np.nan:
             print("FLAT PENALTY FOR NANS")
-            return val_u_diff * 1000.0
+            return val_u_diff * 10000.0
 
         print("udiff calc")
         print(u, "-", self.u_path[i], u_diff, val_u_diff)
@@ -1282,6 +1432,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
     def get_x_diff(self, x_input, i):
         x_ref   = np.asarray([self.x_path[i][0], self.x_path[i][1]])
+        x_ref   = self.exp.get_target_goal()[:2]
         x_cur   = np.asarray([x_input[0], x_input[1]])
         x_diff  = x_cur - x_ref
         print("xdiff detail")
@@ -1356,7 +1507,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         observers   = self.exp.get_observers()
 
         squared_x_cost = 0 # self.get_x_diff(x, i)
-        squared_u_cost = self.get_u_diff(u, i)
+        squared_u_cost = self.get_u_diff(x, u, i)
 
         val_angle_diff  = 0
 
@@ -1384,23 +1535,23 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         visibility_coeff = f_value
 
-        wt_legib     = 10
+        wt_legib     = 10.0
         wt_lam       = 8 * (1.0 / self.exp.get_dt())
-        wt_heading   = 10
+        wt_heading   = 10.0
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
         # If heading is not on, set the weight to not on
-        if self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is not None:
+        if self.exp.get_mode_type_dist() is not None and self.exp.get_mode_type_heading() is None:
             # wt_legib    = wt_legib + wt_heading
             wt_heading  = 0.0
 
         # If a heading-only scenario, shift weighting to that
-        if self.exp.get_mode_type_heading() is not None and self.exp.get_mode_type_dist() is None:
+        if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is not None:
             # wt_heading  = wt_heading + wt_legib
             wt_legib    = 0.0
-            # wt_lam      = wt_lam * 5
+            wt_lam      = wt_lam * 5.0
 
-        if self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is None:
+        if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is None:
             wt_legib    = 0
             wt_heading  = 0
             wt_lam      = wt_lam
@@ -1412,11 +1563,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         elif self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
             wt_lam      *= 2.0
             wt_legib    *= 1.0
-        
-        elif self.exp.get_mode_type_heading() is None and self.exp.get_mode_type_dist() is 'exp':
-            wt_legib    *= 10.0
-            wt_heading  *= 10.0
-            wt_lam      *= 10.0
+
+        elif self.exp.get_mode_type_dist() is 'exp' and self.exp.get_mode_type_heading() is None:
+            wt_legib    *= 1.0 #10.0
+            wt_heading  *= 1.0 #10.0
+            wt_lam      *= 1.0 #10.0
 
 
         val_legib       = 0
@@ -1428,7 +1579,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if wt_legib > 0:
             val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
         if wt_heading > 0:
-           val_heading     = self.get_legibility_heading_stage_cost(x, u, i, goal, visibility_coeff)
+            if self.exp.get_state_size() < 4:
+                val_heading     = self.get_legibility_heading_stage_cost(x, u, i, goal, visibility_coeff)
+            else:
+                x_new   = x[:2]
+                x_prev  = x[2:]
+                val_heading     = self.get_legibility_heading_stage_cost_from_pt_seq(x_new, x_prev, i, goal, visibility_coeff, u=u)
 
         if wt_lam > 0:
             val_lam         = squared_u_cost #+ (0 * .1 * squared_x_cost)
@@ -1594,7 +1750,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
     def prob_distance(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None):
         x       = np.asarray(x_triplet[:2])
-        u       = np.asarray(u_input[:2])
+        u       = u_input
         start   = np.asarray(start_input[:2])
         goal    = np.asarray(goal_input[:2])
         all_goals = self.goals
@@ -1604,9 +1760,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
         mode_blend   = self.exp.get_mode_type_blend()
 
         if override is not None:
-            if 'mode_dist' in override:
+            if 'mode_dist' in override.keys():
                 mode_dist = override['mode_dist']
-                print("Dist override: " + str(mode_dist))
+                print("OO: Dist override: " + str(mode_dist))
 
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
