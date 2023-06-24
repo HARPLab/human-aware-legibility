@@ -72,7 +72,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = 1000.0 #.01
+    solver_scale_term       = 100000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -88,7 +88,7 @@ class PathingExperiment():
     cost_label  = COST_OA_AND_OBS
     f_label     = F_VIS_BIN
 
-    state_size  = 3
+    state_size  = 4
     action_size = 2
 
     dt  = 1.0  #.5 #.025
@@ -180,6 +180,7 @@ class PathingExperiment():
         self.action_size = action_size
 
         Xrefline = np.tile(x_goal_raw, (N+1, 1))
+        print(Xrefline.shape, state_size)
         Xrefline = np.reshape(Xrefline, (-1, state_size))
 
         u_blank  = np.asarray([0.0, 0.0])
