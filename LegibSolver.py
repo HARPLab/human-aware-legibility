@@ -7,10 +7,15 @@ from ilqr import iLQR
 from ilqr.cost import QRCost, PathQRCost
 from ilqr.dynamics import constrain
 from ilqr.dynamics import tensor_constrain
+import theano.tensor as T
+import theano
 
 from NavigationDynamics import NavigationDynamics
+from NavDynamics import NavDynamics
 import LegibTestScenarios as test_scenarios
 
+# theano.config.exception_verbosity='high'
+# theano.config.optimizer='None'
 
 J_hist = []
 
@@ -36,7 +41,7 @@ def run_solver(exp):
     dash_folder = exp.get_run_filters()[test_scenarios.DASHBOARD_FOLDER]
     exp.reinit_file_id()
 
-    state_size  = 3 #
+    state_size  = 4 #
     action_size = 2 #
 
     exp.set_state_size(state_size)
@@ -45,15 +50,23 @@ def run_solver(exp):
     start   = exp.get_start()
     goal    = exp.get_target_goal()
 
-    x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
-    x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
+    if state_size == 4:
+        x0_raw          = np.asarray([start[0],    start[1],   start[0],    start[1]]).T
+        x_goal_raw      = np.asarray([goal[0],     goal[1],    goal[0],     goal[1]]).T
 
-    if state_size == 2:
+    elif state_size == 3:
+        x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
+        x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
+
+    elif state_size == 2:
         x_goal_raw = x_goal_raw[:2]
         x0_raw = x0_raw[:2]
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
-    dynamics = NavigationDynamics(exp.get_dt(), exp)
+    if state_size < 4:
+        dynamics = NavigationDynamics(exp.get_dt(), exp)
+    else:
+        dynamics = NavDynamics(exp)
 
     # Note that the augmented state is not all 0.
     # x0      = dynamics.augment_state(np.array(x0_raw)).T
@@ -81,8 +94,8 @@ def run_solver(exp):
 
     cost.init_output_log(dash_folder)
 
-    tol = 1e-4 #8 #1e-5
-    num_iterations = 100
+    tol = 1e-3 #8 #1e-5
+    num_iterations = 15
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
@@ -91,17 +104,22 @@ def run_solver(exp):
 
     start_time = time.time()
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration_exp)
-    xs_best = exp.best_xs
-    us_best = exp.best_us
-
     end_time = time.time()
 
-    t = np.arange(N) * dt
+    print("XS")
+    print(xs)
 
+    print("US")
+    print(us)
+
+    # t = np.arange(N) * dt
     # Plot of the path through space
     verts = xs
 
-    if state_size == 3:
+    if state_size == 4:
+        xs, ys, x_prevs, y_prevs = zip(*verts)
+        sx, sy, s_fillerx, s_fillery = zip(*[x0_raw])
+    elif state_size == 3:
         xs, ys, thetas = zip(*verts)
         sx, sy, stheta = zip(*[x0_raw])
     else:
