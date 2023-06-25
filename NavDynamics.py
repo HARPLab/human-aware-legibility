@@ -10,8 +10,8 @@ class NavDynamics(BatchAutoDiffDynamics):
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-5.0,
-                 max_bounds=5.0,
+                 min_bounds=-0.5,
+                 max_bounds=0.5,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
 
@@ -31,13 +31,14 @@ class NavDynamics(BatchAutoDiffDynamics):
             action: [torque]
         """
         self.constrained    = constrain
-        self.min_bounds     = min_bounds
-        self.max_bounds     = max_bounds
+        self.min_bounds     = min_bounds * exp.get_dt()
+        self.max_bounds     = max_bounds * exp.get_dt()
 
         self.exp            = exp
 
         def f(x, u, i):
-            
+            min_bounds, max_bounds = self.min_bounds, self.max_bounds
+
             # Constrain action space.
             if constrain:
                 u = tensor_constrain(u, min_bounds, max_bounds)
@@ -62,7 +63,6 @@ class NavDynamics(BatchAutoDiffDynamics):
                 x_current_y
             ]).T
 
-        super(NavDynamics, self).__init__(f,
-                                                       state_size=4,
-                                                       action_size=2,
-                                                       **kwargs)
+        super(NavDynamics, self).__init__(f,    state_size=4,
+                                                action_size=2,
+                                                **kwargs)
