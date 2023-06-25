@@ -692,6 +692,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         target_val  = all_effort_measures[target_index]
         total       = sum(all_effort_measures)
+        num_goals   = len(all_goals)
 
         try:
             all_probs = [x/total for x in all_effort_measures]
@@ -703,9 +704,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             P_heading = decimal.Decimal(1.0 / num_goals)
 
 
-        num_goals   = len(all_goals)
         P_oa        = decimal.Decimal((1.0/num_goals)*(1.0 - visibility_coeff)) + ((decimal.Decimal(visibility_coeff) * P_heading))
-
         return P_oa
 
     # This function only takes size 3 vectors
