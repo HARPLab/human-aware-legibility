@@ -643,14 +643,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
             if 'mode_heading' in override:
                 mode_dist = override['mode_heading']
 
+        if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
+            print("ALERT: Goal and exp goal not the same in prob heading")
+            print(goal, self.exp.get_target_goal())
+            # exit()
+
         debug_dict = {'x': [x_cur, x_prev], 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(), 'override': override, 'mode_heading': mode_heading}
         print("HEADING EFFORT COST INPUTS")
         print(debug_dict)
-
-        if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
-            print("Goal and exp goal not the same in prob heading")
-            print(goal, self.exp.get_target_goal())
-            # exit()
 
 
         target_vector           = None
@@ -698,7 +698,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print(all_probs)
 
             P_heading   = decimal.Decimal((target_val) / total)
-        except (ValueError, decimal.InvalidOperation):
+        except (ValueError, decimal.InvalidOperation, ZeroDivisionError):
             print("Error! ...")
             P_heading = decimal.Decimal(1.0 / num_goals)
 
@@ -1536,7 +1536,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 10.0
-        wt_lam       = 8 * (1.0 / self.exp.get_dt())
+        wt_lam       = 10.0 * (1.0 / self.exp.get_dt())
         wt_heading   = 10.0
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
@@ -1557,11 +1557,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
             wt_lam      = wt_lam
 
         if self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
-            wt_lam      *= 3.0
+            wt_lam      *= 1.0
             wt_legib    *= 1.0
 
         elif self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
-            wt_lam      *= 2.0
+            wt_lam      *= 1.0
             wt_legib    *= 1.0
 
         elif self.exp.get_mode_type_dist() is 'exp' and self.exp.get_mode_type_heading() is None:
