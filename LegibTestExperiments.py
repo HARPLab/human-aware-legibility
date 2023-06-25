@@ -519,8 +519,8 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
     # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
     # test_setups_og.append(new_test)
@@ -528,11 +528,11 @@ def test_full_set(dash_folder, scenario_filters):
     new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    test_setups_og.append(new_test)
 
-    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
-    # test_setups_og.append(new_test)
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    test_setups_og.append(new_test)
 
     # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
     # test_setups_og.append(new_test)
@@ -585,7 +585,7 @@ def test_full_set(dash_folder, scenario_filters):
                     ax = ax_mappings[ax_key]
                     verts, us, cost, label = outputs[key]
                     
-                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
                     _ = ax.set_title(label, fontweight='bold')
                     ax.set_aspect('equal')
                     ax.get_legend().remove()
@@ -613,7 +613,7 @@ def test_full_set(dash_folder, scenario_filters):
             ax = ax_mappings[ax_key]
             verts, us, cost, label = outputs[key]
             
-            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
             _ = ax.set_title(label, fontweight='bold')
             ax.get_legend().remove()
             max_key = key
