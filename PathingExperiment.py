@@ -1,6 +1,7 @@
 import sys
 import os
 import numpy as np
+import decimal
 
 from datetime import timedelta, datetime
 
@@ -72,7 +73,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = 100000.0 #.01
+    solver_scale_term       = 1000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -446,7 +447,7 @@ class PathingExperiment():
         else:
             blurb = ""
 
-        blurb += " J=" + str(J_opt)
+        blurb += "\nJ=" + str(J_opt)
 
         return blurb
 
@@ -540,4 +541,14 @@ class PathingExperiment():
             title += " blended"
 
         return title
+
+    # Covers the weird cases with decimal falloff better
+    def safe_norm(self, x):
+        xmax = np.max(x)
+        return np.linalg.norm(x / xmax) * xmax
+
+    def vector_mag(self, x):
+        # x = decimal.Decimal(x)
+        mag = np.sqrt(x.dot(x))
+        return mag
 
