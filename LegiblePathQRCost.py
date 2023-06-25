@@ -32,6 +32,8 @@ from matplotlib import colors
 
 import PathingExperiment as ex
 
+np.set_printoptions(suppress=True)
+
 PREFIX_EXPORT = 'experiment_outputs/'
 
 FLAG_SHOW_IMAGE_POPUP = False
@@ -838,7 +840,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
-    def get_overview_pic(self, verts, us, elapsed_time=None, ax=None, info_packet=None, fn_note="", dash_folder=None):
+    def get_overview_pic(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
         axarr = ax
 
         axarr.set_aspect('equal')
@@ -877,11 +879,12 @@ class LegiblePathQRCost(FiniteDiffCost):
             obs_color = 'orange'
             obs_color_outer = '#f8d568'
             obs_pt  = observer.get_center()
-            obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
-            axarr.add_patch(obs)
+            if not multilayer_draw:
+                obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
+                axarr.add_patch(obs)
 
-            obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
-            axarr.add_patch(obs)
+                obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
+                axarr.add_patch(obs)
 
             ox, oy = obs_pt
             THETA_ARROW_RADIUS = 1
@@ -990,11 +993,12 @@ class LegiblePathQRCost(FiniteDiffCost):
             if gx == target[0] and gy == target[1]:
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
             else:
-                g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
-                axarr.add_patch(g)
+                if not multilayer_draw:
+                    g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
+                    axarr.add_patch(g)
 
-                g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
-                axarr.add_patch(g)
+                    g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
+                    axarr.add_patch(g)
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
 
@@ -1267,7 +1271,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # F = ax6 = Graph of U magnitude
         ts = np.arange(len(us)) * self.dt
-        u_mags = [np.linalg.norm(vector) for vector in us]
+        u_mags = [self.exp.vector_mag(vector) for vector in us]
+        print("u_mags")
+        print(u_mags)
 
         _ = ax6.plot(ts, u_mags, lw=2, color='black',)
         _ = ax6.set_xlabel("time (s)", fontweight='bold')
