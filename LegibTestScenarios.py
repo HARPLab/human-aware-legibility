@@ -292,7 +292,7 @@ def scenario_test_4(goal_index=None):
     return label, exp
 
 def scenario_test_4_flip(goal_index=None):
-    label = "test4_needle" # 2_g" + str(goal_index)
+    label = "test4_needle_flip" # 2_g" + str(goal_index)
 
     start           = [0.0, 2.0]
 
@@ -713,7 +713,7 @@ def scenario_7_observer(goal_index=None, obs_angle=0):
     # table_pts.append([3.0, 0.5])
 
     obs_pts = []
-    obs_pts.append([3.5, 1.0, obs_angle])
+    obs_pts.append([2.5, 1.0, obs_angle])
     # obs_pts.append([4.5, 1.0, 180])
     # obs_pts.append([4.0, 0.5, 90])
 
@@ -908,8 +908,6 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_a(goal_index=0)
     scenarios[label] = exp
 
-    # return scenarios
-
     # # TEST SCENARIO
     # label, exp = scenario_test_a(goal_index=1)
     # scenarios[label] = exp
@@ -918,7 +916,8 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_b(goal_index=0)
     scenarios[label] = exp
 
-    # return scenarios
+    return scenarios
+    
     # # TEST SCENARIO
     # label, exp = scenario_test_b(goal_index=1)
     # scenarios[label] = exp
@@ -967,6 +966,8 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_2(goal_index=0)
     scenarios[label] = exp
 
+    # return scenarios
+
     # label, exp = scenario_test_2(goal_index=1)
     # scenarios[label] = exp
 
@@ -975,7 +976,7 @@ def get_scenario_set(scenario_filters=[]):
     scenarios[label] = exp
 
     # label, exp = scenario_test_3(goal_index=1)
-    # scenarios[label] = exp
+    scenarios[label] = exp
 
     ####### NEEDLE
     # # TEST SCENARIO
@@ -991,6 +992,8 @@ def get_scenario_set(scenario_filters=[]):
 
     # label, exp = scenario_test_4_flip(goal_index=1)
     # scenarios[label] = exp
+
+    # return scenarios
 
     # # TEST SCENARIO
     label, exp = scenario_test_5(goal_index=0)
