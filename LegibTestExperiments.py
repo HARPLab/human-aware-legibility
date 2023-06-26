@@ -1,4 +1,4 @@
-# from __future__ import print_function
+purpose = "heading_fix_all"
 
 import os
 import sys
@@ -18,36 +18,13 @@ import markupsafe
 from random import randint
 from matplotlib import colors
 
-# import theano.tensor as T
-
-# from ilqr import iLQR
-# from ilqr.cost import QRCost, PathQRCost
-# from ilqr.dynamics import constrain
-# from ilqr.dynamics import tensor_constrain
 import utility_environ_descrip as resto
 
 import PathingExperiment as ex
 from LegiblePathQRCost import LegiblePathQRCost
-# from DirectPathQRCost import DirectPathQRCost
-# from ObstaclePathQRCost import ObstaclePathQRCost
-# from LegibilityOGPathQRCost import LegibilityOGPathQRCost
-# from OALegiblePathQRCost import OALegiblePathQRCost
-# from NavigationDynamics import NavigationDynamics
 import LegibTestScenarios as test_scenarios
 
 import utility_environ_descrip as resto
-
-# ###### COST/SOLVER OPTIONS
-# # exp.set_cost_label(ex.COST_LEGIB)
-# # exp.set_cost_label(ex.COST_OBS)
-# # exp.set_cost_label(ex.COST_OA)
-# exp.set_cost_label(ex.COST_OA_AND_OBS)
-
-# ###### WEIGHTING FUNCTION 
-# ###    (DISTRIBUTING LEGIBILITY ACCORDING TO TIME OR VIS, etc)
-# exp.set_f_label(ex.F_VIS_BIN)
-# # exp.set_f_label(ex.F_VIS_LIN)
-# # exp.set_f_label(ex.F_NONE)
 
 test_log = []
 np.set_printoptions(suppress=True)
@@ -63,16 +40,6 @@ def run_all_tests():
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
     test_full_set(dashboard_folder, scenario_filters)
-    # test_vanilla_set(dashboard_folder, scenario_filters)
-
-    # test_amount_of_slack(dashboard_folder, scenario_filters)
-    # test_observers_rotated(dashboard_folder, scenario_filters)
-    # # test_observers_being_respected(dashboard_folder, scenario_filters)
-    # # test_normalized_or_no(dashboard_folder, scenario_filters)
-    # # test_heading_sqr_or_no(dashboard_folder, scenario_filters)
-    # # test_heading_useful_or_no(dashboard_folder, scenario_filters)
-    # test_obstacles_being_avoided(dashboard_folder, scenario_filters)
-    # test_weighted_by_distance_or_no(dashboard_folder, scenario_filters)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -83,9 +50,15 @@ def get_file_id_for_exp(dash_folder, label):
     return dash_folder + file_id
 
 def get_dashboard_folder():
-    dashboard_file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + "experiments"
+    # purpose is a note field set at the top of this doc
+    purpose_fn = purpose.replace(" ", "_")[:30]
+
+    dashboard_file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + "exp-" + purpose_fn
     try:
         os.mkdir(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id)
+
+        with open(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + '/readme.txt', 'w') as f:
+            f.write(purpose)
     except:
         print("FILE ALREADY EXISTS " + file_id)
 
@@ -124,6 +97,332 @@ def collate_and_report_on_results(dash_folder):
     df_dashboard.to_latex(save_location + ".latex") #sparse_index=True, sparse_columns=True
     df_dashboard.to_excel(save_location + ".xls", merge_cells=True, engine='openpyxl')
 
+
+def test_full_set(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
+    test_group = "all-cross"
+
+    test_setups_og = []
+
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    test_setups_og.append(new_test)
+
+    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
+    # test_setups_og.append(new_test)
+
+    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'mode_heading':'lin', 'mode_dist':'lin', 'mode_blend': 'min'}
+    # test_setups_og.append(new_test)
+
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+        
+        outputs = {}
+        label_dict = {}
+
+        for ti in range(len(test_setups_og)):
+            for g_index in range(len(scenario.get_goals())):
+                test = test_setups_og[ti]
+                # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+                n_scenario = copy.copy(scenario)
+
+                mega_scenario = copy.copy(scenario)
+                mega_scenario.set_fn_note(test['label'])
+                mega_scenario.set_test_options(test)
+                mega_scenario.set_target_goal_index(g_index)
+
+                save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
+
+                verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+                outputs[(ti, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+                test_log.append(mega_scenario.get_solve_quality_status(test_group))
+
+                collate_and_report_on_results(dash_folder)
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        
+        # EXPORT PATHS FOR EACH GOAL
+        print("Exporting paths pic for each goal")
+        goal_indexes = range(len(mega_scenario.get_goals()))
+        for gi in goal_indexes:
+            fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
+            # EXPORT GRAPH ACROSS ALL GOALS
+            for key in outputs.keys():
+                ax_key, goal_key = key
+                if goal_key == gi:
+                    ax = ax_mappings[ax_key]
+                    verts, us, cost, label = outputs[key]
+                    
+                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
+                    _ = ax.set_title(label, fontweight='bold')
+                    ax.set_aspect('equal')
+                    ax.get_legend().remove()
+                    max_key = key
+
+            for ax_index in range(len(test_setups_og), len(ax_mappings)):
+                ax_mappings[ax_index].axis('off')
+
+            mega_scenario.set_target_goal_index(gi)
+            save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(gi))
+
+            fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
+            plt.subplots_adjust(top=0.9)
+            # plt.tight_layout()
+            plt.savefig(save_location + ".png")
+            plt.close()
+            plt.clf()
+
+
+        print("Exporting paths pic for all goals")
+        fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
+        # EXPORT GRAPH ACROSS ALL GOALS
+        for key in outputs.keys():
+            ax_key, goal_key = key
+            ax = ax_mappings[ax_key]
+            verts, us, cost, label = outputs[key]
+            
+            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+            max_key = key
+
+        for ax_index in range(len(test_setups_og), len(ax_mappings)):
+            ax_mappings[ax_index].axis('off')
+
+        save_location = get_file_id_for_exp(dash_folder, "cross-" + "-" + mega_scenario.get_exp_label() + "-all")
+        save_location = get_file_id_for_exp(dash_folder, "all-cross-" + "-" + mega_scenario.get_exp_label() + "-all")
+
+        fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
+        plt.subplots_adjust(top=0.9)
+        # plt.tight_layout()
+        plt.savefig(save_location + ".png")
+        plt.close()
+        plt.clf()
+
+
+
+def test_vanilla_set(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
+    test_group = "vanilla"
+
+    test_setups_og = []
+
+    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
+    test_setups_og.append(new_test)
+
+    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
+    test_setups_og.append(new_test)
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+
+        save_location = get_file_id_for_exp(dash_folder, "vanil-" + scenario.get_exp_label())
+        
+        outputs = {}
+        label_dict = {}
+        for ti in range(len(test_setups_og)):
+            test = test_setups_og[ti]
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            n_scenario = copy.copy(scenario)
+
+            mega_scenario = copy.copy(scenario)
+            mega_scenario.set_fn_note(test['label'])
+
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            mega_scenario.set_heading_on(test['heading-on'])
+            mega_scenario.set_mode_pure_heading(test['pure-heading'])
+            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
+            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
+            
+            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+            outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+            test_log.append(mega_scenario.get_solve_quality_status(test_group))
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("AB", figsize=(8, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        # ax_mappings[6] = axes['G']
+        # ax_mappings[7] = axes['H']
+        # ax_mappings[8] = axes['I']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_n, us_with_n, cost_with_n, label = outputs[key]
+
+            # label = str(label_dict[key]) + "%"
+            
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+
+        plt.tight_layout()
+        fig.suptitle("legib=" + " " + mega_scenario.get_goal_label())
+        plt.subplots_adjust(top=0.9)
+        plt.savefig(save_location + ".png")
+
+
+        collate_and_report_on_results(dash_folder)
+
+def test_amount_of_slack(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
+    test_group = "amt slack"
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+        base_N = scenario.get_N()
+
+        # n_scenarios = generate_8_scenarios_varying_N(scenario)
+        save_location = get_file_id_for_exp(dash_folder, "N-" + scenario.get_exp_label())
+        
+        scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
+
+        outputs = {}
+        label_dict = {}
+        for multiplier in scale_set:
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            n_scenario = copy.copy(scenario)
+
+            new_N = int(base_N * multiplier)
+            n_percent = int(100.0 * multiplier)
+
+            label_dict[multiplier] = n_percent
+            n_scenario.set_N(new_N)
+
+            n_scenario.set_fn_note("n_" + str(new_N))
+            
+            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(n_scenario)
+            outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
+
+            test_log.append(n_scenario.get_solve_quality_status(test_group))
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+
+        ax_mappings = {}
+        ax_mappings[scale_set[4]] = axes['D']
+
+        ax_mappings[scale_set[3]] = axes['I']
+        ax_mappings[scale_set[2]] = axes['C']
+        ax_mappings[scale_set[1]] = axes['B']
+        ax_mappings[scale_set[0]] = axes['A']
+        
+        ax_mappings[scale_set[5]] = axes['J']
+        ax_mappings[scale_set[6]] = axes['F']
+        ax_mappings[scale_set[7]] = axes['G']
+        ax_mappings[scale_set[8]] = axes['H']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_n, us_with_n, cost_with_n = outputs[key]
+
+            label = str(label_dict[key]) + "%"
+
+            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            _ = ax.set_title("N= " + label, fontweight='bold')
+            ax.get_legend().remove()
+    
+        plt.tight_layout()
+        fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
+        plt.savefig(save_location + ".png")
+        plt.close('all')
+
+        collate_and_report_on_results(dash_folder)
+
+
+
+def test_observers_rotated(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios_observers(scenario_filters)
+    test_group = 'obs rotated ok?'
+    # 3 to either side at +30, +60, +90, and minus the same
+
+    # for each test scenario
+    # compare with observer vs no
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+
+        rot_scenarios = generate_scenarios_with_observer_rotating(scenario)
+        save_location = get_file_id_for_exp(dash_folder, "rot-" + scenario.get_exp_label())
+        
+        outputs = {}
+        for rkey in rot_scenarios.keys():
+            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+            rot_scenario = rot_scenarios[rkey]
+            rot_scenario.set_oa_on(True)
+            
+            verts_with_rot, us_with_rot, cost_with_rot, info_packet = solver.run_solver(rot_scenario)
+            outputs[rkey] = verts_with_rot, us_with_rot, cost_with_rot
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
+
+        ax_mappings = {}
+        ax_mappings[0] = axes['D']
+
+        ax_mappings[30] = axes['I']
+        ax_mappings[60] = axes['C']
+        ax_mappings[90] = axes['B']
+        ax_mappings[120] = axes['A']
+        
+        ax_mappings[-30] = axes['J']
+        ax_mappings[-60] = axes['F']
+        ax_mappings[-90] = axes['G']
+        ax_mappings[-120] = axes['H']
+
+        for key in outputs.keys():
+            ax = ax_mappings[key]
+            verts_with_rot, us_with_rot, cost_with_rot = outputs[key]
+
+            if key > 0:
+                amount_label = "+"
+            else:
+                amount_label = ""
+            amount_label += str(key)
+
+            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
+            _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
+            ax.get_legend().remove()
+    
+        plt.tight_layout()
+        fig.suptitle("Goal = " + rot_scenario.get_goal_label())
+        plt.savefig(save_location + ".png")
+        plt.close('all')
+
+    # collate_and_report_on_results(dash_folder)
 
 def test_heading_useful_or_no(dash_folder, scenario_filters):
     test_group = 'heading useful?'
@@ -509,333 +808,6 @@ def setup_axes_for_test_setups(test_setups_og):
         ax_mappings[5] = axes['F']
 
     return fig, axes, ax_mappings
-
-def test_full_set(dash_folder, scenario_filters):
-    scenarios = test_scenarios.get_scenarios(scenario_filters)
-    test_group = "all-cross"
-
-    test_setups_og = []
-
-    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
-
-    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
-    # test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
-    test_setups_og.append(new_test)
-
-    # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
-    # test_setups_og.append(new_test)
-
-    # new_test      = {'label':"mixed_lin", 'title':'Mixed Dist / linear heading', 'mode_heading':'lin', 'mode_dist':'lin', 'mode_blend': 'min'}
-    # test_setups_og.append(new_test)
-
-
-    for key in scenarios.keys():
-        scenario = scenarios[key]
-        scenario.set_run_filters(scenario_filters)
-        
-        outputs = {}
-        label_dict = {}
-
-        for ti in range(len(test_setups_og)):
-            for g_index in range(len(scenario.get_goals())):
-                test = test_setups_og[ti]
-                # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-                n_scenario = copy.copy(scenario)
-
-                mega_scenario = copy.copy(scenario)
-                mega_scenario.set_fn_note(test['label'])
-                mega_scenario.set_test_options(test)
-                mega_scenario.set_target_goal_index(g_index)
-
-                save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
-
-                verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
-                outputs[(ti, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
-
-                test_log.append(mega_scenario.get_solve_quality_status(test_group))
-
-                collate_and_report_on_results(dash_folder)
-
-
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-        
-        # EXPORT PATHS FOR EACH GOAL
-        print("Exporting paths pic for each goal")
-        goal_indexes = range(len(mega_scenario.get_goals()))
-        for gi in goal_indexes:
-            fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
-            # EXPORT GRAPH ACROSS ALL GOALS
-            for key in outputs.keys():
-                ax_key, goal_key = key
-                if goal_key == gi:
-                    ax = ax_mappings[ax_key]
-                    verts, us, cost, label = outputs[key]
-                    
-                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
-                    _ = ax.set_title(label, fontweight='bold')
-                    ax.set_aspect('equal')
-                    ax.get_legend().remove()
-                    max_key = key
-
-            for ax_index in range(len(test_setups_og), len(ax_mappings)):
-                ax_mappings[ax_index].axis('off')
-
-            mega_scenario.set_target_goal_index(gi)
-            save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(gi))
-
-            fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
-            plt.subplots_adjust(top=0.9)
-            # plt.tight_layout()
-            plt.savefig(save_location + ".png")
-            plt.close()
-            plt.clf()
-
-
-        print("Exporting paths pic for all goals")
-        fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups_og)
-        # EXPORT GRAPH ACROSS ALL GOALS
-        for key in outputs.keys():
-            ax_key, goal_key = key
-            ax = ax_mappings[ax_key]
-            verts, us, cost, label = outputs[key]
-            
-            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
-            _ = ax.set_title(label, fontweight='bold')
-            ax.get_legend().remove()
-            max_key = key
-
-        for ax_index in range(len(test_setups_og), len(ax_mappings)):
-            ax_mappings[ax_index].axis('off')
-
-        save_location = get_file_id_for_exp(dash_folder, "cross-" + "-" + mega_scenario.get_exp_label() + "-all")
-        save_location = get_file_id_for_exp(dash_folder, "all-cross-" + "-" + mega_scenario.get_exp_label() + "-all")
-
-        fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
-        plt.subplots_adjust(top=0.9)
-        # plt.tight_layout()
-        plt.savefig(save_location + ".png")
-        plt.close()
-        plt.clf()
-
-
-
-def test_vanilla_set(dash_folder, scenario_filters):
-    scenarios = test_scenarios.get_scenarios(scenario_filters)
-    test_group = "vanilla"
-
-    test_setups_og = []
-
-    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':False}
-    test_setups_og.append(new_test)
-
-    new_test      = {'label':"pure_dist", 'title':'Pure OG', 'heading-on':False, 'pure-heading':False, 'heading_sqr':False, 'dist-legib-on':True}
-    test_setups_og.append(new_test)
-
-    for key in scenarios.keys():
-        scenario = scenarios[key]
-        scenario.set_run_filters(scenario_filters)
-
-        save_location = get_file_id_for_exp(dash_folder, "vanil-" + scenario.get_exp_label())
-        
-        outputs = {}
-        label_dict = {}
-        for ti in range(len(test_setups_og)):
-            test = test_setups_og[ti]
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            n_scenario = copy.copy(scenario)
-
-            mega_scenario = copy.copy(scenario)
-            mega_scenario.set_fn_note(test['label'])
-
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            mega_scenario.set_heading_on(test['heading-on'])
-            mega_scenario.set_mode_pure_heading(test['pure-heading'])
-            mega_scenario.set_mode_dist_legib_on(test['dist-legib-on'])
-            mega_scenario.set_mode_heading_err_sqr(test['heading_sqr'])
-            
-            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
-            outputs[ti] = verts_with_n, us_with_n, cost_with_n, test['label']
-
-            test_log.append(mega_scenario.get_solve_quality_status(test_group))
-
-
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, axes = plt.subplot_mosaic("AB", figsize=(8, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1]})
-        ax_mappings = {}
-        ax_mappings[0] = axes['A']
-        ax_mappings[1] = axes['B']
-        # ax_mappings[6] = axes['G']
-        # ax_mappings[7] = axes['H']
-        # ax_mappings[8] = axes['I']
-
-        for key in outputs.keys():
-            ax = ax_mappings[key]
-            verts_with_n, us_with_n, cost_with_n, label = outputs[key]
-
-            # label = str(label_dict[key]) + "%"
-            
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-            _ = ax.set_title(label, fontweight='bold')
-            ax.get_legend().remove()
-
-        plt.tight_layout()
-        fig.suptitle("legib=" + " " + mega_scenario.get_goal_label())
-        plt.subplots_adjust(top=0.9)
-        plt.savefig(save_location + ".png")
-
-
-        collate_and_report_on_results(dash_folder)
-
-def test_amount_of_slack(dash_folder, scenario_filters):
-    scenarios = test_scenarios.get_scenarios(scenario_filters)
-    test_group = "amt slack"
-
-    for key in scenarios.keys():
-        scenario = scenarios[key]
-        scenario.set_run_filters(scenario_filters)
-        base_N = scenario.get_N()
-
-        # n_scenarios = generate_8_scenarios_varying_N(scenario)
-        save_location = get_file_id_for_exp(dash_folder, "N-" + scenario.get_exp_label())
-        
-        scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
-
-        outputs = {}
-        label_dict = {}
-        for multiplier in scale_set:
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            n_scenario = copy.copy(scenario)
-
-            new_N = int(base_N * multiplier)
-            n_percent = int(100.0 * multiplier)
-
-            label_dict[multiplier] = n_percent
-            n_scenario.set_N(new_N)
-
-            n_scenario.set_fn_note("n_" + str(new_N))
-            
-            verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(n_scenario)
-            outputs[multiplier] = verts_with_n, us_with_n, cost_with_n
-
-            test_log.append(n_scenario.get_solve_quality_status(test_group))
-
-
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
-
-        ax_mappings = {}
-        ax_mappings[scale_set[4]] = axes['D']
-
-        ax_mappings[scale_set[3]] = axes['I']
-        ax_mappings[scale_set[2]] = axes['C']
-        ax_mappings[scale_set[1]] = axes['B']
-        ax_mappings[scale_set[0]] = axes['A']
-        
-        ax_mappings[scale_set[5]] = axes['J']
-        ax_mappings[scale_set[6]] = axes['F']
-        ax_mappings[scale_set[7]] = axes['G']
-        ax_mappings[scale_set[8]] = axes['H']
-
-        for key in outputs.keys():
-            ax = ax_mappings[key]
-            verts_with_n, us_with_n, cost_with_n = outputs[key]
-
-            label = str(label_dict[key]) + "%"
-
-            cost_with_n.get_overview_pic(verts_with_n, us_with_n, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-            _ = ax.set_title("N= " + label, fontweight='bold')
-            ax.get_legend().remove()
-    
-        plt.tight_layout()
-        fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
-        plt.close('all')
-
-        collate_and_report_on_results(dash_folder)
-
-
-
-def test_observers_rotated(dash_folder, scenario_filters):
-    scenarios = test_scenarios.get_scenarios_observers(scenario_filters)
-    test_group = 'obs rotated ok?'
-    # 3 to either side at +30, +60, +90, and minus the same
-
-    # for each test scenario
-    # compare with observer vs no
-    for key in scenarios.keys():
-        scenario = scenarios[key]
-        scenario.set_run_filters(scenario_filters)
-
-        rot_scenarios = generate_scenarios_with_observer_rotating(scenario)
-        save_location = get_file_id_for_exp(dash_folder, "rot-" + scenario.get_exp_label())
-        
-        outputs = {}
-        for rkey in rot_scenarios.keys():
-            # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-            rot_scenario = rot_scenarios[rkey]
-            rot_scenario.set_oa_on(True)
-            
-            verts_with_rot, us_with_rot, cost_with_rot, info_packet = solver.run_solver(rot_scenario)
-            outputs[rkey] = verts_with_rot, us_with_rot, cost_with_rot
-
-
-        # This placement of the figure statement is actually really important
-        # numpy only likes to have one plot open at a time, 
-        # so this is a fresh one not dependent on the graphing within the solver for each
-        fig, axes = plt.subplot_mosaic("ABC;IDJ;FGH", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1, 1], 'width_ratios':[1, 1, 1]})
-
-        ax_mappings = {}
-        ax_mappings[0] = axes['D']
-
-        ax_mappings[30] = axes['I']
-        ax_mappings[60] = axes['C']
-        ax_mappings[90] = axes['B']
-        ax_mappings[120] = axes['A']
-        
-        ax_mappings[-30] = axes['J']
-        ax_mappings[-60] = axes['F']
-        ax_mappings[-90] = axes['G']
-        ax_mappings[-120] = axes['H']
-
-        for key in outputs.keys():
-            ax = ax_mappings[key]
-            verts_with_rot, us_with_rot, cost_with_rot = outputs[key]
-
-            if key > 0:
-                amount_label = "+"
-            else:
-                amount_label = ""
-            amount_label += str(key)
-
-            cost_with_rot.get_overview_pic(verts_with_rot, us_with_rot, ax=ax, info_packet=info_packet, dash_folder=dash_folder)
-            _ = ax.set_title("Rotated " + amount_label, fontweight='bold')
-            ax.get_legend().remove()
-    
-        plt.tight_layout()
-        fig.suptitle("Goal = " + rot_scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
-        plt.close('all')
-
-    # collate_and_report_on_results(dash_folder)
-
 
 
 def generate_scenarios_with_observer_rotating(exp):
