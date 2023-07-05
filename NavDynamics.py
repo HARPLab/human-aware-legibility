@@ -10,7 +10,7 @@ class NavDynamics(BatchAutoDiffDynamics):
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-0.5,
+                 min_bounds=-0.5, #-1, 1
                  max_bounds=0.5,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
@@ -53,8 +53,8 @@ class NavDynamics(BatchAutoDiffDynamics):
 
             dt = self.exp.get_dt()
 
-            x_new_x = x_current_x + u_x * dt
-            x_new_y = x_current_y + u_y * dt
+            x_new_x = x_current_x + (u_x * dt)
+            x_new_y = x_current_y + (u_y * dt)
 
             return T.stack([
                 x_new_x,
