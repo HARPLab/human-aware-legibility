@@ -187,6 +187,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         )
 
 
+    def get_target_goal(self):
+        return self.exp.get_target_goal()
+
     def init_output_log(self, dash_folder):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
@@ -1025,9 +1028,18 @@ class LegiblePathQRCost(FiniteDiffCost):
         # Deprecated method because this only accounts for one set of points, 
         # and since we only add them by each run, it's better to autoscale
         # it was useful for the colinear case, however- maybe add a case for this
-        # xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
-        # axarr.set_xlim([xmin, xmax])
-        # axarr.set_ylim([ymin, ymax])
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
+        x_min_cur, x_max_cur = axarr.get_xlim()
+        y_min_cur, y_max_cur = axarr.get_ylim()
+        
+        if xmin < x_min_cur:
+            axarr.set_xlim(left=xmin)
+        if ymin < y_min_cur:
+            axarr.set_ylim(bottom=ymin)
+        if xmax > x_max_cur:
+            axarr.set_xlim(right=xmax)
+        if ymax > y_max_cur:
+            axarr.set_ylim(top=ymax)
 
         return axarr
 
@@ -1275,10 +1287,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("u_mags")
         print(u_mags)
 
-        _ = ax6.plot(ts, u_mags, lw=2, color='black',)
+        _ = ax6.plot(ts, u_mags, lw=2, color='black')
         _ = ax6.set_xlabel("time (s)", fontweight='bold')
         _ = ax6.set_ylabel("Magnitude of U", fontweight='bold')
         _ = ax6.set_title("Magnitude of U Over Path", fontweight='bold')
+        ax6.set_ylim(bottom=0)
         # ax6.legend()
 
         if False:
@@ -1313,7 +1326,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             for i in range(len(us)):
                 # print("STAGE COSTS")
                 print("xs,\t\t us,\t\t tcs,\t\t scs \t at " + str(i))
-                print(str(xs[i]) + "\t" + str(us[i]) + "\t" + str(tcs[i]) + "\t" + str(scs[i]))
+                print(str(verts[i]) + "\t" + str(us[i]) + "\t" + str(tcs[i]) + "\t" + str(scs[i]))
 
             # print("TERM COSTS")
 
