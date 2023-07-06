@@ -18,14 +18,10 @@ import LegibTestScenarios as test_scenarios
 # theano.config.optimizer='None'
 
 J_hist = []
+FLAG_FASTER_CHECK = False #True
 
-# most_recent_is_complete = [converged, info, iteration_count]
+# most_recent_is_complete = [converged, info, iteration_count, J_opt]
 most_recent_is_complete_packet = [None, None, None]
-
-# class iLQR_plus(iLQR):
-#     def __init__(self, dynamics, cost, N, max_reg=1e10, hessians=False):
-#         iLQR.__init__(self, dynamics, cost, N, max_reg=1e10, hessians=False)
-#         self.most_recent_is_complete_packet = [None, None, None]
 
 def on_iteration_default(iteration_count, xs, us, J_opt, accepted, converged):
     J_hist.append(J_opt)
@@ -63,7 +59,7 @@ def run_solver(exp):
         x0_raw = x0_raw[:2]
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
-    if state_size < 4:
+    if state_size < 4 or FLAG_FASTER_CHECK:
         dynamics = NavigationDynamics(exp.get_dt(), exp)
     else:
         dynamics = NavDynamics(exp)
@@ -94,8 +90,8 @@ def run_solver(exp):
 
     cost.init_output_log(dash_folder)
 
-    tol = 1e-3 #8 #1e-5
-    num_iterations = 15
+    tol = 1e-4 #8 #1e-5
+    num_iterations = 100
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
@@ -106,10 +102,10 @@ def run_solver(exp):
     xs, us = ilqr.fit(x0_raw, Urefline, tol=tol, n_iterations=num_iterations, on_iteration=on_iteration_exp)
     end_time = time.time()
 
-    print("XS")
+    print("XS-final")
     print(xs)
 
-    print("US")
+    print("US-final")
     print(us)
 
     # t = np.arange(N) * dt
