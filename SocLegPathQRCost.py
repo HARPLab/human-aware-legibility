@@ -231,15 +231,15 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if obst_dist < obstacle_radius:
             print("Inside the actual obj")
             if Fpsp == 0:
-                print("ALERT no penalty")
+                print("ALERT: no penalty")
         elif obst_dist < obstacle_buffer + obstacle_radius:
             print("Inside the overall force diagram")
             if Fpsp == 0:
-                print("ALERT no penalty")
+                print("ALERT: no penalty")
         else:
             print("Not in an obstacle")
             if Fpsp > 0:
-                print("ALERT obstacle penalty when not in object")
+                print("ALERT: obstacle penalty when not in object")
 
         return Fpsp
 
@@ -391,41 +391,64 @@ class SocLegPathQRCost(LegiblePathQRCost):
         return abs(x - y)
 
     def get_heading_look_from_x0_to_x1(self, x0, x1):
-        print("Look from " + str(x0) + " to " + str(x1))
-
         unit_vec    = [x0[0] + 1.0, x0[1]]
         heading     = self.get_angle_between_triplet(x1, x0, unit_vec)
+        heading     = heading % 360
+
+        print("Look from " + str(x0) + " to " + str(x1) + " == " + str(heading))
         return heading
 
     # ADA TODO
+    def angle_x1_x0(self, x_cur, x_prev):
+        x_cur_x, x_cur_y = x_cur
+        x_prev_x, x_prev_y = x_prev
+
+        # atan2 = -180 to 180, in radians
+        heading = math.atan2(x_cur_y-x_prev_y, x_cur_x-x_prev_x)
+        heading = heading * (180.0/np.pi)
+
+        heading = (heading + 360) % 360
+
+        # This angle is counter clockwise from 0 at EAST
+        # 90 = NORTH
+        # 270 = SOUTH
+
+        return heading
+
     def get_angle_to_look_at_point(self, robot_x1, robot_x0, look_at_pt):
         # robot_x1 = robot_x[:2]
         # robot_x0 = robot_x[2:]
 
-        prev_angle = self.get_heading_look_from_x0_to_x1(robot_x0, robot_x1)
-        prev_angle_rev = self.get_heading_look_from_x0_to_x1(robot_x1, robot_x0)
-        prev_angle = self.get_heading_look_from_x0_to_x1(robot_x1, robot_x0)
+        prev_angle = self.angle_x1_x0(robot_x1, robot_x0)
+        prev_angle_rev = self.angle_x1_x0(robot_x0, robot_x1)
+        # prev_angle = self.get_heading_look_from_x0_to_x1(robot_x1, robot_x0)
 
-        target_shifted = look_at_pt - robot_x1
+        goal_angle = self.angle_x1_x0(look_at_pt, robot_x1)
 
-        angle = math.atan2(target_shifted[1], target_shifted[0])
-        angle = angle * (180.0/np.pi)
+        # target_shifted = look_at_pt - robot_x1
 
-        # atan2 gives -180 to 180
-        if angle < 0:
-            angle = 360 - angle
+        # angle = math.atan2(target_shifted[1], target_shifted[0])
+        # angle = angle * (180.0/np.pi)
+        # angle = (angle + 360) % 360
+
+        # # atan2 gives -180 to 180
+        # if angle < 0:
+        #     angle = 360 - angle
 
         print("Robot looking at " + str(prev_angle))
         print("Opp: " + str(prev_angle_rev))
-        print("Angle to goal is " + str(angle))
+        print("Angle to goal is " + str(goal_angle))
 
+        offset = np.abs(prev_angle - goal_angle)
+        print("OG offset " + str(offset))
 
-        offset = np.abs(prev_angle - angle)
         if offset > 180:
             offset = 360 - offset
 
+        print("final offset " + str(offset))
 
-        return angle
+
+        return offset
 
     def inversely_proportional_to_distance(self, x):
         if x == 0:
@@ -615,8 +638,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if ang > 180:
             ang = 360.0 - ang
 
-        print("soc math check")
-        print(a, b, c, str(ang) + " degrees", alt_check)
+        print("\tsoc math check")
+        print("\t", a, b, c, str(ang) + " degrees", alt_check)
 
         if np.abs(ang - alt_check) > 1.0:
             print("ALERT: HEADING ANGLE MATH MAY BE INCONSISTENT")
@@ -704,8 +727,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 mode_dist = override['mode_heading']
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
-            print("ALERT: Goal and exp goal not the same in prob heading")
-            print(goal, self.exp.get_target_goal())
+            print("WARNING: Goal and exp goal not the same in prob heading")
+            print(goal[:2], self.exp.get_target_goal()[:2])
             # exit()
 
         x_total = np.concatenate((x_cur, x_prev))
@@ -740,7 +763,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             # effort_made = self.get_angle_between_triplet(x_prev, x, alt_goal)
 
             angle_to_look = self.get_angle_to_look_at_point(x_cur, x_prev, alt_goal)
-            effort_made = 180.0 - angle_to_look
+            effort_made = (180.0 - angle_to_look)
 
             print("Angle to look at goal " + str(alt_goal) + " is " + str(angle_to_look))
             print("Effort is " + str(effort_made))
@@ -1478,6 +1501,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
     def get_u_diff(self, x, u, i):
         u_calc = x[:2] - x[2:]
+        # u = u_calc
 
         if np.array_equal(u_calc, u):
             print("NA: U calc as promised!")
@@ -1486,17 +1510,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print(x, u, u_calc)
             print(x[:2], x[2:])
             
-        # u = u_calcf
-
         if u.any() == None:
             return 0.0
 
         # print("incoming " + str(u))
         R = np.eye(2)
         u_diff      = np.abs(u - self.u_path[i])
-        u_diff      = np.abs(u - np.asarray([0, 0]))
+        # u_diff      = np.abs(u - np.asarray([0, 0]))
 
-        # u_diff = u_calc
         val_u_diff  = u_diff.T.dot(R).dot(u_diff)
 
         if u[0] is np.nan or u[1] is np.nan:
@@ -1614,8 +1635,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 10.0
-        wt_lam       = 10.0 * (1.0 / self.exp.get_dt())
-        wt_heading   = 10.0
+        wt_lam       = 20.0 * (1.0 / self.exp.get_dt())
+        wt_heading   = 15.0
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
         # PURE LEGIBILITY MODE
@@ -1873,7 +1894,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
             print("Goal and exp goal not the same in prob_distance")
-            print(goal, self.exp.get_target_goal())      
+            print(goal[:2], self.exp.get_target_goal()[:2])      
 
         if visibility_coeff == 1 or visibility_coeff == 0:
             pass
@@ -1886,7 +1907,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
             debug_dict = {'start':start, 'goal':goal, 'all_goals':self.exp.get_goals(), 'x': x_triplet, 'u': u, 'i':i_step, 'goal': goal, 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(),'override':override, 'mode_dist': mode_dist}
             print("DIST COST INPUTS")
             print(debug_dict)
-            # print("TYPE OF DIST: " + str(mode_dist))
+
+            print("TYPE OF DIST: " + str(mode_dist))
+            print("GOAL: " + str(goal))
 
         if np.array_equal(x, goal):
             print("We are on the goal")
