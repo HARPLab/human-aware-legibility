@@ -15,6 +15,9 @@ from OALegiblePathQRCost import OALegiblePathQRCost
 from OAObsPathQRCost import OAObsPathQRCost
 from SocLegPathQRCost import SocLegPathQRCost
 
+from LegiblePathCost import LegiblePathCost
+from SocLegPathCost import SocLegPathCost
+
 PREFIX_EXPORT = 'experiment_outputs/'
 
 # OPTIONS OF F FUNCTION
@@ -73,7 +76,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = 1000.0 #.01
+    solver_scale_term       = -1000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -174,7 +177,7 @@ class PathingExperiment():
         most_recent_is_complete_packet = [converged, info, iteration_count, J_opt]
 
         print("TESTED PATH IS " + str(xs))
-        self.solve_status = most_recent_is_complete_packet
+        self.solve_status = most_recent_is_complete_packet   
 
     def setup_cost(self, state_size, action_size, x_goal_raw, N):
         self.state_size = state_size
@@ -339,7 +342,7 @@ class PathingExperiment():
         self.solver_scale_term = scale
 
     def get_solver_scale_term(self):
-        return self.solver_scale_term
+        return self.solver_scale_term * (1.0 / self.get_dt())
 
     def set_solver_coeff_terminal(self, scale):
         self.solver_coeff_terminal = scale
