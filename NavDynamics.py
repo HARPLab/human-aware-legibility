@@ -3,15 +3,15 @@ import theano.tensor as T
 from ilqr.dynamics import FiniteDiffDynamics, tensor_constrain, constrain, BatchAutoDiffDynamics, AutoDiffDynamics
 
 
-class NavDynamics(BatchAutoDiffDynamics):
+class NavDynamics(AutoDiffDynamics):
 
     """Inverted pendulum auto-differentiated dynamics model."""
 
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-0.5, #-1, 1
-                 max_bounds=0.5,
+                 min_bounds=-1.0, #-1, 1
+                 max_bounds=1.0,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
 
@@ -63,6 +63,18 @@ class NavDynamics(BatchAutoDiffDynamics):
                 x_current_y
             ]).T
 
-        super(NavDynamics, self).__init__(f,    state_size=4,
-                                                action_size=2,
+        x_x = T.dscalar("x_x")
+        x_y = T.dscalar("x_y")
+        x_x_prev = T.dscalar("x_x_prev")
+        x_y_prev = T.dscalar("x_y_prev")
+
+        x_inputs = [x_x, x_y, x_x_prev, x_y_prev]
+        u_inputs = [x_x, u_y]
+        super(NavDynamics, self).__init__(f, x_inputs, u_inputs, hessians=True,
                                                 **kwargs)
+
+        # super(NavDynamics, self).__init__(f,    state_size=4,
+        #                                         action_size=2,
+        #                                         **kwargs)
+
+
