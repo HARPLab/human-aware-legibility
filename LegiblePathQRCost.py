@@ -30,6 +30,8 @@ from random import randint
 import pandas as pd
 from matplotlib import colors
 
+from autograd import grad, elementwise_grad, jacobian, hessian
+
 import PathingExperiment as ex
 
 np.set_printoptions(suppress=True)
@@ -143,11 +145,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         path_length = self.x_path.shape[0]
 
-        x_eps = .05 #05
-        u_eps = .01 #05
+        x_eps = .1 #05
+        u_eps = .05 #05
 
-        # self._x_eps_hess = np.sqrt(self._x_eps)
-        # self._u_eps_hess = np.sqrt(self._u_eps)
+        self._x_eps = x_eps
+        self._u_eps = u_eps
+
+        self._x_eps_hess = x_eps #np.sqrt(self._x_eps)
+        self._u_eps_hess = u_eps #np.sqrt(self._u_eps)
 
         self._state_size = state_size
         self._action_size = action_size
@@ -530,7 +535,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             goals_total += np.exp(sub_goal)
     
         ratio = this_goal / np.log(goals_total)
-        print(ratio)
+        # print(ratio)
         return ratio
 
         # return np.log(this_goal) - np.log(goals_total)
@@ -538,6 +543,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         # return decimal.Decimal(this_goal / goals_total)
         # return np.log(this_goal) - np.log(goals_total)
 
+
+    # https://github.com/HIPS/autograd/blob/1bb5cbc21d2aa06e0c61654a9cc6f38c174dacc0/autograd/differential_operators.py#L93
+    # Discussion of hessian construction with autograd
     def l_x(self, x, u, i, terminal=False):
         """Partial derivative of cost function with respect to x.
         Args:
@@ -552,11 +560,14 @@ class LegiblePathQRCost(FiniteDiffCost):
             return approx_fprime(x, lambda x: self._l_terminal(x, i),
                                  self._x_eps)
 
-        val = approx_fprime(x, lambda x: self._l(x, u, i), self._x_eps)
+        # val_old = approx_fprime(x, lambda x: self._l(x, u, i), self._x_eps)
+        val = grad(lambda x: self._l(x, u, i))
+        val = val(x)
+        # val = val_old
         if self.FLAG_DEBUG_J:
             print("J_x at " + str(x) + "," + str(u) + ","  + str(i))
-            print(val)
-
+            
+        # print(val, val_old)
         return val
 
     def l_u(self, x, u, i, terminal=False):
@@ -573,86 +584,142 @@ class LegiblePathQRCost(FiniteDiffCost):
             # Not a function of u, so the derivative is zero.
             return np.zeros(self._action_size)
 
-        val = approx_fprime(u, lambda u: self._l(x, u, i), self._u_eps)
+        # val_old = approx_fprime(u, lambda u: self._l(x, u, i), self._u_eps)
+        # val = val_old
+        val = grad(lambda u: self._l(x, u, i))
+        val = val(u)
         if self.FLAG_DEBUG_J:
             print("J_u at " + str(x) + "," + str(u) + ","  + str(i))
             print(val)
 
+        # print(val, val_old)
         return val
 
-    def l_xx(self, x, u, i, terminal=False):
-        """Second partial derivative of cost function with respect to x.
-        Args:
-            x: Current state [state_size].
-            u: Current control [action_size]. None if terminal.
-            i: Current time step.
-            terminal: Compute terminal cost. Default: False.
-        Returns:
-            d^2l/dx^2 [state_size, state_size].
-        """
-        eps = self._x_eps_hess
-        Q = np.vstack([
-            approx_fprime(x, lambda x: self.l_x(x, u, i, terminal)[m], eps)
-            for m in range(self._state_size)
-        ])
+    # def l_xx(self, x_in, u_in, i_in, terminal=False):
+    #     """Second partial derivative of cost function with respect to x.
+    #     Args:
+    #         x: Current state [state_size].
+    #         u: Current control [action_size]. None if terminal.
+    #         i: Current time step.
+    #         terminal: Compute terminal cost. Default: False.
+    #     Returns:
+    #         d^2l/dx^2 [state_size, state_size].
+    #     """
+    #     eps = self._x_eps_hess
+    #     # Q_old = np.vstack([
+    #     #     approx_fprime(x, lambda x: self.l_x(x, u, i, terminal)[m], eps)
+    #     #     for m in range(self._state_size)
+    #     # ])
 
-        if self.FLAG_DEBUG_J:
-            print("J_xx at " + str(x) + "," + str(u) + ","  + str(i))
-            print(Q)
+    #     # print("L_xx computation")
+    #     # grad_est = jacobian(self.l_x)
+    #     # print("grad est")
+    #     # Q = grad_est[x_in, u_in, i_in]
 
-        return Q
+    #     Q = hessian(self.l)(x_in, u_in, i_in)
 
-    def l_ux(self, x, u, i, terminal=False):
-        """Second partial derivative of cost function with respect to u and x.
-        Args:
-            x: Current state [state_size].
-            u: Current control [action_size]. None if terminal.
-            i: Current time step.
-            terminal: Compute terminal cost. Default: False.
-        Returns:
-            d^2l/dudx [action_size, state_size].
-        """
-        if terminal:
-            # Not a function of u, so the derivative is zero.
-            return np.zeros((self._action_size, self._state_size))
+    #     # grad_est = grad_est(x_in)
+    #     # Q = np.vstack([
+    #     #     grad_est[0],
+    #     #     grad_est[1],
+    #     #     grad_est[2],
+    #     #     grad_est[3]
+    #     # ])
+    #     # # for m in range(self._state_size)
 
-        eps = self._x_eps_hess
-        Q = np.vstack([
-            approx_fprime(x, lambda x: self.l_u(x, u, i)[m], eps)
-            for m in range(self._action_size)
-        ])
+    #     # Q = Q_old
 
-        if self.FLAG_DEBUG_J:
-            print("J_ux at " + str(x) + "," + str(u) + ","  + str(i))
-            print(Q)
+    #     if self.FLAG_DEBUG_J:
+    #         print("J_xx at " + str(x) + "," + str(u) + ","  + str(i))
+    #         print(Q)
 
-        return Q
+    #     # print(Q, Q_old)
+    #     return Q
 
-    def l_uu(self, x, u, i, terminal=False):
-        """Second partial derivative of cost function with respect to u.
-        Args:
-            x: Current state [state_size].
-            u: Current control [action_size]. None if terminal.
-            i: Current time step.
-            terminal: Compute terminal cost. Default: False.
-        Returns:
-            d^2l/du^2 [action_size, action_size].
-        """
-        if terminal:
-            # Not a function of u, so the derivative is zero.
-            return np.zeros((self._action_size, self._action_size))
+    # def l_ux(self, x_in, u_in, i_in, terminal=False):
+    #     """Second partial derivative of cost function with respect to u and x.
+    #     Args:
+    #         x: Current state [state_size].
+    #         u: Current control [action_size]. None if terminal.
+    #         i: Current time step.
+    #         terminal: Compute terminal cost. Default: False.
+    #     Returns:
+    #         d^2l/dudx [action_size, state_size].
+    #     """
+    #     if terminal:
+    #         # Not a function of u, so the derivative is zero.
+    #         return np.zeros((self._action_size, self._state_size))
 
-        eps = self._u_eps_hess
-        Q = np.vstack([
-            approx_fprime(u, lambda u: self.l_u(x, u, i)[m], eps)
-            for m in range(self._action_size)
-        ])
+    #     eps = self._x_eps_hess
+    #     # Q_old = np.vstack([
+    #     #     approx_fprime(x, lambda x: self.l_u(x, u, i)[m], eps)
+    #     #     for m in range(self._action_size)
+    #     # ])
 
-        if self.FLAG_DEBUG_J:
-            print("J_uu at " + str(x) + "," + str(u) + ","  + str(i))
-            print(Q)
+    #     # Q = np.vstack([
+    #     #     grad(lambda x: self._l_u(x, u, i, terminal)[m])
+    #     #     # approx_fprime(x, lambda x: self.l_x(x, u, i, terminal)[m], eps)
+    #     #     for m in range(self._state_size)
+    #     # ])
+    #     # Q = Q_old
 
-        return Q
+    #     grad_est = elementwise_grad(lambda x: self.l_u(x, u_in, i_in, terminal))(x_in)
+    #     Q = np.vstack([
+    #         grad_est[0],
+    #         grad_est[1],
+    #         grad_est[2],
+    #         grad_est[3]
+    #     ])
+
+    #     if self.FLAG_DEBUG_J:
+    #         print("J_ux at " + str(x) + "," + str(u) + ","  + str(i))
+    #         print(Q)
+
+    #     # print(Q, Q_old)
+    #     return Q
+
+    # def l_uu(self, x_in, u_in, i_in, terminal=False):
+    #     """Second partial derivative of cost function with respect to u.
+    #     Args:
+    #         x: Current state [state_size].
+    #         u: Current control [action_size]. None if terminal.
+    #         i: Current time step.
+    #         terminal: Compute terminal cost. Default: False.
+    #     Returns:
+    #         d^2l/du^2 [action_size, action_size].
+    #     """
+    #     if terminal:
+    #         # Not a function of u, so the derivative is zero.
+    #         return np.zeros((self._action_size, self._action_size))
+
+    #     eps = self._u_eps_hess
+    #     # Q_old = np.vstack([
+    #     #     approx_fprime(u, lambda u: self.l_u(x, u, i)[m], eps)
+    #     #     for m in range(self._action_size)
+    #     # ])
+
+    #     # Q = np.vstack([
+    #     #     grad(lambda u: self._l_u(x, u, i, terminal)[m])
+    #     #     # approx_fprime(x, lambda x: self.l_x(x, u, i, terminal)[m], eps)
+    #     #     for m in range(self._state_size)
+    #     # ])
+
+    #     grad_est = elementwise_grad(lambda u: self.l_u(x_in, u, i_in, terminal))(u_in)
+    #     Q = np.vstack([
+    #         grad_est[0],
+    #         grad_est[1],
+    #         grad_est[2],
+    #         grad_est[3]
+    #     ])
+
+    #     # Q = Q_old
+
+    #     if self.FLAG_DEBUG_J:
+    #         print("J_uu at " + str(x) + "," + str(u) + ","  + str(i))
+    #         print(Q)
+
+    #     # print(Q, Q_old)
+    #     return Q
 
     def get_window_dimensions_for_envir(self, start, goals, pts):
         xmin, ymin = start
@@ -767,6 +834,12 @@ class LegiblePathQRCost(FiniteDiffCost):
         resto_envir = self.restaurant
         goals = self.goals
 
+        l_components = {}
+        l_components['total_legib']     = []
+        l_components['total_lam']       = []
+        l_components['total_heading']   = []
+        l_components['total_obstacle']  = []
+
         for i in range(len(verts)):
             # print(str(i) + " out of " + str(len(verts)))
             x = verts[i]
@@ -775,17 +848,33 @@ class LegiblePathQRCost(FiniteDiffCost):
             l = legib.f_legibility_ilqr(resto_envir, goal, goals, verts[:i], aud)
             
             if i < len(us):
-                j = len(us) - 1
+                j = i
+                # j = us[i] #len(us) - 1
                 u = us[j]
                 sc = self.l(x, u, j, just_stage=True) #self.get_total_stage_cost(start, goal, x, u, j, terminal)
                 tc = self.l(x, u, j, just_term=True)
-            else:
-                sc = 0.0
+                scs.append(sc)
 
-            scs.append(sc)
+                l_legib = self.l(x, u, j, just_stage=True, test_component='legib')
+                l_lam   = self.l(x, u, j, just_stage=True, test_component='lam')
+                l_head  = self.l(x, u, j, just_stage=True, test_component='head')
+                l_obs   = self.l(x, u, j, just_stage=True, test_component='obs')
+
+                l_components['total_legib'].append(l_legib)
+                l_components['total_lam'].append(l_lam)
+                l_components['total_heading'].append(l_head)
+                l_components['total_obstacle'].append(l_obs)
+
+    
             tcs.append(tc)
+
+
             # tc = float(self.term_cost(x, i))
             ls.append(l)
+
+        x = verts[-1]
+        N = self.exp.get_N()
+        last_term = self.l(x, None, N, terminal=True)
 
         # TODO: alter this if we want to show vis from multiple observers
         for obs in self.exp.get_restaurant().get_observers():
@@ -798,6 +887,25 @@ class LegiblePathQRCost(FiniteDiffCost):
                 vis_log.append(v)
 
             vs.append(vis_log)
+
+
+        print("~~~~~FINAL COLLATE")
+        total_legib     = l_components['total_legib']
+        total_lam       = l_components['total_lam']
+        total_heading   = l_components['total_heading']
+        total_obstacle  = l_components['total_obstacle']
+
+        print("TOTAL LEGIB")
+        print(sum(total_legib))
+        print("TOTAL LAM")
+        print(sum(total_lam))
+        print("TOTAL HEADING")
+        print(sum(total_heading))
+        print("TOTAL OBSTACLE")
+        print(sum(total_obstacle))
+
+        print("LAST TERM COST")
+        print(last_term)
 
         return ls, scs, tcs, vs
 
@@ -852,6 +960,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         TABLE_RADIUS    = self.exp.get_table_radius()
         OBS_RADIUS      = self.exp.get_observer_radius()
         GOAL_RADIUS     = self.exp.get_goal_radius()
+        OBS_BUFFER      = self.exp.get_obstacle_buffer()
 
         TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
         OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
@@ -1187,10 +1296,10 @@ class LegiblePathQRCost(FiniteDiffCost):
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
 
 
-            ax3.plot(ts, scs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
+            ax3.plot(ts[:-1], scs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
             ax4.plot(ts, tcs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
 
-            ax3.scatter(ts, scs, c=outline_grad, s=8)
+            ax3.scatter(ts[:-1], scs, c=outline_grad[:-1], s=8)
             ax4.scatter(ts, tcs, c=outline_grad, s=8)
 
             # ax3.scatter(ts, scs, c=color_grad, s=4)
