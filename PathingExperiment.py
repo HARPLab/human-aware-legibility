@@ -76,7 +76,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = -1000.0 #.01
+    solver_scale_term       = 1000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -554,4 +554,8 @@ class PathingExperiment():
         # x = decimal.Decimal(x)
         mag = np.sqrt(x.dot(x))
         return mag
+
+    def get_dist_scalar_k(self):
+        k = np.linalg.norm(np.asarray(self.get_start()) - np.asarray(self.get_target_goal())) / (self.get_N())
+        return k
 
