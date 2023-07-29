@@ -674,6 +674,21 @@ class SocLegPathQRCost(LegiblePathQRCost):
         return cost
 
     def get_legibility_heading_stage_cost_from_pt_seq(self, x_cur, x_prev, i, goal, visibility_coeff, u=None, override=None):
+        # start = self.exp.get_start()
+        # k = self.exp.get_dist_scalar_k()
+        # print("mergh")
+        # print(k)
+
+        # print(np.abs((x_cur[0] - x_prev[0])), np.abs((x_cur[1] - x_prev[1])))
+        # # If the heading is not going anywhere, put max penalty
+        # if np.abs((x_cur[0] - x_prev[0])) < k and np.abs((x_cur[1] - x_prev[1])) < k:
+        #     return 2.0
+
+        # print(np.abs((x_cur[0] - goal[0])), np.abs((x_cur[1] - goal[1])))
+        # # if we are on the goal, return max penalty
+        # if np.abs((x_cur[0] - goal[0])) < k and np.abs((x_cur[1] - goal[1])) < k:
+        #     return 2.0
+
         P_oa = self.prob_heading_from_pt_seq(x_cur, x_prev, i, goal, visibility_coeff, u=u, override=override)
 
         if (P_oa) < 0:
@@ -721,9 +736,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # If you did nothing and stood in the same spot, 
         # then min probability, maximum penalty
-
-        if np.abs((x_cur[0] - x_prev[0])) < .0000000001 and np.abs((x_cur[1] - x_prev[1])) < .0000000001:
-            return 0.0
 
         return heading_P_oa_4d
 
@@ -1562,6 +1574,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # print("incoming " + str(u))
         R = np.eye(2)
+        
         u_diff      = np.abs(u - self.u_path[i])
         # u_diff      = np.abs(u - np.asarray([0, 0]))
         val_u_diff  = np.dot(u_diff.T, R)
@@ -1573,6 +1586,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         print("udiff calc")
         print(u, "-", self.u_path[i], u_diff, val_u_diff)
+        print(u_calc)
 
         return val_u_diff
 
@@ -1614,6 +1628,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print("xdiff detail")
         print("x_input, x_ref, x_cur, x_diff")
         print(x_input, x_ref, x_cur, x_diff)
+
         Q = np.eye(2)
         squared_x_cost = .5 * x_diff.T.dot(Q).dot(x_diff)
 
@@ -1648,9 +1663,28 @@ class SocLegPathQRCost(LegiblePathQRCost):
         u = copy.copy(input_u)
         x = copy.copy(input_x)
         i = copy.copy(input_i)
-        print("INPUT U IS " + str(u))
-        if u is None:
-            u = np.asarray([np.inf, np.inf])
+       
+        # print("INPUT U IS " + str(u))
+        # if u is None:
+        #     u = np.asarray([np.inf, np.inf])
+
+        # if not isinstance(u, (list, np.ndarray)): # and np.isnan(u):
+        #     print("Alert: u is not a list")
+        #     return np.inf
+        # if not isinstance(x, (list, np.ndarray)): # and np.isnan(x):
+        #     print("Alert: x is not a list")
+        #     return np.inf
+
+        try:
+            # if u[0] == np.nan:
+            #     print("Alert: u has a nan")
+            #     return np.inf
+            if x[0] is np.nan:
+                print("Alert: x has a nan")
+                return np.inf
+        except:
+            print("Alert: issue with input format")
+            return np.inf
 
 
         scale_term  = self.exp.get_solver_scale_term() #0.01 # 1/100
@@ -1713,7 +1747,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 1.0
-        wt_lam       = 0.5 * (1.0 / self.exp.get_dt())
+        wt_lam       = 1.0 * (1.0 / self.exp.get_dt())
         wt_heading   = 1.0
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
@@ -1734,8 +1768,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is not None:
             # wt_heading  = wt_heading + wt_legib
             wt_legib    *= 0.0
-            wt_lam      *= 1.0
-            wt_heading  = 0.01 #.01
+            wt_lam      *= 5.0 # 1.0
+            wt_heading  *= 1.0 #5x for speed limited .01
 
         # JUST DISTANCE SQR
         if self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
@@ -1749,9 +1783,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # JUST DISTANCE EXP OG
         elif self.exp.get_mode_type_dist() is 'exp' and self.exp.get_mode_type_heading() is None:
-            wt_legib    *= 1.0 #10.0
-            wt_heading  *= 1.0 #10.0
-            wt_lam      *= 1.0 #10.0
+            wt_legib    *= 2.0 #10.0
+            wt_heading  *= 0.0 #10.0
+            wt_lam      *= 1.0 # 0.1 #10.0
 
 
         val_legib       = 0
@@ -1824,10 +1858,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
         stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])
         stage_costs = (stage_costs)
 
-        # if stage_costs != J:
-        #     print("alert! j math is off")
-        #     print("J = " + str(J))
-        #     print(stage_costs)
+        if stage_costs != J:
+            print("alert! j math is off")
+            print("J = " + str(J))
+            print(stage_costs)
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
             print("STAGE,\t TERM")
@@ -1867,6 +1901,97 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
         return distance
+
+    def logsumexp(self, x):
+        c = np.max(x)
+        total = 0
+        for x_val in x:
+            total += np.exp(x_val - c)
+
+        return c + np.log(total)
+
+    # # https://timvieira.github.io/blog/post/2014/02/11/exp-normalize-trick/
+    # def small_value_norm(self, values):
+    #     norm_array = []
+    #     logsumexp_norm = self.logsumexp(values)
+    #     print("logsumexp numerator")
+    #     print(logsumexp_norm)
+    #     # print(np.logsumexp(values))
+
+    #     # np.exp(x - logsumexp(x))
+    #     for x in values:
+    #         v = np.exp(x - logsumexp_norm)
+    #         norm_array.append(v)
+
+    #     return norm_array
+
+    def small_value_norm(self, values):
+        smallest = np.min([i for i in values if i != 0])
+
+        order = (-np.log1p(smallest))
+        if order > 0:
+           order = 0
+        sf = np.exp(order)
+        scaled = [x * sf for x in values]
+        tot = sum(scaled)
+        norm = [x/tot for x in scaled]
+
+        return norm
+
+    def small_value_norm_v1(self, values):
+        no_z = [i for i in values if i != 0]
+        no_z = [i for i in values if i != np.nan]
+        print(values, no_z)
+
+        # if len(no_z) < len(values):
+        #     new_values = []
+        #     for v in values:
+        #         if v == 0:
+        #             new_val = 0
+        #         else:
+        #             new_val = 1.0 / len(no_z)
+        #         new_values.append(new_val)
+
+        #     return new_values
+
+        if len(no_z) == 0:
+            if len(values)== 0:
+                print("Alert: values has length of 0")
+            return [1.0/len(values) for i in values]
+
+        smallest = np.min(no_z)
+        no_z_max = np.max(no_z)
+        print(no_z, smallest, no_z_max)
+        biggest_index = no_z.index(no_z_max)
+        # print("smallest")
+        # print(smallest)
+
+        if smallest < 10e-160:
+            values = [i * 10e160 for i in values]
+
+        # This is about the point where divide by 0 issues happen
+        if smallest < 10e-160:
+            print("Alert: Smallest caught")
+            new_values = []
+            for v in values:
+                new_values.append(0.0)
+
+            new_values[biggest_index] = 1.0
+            # print("v small smallest")
+            return new_values
+
+        order = (-np.log10(smallest))
+        # print(order)
+        if order > 0:
+           order = 0
+        sf = 10**order
+        scaled = [x * sf for x in values]
+        tot = sum(scaled)
+        # print("tot")
+        # print(tot)
+        norm = [x/tot for x in scaled]
+
+        return norm
 
     def get_relative_distance_value(self, start, goal_in, x_input, terminal, mode_dist):
         Q       = np.eye(2) #self.Q_terminal if terminal else self.Q
@@ -1910,6 +2035,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
         diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
 
+        print("vals")
+        print(start, x)
+        print(x, goal)
+        print(start, goal)
+
         print("exp diffs")
         # print(diff_curr, diff_goal, diff_all)
         # print(np.dot(np.dot((diff_curr.T), Q), ((diff_curr)))
@@ -1920,21 +2050,21 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(diff_all_v)
         print("==")
 
-        print("exp norms")
-        # print(diff_curr, diff_goal, diff_all)
-        print(np.linalg.norm(diff_curr))
-        print(np.linalg.norm(diff_goal))
-        print(np.linalg.norm(diff_all))
-        print("==")
+        # print("exp norms")
+        # # print(diff_curr, diff_goal, diff_all)
+        # print(np.linalg.norm(diff_curr))
+        # print(np.linalg.norm(diff_goal))
+        # print(np.linalg.norm(diff_all))
+        # print("==")
 
         # diff_curr   = diff_curr.T
         # diff_goal   = diff_goal.T
         # diff_all    = diff_all.T
 
 
-        diff_curr_size = np.linalg.norm(diff_curr)
-        diff_goal_size = np.linalg.norm(diff_goal)
-        diff_all_size  = np.linalg.norm(diff_all)
+        # diff_curr_size = np.linalg.norm(diff_curr)
+        # diff_goal_size = np.linalg.norm(diff_goal)
+        # diff_all_size  = np.linalg.norm(diff_all)
 
         if np.array_equal(goal[:2], [3.79, -6.99]) or np.array_equal(goal[:2], [7.41, -6.99]):
             # Apply roughly the scalar to match the OG dimensions, 
@@ -1954,14 +2084,14 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         FLAG_SCALE_FOR_VARIANCE = True
         if FLAG_SCALE_FOR_VARIANCE:
-            k = np.linalg.norm(start - goal) / (self.exp.get_N()) * 1.0
+            k = self.exp.get_dist_scalar_k() * np.exp(-10)
             print("scaling by ")
             print(k)
 
 
-        diff_curr   = diff_curr * (1.0 / k)
-        diff_goal   = diff_goal * (1.0 / k)
-        diff_all    = diff_all * (1.0 / k)
+        diff_curr   = diff_curr * (k)
+        diff_goal   = diff_goal * (k)
+        diff_all    = diff_all * (k)
 
         # diff_curr_size = diff_curr_size * diff_curr_size
         # diff_goal_size = diff_goal_size * diff_goal_size
@@ -2031,6 +2161,8 @@ class SocLegPathQRCost(LegiblePathQRCost):
         elif (P_oa) > 1:
             print("ALERT: P_oa > 1")
 
+        print("P_oa is " + str(P_oa))
+
         # return (np.exp(1.0)) - np.exp(P_oa)
         return (1.0) - P_oa
 
@@ -2081,7 +2213,10 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
 
         goal_values = []
-        for alt_goal in all_goals:
+        target_index = -1
+
+        for j in range(len(all_goals)):
+            alt_goal = all_goals[j]
             alt_goal_xy = np.asarray(alt_goal[:2])
             goal_val = self.get_relative_distance_value(start, alt_goal_xy, x, terminal, mode_dist) 
             goal_values.append(goal_val)
@@ -2089,6 +2224,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
             if np.array_equal(goal[:2], alt_goal[:2]):
                 target_val = goal_val
                 print("Target found")
+                target_index = j
 
             else:
                 print(goal, alt_goal)
@@ -2098,16 +2234,28 @@ class SocLegPathQRCost(LegiblePathQRCost):
         print(target_val)
         print("All values")
         print([str(ele) for ele in goal_values])
+        print("-")
 
         total = sum([abs(ele) for ele in goal_values])
 
-        try:        
-            # dist_prob = (total - target_val) / (total)
-            print(target_val, total)
-            dist_prob = (target_val) / total
-        except:
+        if mode_dist == 'exp':
+            print("small value norm")
+            goal_values_norm = self.small_value_norm(goal_values)  
+            # goal_values_norm_v1 = self.small_value_norm_v1(goal_values)   
+            print("LOGSUMEXP")
+            print(goal_values_norm)
+            # print(goal_values_norm_v1)
+            dist_prob = goal_values_norm[target_index]
+            # dist_prob = target_val / np.linalg.norm(goal_values, ord=1)
+
+            print("Dist normalized")
+            print(dist_prob, goal_values)
+        elif total == 0:
             print("ALERT: in prob distance division")
+            num_goals = len(all_goals)
             dist_prob = ((1.0/num_goals))
+        else:
+            dist_prob = (goal_values[target_index]) / total
 
         print("Dist prob " + str(dist_prob))
 
