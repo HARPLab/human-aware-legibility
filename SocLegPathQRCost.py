@@ -689,6 +689,17 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # if np.abs((x_cur[0] - goal[0])) < k and np.abs((x_cur[1] - goal[1])) < k:
         #     return 2.0
 
+        # Protection against the weird case of both ydiff and xdiff = 0
+        # which would be a discontinuity
+        # https://github.com/google/jax/discussions/15865
+        if np.array_equal(x_cur, x_prev):
+            return 2.0
+
+        # How do we handle getting to the goal early?
+        if np.array_equal(x_cur, goal):
+            return 2.0
+
+
         P_oa = self.prob_heading_from_pt_seq(x_cur, x_prev, i, goal, visibility_coeff, u=u, override=override)
 
         if (P_oa) < 0:
@@ -1747,7 +1758,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         visibility_coeff = f_value
 
         wt_legib     = 1.0
-        wt_lam       = 1.0 * (1.0 / self.exp.get_dt())
+        wt_lam       = 1.0 #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading   = 1.0
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
@@ -1767,9 +1778,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
         # If a heading-only scenario, shift weighting to that
         if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is not None:
             # wt_heading  = wt_heading + wt_legib
-            wt_legib    *= 0.0
+            wt_legib    = 0.0
             wt_lam      *= 5.0 # 1.0
-            wt_heading  *= 0.5 #5x for speed limited .01
+            wt_heading  *= 1.0 #5x for speed limited .01
 
         # JUST DISTANCE SQR
         
