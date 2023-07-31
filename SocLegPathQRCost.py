@@ -1769,15 +1769,16 @@ class SocLegPathQRCost(LegiblePathQRCost):
             # wt_heading  = wt_heading + wt_legib
             wt_legib    *= 0.0
             wt_lam      *= 5.0 # 1.0
-            wt_heading  *= 1.0 #5x for speed limited .01
+            wt_heading  *= 0.5 #5x for speed limited .01
 
         # JUST DISTANCE SQR
-        if self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
-            wt_lam      *= 1.0
-            wt_legib    *= 1.0
-
+        
         # JUST DISTANCE LINEAR
-        elif self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
+        if self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
+            wt_lam      *= 1.0
+            wt_legib    *= 1.5
+
+        elif self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
             wt_lam      *= 1.0
             wt_legib    *= 1.0
 
@@ -1926,9 +1927,12 @@ class SocLegPathQRCost(LegiblePathQRCost):
     #     return norm_array
 
     def small_value_norm(self, values):
+        if all(a == 0 for a in values):
+            values = [1.0 / len(values) for i in values]
+
         smallest = np.min([i for i in values if i != 0])
 
-        order = (-np.log1p(smallest))
+        order = (-np.log(smallest)) # log1p can add to the precision
         if order > 0:
            order = 0
         sf = np.exp(order)
@@ -1993,7 +1997,30 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         return norm
 
-    def get_relative_distance_value(self, start, goal_in, x_input, terminal, mode_dist):
+    def get_estimated_cost(self, distance, num_steps):
+        FLAG_SCALE_FOR_VARIANCE = True
+        k = 1.0
+        if FLAG_SCALE_FOR_VARIANCE:
+            # k is the step size of the expected smallest step
+            k = self.exp.get_dist_scalar_k()
+            print("scaling by ")
+            print(k)
+
+        if num_steps == 0:
+            return 0
+
+        # est_dist = distance / num_steps
+        # est_dist = num_steps * (est_dist * est_dist)
+
+        est_dist = distance * k
+
+        print("Est dist")
+        print(distance, k, est_dist)
+
+        return est_dist
+
+
+    def get_relative_distance_value(self, i_step, start, goal_in, x_input, terminal, mode_dist):
         Q       = np.eye(2) #self.Q_terminal if terminal else self.Q
         x       = x_input[:2]
         goal    = goal_in
@@ -2034,6 +2061,11 @@ class SocLegPathQRCost(LegiblePathQRCost):
         diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
         diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
         diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+        total_steps = self.exp.get_N()
+        diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
+        diff_all_v = self.get_estimated_cost(diff_all_v, self.exp.get_N())
 
         print("vals")
         print(start, x)
@@ -2081,17 +2113,6 @@ class SocLegPathQRCost(LegiblePathQRCost):
             print("==")
         # else:
         #     print("Alert: goal is " + str(goal))
-
-        FLAG_SCALE_FOR_VARIANCE = True
-        if FLAG_SCALE_FOR_VARIANCE:
-            k = self.exp.get_dist_scalar_k() * np.exp(-10)
-            print("scaling by ")
-            print(k)
-
-
-        diff_curr   = diff_curr * (k)
-        diff_goal   = diff_goal * (k)
-        diff_all    = diff_all * (k)
 
         # diff_curr_size = diff_curr_size * diff_curr_size
         # diff_goal_size = diff_goal_size * diff_goal_size
@@ -2218,7 +2239,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
         for j in range(len(all_goals)):
             alt_goal = all_goals[j]
             alt_goal_xy = np.asarray(alt_goal[:2])
-            goal_val = self.get_relative_distance_value(start, alt_goal_xy, x, terminal, mode_dist) 
+            goal_val = self.get_relative_distance_value(i_step, start, alt_goal_xy, x, terminal, mode_dist) 
             goal_values.append(goal_val)
 
             if np.array_equal(goal[:2], alt_goal[:2]):
