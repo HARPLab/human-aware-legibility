@@ -163,6 +163,15 @@ class PathingExperiment():
 
         self.setup_file_id()
 
+        max_dist = 0
+        for goal in all_goals:
+            dist = np.linalg.norm(np.asarray(start) - np.asarray(goal))
+            if dist > max_dist:
+                max_dist = dist
+
+        self.max_dist = max_dist
+
+
     def on_iteration_exp(self, iteration_count, xs, us, J_opt, accepted, converged):
         self.J_hist.append(J_opt)
         info = "converged" if converged else ("accepted" if accepted else "failed")
@@ -206,6 +215,7 @@ class PathingExperiment():
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
         print("''''''" + str(solver_label) + "''''''")
+
 
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
@@ -555,7 +565,11 @@ class PathingExperiment():
         mag = np.sqrt(x.dot(x))
         return mag
 
-    def get_dist_scalar_k(self):
+    def get_dist_scalar_expected_step_size(self):
         k = np.linalg.norm(np.asarray(self.get_start()) - np.asarray(self.get_target_goal())) / (self.get_N())
+        return k
+
+    def get_dist_scalar_k(self):
+        k = 1.0 / self.max_dist
         return k
 
