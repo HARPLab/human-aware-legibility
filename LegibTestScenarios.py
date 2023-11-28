@@ -27,8 +27,8 @@ def scenario_test_a(goal_index=None):
     # goal3 = [3.0, 2.0]
 
     start = [0.0, 0.0]
-    goal1 = [2.0, -1.0]
-    goal3 = [2.0, 1.0]
+    goal3 = [10.0, -5.0]
+    goal1 = [10.0, 5.0]
 
     # start           = [0.0, 0.0]
     # goal1 = [-1.0, 2.0]
@@ -39,7 +39,54 @@ def scenario_test_a(goal_index=None):
     # goal3 = [-2, -1.0]
 
     target_goal = goal1
-    all_goals   = [goal3, goal1]
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    # center points of tables, circular in iLQR world
+    # radius needs to be agreed upon between this definition and the Obstacle class
+    table_pts = []
+    # table_pts.append([1.0, 1.0])
+    # table_pts.append([3.0, 0.5])
+
+    obs_pts = []
+    # obs_pts.append([1.0, 0.5, 0])
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_test_c(goal_index=None):
+    label = "testc" # _g" + str(goal_index)
+
+    # start           = [1.0, 3.0]
+
+    # goal1 = [3.0, 4.0]
+    # goal3 = [3.0, 2.0]
+
+    start = [0.0, 0.0]
+    goal3 = [1.00, .50]
+    goal1 = [1.00, 1.50]
+
+    # start           = [0.0, 0.0]
+    # goal1 = [-1.0, 2.0]
+    # goal3 = [1.0, 2.0]
+
+    # start = [0.0, 0.0]
+    # goal1 = [-2, 1.0]
+    # goal3 = [-2, -1.0]
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
 
     if goal_index is not None:
         target_goal = all_goals[goal_index]
@@ -70,8 +117,8 @@ def scenario_test_b(goal_index=None):
 
     start           = [0.0, 0.0]
 
-    goal1 = [-1.0, 2.0]
-    goal3 = [1.0, 2.0]
+    goal3 = [-5.0, 10.0]
+    goal1 = [5.0, 10.0]
 
     target_goal = goal1
     all_goals   = [goal1, goal3]
@@ -904,19 +951,23 @@ def scenario_6():
 def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
-    # TEST SCENARIO
-    label, exp = scenario_test_a(goal_index=0)
-    scenarios[label] = exp
-
     # # TEST SCENARIO
-    # label, exp = scenario_test_a(goal_index=1)
+    # label, exp = scenario_test_a(goal_index=0)
     # scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_test_a(goal_index=1)
+    scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_b(goal_index=0)
     scenarios[label] = exp
 
-    return scenarios
+    # TEST SCENARIO
+    label, exp = scenario_test_c(goal_index=0)
+    scenarios[label] = exp
+
+    # return scenarios
     
     # # TEST SCENARIO
     # label, exp = scenario_test_b(goal_index=1)
