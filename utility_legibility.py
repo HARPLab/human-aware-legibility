@@ -125,7 +125,7 @@ def f_exp_single_normalized_ilqr(t, pt, aud, path):
 
 # ADA MASTER VISIBILITY EQUATION
 # ILQR OBSERVER-AWARE EQUATION
-def get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True, epsilon=.01):
+def get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True, epsilon=.01, angle_fov=120):
 
 	observers = []
 	score = []
@@ -145,7 +145,7 @@ def get_visibility_of_pt_w_observers_ilqr(pt, aud, normalized=True, epsilon=.01)
 		# if obs_orient != 300:
 		# 	print(obs_orient)
 		# 	exit()
-		obs_FOV 	= observer.get_FOV()
+		obs_FOV 	= angle_fov #observer.get_FOV()
 
 		angle 		= angle_between_points(observer.get_center(), pt)
 		distance 	= resto.dist(pt, observer.get_center())

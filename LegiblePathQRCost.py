@@ -560,10 +560,16 @@ class LegiblePathQRCost(FiniteDiffCost):
             return approx_fprime(x, lambda x: self._l_terminal(x, i),
                                  self._x_eps)
 
-        # val_old = approx_fprime(x, lambda x: self._l(x, u, i), self._x_eps)
+        print("Calculating L_x")
         val = grad(lambda x: self._l(x, u, i))
+        print("(x), val")
+        print(x, val)
+ 
         val = val(x)
-        # val = val_old
+
+        # if np.nan in val:
+        #    val = approx_fprime(x, lambda x: self._l(x, u, i), self._x_eps)
+
         if self.FLAG_DEBUG_J:
             print("J_x at " + str(x) + "," + str(u) + ","  + str(i))
             
@@ -588,6 +594,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         # val = val_old
         val = grad(lambda u: self._l(x, u, i))
         val = val(u)
+
+        # if np.nan in val:
+        #    val = approx_fprime(u, lambda u: self._l(x, u, i), self._x_eps)
+
         if self.FLAG_DEBUG_J:
             print("J_u at " + str(x) + "," + str(u) + ","  + str(i))
             print(val)

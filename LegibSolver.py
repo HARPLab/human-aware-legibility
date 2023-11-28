@@ -12,6 +12,7 @@ import theano
 
 from NavigationDynamics import NavigationDynamics
 from NavDynamics import NavDynamics
+from NavDynamicsAuto import NavDynamicsAuto
 import LegibTestScenarios as test_scenarios
 
 # theano.config.exception_verbosity='high'
@@ -62,7 +63,8 @@ def run_solver(exp):
     if state_size < 4 or FLAG_FASTER_CHECK:
         dynamics = NavigationDynamics(exp.get_dt(), exp)
     else:
-        dynamics = NavDynamics(exp)
+        # dynamics = NavDynamics(exp)
+        dynamics = NavDynamicsAuto(exp)
 
     # Note that the augmented state is not all 0.
     # x0      = dynamics.augment_state(np.array(x0_raw)).T
@@ -90,8 +92,8 @@ def run_solver(exp):
 
     cost.init_output_log(dash_folder)
 
-    tol = 1e-4 #8 #1e-5
-    num_iterations = 100
+    tol = 1e-8 #8 #1e-5
+    num_iterations = 60 #25 #50
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1

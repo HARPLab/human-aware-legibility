@@ -10,8 +10,8 @@ class NavDynamics(AutoDiffDynamics):
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-1.0, #-1, 1
-                 max_bounds=1.0,
+                 min_bounds=-.50, #-1, 1
+                 max_bounds=.50,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
 
@@ -30,9 +30,15 @@ class NavDynamics(AutoDiffDynamics):
             state: [sin(theta), cos(theta), theta']
             action: [torque]
         """
+        # k = np.linalg.norm(start - goal) / (self.exp.get_N())
+        k = .1
+
         self.constrained    = constrain
-        self.min_bounds     = min_bounds * exp.get_dt()
-        self.max_bounds     = max_bounds * exp.get_dt()
+        self.min_bounds     = min_bounds * exp.get_dt() * k
+        self.max_bounds     = max_bounds * exp.get_dt() * k
+
+        print("DYNAM: min max bounds")
+        print(self.min_bounds, self.max_bounds)
 
         self.exp            = exp
 
@@ -68,8 +74,11 @@ class NavDynamics(AutoDiffDynamics):
         x_x_prev = T.dscalar("x_x_prev")
         x_y_prev = T.dscalar("x_y_prev")
 
+        u_x = T.dscalar("u_x")
+        u_y = T.dscalar("u_y")
+
         x_inputs = [x_x, x_y, x_x_prev, x_y_prev]
-        u_inputs = [x_x, u_y]
+        u_inputs = [u_x, u_y]
         super(NavDynamics, self).__init__(f, x_inputs, u_inputs, hessians=True,
                                                 **kwargs)
 

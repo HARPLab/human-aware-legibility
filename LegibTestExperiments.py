@@ -1,4 +1,5 @@
-purpose = "heading_fix_all"
+purpose = "test_exp_heading_wt_all_1"
+# purpose = "test_dist_k"
 
 import os
 import sys
@@ -35,7 +36,7 @@ def run_all_tests():
     # SET UP OPTIONS FOR THIS RUN
     # MAINLY IS IT'S A FULL RUN OR A QUICK ONE TO VERIFY CODE
     scenario_filters = {}
-    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = False
+    scenario_filters[test_scenarios.SCENARIO_FILTER_MINI]       = True
     scenario_filters[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] = False
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
@@ -104,23 +105,32 @@ def test_full_set(dash_folder, scenario_filters):
 
     test_setups_og = []
 
-    new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"no-legib", 'title':'No Legibility, just direct', 'mode_heading':None, 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"head_lin", 'title':'Pure linear heading', 'mode_heading':'lin', 'mode_dist':None, 'mode_blend': None}
-    test_setups_og.append(new_test)
+    # new_test      = {'label':"head_sqr", 'title':'Pure squared heading', 'mode_heading':'sqr', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
+    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
     test_setups_og.append(new_test)
 
     new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
     test_setups_og.append(new_test)
 
-    new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    new_test      = {'label':"dist_exp", 'title':'Pure OG', 'mode_heading':None, 'mode_dist':'exp', 'mode_blend': None}
     test_setups_og.append(new_test)
+
+    # new_test      = {'label':"head_exp", 'title':'Pure exp heading', 'mode_heading':'exp', 'mode_dist':None, 'mode_blend': None}
+    # test_setups_og.append(new_test)
+
+    # new_test      = {'label':"dist_sqr", 'title':'Dist square heading', 'mode_heading':None, 'mode_dist':'sqr', 'mode_blend': None}
+    # test_setups_og.append(new_test)
+
+    # new_test      = {'label':"dist_lin", 'title':'Dist linear heading', 'mode_heading':None, 'mode_dist':'lin', 'mode_blend': None}
+    # test_setups_og.append(new_test)
 
     # new_test      = {'label':"mixed_sqr", 'title':'Mixed Dist / sqr heading', 'mode_heading':'sqr', 'mode_dist':'sqr', 'mode_blend': 'min'}
     # test_setups_og.append(new_test)
