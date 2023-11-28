@@ -725,6 +725,18 @@ class SocLegPathQRCost(LegiblePathQRCost):
         if len(x_prev) == 4:
             x_prev = x_prev[2:]
 
+
+        # 4.117876  -0.2    -6.848375
+
+        # g_away          = np.asarray([7.41, -6.99]) # G_AWAY   0 angle
+        # g_me            = np.asarray([3.79, -6.99]) # G_ME   180 angle
+        if np.array_equal(goal_in, [3.79, -6.99]) and self.dist_between(x_cur_in, goal_in) < .36:
+            return 1.0
+
+        # if np.array_equal(goal_in, [7.41, -6.99]) and goal_in dist_between(x_cur_in, goal_in) < .36:
+        #     return 1.0
+
+
         # if not np.array_equal(x_cur_in, x_prev):
         #     x_theta = self.get_heading_of_pt_diff_p2_p1(x_cur[:2], x_prev[:2])
         # else:
@@ -824,9 +836,9 @@ class SocLegPathQRCost(LegiblePathQRCost):
             #     print("ALERT: Get angle between needs some work")
             #     # exit()
 
-            if mode_heading is 'sqr':
+            if mode_heading == 'sqr':
                 effort_made = effort_made**2
-            elif mode_heading is 'exp':
+            elif mode_heading == 'exp':
                 effort_made = np.exp(effort_made)
 
             all_effort_measures.append(effort_made)
@@ -1763,39 +1775,39 @@ class SocLegPathQRCost(LegiblePathQRCost):
         wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
         
         # PURE LEGIBILITY MODE
-        if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is None:
+        if self.exp.get_mode_type_dist() == None and self.exp.get_mode_type_heading() == None:
             wt_legib    = 0
             wt_heading  = 0
             wt_lam      = 10.0 * wt_lam
 
         # JUST DISTANCE
         # If heading is not on, set the weight to not on
-        if self.exp.get_mode_type_dist() is not None and self.exp.get_mode_type_heading() is None:
+        if self.exp.get_mode_type_dist() == not None and self.exp.get_mode_type_heading() == None:
             # wt_legib    = wt_legib + wt_heading
             wt_heading  = 0.0
 
         # JUST HEADING
         # If a heading-only scenario, shift weighting to that
-        if self.exp.get_mode_type_dist() is None and self.exp.get_mode_type_heading() is not None:
+        if self.exp.get_mode_type_dist() == None and self.exp.get_mode_type_heading() != None:
             # wt_heading  = wt_heading + wt_legib
             wt_legib    = 0.0
-            wt_lam      *= 5.0 # 1.0
+            wt_lam      *= 2.0 # 1.0
             wt_heading  *= 1.0 #5x for speed limited .01
 
         # JUST DISTANCE SQR
         
         # JUST DISTANCE LINEAR
-        if self.exp.get_mode_type_dist() is 'lin' and self.exp.get_mode_type_heading() is None:
+        if self.exp.get_mode_type_dist() == 'lin' and self.exp.get_mode_type_heading() == None:
             wt_lam      *= 1.0
-            wt_legib    *= 1.5
+            wt_legib    *= 1.0
 
-        elif self.exp.get_mode_type_dist() is 'sqr' and self.exp.get_mode_type_heading() is None:
+        elif self.exp.get_mode_type_dist() == 'sqr' and self.exp.get_mode_type_heading() == None:
             wt_lam      *= 1.0
             wt_legib    *= 1.0
 
         # JUST DISTANCE EXP OG
-        elif self.exp.get_mode_type_dist() is 'exp' and self.exp.get_mode_type_heading() is None:
-            wt_legib    *= 2.0 #10.0
+        elif self.exp.get_mode_type_dist() == 'exp' and self.exp.get_mode_type_heading() == None:
+            wt_legib    *= 1.0 #10.0
             wt_heading  *= 0.0 #10.0
             wt_lam      *= 1.0 # 0.1 #10.0
 
@@ -2259,6 +2271,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
                 target_index = j
 
             else:
+                print("Not it")
                 print(goal, alt_goal)
 
 
