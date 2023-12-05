@@ -1,6 +1,7 @@
 import copy
 import decimal
-import numpy as np
+# import numpy as np
+import autograd.numpy as np
 import math
 import pandas as pd
 import matplotlib.pylab as plt
@@ -645,13 +646,14 @@ def f_legibility_ilqr(r, goal, goals, path, aud, f_function=None, exp_settings=N
 	# 	print(legibility)
 	# 	print(overall)
 	# 	print()
+	bug_counter = {}
 
 	if legibility > 1.0 or legibility < 0:
 		print("BAD L ==> " + str(legibility))
 		# r.get_obs_label(aud)
-		goal_index = r.get_goal_index(goal)
-		category = r.get_obs_label(aud)
-		bug_counter[goal_index, category] += 1
+		# goal_index = r.get_goal_index(goal)
+		# category = r.get_obs_label(aud)
+		# bug_counter[goal_index, category] += 1
 
 	elif (legibility == 1):
 		goal_index = r.get_goal_index(goal)
