@@ -7,16 +7,18 @@ from datetime import timedelta, datetime
 
 import utility_environ_descrip as resto
 
-from LegiblePathQRCost import LegiblePathQRCost
+# from LegiblePathQRCost import LegiblePathQRCost
 from DirectPathQRCost import DirectPathQRCost
 from ObstaclePathQRCost import ObstaclePathQRCost
 from LegibilityOGPathQRCost import LegibilityOGPathQRCost
 from OALegiblePathQRCost import OALegiblePathQRCost
 from OAObsPathQRCost import OAObsPathQRCost
 from SocLegPathQRCost import SocLegPathQRCost
+from UnderstandingPathQRCost import UnderstandingPathQRCost
 
 from LegiblePathCost import LegiblePathCost
-from SocLegPathCost import SocLegPathCost
+# from SocLegPathCost import SocLegPathCost
+
 
 PREFIX_EXPORT = 'experiment_outputs/'
 
@@ -27,11 +29,12 @@ F_VIS_LIN           = 'f_vis_lin'
 F_VIS_BIN           = 'f_vis_bin'
 
 # OPTIONS FOR COST/SOLVER TYPE
-COST_DIRECT     = 'cost_direct'
-COST_LEGIB      = 'cost_legible'
-COST_OA         = 'cost_oalegib'
-COST_OBS        = 'cost_obstacles'
-COST_OA_AND_OBS = 'cost_oa_and_obs'
+COST_DIRECT         = 'cost_direct'
+COST_LEGIB          = 'cost_legible'
+COST_OA             = 'cost_oalegib'
+COST_OBS            = 'cost_obstacles'
+COST_OA_AND_OBS     = 'cost_oa_and_obs'
+COST_UNDERSTANDING  = 'cost_understanding'
 
 # # SOLVER TYPE
 # SOLVER_LEGIB        = 'Solver=Legible'
@@ -89,7 +92,7 @@ class PathingExperiment():
 
 
     # DEFAULT COST TYPE AND F TYPE
-    cost_label  = COST_OA_AND_OBS
+    cost_label  = COST_UNDERSTANDING
     f_label     = F_VIS_BIN
 
     state_size  = 4
@@ -108,9 +111,14 @@ class PathingExperiment():
     # mode_pure_heading       = False
     # mode_heading_err_sqr    = False
 
-    mode_type_dist          = 'exp' # 'exp', 'sqr', 'lin'
-    mode_type_heading       = None
-    mode_type_blend         = None
+    mode_type_dist          = 'lin' # 'exp', 'sqr', 'lin'
+    mode_type_heading       = 'lin'
+    mode_type_blend         = 'min' #'mixed'
+
+    mode_und_target         = None
+    mode_und_secondary      = None
+
+    local_distance          = 1.0
 
     J_hist = []
     best_xs = None
@@ -193,7 +201,7 @@ class PathingExperiment():
         self.action_size = action_size
 
         Xrefline = np.tile(x_goal_raw, (N+1, 1))
-        print(Xrefline.shape, state_size)
+        # print(Xrefline.shape, state_size)
         Xrefline = np.reshape(Xrefline, (-1, state_size))
 
         u_blank  = np.asarray([0.0, 0.0])
@@ -211,7 +219,10 @@ class PathingExperiment():
         elif solver_label is COST_DIRECT:
             return DirectPathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_OA_AND_OBS:
+            exit()
             return SocLegPathQRCost(self, Xrefline, Urefline), Urefline
+        elif solver_label is COST_UNDERSTANDING:
+            return UnderstandingPathQRCost(self, Xrefline, Urefline), Urefline
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
         print("''''''" + str(solver_label) + "''''''")
@@ -451,7 +462,7 @@ class PathingExperiment():
             converged, info, iteration_count, J_opt = info_packet
             if converged is True:
                 converged_text = "CONVERGED after " + str(iteration_count)
-            elif info is 'accepted':
+            elif info == 'accepted':
                 converged_text = "ACCEPTED in " + str(iteration_count)
             else:
                 converged_text = "INCOMPLETE after " + str(iteration_count)
@@ -481,6 +492,14 @@ class PathingExperiment():
         if KEY_TYPE_BLEND in test_setup.keys():
             self.mode_type_blend = test_setup[KEY_TYPE_BLEND]
 
+        KEY_UND_TARGET = 'und_target'
+        if KEY_UND_TARGET in test_setup.keys():
+            self.mode_und_target = test_setup[KEY_UND_TARGET]
+
+        KEY_UND_SECONDARY = 'und_secondary' 
+        if KEY_UND_SECONDARY in test_setup.keys():
+            self.mode_und_secondary = test_setup[KEY_UND_SECONDARY]
+
     def get_mode_type_heading(self):
         return self.mode_type_heading
 
@@ -489,6 +508,12 @@ class PathingExperiment():
 
     def get_mode_type_blend(self):
         return self.mode_type_blend
+
+    def get_mode_und_target(self):
+        return self.mode_und_target
+
+    def get_mode_und_secondary(self):
+        return self.mode_und_secondary
 
 
     def get_solve_quality_status(self, test_group, info_packet=None):
@@ -501,7 +526,7 @@ class PathingExperiment():
             converged, info, iteration_count, J_opt = info_packet
             if converged is True:
                 converged_text = "CONV in " + str(iteration_count)
-            elif info is 'accepted':
+            elif info == 'accepted':
                 converged_text = "OK in " + str(iteration_count)
             else:
                 converged_text = "INC in " + str(iteration_count)
@@ -531,27 +556,35 @@ class PathingExperiment():
         return self.get_mode_dist_type()
 
 
+    def get_mode_understanding_target(self):
+        return self.mode_und_target
+
+    def get_mode_understanding_secondary(self):
+        return self.mode_und_secondary
+
     # TODO make this more consistent
     def get_suptitle(self):
-        title = self.exp_label + "  "
+        title = self.exp_label + "  " + self.get_mode_type_blend()
 
-        if self.mode_type_heading is None and self.mode_type_dist is None:
-            title += "No legibility"
+        # if self.mode_type_heading is None and self.mode_type_dist is None:
+        #     title += "No legibility"
 
-        if self.get_mode_type_heading() is 'sqr':
-                title += "Heading: Square"
-        elif self.get_mode_type_heading() is 'lin':
-                title += "Heading: Linear"
+        # if self.get_mode_type_heading() == 'sqr':
+        #         title += "Heading: Square"
+        # elif self.get_mode_type_heading() == 'lin':
+        #         title += "Heading: Linear"
+        # if self.get_mode_type_dist() == 'exp':
+        #     title += " Dist: Exponential"
+        # elif self.get_mode_type_dist() == 'sqr':
+        #     title += " Dist: Squared"
+        # elif self.get_mode_type_dist() == 'lin':
+        #     title += " Dist: Linear"
 
-        if self.get_mode_type_dist() is 'exp':
-            title += " Dist: Exponential"
-        elif self.get_mode_type_dist() is 'sqr':
-            title += " Dist: Squared"
-        elif self.get_mode_type_dist() is 'lin':
-            title += " Dist: Linear"
+        # if self.mode_type_blend == 'mixed':
+        #     title += " blended"
 
-        if self.mode_type_blend is 'mixed':
-            title += " blended"
+        title += "Target understanding: " + str(self.get_mode_understanding_target()) + " ::: Secondary: " + str(self.get_mode_understanding_secondary())
+        title += '\n Local dist: ' + str(self.get_local_distance())
 
         return title
 
@@ -573,3 +606,8 @@ class PathingExperiment():
         k = 1.0 / self.max_dist
         return k
 
+    def set_local_distance(self, val):
+        self.local_distance = val
+
+    def get_local_distance(self):
+        return self.local_distance
