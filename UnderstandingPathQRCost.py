@@ -1354,6 +1354,9 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         if wt_obstacle > 0:
             val_obstacle    = self.get_obstacle_penalty(x, i, goal)
 
+        # How do we use the visibility coeff?
+        visibility_coeff = 
+
         understanding_target        = self.exp.get_mode_understanding_target()
         understanding_secondary     = self.exp.get_mode_understanding_secondary()
         mode_blend                  = self.exp.get_mode_type_blend()
@@ -1372,7 +1375,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             target_costs        = val_legib + val_heading
             secondary_costs     = (1.0 - val_legib) + (1.0 - val_heading)
         elif mode_blend == 'min':
-            # ADA TODO check 
+            # ADA TODO check
             target_costs        = max(val_legib, val_heading)
             secondary_costs     = max( (1.0 - val_legib), (1.0 - val_heading))
 
