@@ -18,6 +18,71 @@ SCENARIO_FILTER_MINI = 'mini'
 SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
 DASHBOARD_FOLDER = None
 
+
+def scenario_aimakerspace_no_obs(goal_index=None):
+    label = "pilot" # _g" + str(goal_index)
+
+
+    start = [0.0, 10.0]
+    goal1 = [10.0, 8.0]
+    goal3 = [5.0, 12.0]
+
+    obs_pts = []
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    exp.set_local_distance(2.0)
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_aimakerspace(goal_index=None):
+    label = "pilot" # _g" + str(goal_index)
+
+
+    start = [0.0, 10.0]
+    goal1 = [10.0, 8.0]
+    goal3 = [5.0, 12.0]
+
+    obs_pts = []
+    obs_pts.append([goal1[0], goal1[1], 180])
+    obs_pts.append([goal3[0], goal3[1], 270])
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    exp.set_local_distance(2.0)
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
 def scenario_test_a(goal_index=None):
     label = "testa" # _g" + str(goal_index)
 
@@ -951,9 +1016,13 @@ def scenario_6():
 def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
-    # # TEST SCENARIO
-    # label, exp = scenario_test_a(goal_index=0)
-    # scenarios[label] = exp
+    # TEST SCENARIO
+    label, exp = scenario_aimakerspace_no_obs(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_aimakerspace(goal_index=0)
+    scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_test_a(goal_index=1)
@@ -967,7 +1036,7 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_test_c(goal_index=0)
     scenarios[label] = exp
 
-    # return scenarios
+    return scenarios
     
     # # TEST SCENARIO
     # label, exp = scenario_test_b(goal_index=1)
