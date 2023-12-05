@@ -812,22 +812,24 @@ class LegiblePathQRCost(FiniteDiffCost):
             if bin_visibility > 0:
                 bin_visibility = 1.0
 
-            if label is 'dist_exp':
+            if label == 'dist_exp':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            elif label is 'dist_sqr':
+            elif label == 'dist_sqr':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'sqr', 'mode_blend':None})
-            elif label is 'dist_lin':
+            elif label == 'dist_lin':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-            elif label is 'head_sqr':
+            elif label == 'head_sqr':
                 if len(x_input) == 4:
                     p = self.prob_heading_from_pt_seq(x, x_prev, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
                 else:
                     p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'sqr', 'mode_dist':None, 'mode_blend':None})
-            elif label is 'head_lin':
+            elif label == 'head_lin':
                 if len(x_input) == 4:
                     p = self.prob_heading_from_pt_seq(x, x_prev, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
                 else:
                     p = self.prob_heading(x, u, i, goal, bin_visibility, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+            else:
+                print(label)
             
             prob_list.append(p)
 

@@ -1782,7 +1782,7 @@ class SocLegPathQRCost(LegiblePathQRCost):
 
         # JUST DISTANCE
         # If heading is not on, set the weight to not on
-        if self.exp.get_mode_type_dist() == not None and self.exp.get_mode_type_heading() == None:
+        if self.exp.get_mode_type_dist() != None and self.exp.get_mode_type_heading() == None:
             # wt_legib    = wt_legib + wt_heading
             wt_heading  = 0.0
 
