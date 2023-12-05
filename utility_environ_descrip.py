@@ -1,4 +1,4 @@
-import numpy as np
+import autograd.numpy as np
 import math
 import random
 import copy
@@ -242,7 +242,7 @@ def to_xy(pt):
 	return (int(pt[0]), int(pt[1]))
 
 def dist(p0, p1):
-	return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2)
+	return np.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2)
 
 def bresenham_line(xy1, xy2):
 	x0, y0 = xy1
@@ -1273,7 +1273,7 @@ class Restaurant:
 
 			# person a
 			obs1_pt = (table_x, table_y - customer_offset)
-			# print(obs1_pt)
+			print(obs1_pt)
 			obs1_pt = unity_to_image(obs1_pt)
 
 			obs1_angle = unity_to_image_angle(150)
@@ -1283,7 +1283,7 @@ class Restaurant:
 
 			# person b
 			obs2_pt = (table_x - customer_offset_diag, table_y - customer_offset_diag)
-			# print(obs2_pt)
+			print(obs2_pt)
 			obs2_pt = unity_to_image(obs2_pt)
 			
 			obs2_angle = unity_to_image_angle(120)
@@ -1293,7 +1293,7 @@ class Restaurant:
 
 			# person c
 			obs3_pt = (table_x - customer_offset, table_y)
-			# print(obs3_pt)
+			print(obs3_pt)
 			obs3_pt = unity_to_image(obs3_pt)
 			
 			obs3_angle = unity_to_image_angle(90)
@@ -1303,7 +1303,7 @@ class Restaurant:
 		
 			# person d
 			obs4_pt = (table_x - customer_offset_diag, table_y + customer_offset_diag)
-			# print(obs4_pt)
+			print(obs4_pt)
 			obs4_pt = unity_to_image(obs4_pt)
 			
 			obs4_angle = unity_to_image_angle(60)
@@ -1313,7 +1313,7 @@ class Restaurant:
 
 			# person e
 			obs5_pt = (table_x, table_y + customer_offset)
-			# print(obs5_pt)
+			print(obs5_pt)
 			obs5_pt = unity_to_image(obs5_pt)
 			
 			obs5_angle = unity_to_image_angle(30)
@@ -1326,7 +1326,6 @@ class Restaurant:
 			obs_sets[OBS_KEY_D] = [obs2]
 			obs_sets[OBS_KEY_E] = [obs1]
 			
-
 
 
 			# obs_sets[OBS_KEY_ALL] = all_observers
@@ -1988,7 +1987,7 @@ class Restaurant:
 			endAngle = 180 * dir_y
 			t_up = int(dir_y * table_radius * .5)
 
-			if ttheta is not -1:
+			if ttheta != -1:
 				cv2.ellipse(img, center_pt, axes, angle, startAngle, endAngle, COLOR_TABLE, -1)
 			
 			table_list = [(tx + radius, ty), (tx + radius, ty - t_up), (tx - radius, ty - t_up), (tx - radius, ty)]
@@ -2188,9 +2187,13 @@ class Restaurant:
 
 		key_list = list(all_sets.keys())
 		val_list = list(all_sets.values())
-		 
-		position = val_list.index(obs_set)
-		return key_list[position]
+		
+		try:
+			position = val_list.index(obs_set)
+			return key_list[position]
+
+		except:
+			return None
 
 	def get_obs_sets(self):
 		return self.obs_sets
@@ -2427,7 +2430,7 @@ class Restaurant:
 		return self.generate_obstacle_map_and_img(self.observers, obs_set, show_cones)
 
 	def get_obs_img(self, obs_key):
-		if obs_key is 'naked':
+		if obs_key == 'naked':
 			target_obs = []
 		else:
 			target_obs = self.get_obs_sets()[obs_key]
