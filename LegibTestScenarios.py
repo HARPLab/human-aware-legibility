@@ -59,8 +59,8 @@ def scenario_aimakerspace(goal_index=None):
     goal3 = [5.0, 12.0]
 
     obs_pts = []
-    obs_pts.append([goal1[0], goal1[1], 180])
-    obs_pts.append([goal3[0], goal3[1], 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
 
     target_goal = goal1
     all_goals   = [goal1, goal3]
@@ -73,7 +73,9 @@ def scenario_aimakerspace(goal_index=None):
     table_pts = []
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
-    exp.set_local_distance(2.0)
+    exp.set_local_distance(5.0)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals)
 
     N = 26
     exp.set_N(N)
@@ -121,6 +123,7 @@ def scenario_test_a(goal_index=None):
     # obs_pts.append([1.0, 0.5, 0])
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    exp.set_local_distance(5.0)
 
     N = 26
     exp.set_N(N)
