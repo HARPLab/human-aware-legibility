@@ -113,12 +113,15 @@ class PathingExperiment():
 
     mode_type_dist          = 'lin' # 'exp', 'sqr', 'lin'
     mode_type_heading       = 'lin'
-    mode_type_blend         = 'min' #'mixed'
+    mode_type_blend         = 'mixed' #'min' #'mixed'
 
     mode_und_target         = None
     mode_und_secondary      = None
 
     local_distance          = 1.0
+
+    observer_goal_pairs         = []
+    has_observer_goal_pairs     = False
 
     J_hist = []
     best_xs = None
@@ -288,6 +291,20 @@ class PathingExperiment():
     def get_action_size(self):
         return self.action_size
 
+    def set_observer_goal_pairs(self, observers, goals):
+        self.observers = observers 
+        self.goal = goals
+
+        observer_goal_pairs = []
+
+        for i in range(len(observers)):
+            observer_goal_pairs.append([observers[i], goals[i]])
+
+        self.observer_goal_pairs = observer_goal_pairs
+
+        self.has_observer_goal_pairs = True
+
+
     def set_observers(self, x):
         if type(x[0]) is resto.Observer:
             restaurant = resto.Restaurant(resto.TYPE_CUSTOM, table_pts=self.table_pts, goals=self.goals, start=self.start, observers=x, dim=None)
@@ -317,6 +334,16 @@ class PathingExperiment():
 
     def get_target_goal(self):
         return self.target_goal
+
+    def get_target_observer(self):
+        return self.target_observer
+
+    def get_secondary_goals(self):
+        return [x for x in self.goals if x != self.target_goal]
+
+    def get_secondary_observers(self):
+        return [x for x in self.observers if x != self.target_observer]
+
 
     def set_QR_weights(self, Q, R, Qf):
         self.Q  = Q
@@ -476,7 +503,8 @@ class PathingExperiment():
         return blurb
 
     def set_target_goal_index(self, ti):
-        self.target_goal = self.goals[ti]
+        self.target_goal        = self.goals[ti]
+        self.target_observer    = self.observers[ti]
 
     def set_test_options(self, test_setup):
         # 'heading-mode':'none', 'dist-mode':'lin', 'blend-type': 'none'
