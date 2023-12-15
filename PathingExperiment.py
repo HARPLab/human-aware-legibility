@@ -630,6 +630,10 @@ class PathingExperiment():
         k = np.linalg.norm(np.asarray(self.get_start()) - np.asarray(self.get_target_goal())) / (self.get_N())
         return k
 
+    def get_max_dist(self):
+        return self.max_dist
+
+
     def get_dist_scalar_k(self):
         k = 1.0 / self.max_dist
         return k
