@@ -1172,6 +1172,62 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         return squared_x_cost
 
+    def get_visibility_of_all(self, x):
+        is_vis_target = 0
+        is_vis_secondary = []
+
+        observers       = self.exp.get_observers()
+        target_obs      = self.exp.get_target_observer()
+        secondary_obs   = self.exp.get_secondary_observers()
+
+        # what to do if there are no observers
+        if len(observers) > 0:
+            return 1.0, 1.0
+
+        # if self.exp.get_is_oa_on() is True:
+
+        vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [self.exp.get_target_observer()], normalized=True)
+        if vis_target > 0:
+            is_vis_target = True
+        else:
+            is_vis_target = False
+
+        for o in self.exp.get_secondary_observers():
+            vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [o], normalized=True)
+            if vis_target > 0:
+                is_vis_target = True
+            else:
+                is_vis_target = False
+
+            is_vis_observers.append(is_vis_target)
+
+
+        return is_vis_target, is_vis_observers
+
+    def get_if_local_to_all(self, x):
+        islocal_target      = 0
+        islocal_secondary   = []
+
+        observers       = self.exp.get_observers()
+        target_obs      = self.exp.get_target_observer()
+        secondary_obs   = self.exp.get_secondary_observers()
+
+        if self.dist_between(x, target_obs.get_center()) < self.exp.get_local_distance():
+                islocal_target = 1.0
+    
+        for o in self.exp.get_secondary_observers():
+            if self.dist_between(x, o.get_center()) < self.exp.get_local_distance():
+                islocal_secondary.append(1.0)
+            else:
+                islocal_secondary.append(0.0)            
+
+        return islocal_target, islocal_secondary
+
+
+    def get_stage_components_per_goal(x):
+        return
+
+
     # original version for plain path following
     def l(self, input_x, input_u, input_i, terminal=False, just_term=False, just_stage=False, test_component=None):
         """Instantaneous cost function.
@@ -1257,89 +1313,36 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         val_angle_diff  = 0
 
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
-        if self.exp.get_is_oa_on() is True:
-            if len(observers) > 0:
-                visibility  = legib.get_visibility_of_pt_w_observers_ilqr(x, observers, normalized=True)
-            else:
-                visibility  = 1.0
-        else:
-            visibility = 1.0
+        is_vis_target, is_vis_secondary           = self.get_visibility_of_all(x)
+        islocal_target, islocal_secondary         = self.get_if_local_to_all(x)
 
-        FLAG_OA_MIN_VIS = False
-        f_func     = self.get_f()
-        f_value    = visibility
+        # ADA NEXTTODO
+        # cost_dict = self.get_costs_relative_to_goals()
 
-        # KEEP THE VIS VALUE IF F_VIS_LIN, OR...
-        if self.exp.get_f_label() is ex.F_VIS_BIN:
-            if f_value > 0:
-                f_value = 1.0
-            else:
-                f_value = 0.0
-        elif self.exp.get_f_label() is ex.F_NONE:
-            f_value = 1.0
-
-        visibility_coeff = f_value
-
-        wt_legib     = 1.0
-        wt_lam       = 1.0 #* (1.0 / self.exp.get_dt()) this should really be N if anything
-        wt_heading   = 1.0
-        wt_obstacle  = 1.0 #self.exp.get_solver_scale_obstacle()
-        
-        # PURE LEGIBILITY MODE
-        if self.exp.get_mode_type_dist() == None and self.exp.get_mode_type_heading() == None:
-            wt_legib    = 0
-            wt_heading  = 0
-            wt_lam      = 10.0 * wt_lam
-
-        # JUST DISTANCE
-        # If heading is not on, set the weight to not on
-        if self.exp.get_mode_type_dist() != None and self.exp.get_mode_type_heading() == None:
-            # wt_legib    = wt_legib + wt_heading
-            wt_heading  = 0.0
-
-        # JUST HEADING
-        # If a heading-only scenario, shift weighting to that
-        if self.exp.get_mode_type_dist() == None and self.exp.get_mode_type_heading() != None:
-            # wt_heading  = wt_heading + wt_legib
-            wt_legib    = 0.0
-            wt_lam      *= 2.0 # 1.0
-            wt_heading  *= 1.0 #5x for speed limited .01
-
-        # JUST DISTANCE SQR
-        
-        # JUST DISTANCE LINEAR
-        if self.exp.get_mode_type_dist() == 'lin' and self.exp.get_mode_type_heading() == None:
-            wt_lam      *= 1.0
-            wt_legib    *= 1.0
-
-        elif self.exp.get_mode_type_dist() == 'sqr' and self.exp.get_mode_type_heading() == None:
-            wt_lam      *= 1.0
-            wt_legib    *= 1.0
-
-        # JUST DISTANCE EXP OG
-        elif self.exp.get_mode_type_dist() == 'exp' and self.exp.get_mode_type_heading() == None:
-            wt_legib    *= 1.0 
-            wt_heading  *= 0.0 
-            wt_lam      *= 1.0 
-
+        wt_legib        = 1.0
+        wt_lam          = 1.0 #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_heading      = 1.0
+        wt_obstacle     = 1.0 #self.exp.get_solver_scale_obstacle()
 
         val_legib       = 0
         val_lam         = 0
         val_obstacle    = 0
         val_heading     = 0
 
+        if_seen = 1.0
+
         # Get the values if necessary
         if wt_legib > 0:
-            val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, visibility_coeff)
+            val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, if_seen)
         
         if wt_heading > 0:
             if self.exp.get_state_size() < 4:
-                val_heading     = self.get_legibility_heading_stage_cost_3d(x, u, i, goal, visibility_coeff)
+                val_heading     = self.get_legibility_heading_stage_cost_3d(x, u, i, goal, if_seen)
             else:
                 x_new   = x[:2]
                 x_prev  = x[2:]
                 print("Getting heading for " + str(x_new) + ' -> ' + str(x_prev) + " from point " + str(x))
-                val_heading     = self.get_legibility_heading_stage_cost_from_pt_seq(x_new, x_prev, i, goal, visibility_coeff)
+                val_heading     = self.get_legibility_heading_stage_cost_from_pt_seq(x_new, x_prev, i, goal, if_seen)
 
         if wt_lam > 0:
             val_lam         = squared_u_cost + (squared_x_cost)
@@ -1354,12 +1357,11 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         if wt_obstacle > 0:
             val_obstacle    = self.get_obstacle_penalty(x, i, goal)
 
-        # How do we use the visibility coeff?
-        visibility_coeff = 
+        ######################################
 
-        understanding_target        = self.exp.get_mode_understanding_target()
-        understanding_secondary     = self.exp.get_mode_understanding_secondary()
         mode_blend                  = self.exp.get_mode_type_blend()
+        understanding_target        = 'local'
+        understanding_secondary     = 'local'
 
         wt_understanding_target     = 0
         wt_understanding_secondary  = 0
@@ -1368,28 +1370,42 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         val_understanding_secondary  = 0
        
         target_costs        = 0
-        secondary_costs     = 0
+        secondary_costs     = []
 
         ###### Note: Needs updating for 3 target scenarios
-        if mode_blend == 'mixed':
-            target_costs        = val_legib + val_heading
-            secondary_costs     = (1.0 - val_legib) + (1.0 - val_heading)
-        elif mode_blend == 'min':
+        # if mode_blend == 'mixed':
+        #     target_costs        = val_legib + val_heading
+        #     secondary_costs     = (1.0 - val_legib) + (1.0 - val_heading)
+        # elif mode_blend == 'min':
+
+        # HARDCODED
+        val_heading = 0
+
+        # Take the max of the two values
+        if True:
             # ADA TODO check
             target_costs        = max(val_legib, val_heading)
-            secondary_costs     = max( (1.0 - val_legib), (1.0 - val_heading))
+
+            for i in range(len(self.exp.get_secondary_observers())):
+                sec_val_legib       = (1.0 - val_legib)
+                sec_val_heading     = (1.0 - val_heading)
+                secondary_cost     = max(sec_val_legib, sec_val_heading)
+
+                secondary_costs.append(secondary_cost)
 
 
         ###### UNDERSTANDING COSTS: TARGET
+        ### Depending on mode taken from the exp packet...
         if understanding_target == None:
             val_understanding_target = 0
 
         elif understanding_target == 'global':
             val_understanding_target = target_costs
 
+        # THIS IS THE ONE WE USE
         elif understanding_target == 'local':
             #### Also needs update for multi-goal
-            if self.dist_between(x, self.exp.get_target_goal()) < self.exp.get_local_distance():
+            if islocal_target:
                 val_understanding_target = target_costs
             else:
                 val_understanding_target = 0
@@ -1403,12 +1419,11 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             val_understanding_secondary = secondary_costs
 
         elif understanding_secondary == 'local':
-            if self.dist_between(x, self.exp.get_target_goal()) < self.exp.get_local_distance():
-                val_understanding_secondary = secondary_costs
-            else:
-                val_understanding_secondary = 0
-
-
+            for i in range(len(self.exp.get_secondary_observers())):
+                islocal = islocal_secondary[i]
+                sc      = secondary_costs[i]
+                if islocal:
+                    val_understanding_secondary += sc
 
 
         wt_legib     = (wt_legib)
