@@ -1,6 +1,6 @@
 import sys
 import os
-import numpy as np
+import autograd.numpy as np
 import decimal
 
 from datetime import timedelta, datetime
@@ -18,6 +18,8 @@ from UnderstandingPathQRCost import UnderstandingPathQRCost
 
 from LegiblePathCost import LegiblePathCost
 # from SocLegPathCost import SocLegPathCost
+
+import utility_legibility as legib
 
 
 PREFIX_EXPORT = 'experiment_outputs/'
@@ -118,7 +120,7 @@ class PathingExperiment():
     mode_und_target         = None
     mode_und_secondary      = None
 
-    local_distance          = 1.0
+    local_distance          = -1
 
     observer_goal_pairs         = []
     has_observer_goal_pairs     = False
@@ -543,6 +545,69 @@ class PathingExperiment():
     def get_mode_und_secondary(self):
         return self.mode_und_secondary
 
+    # RETURN TRUE IF IN SIGHT, FALSE IF NO
+    # TARGET, then list of SECONDARY
+    def get_visibility_of_all(self, x):
+        is_vis_target = 0
+        is_vis_secondary = []
+
+        observers       = self.get_observers()
+        target_obs      = self.get_target_observer()
+        secondary_obs   = self.get_secondary_observers()
+
+        # what to do if there are no observers
+        if len(observers) == 0:
+            return True, [True]
+
+        # if self.exp.get_is_oa_on() is True:
+        is_vis_observers = []
+
+        vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [self.get_target_observer()], normalized=True)
+        if vis_target > 0:
+            is_vis_target = True
+        else:
+            is_vis_target = False
+
+        for o in self.get_secondary_observers():
+            vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [o], normalized=True)
+            if vis_target > 0:
+                is_vis_target = True
+            else:
+                is_vis_target = False
+
+            is_vis_observers.append(is_vis_target)
+
+        return is_vis_target, is_vis_observers
+
+    def dist_between(self, x1, x2):
+        # print(x1)
+        # print(x2)
+        # print(x1[0], x2[0], x1[1], x2[1])
+
+        distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
+        return distance
+
+    # RETURN TRUE IF LOCAL, FALSE IF NOT
+    # TARGET, then list of SECONDARY
+    def get_is_local_of_all(self, x):
+        islocal_target      = False
+        islocal_secondary   = []
+
+        observers       = self.get_observers()
+        target_obs      = self.get_target_observer()
+        secondary_obs   = self.get_secondary_observers()
+
+        if self.dist_between(x, target_obs.get_center()) < self.get_local_distance():
+                islocal_target = True
+    
+        for o in self.get_secondary_observers():
+            if self.dist_between(x, o.get_center()) < self.get_local_distance():
+                islocal_secondary.append(True)
+            else:
+                islocal_secondary.append(False)            
+
+        return islocal_target, islocal_secondary
+
 
     def get_solve_quality_status(self, test_group, info_packet=None):
         if info_packet is None:
@@ -612,7 +677,7 @@ class PathingExperiment():
         #     title += " blended"
 
         title += "Target understanding: " + str(self.get_mode_understanding_target()) + " ::: Secondary: " + str(self.get_mode_understanding_secondary())
-        title += '\n Local dist: ' + str(self.get_local_distance())
+        title += '\n Local dist: ' + str("{0:.3g}".format(self.get_local_distance()))
 
         return title
 
