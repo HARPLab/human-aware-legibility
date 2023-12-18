@@ -1172,58 +1172,6 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         return squared_x_cost
 
-    def get_visibility_of_all(self, x):
-        is_vis_target = 0
-        is_vis_secondary = []
-
-        observers       = self.exp.get_observers()
-        target_obs      = self.exp.get_target_observer()
-        secondary_obs   = self.exp.get_secondary_observers()
-
-        # what to do if there are no observers
-        if len(observers) > 0:
-            return 1.0, 1.0
-
-        # if self.exp.get_is_oa_on() is True:
-
-        vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [self.exp.get_target_observer()], normalized=True)
-        if vis_target > 0:
-            is_vis_target = True
-        else:
-            is_vis_target = False
-
-        for o in self.exp.get_secondary_observers():
-            vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [o], normalized=True)
-            if vis_target > 0:
-                is_vis_target = True
-            else:
-                is_vis_target = False
-
-            is_vis_observers.append(is_vis_target)
-
-
-        return is_vis_target, is_vis_observers
-
-    def get_if_local_to_all(self, x):
-        islocal_target      = 0
-        islocal_secondary   = []
-
-        observers       = self.exp.get_observers()
-        target_obs      = self.exp.get_target_observer()
-        secondary_obs   = self.exp.get_secondary_observers()
-
-        if self.dist_between(x, target_obs.get_center()) < self.exp.get_local_distance():
-                islocal_target = 1.0
-    
-        for o in self.exp.get_secondary_observers():
-            if self.dist_between(x, o.get_center()) < self.exp.get_local_distance():
-                islocal_secondary.append(1.0)
-            else:
-                islocal_secondary.append(0.0)            
-
-        return islocal_target, islocal_secondary
-
-
     def get_stage_components_per_goal(x):
         return
 
@@ -1313,8 +1261,8 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         val_angle_diff  = 0
 
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
-        is_vis_target, is_vis_secondary           = self.get_visibility_of_all(x)
-        islocal_target, islocal_secondary         = self.get_if_local_to_all(x)
+        is_vis_target, is_vis_secondary           = self.exp.get_visibility_of_all(x)
+        islocal_target, islocal_secondary         = self.exp.get_is_local_of_all(x)
 
         # ADA NEXTTODO
         # cost_dict = self.get_costs_relative_to_goals()
