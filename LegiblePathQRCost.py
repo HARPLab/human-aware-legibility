@@ -731,6 +731,29 @@ class LegiblePathQRCost(FiniteDiffCost):
     #     # print(Q, Q_old)
     #     return Q
 
+    def hex_to_rgb(self, value):
+       value = value.lstrip('#')
+       lv = len(value)
+       return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+    def rgb_to_hex(self, rgb):
+        value = '%02x%02x%02x' % rgb
+        value = '#' + str(value)
+        return value
+
+    def mean_color(self, color1, color2):
+        rgb1 = self.hex_to_rgb(color1)
+        rgb2 = self.hex_to_rgb(color2)
+
+        avg = lambda x, y: round((x+y) / 2)
+
+        new_rgb = ()
+
+        for i in range(len(rgb1)):
+            new_rgb += (avg(rgb1[i], rgb2[i]),)
+       
+        return self.rgb_to_hex(new_rgb)
+
     def get_window_dimensions_for_envir(self, start, goals, pts):
         xmin, ymin = start
         xmax, ymax = start
@@ -1164,6 +1187,49 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
+    def get_info_grad(self, verts):
+        total_observers = len(self.exp.get_observers())
+
+        cg1 = self.get_color_gradient('#000000', '#a83266', total_observers + 1)
+        cg2 = self.get_color_gradient('#000000', '#3246a8', total_observers + 1)
+
+        info_grad = []
+        info_outline_grad = []
+        for i in range(len(verts)):
+            vert = verts[i]
+
+            can_see_target, can_see_secondary   = self.exp.get_visibility_of_all(vert)
+            islocal_target, islocal_secondary   = self.exp.get_is_local_of_all(vert)
+
+            # print(can_see_target, can_see_secondary)
+            # print(islocal_target, islocal_secondary)
+            
+            total_can_see = 0
+            total_islocal = 0
+
+            if can_see_target:
+                total_can_see += 1
+            if islocal_target:
+                total_islocal += 1
+
+            for i in can_see_secondary:
+                if i == True:
+                    total_can_see += 1
+
+            for i in islocal_secondary:
+                if i == True:
+                    total_islocal += 1
+
+            # the more people who can see it, and see it locally, the darker the gradient
+            # for each color
+            color1 = cg1[total_can_see]
+            color2 = cg2[total_islocal]
+
+            sum_color = self.mean_color(color1, color2)
+            info_grad.append(sum_color)
+
+        return info_grad
+
     def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None, suptitle=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
@@ -1280,7 +1346,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         outline_grad = []
         for i in range(len(in_vis)):
             can_see = in_vis[i]
-            print(can_see)
+            # print(can_see)
 
             if can_see == True:
                 color_grad.append(color_grad_1[i])
@@ -1290,6 +1356,14 @@ class LegiblePathQRCost(FiniteDiffCost):
                 color_grad.append(color_grad_2[i])
                 outline_grad.append(color_grad_1[i])
                 # outline_grad.append('#f4722b')
+
+        ###########
+        # STATUS OF POINT VIS and LOCAL
+
+        info_grad = self.get_info_grad(verts)
+
+        ##########
+        color_connect = '#cccccc'
 
         target = self.target_goal
         # for each goal, graph legibility
@@ -1308,11 +1382,11 @@ class LegiblePathQRCost(FiniteDiffCost):
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
 
 
-            ax3.plot(ts[:-1], scs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
-            ax4.plot(ts, tcs, linestyle='dashed', lw=1, color='grey', label=goal, markersize=0)
+            ax3.plot(ts[:-1], scs, lw=1, color=color_connect, label=goal, markersize=0) #linestyle='dashed',
+            ax4.plot(ts, tcs, lw=1, color=color_connect, label=goal, markersize=0) # linestyle='dashed'
 
-            ax3.scatter(ts[:-1], scs, c=outline_grad[:-1], s=8)
-            ax4.scatter(ts, tcs, c=outline_grad, s=8)
+            ax3.scatter(ts[:-1], scs, c=info_grad[:-1], s=8)
+            ax4.scatter(ts, tcs, c=info_grad, s=8)
 
             # ax3.scatter(ts, scs, c=color_grad, s=4)
             # ax4.scatter(ts, tcs, c=color_grad, s=4)
@@ -1324,29 +1398,25 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
 
             for v in vs:
-                ax7.scatter(ts, v, c=outline_grad, s=8)
+                ax7.scatter(ts, v, c=info_grad, s=8)
                 # ax7.scatter(ts, v, c=color_grad, s=5)
                 ax7.plot(ts, v, lw=1, color=color, label=goal, markersize=0)
 
                 # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
             # print("plotted ax4")
             # print("Plotted all data")
-        
 
-        ax_p_dist_exp.scatter(ts, p_dist_exp, c=outline_grad, s=8)
-        ax_p_dist_exp.plot(ts, p_dist_exp, lw=1, color=color, label=goal, markersize=0)
-    
-        ax_p_dist_sqr.scatter(ts, p_dist_sqr, c=outline_grad, s=8)
-        ax_p_dist_sqr.plot(ts, p_dist_sqr, lw=1, color=color, label=goal, markersize=0)
+        ax_p_dist_exp.plot(ts, p_dist_exp, lw=1, color=color_connect, label=goal, markersize=0)
+        ax_p_dist_sqr.plot(ts, p_dist_sqr, lw=1, color=color_connect, label=goal, markersize=0)
+        ax_p_dist_lin.plot(ts, p_dist_lin, lw=1, color=color_connect, label=goal, markersize=0)
+        ax_p_head_sqr.plot(ts, p_head_sqr, lw=1, color=color_connect, label=goal, markersize=0)
+        ax_p_head_lin.plot(ts, p_head_lin, lw=1, color=color_connect, label=goal, markersize=0)
 
-        ax_p_dist_lin.scatter(ts, p_dist_lin, c=outline_grad, s=8)
-        ax_p_dist_lin.plot(ts, p_dist_lin, lw=1, color=color, label=goal, markersize=0)
-
-        ax_p_head_sqr.scatter(ts, p_head_sqr, c=outline_grad, s=8)
-        ax_p_head_sqr.plot(ts, p_head_sqr, lw=1, color=color, label=goal, markersize=0)
-
-        ax_p_head_lin.scatter(ts, p_head_lin, c=outline_grad, s=8)
-        ax_p_head_lin.plot(ts, p_head_lin, lw=1, color=color, label=goal, markersize=0)
+        ax_p_dist_exp.scatter(ts, p_dist_exp, c=info_grad, s=8)
+        ax_p_dist_sqr.scatter(ts, p_dist_sqr, c=info_grad, s=8)
+        ax_p_dist_lin.scatter(ts, p_dist_lin, c=info_grad, s=8)
+        ax_p_head_sqr.scatter(ts, p_head_sqr, c=info_grad, s=8)
+        ax_p_head_lin.scatter(ts, p_head_lin, c=info_grad, s=8)
 
         _ = ax_p_dist_exp.set_xlabel("Time", fontweight='bold')
         _ = ax_p_dist_exp.set_ylabel("P(G | xi)", fontweight='bold')
