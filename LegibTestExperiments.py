@@ -249,9 +249,11 @@ def test_locality_set(dash_folder, scenario_filters):
 
         for multiplier in scale_set:
             test = copy.copy(test_template)
-            
+
             new_N = (longest_distance / multiplier)
             n_percent = int(100.0 * multiplier)
+            new_N = str("{0:.3g}".format((new_N)))
+            new_N = float(new_N)
 
             label_dict[multiplier] = new_N
 
@@ -262,15 +264,13 @@ def test_locality_set(dash_folder, scenario_filters):
 
             for g_index in range(len(scenario.get_goals())):
                 # RUN THE SOLVER WITH CONSTRAINTS ON EACH
-                n_scenario = copy.copy(scenario)
-
-                n_scenario.set_local_distance(new_N)
-                n_scenario.set_fn_note("locdist_" + str(new_N))
-
                 mega_scenario = copy.copy(scenario)
                 # mega_scenario.set_fn_note(test['label'])
                 mega_scenario.set_test_options(test)
                 mega_scenario.set_target_goal_index(g_index)
+
+                mega_scenario.set_local_distance(new_N)
+                mega_scenario.set_fn_note("locdist_" + str(new_N))
 
                 save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
 
