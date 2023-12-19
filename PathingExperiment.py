@@ -547,9 +547,11 @@ class PathingExperiment():
 
     # RETURN TRUE IF IN SIGHT, FALSE IF NO
     # TARGET, then list of SECONDARY
-    def get_visibility_of_all(self, x):
+    def get_visibility_of_all(self, x_in):
         is_vis_target = 0
         is_vis_secondary = []
+
+        x = x_in[:2]
 
         observers       = self.get_observers()
         target_obs      = self.get_target_observer()
@@ -577,6 +579,12 @@ class PathingExperiment():
 
             is_vis_observers.append(is_vis_target)
 
+        print("vis mathing")
+        print(self.get_target_observer().get_center(), self.get_secondary_observers()[0].get_center())
+        print(x, is_vis_target, is_vis_observers)
+
+        print("END VIS")
+
         return is_vis_target, is_vis_observers
 
     def dist_between(self, x1, x2):
@@ -589,7 +597,7 @@ class PathingExperiment():
 
     # RETURN TRUE IF LOCAL, FALSE IF NOT
     # TARGET, then list of SECONDARY
-    def get_is_local_of_all(self, x):
+    def get_is_local_of_all(self, x_in):
         islocal_target      = False
         islocal_secondary   = []
 
@@ -597,15 +605,24 @@ class PathingExperiment():
         target_obs      = self.get_target_observer()
         secondary_obs   = self.get_secondary_observers()
 
+        x = x_in[:2]
+
+        print("LOCAL CHECK")
+
         if self.dist_between(x, target_obs.get_center()) < self.get_local_distance():
+                print(self.dist_between(x, target_obs.get_center()) )
                 islocal_target = True
     
         for o in self.get_secondary_observers():
+            print(self.dist_between(x, o.get_center()))
             if self.dist_between(x, o.get_center()) < self.get_local_distance():
                 islocal_secondary.append(True)
             else:
                 islocal_secondary.append(False)            
 
+
+        print(islocal_target, islocal_secondary, self.get_local_distance())
+        print("END LOCAL")
         return islocal_target, islocal_secondary
 
 
