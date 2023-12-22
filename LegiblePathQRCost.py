@@ -745,7 +745,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb1 = self.hex_to_rgb(color1)
         rgb2 = self.hex_to_rgb(color2)
 
-        avg = lambda x, y: round((x+y) / 2)
+        avg = lambda x, y: round((x+y))
 
         new_rgb = ()
 
@@ -1193,6 +1193,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         cg1 = self.get_color_gradient('#000000', '#a83266', total_observers + 1)
         cg2 = self.get_color_gradient('#000000', '#3246a8', total_observers + 1)
 
+        cg1 = self.get_color_gradient('#000000', '#FF0000', total_observers + 1) #[::-1]
+        cg2 = self.get_color_gradient('#000000', '#0000FF', total_observers + 1) #[::-1]
+
+        print("FINAL SUMMARY IMAGE")
+
         info_grad = []
         info_outline_grad = []
         for i in range(len(verts)):
@@ -1220,12 +1225,62 @@ class LegiblePathQRCost(FiniteDiffCost):
                 if i == True:
                     total_islocal += 1
 
-            # the more people who can see it, and see it locally, the darker the gradient
-            # for each color
-            color1 = cg1[total_can_see]
-            color2 = cg2[total_islocal]
+            if False:
+                # the more people who can see it, and see it locally, the darker the gradient
+                # for each color
+                color1 = cg1[total_can_see] # Visibility is red
+                color2 = cg2[total_islocal] # Locality is blue
 
-            sum_color = self.mean_color(color1, color2)
+                sum_color = self.mean_color(color1, color2)
+
+                print(vert)
+                print("sumcolor")
+                print(sum_color)
+            # MANUAL GOOD COLORS
+            else:
+                neutral_color = '#aaaaaa'
+
+                if islocal_target and can_see_target:
+                    paint_color_target = '#8E44AD' # purple
+
+                elif islocal_target and not can_see_target:
+                    paint_color_target = '#F1948A' # light red
+
+                elif not islocal_target and can_see_target:
+                    paint_color_target = '#85C1E9' # light blue
+                else:
+                    paint_color_target = neutral_color
+
+
+                secondary_colors = []
+                for can_see, islocal in zip(can_see_secondary, islocal_secondary):
+                    if islocal and can_see:
+                        paint_color = '#27AE60' # green
+
+                    elif islocal and not can_see:
+                        paint_color = '#F9E79F' # yellow
+
+                    elif not islocal and can_see:
+                        paint_color = '#EB984E' # light orange
+
+                    else:
+                        paint_color = neutral_color
+
+                    secondary_colors.append(paint_color)
+
+
+                if paint_color_target == '#8E44AD' and  secondary_colors[0] == '#27AE60':
+                    paint_color = '#000000'
+
+                elif paint_color_target != neutral_color:
+                    paint_color = paint_color_target
+
+                # TODO MULTI
+                elif secondary_colors[0] != neutral_color:
+                    paint_color = secondary_colors[0]
+
+                sum_color = paint_color
+
             info_grad.append(sum_color)
 
         return info_grad
@@ -1381,7 +1436,6 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             ax2.plot(ts, ls, 'o--', lw=2, color=color, label=goal, markersize=3)
 
-
             ax3.plot(ts[:-1], scs, lw=1, color=color_connect, label=goal, markersize=0) #linestyle='dashed',
             ax4.plot(ts, tcs, lw=1, color=color_connect, label=goal, markersize=0) # linestyle='dashed'
 
@@ -1400,7 +1454,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             for v in vs:
                 ax7.scatter(ts, v, c=info_grad, s=8)
                 # ax7.scatter(ts, v, c=color_grad, s=5)
-                ax7.plot(ts, v, lw=1, color=color, label=goal, markersize=0)
+                ax7.plot(ts, v, lw=1, color=color_connect, label=goal, markersize=0)
 
                 # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
             # print("plotted ax4")
