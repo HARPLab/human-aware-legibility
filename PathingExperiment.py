@@ -134,6 +134,8 @@ class PathingExperiment():
     run_filters = []
     mode_dist_legib_on = True
 
+    ti = 0
+
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label = label
         self.restaurant = restaurant
@@ -507,6 +509,7 @@ class PathingExperiment():
     def set_target_goal_index(self, ti):
         self.target_goal        = self.goals[ti]
         self.target_observer    = self.observers[ti]
+        self.ti = ti
 
     def set_test_options(self, test_setup):
         # 'heading-mode':'none', 'dist-mode':'lin', 'blend-type': 'none'
@@ -545,6 +548,56 @@ class PathingExperiment():
     def get_mode_und_secondary(self):
         return self.mode_und_secondary
 
+    def angle_between_points(self, p1, p2):
+        x1, y1 = p1[:2]
+        x2, y2 = p2[:2]
+        angle = np.arctan2(y2 - y1, x2 - x1)
+
+        # ang1 = np.arctan2(*p1[::-1])
+        # ang2 = np.arctan2(*p2[::-1])
+        return np.rad2deg(angle)
+
+    # ADA MASTER VISIBILITY EQUATION
+    # ILQR OBSERVER-AWARE EQUATION
+    # RETURN HERE
+    def get_visibility_of_pt_w_observer_ilqr(self, pt, observer, normalized=True, epsilon=.01, angle_fov=120, RETURN_ANGLE=False):
+        observers   = []
+        score       = []
+
+        MAX_DISTANCE    =  np.inf
+        obs_orient      = observer.get_orientation() 
+        obs_FOV         = angle_fov #observer.get_FOV()
+
+        angle       = self.angle_between_points(observer.get_center(), pt)
+        x1, x2      = pt, observer.get_center()
+        distance    = distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
+
+        in_view     = False
+
+        a                   = angle - obs_orient
+        signed_angle_diff   = (a + 180) % 360 - 180
+        angle_diff          = abs(signed_angle_diff)
+
+        print("Observer test")
+        print(observer.get_center(), observer.get_orientation())
+
+        print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+        print("observer looking at... " + str(obs_orient))
+        print("angle diff = " + str(angle_diff))
+
+        half_fov = (obs_FOV / 2.0)
+        if angle_diff < half_fov:
+            from_center = half_fov - angle_diff
+            if normalized:
+                from_center = from_center / (half_fov)
+
+            in_view = True
+
+        if RETURN_ANGLE:
+            return in_view, angle_diff
+
+        return in_view
+
     # RETURN TRUE IF IN SIGHT, FALSE IF NO
     # TARGET, then list of SECONDARY
     def get_visibility_of_all(self, x_in):
@@ -563,25 +616,23 @@ class PathingExperiment():
 
         # if self.exp.get_is_oa_on() is True:
         is_vis_observers = []
-
-        vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [self.get_target_observer()], normalized=True)
-        if vis_target > 0:
-            is_vis_target = True
-        else:
-            is_vis_target = False
+    
+        vis_target, target_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, self.get_target_observer(), normalized=True, RETURN_ANGLE=True)
+        is_vis_target = vis_target
 
         for o in self.get_secondary_observers():
-            vis_target  = legib.get_visibility_of_pt_w_observers_ilqr(x, [o], normalized=True)
-            if vis_target > 0:
-                is_vis_target = True
-            else:
-                is_vis_target = False
+            vis_target, secondary_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
+            is_vis_target = vis_target
 
             is_vis_observers.append(is_vis_target)
 
+        # if self.ti == 0:
+        #     is_vis_target = not is_vis_target
+
         print("vis mathing")
-        print(self.get_target_observer().get_center(), self.get_secondary_observers()[0].get_center())
-        print(x, is_vis_target, is_vis_observers)
+        print(x, self.get_target_observer().get_center(), self.get_secondary_observers()[0].get_center())
+        print(target_ang, secondary_ang)
+        print(is_vis_target, is_vis_observers)
 
         print("END VIS")
 
