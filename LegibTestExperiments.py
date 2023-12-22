@@ -234,7 +234,10 @@ def test_locality_set(dash_folder, scenario_filters):
     # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
     scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
 
-    scale_set = [1, 16, 64][::-1]
+    scale_set = [1, 3/2.0, 3/1.0][::-1]
+    # scale_set = [1, 5/4.0, 5/2.0][::-1]
+
+    observer_gap = 1.5
 
     for key in scenarios.keys():
         scenario = scenarios[key]
@@ -250,7 +253,7 @@ def test_locality_set(dash_folder, scenario_filters):
         for multiplier in scale_set:
             test = copy.copy(test_template)
 
-            new_N = (longest_distance / multiplier)
+            new_N = (longest_distance / multiplier) + observer_gap
             n_percent = int(100.0 * multiplier)
             new_N = str("{0:.3g}".format((new_N)))
             new_N = float(new_N)
