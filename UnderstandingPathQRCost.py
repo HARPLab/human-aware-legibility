@@ -430,8 +430,8 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         # robot_x1 = robot_x[:2]
         # robot_x0 = robot_x[2:]
 
-        prev_angle = self.angle_x1_x0(robot_x1, robot_x0)
-        prev_angle_rev = self.angle_x1_x0(robot_x0, robot_x1)
+        prev_angle      = self.angle_x1_x0(robot_x1, robot_x0)
+        prev_angle_rev  = self.angle_x1_x0(robot_x0, robot_x1)
         # prev_angle = self.get_heading_look_from_x0_to_x1(robot_x1, robot_x0)
 
         goal_angle = self.angle_x1_x0(look_at_pt, robot_x1)
@@ -1280,10 +1280,10 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         if_seen = 1.0
 
         # Get the values if necessary
-        if wt_legib > 0:
+        if True: #wt_legib > 0:
             val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, if_seen)
         
-        if wt_heading > 0:
+        if True: #wt_heading > 0:
             if self.exp.get_state_size() < 4:
                 val_heading     = self.get_legibility_heading_stage_cost_3d(x, u, i, goal, if_seen)
             else:
@@ -1311,14 +1311,22 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         understanding_target        = 'local'
         understanding_secondary     = 'local'
 
-        wt_understanding_target     = 0
-        wt_understanding_secondary  = 0
+        wt_understanding_target     = 1.0
+        wt_understanding_secondary  = 1.0
        
         val_understanding_target     = 0
         val_understanding_secondary  = 0
        
         target_costs        = 0
         secondary_costs     = []
+
+        max_legib_value     = 2 # max 1 for heading, and 1 for position
+
+        num_factors = len(['legib', 'heading'])
+        num_factors = 1
+        max_not_vis_penalty     = num_factors * len(self.exp.get_observers())
+        max_not_local_penalty   = num_factors * len(self.exp.get_observers())
+        max_penalty             = num_factors * len(self.exp.get_observers()) * self.exp.get_N()
 
         ###### Note: Needs updating for 3 target scenarios
         # if mode_blend == 'mixed':
@@ -1330,9 +1338,9 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         val_heading = 0
 
         # Take the max of the two values
-        if True:
+        if False:
             # ADA TODO check
-            target_costs        = max(val_legib, val_heading)
+            target_costs        = min(val_legib, val_heading)
 
             for i in range(len(self.exp.get_secondary_observers())):
                 sec_val_legib       = (1.0 - val_legib)
@@ -1340,38 +1348,69 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
                 secondary_cost     = max(sec_val_legib, sec_val_heading)
 
                 secondary_costs.append(secondary_cost)
+        elif True:
+            p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
+
+            if len(input_x) == 4:
+                p_h = self.prob_heading_from_pt_seq(x, x_prev, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+            else:
+                p_h = self.prob_heading(x, u, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+
+            # ADA TODO check
+            # max of the signals
+            P_overall = min(p_d, p_h)
+
+            #sum
+
+            if True:
+                val_overall = np.log(P_overall)
+
+            # INVERT PROBABILITIES INTO COSTS
+            val_overall = 1.0 - P_overall    # * val_heading
+
+
+            target_costs        = val_overall # + val_heading
+
+            for i in range(len(self.exp.get_secondary_observers())):
+                # sec_val_legib       = (1.0 - val_legib)
+                # sec_val_heading     = (1.0 - val_heading)
+                # secondary_cost     = max(sec_val_legib, sec_val_heading)
+
+                # TODO Will need more elaborate math with more goals
+                secondary_cost = val_overall
+                secondary_costs.append(secondary_cost)
 
 
         ###### UNDERSTANDING COSTS: TARGET
         ### Depending on mode taken from the exp packet...
-        if understanding_target == None:
-            val_understanding_target = 0
 
-        elif understanding_target == 'global':
+        #### Also needs update for multi-goal
+        # TARGET
+        if islocal_target and is_vis_target:
             val_understanding_target = target_costs
 
-        # THIS IS THE ONE WE USE
-        elif understanding_target == 'local':
-            #### Also needs update for multi-goal
-            if islocal_target:
-                val_understanding_target = target_costs
-            else:
-                val_understanding_target = 0
-            
+        elif islocal_target and not is_vis_target:
+            val_understanding_target = max_penalty
 
-        ###### UNDERSTANDING COSTS: SECONDARY
-        if understanding_secondary == None:
-            val_understanding_secondary = 0
+        elif not islocal_target and is_vis_target:
+            val_understanding_target = max_penalty
 
-        elif understanding_secondary == 'global':
-            val_understanding_secondary = secondary_costs
+        elif not islocal_target and not is_vis_target:
+            val_understanding_target = max_penalty * 2
 
-        elif understanding_secondary == 'local':
-            for i in range(len(self.exp.get_secondary_observers())):
-                islocal = islocal_secondary[i]
-                sc      = secondary_costs[i]
-                if islocal:
-                    val_understanding_secondary += sc
+        # SECONDARY 
+        for islocal, is_vis, sc in zip(islocal_secondary, is_vis_secondary, secondary_costs):
+            if islocal and is_vis:
+                val_understanding_secondary += sc
+
+            elif not islocal and is_vis:
+                val_understanding_secondary += max_penalty
+
+            elif islocal and not is_vis:
+                val_understanding_secondary += max_penalty
+                
+            elif not islocal and not is_vis:
+                val_understanding_secondary += max_penalty * 2
 
 
         wt_legib     = (wt_legib)
@@ -1415,27 +1454,29 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         # J += wt_lam_h       * val_lam_h         #u_diff.T.dot(R).dot(u_diff)
         J += wt_obstacle    * val_obstacle      #self.get_obstacle_penalty(x, i, goal)
 
-        stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])
-        stage_costs = (stage_costs)
+        # stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])
+        # stage_costs = (stage_costs)
 
-        if stage_costs != J:
-            print("alert! j math is off")
-            print("J = " + str(J))
-            print(stage_costs)
+        stage_costs = J
 
-        if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("STAGE,\t TERM")
-            print(stage_costs, term_cost)
+        # if stage_costs != J:
+        #     print("alert! j math is off")
+        #     print("J = " + str(J))
+        #     print(stage_costs)
 
-            print("[wt_legib, wt_lam, wt_heading, wt_obstacle]")
-            print([str(wt_legib), str(wt_lam), str(wt_heading), str(wt_obstacle)])            
-            print("[val_legib, val_lam, val_heading, val_obstacle]")
-            print([str(val_legib), str(val_lam), str(val_heading), str(val_obstacle)])
-            print("==")
-            print([str(wt_legib*val_legib), str(wt_lam*val_lam), str(wt_heading*val_heading), str(wt_obstacle*val_obstacle)])
+        # if self.FLAG_DEBUG_STAGE_AND_TERM:
+        #     print("STAGE,\t TERM")
+        #     print(stage_costs, term_cost)
 
-            print(str(sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])))
-            print("~~~~~~~~~~~~")
+        #     print("[wt_legib, wt_lam, wt_heading, wt_obstacle]")
+        #     print([str(wt_legib), str(wt_lam), str(wt_heading), str(wt_obstacle)])            
+        #     print("[val_legib, val_lam, val_heading, val_obstacle]")
+        #     print([str(val_legib), str(val_lam), str(val_heading), str(val_obstacle)])
+        #     print("==")
+        #     print([str(wt_legib*val_legib), str(wt_lam*val_lam), str(wt_heading*val_heading), str(wt_obstacle*val_obstacle)])
+
+        #     print(str(sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])))
+        #     print("~~~~~~~~~~~~")
 
         # Don't return term cost here ie (scale_term * term_cost) 
         total = (scale_stage * stage_costs)
@@ -1766,7 +1807,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
             print("Goal and exp goal not the same in prob_distance")
-            print(goal[:2], self.exp.get_target_goal()[:2])      
+            print(goal[:2], self.exp.get_target_goal()[:2])
 
         if visibility_coeff == 1 or visibility_coeff == 0:
             pass
@@ -1798,7 +1839,10 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         for j in range(len(all_goals)):
             alt_goal = all_goals[j]
             alt_goal_xy = np.asarray(alt_goal[:2])
-            goal_val = self.get_relative_distance_value(i_step, start, alt_goal_xy, x, terminal, mode_dist) 
+            goal_val = self.get_relative_distance_value(i_step, start, alt_goal_xy, x, terminal, mode_dist)
+            FLAG_NO_OVERSHOOT = False
+            if FLAG_NO_OVERSHOOT:
+                goal_val = goal_val / self.dist_between(start, alt_goal_xy)
             goal_values.append(goal_val)
 
             if np.array_equal(goal[:2], alt_goal[:2]):
