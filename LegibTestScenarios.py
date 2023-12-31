@@ -54,15 +54,15 @@ def scenario_aimakerspace(goal_index=None):
 
 
     start = [0.0, 10.0]
-    goal1 = [10.0, 8.0]
     goal3 = [5.0, 12.0]
+    goal1 = [10.0, 8.0]
 
     obs_pts = []
-    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
     obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
 
     target_goal = goal1
-    all_goals   = [goal1, goal3]
+    all_goals   = [goal3, goal1]
 
     if goal_index is not None:
         target_goal = all_goals[goal_index]
@@ -73,7 +73,7 @@ def scenario_aimakerspace(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     # Make sure these have the same order
-    exp.set_observer_goal_pairs(exp.get_observers(), all_goals)
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
 
     N = 26
     exp.set_N(N)
@@ -83,17 +83,18 @@ def scenario_aimakerspace(goal_index=None):
 
     return label, exp
 
-def scenario_aimakerspace_long(goal_index=None):
-    label = "pilot" # _g" + str(goal_index)
+def scenario_equidist3(goal_index=None):
+    label = "pilot_equidist3" # _g" + str(goal_index)
 
 
-    start = [0.0, 10.0]
-    goal1 = [60.0, 8.0]
-    goal3 = [55.0, 12.0]
+    start = [0.0, 0.0]
+    goal3 = [0.0, 15.0]
+    goal1 = [0.0, -15.0]
 
     obs_pts = []
-    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
     obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+
 
     target_goal = goal1
     all_goals   = [goal1, goal3]
@@ -107,7 +108,114 @@ def scenario_aimakerspace_long(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     # Make sure these have the same order
-    exp.set_observer_goal_pairs(exp.get_observers(), all_goals)
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_equidist2(goal_index=None):
+    label = "pilot_equidist2" # _g" + str(goal_index)
+
+
+    start = [0.0, 0.0]
+    goal3 = [0.0, 10.0]
+    goal1 = [0.0, -10.0]
+
+    obs_pts = []
+    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+
+def scenario_equidist(goal_index=None):
+    label = "pilot_equidist" # _g" + str(goal_index)
+
+
+    start = [0.0, 0.0]
+    goal3 = [0.0, 10.0]
+    goal1 = [10.0, 0.0]
+
+    obs_pts = []
+    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+
+def scenario_aimakerspace_long(goal_index=None):
+    label = "pilot_long" # _g" + str(goal_index)
+
+
+    start = [0.0, 10.0]
+    goal3 = [55.0, 12.0]
+    goal1 = [60.0, 8.0]
+
+    obs_pts = []
+    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+
+
+    target_goal = goal1
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
 
     N = 26
     exp.set_N(N)
@@ -1051,11 +1159,23 @@ def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
     # TEST SCENARIO
-    label, exp = scenario_aimakerspace_long(goal_index=0)
+    label, exp = scenario_aimakerspace(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
-    label, exp = scenario_aimakerspace(goal_index=0)
+    label, exp = scenario_equidist(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_equidist2(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_equidist3(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_aimakerspace_long(goal_index=0)
     scenarios[label] = exp
 
     # # TEST SCENARIO
