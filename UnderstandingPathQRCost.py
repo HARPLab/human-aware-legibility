@@ -1268,9 +1268,9 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         # cost_dict = self.get_costs_relative_to_goals()
 
         wt_legib        = 1.0
-        wt_lam          = 1.0 #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = .25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
-        wt_obstacle     = 1.0 #self.exp.get_solver_scale_obstacle()
+        wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
         val_legib       = 0
         val_lam         = 0
@@ -1293,7 +1293,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
                 val_heading     = self.get_legibility_heading_stage_cost_from_pt_seq(x_new, x_prev, i, goal, if_seen)
 
         if wt_lam > 0:
-            val_lam         = squared_u_cost + (squared_x_cost)
+            val_lam         = squared_u_cost #+ (squared_x_cost)
         else:
             print("ALERT: why is lam weight 0?")
 
@@ -1326,7 +1326,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         num_factors = 1
         max_not_vis_penalty     = num_factors * len(self.exp.get_observers())
         max_not_local_penalty   = num_factors * len(self.exp.get_observers())
-        max_penalty             = num_factors * len(self.exp.get_observers()) * self.exp.get_N()
+        max_penalty             = num_factors * len(self.exp.get_observers()) * 5 # * (self.exp.get_N() - i)
 
         ###### Note: Needs updating for 3 target scenarios
         # if mode_blend == 'mixed':
@@ -1335,7 +1335,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         # elif mode_blend == 'min':
 
         # HARDCODED
-        val_heading = 0
+        # val_heading = 0
 
         # Take the max of the two values
         if False:
@@ -1349,7 +1349,10 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
                 secondary_costs.append(secondary_cost)
         elif True:
-            p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
+            # p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
+            # p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin_exp', 'mode_blend':None})
+
+            p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
 
             if len(input_x) == 4:
                 p_h = self.prob_heading_from_pt_seq(x, x_prev, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
@@ -1358,12 +1361,12 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
             # ADA TODO check
             # max of the signals
-            P_overall = min(p_d, p_h)
-
+            # P_overall = min(p_d, p_h)
+            P_overall = p_d #* p_h
             #sum
 
-            if True:
-                val_overall = np.log(P_overall)
+            # if True:
+            #     val_overall = np.log(P_overall)
 
             # INVERT PROBABILITIES INTO COSTS
             val_overall = 1.0 - P_overall    # * val_heading
@@ -1377,7 +1380,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
                 # secondary_cost     = max(sec_val_legib, sec_val_heading)
 
                 # TODO Will need more elaborate math with more goals
-                secondary_cost = val_overall
+                secondary_cost  = val_overall
                 secondary_costs.append(secondary_cost)
 
 
@@ -1650,6 +1653,51 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             return val
             # return (self.get_relative_distance_k(x, goal, self.goals))
 
+        elif mode_dist == 'lin_exp':
+            val = (np.exp(self.inversely_proportional_to_distance(dist)))
+            print("mode dist is lin_exp, dist inv value is " + str(val))
+            return val
+
+        elif mode_dist == 'exp':
+            J = self.get_legibility_component_og(start, goal, x, i_step)
+        else:
+            J = np.abs(n / d)
+            print("ALERT: UNKNOWN MODE = " + str(mode_dist))
+
+        if self.exp.get_weighted_close_on() is True:
+            k = self.get_relative_distance_k(x, goal, self.goals)
+        else:
+            k = 1.0
+
+        print("mode dist is exp, dist inv value is " + str(J))
+
+        J = (k)*J
+        print("J of exp")
+        print(J)
+        return J
+
+    # def legibility_stage_cost_wrapper(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
+    #     # print("Compare between modes")
+    #     # prob_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=True)
+    #     # prob_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=True)
+    #     # prob_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=True)
+
+    #     # print("PROBS")
+    #     # print(prob_exp, prob_sqr, prob_lin)
+
+    #     # pen_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=False)
+    #     # pen_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=False)
+    #     # pen_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=False)
+
+    #     # print("PENALTIES")
+    #     # print(pen_exp, pen_sqr, pen_lin)
+
+        
+    #     return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
+
+    def get_legibility_component_og(self, start, goal, x, i_step):
+        Q       = np.eye(2)
+
         goal_diff   = start - goal
         start_diff  = (start - np.array(x))
         togoal_diff = (np.array(x) - goal)
@@ -1724,55 +1772,12 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         n = - (diff_curr_v) - (diff_goal_v)
         d = diff_all_v
 
-        # n = - diff_curr_size - diff_goal_size
-        # d = diff_all_size
-
         print("n, d")
         print(n, d)
+        J = np.exp(n) / np.exp(d)
 
-        if mode_dist == 'exp':
-            # if d == 0:
-            #     if n == 0:
-            #         J = 0
-            #     else:
-            #         J = np.inf
-            # else:
-            J = np.exp(n) / np.exp(d)
-            # J = n - d
-        else:
-            J = np.abs(n / d)
-            print("ALERT: UNKNOWN MODE = " + str(mode_dist))
-
-        if self.exp.get_weighted_close_on() is True:
-            k = self.get_relative_distance_k(x, goal, self.goals)
-        else:
-            k = 1.0
-
-        print("mode dist is exp, dist inv value is " + str(J))
-
-        J = (k)*J
-        print("J of exp")
-        print(J)
         return J
 
-    # def legibility_stage_cost_wrapper(self, start, goal, x, u, i, terminal, visibility_coeff, force_mode=None, pure_prob=False):
-    #     # print("Compare between modes")
-    #     # prob_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=True)
-    #     # prob_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=True)
-    #     # prob_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=True)
-
-    #     # print("PROBS")
-    #     # print(prob_exp, prob_sqr, prob_lin)
-
-    #     # pen_exp = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='exp', pure_prob=False)
-    #     # pen_sqr = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='sqr', pure_prob=False)
-    #     # pen_lin = self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode='lin', pure_prob=False)
-
-    #     # print("PENALTIES")
-    #     # print(pen_exp, pen_sqr, pen_lin)
-
-        
-    #     return self.legibility_stage_cost_helper(start, goal, x, u, i, terminal, visibility_coeff, force_mode=force_mode, pure_prob=pure_prob)
 
     def get_legibility_dist_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff):
         P_oa = self.prob_distance(start, goal, x, u, i_step, terminal, visibility_coeff)
