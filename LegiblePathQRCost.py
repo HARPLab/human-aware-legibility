@@ -780,6 +780,23 @@ class LegiblePathQRCost(FiniteDiffCost):
         xbuffer     = .1 * xwidth
         ybuffer     = .1 * yheight
 
+        # The closer to 1 it is, the closer they are to equal
+        ratio = np.abs(xmin - xmax) / np.abs(ymin - ymax)
+
+        # x much more than y
+        if ratio > 4:
+            stretch = np.abs(ymin - ymax) / np.abs(xmin - xmax)
+            add_buff = np.abs(xmin - xmax) - np.abs(ymin - ymax)
+            add_buff = add_buff / 2.0
+
+            ymin = ymin - add_buff
+            ymax = ymax + add_buff
+
+        # # y much more than x
+        # elif radio < (1/4.0):
+
+
+
         if xbuffer < .3:
             xbuffer = .5
 
@@ -986,6 +1003,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         rgb_colors = [((1-mix)*c1_rgb + (mix*c2_rgb)) for mix in mix_pcts]
         return ["#" + "".join([format(int(round(val*255)), "02x") for val in item]) for item in rgb_colors]
 
+    # graph individual
     def get_overview_pic(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
         axarr = ax
 
@@ -1003,6 +1021,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
+
+        local_distance = self.exp.get_local_distance()
 
         if self.exp.get_state_size() == 4:
             xs, ys, x_o, y_o = zip(*verts)
@@ -1075,6 +1095,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
+            plt.Circle(goal, local_distance, color='#555555', clip_on=False)
+
             if goal is self.target_goal:
                 target_color = color
 
@@ -1083,6 +1105,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 path_color = color
             if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
                 path_color = color
+
 
         # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
         # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
@@ -1174,8 +1197,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         # it was useful for the colinear case, however- maybe add a case for this
         xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts)
         x_min_cur, x_max_cur = axarr.get_xlim()
-        y_min_cur, y_max_cur = axarr.get_ylim()
-        
+        y_min_cur, y_max_cur = axarr.get_ylim()        
+
         if xmin < x_min_cur:
             axarr.set_xlim(left=xmin)
         if ymin < y_min_cur:
@@ -1233,9 +1256,10 @@ class LegiblePathQRCost(FiniteDiffCost):
 
                 sum_color = self.mean_color(color1, color2)
 
-                print(vert)
-                print("sumcolor")
-                print(sum_color)
+                # print(vert)
+                # print("sumcolor")
+                # print(sum_color)
+                
             # MANUAL GOOD COLORS
             else:
                 neutral_color = '#aaaaaa'
@@ -1269,6 +1293,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                     secondary_colors.append(paint_color)
 
 
+                # if local and can see to both
                 if paint_color_target == '#8E44AD' and  secondary_colors[0] == '#27AE60':
                     paint_color = '#000000'
 
