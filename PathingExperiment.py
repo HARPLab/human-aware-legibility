@@ -343,7 +343,11 @@ class PathingExperiment():
         return self.target_observer
 
     def get_secondary_goals(self):
-        return [x for x in self.goals if x != self.target_goal]
+        print("SECONDARIES")
+        print(self.goals)
+        sec = [x for x in self.goals if x != self.target_goal]
+        print(sec)
+        return sec
 
     def get_secondary_observers(self):
         return [x for x in self.observers if x != self.target_observer]
@@ -661,11 +665,15 @@ class PathingExperiment():
         print("LOCAL CHECK")
 
         if self.dist_between(x, target_obs.get_center()) < self.get_local_distance():
-                print(self.dist_between(x, target_obs.get_center()) )
-                islocal_target = True
+            print("DIST BETWEEN " + str(x) + " and " +  str(target_obs.get_center()) + " is...")
+            print(self.dist_between(x, target_obs.get_center()))
+            print(self.dist_between(x, target_obs.get_center()) )
+            islocal_target = True
     
         for o in self.get_secondary_observers():
+            print("DIST BETWEEN " + str(x) + " and " +  str(o.get_center()) + " is...")
             print(self.dist_between(x, o.get_center()))
+            print(self.dist_between(x, o.get_center()) < self.get_local_distance())
             if self.dist_between(x, o.get_center()) < self.get_local_distance():
                 islocal_secondary.append(True)
             else:
@@ -673,6 +681,8 @@ class PathingExperiment():
 
 
         print(islocal_target, islocal_secondary, self.get_local_distance())
+
+
         print("END LOCAL")
         return islocal_target, islocal_secondary
 
