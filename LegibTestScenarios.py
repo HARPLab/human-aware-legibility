@@ -20,7 +20,7 @@ DASHBOARD_FOLDER = None
 
 
 def scenario_aimakerspace_no_obs(goal_index=None):
-    label = "pilot" # _g" + str(goal_index)
+    label = "pilot_no_obs" # _g" + str(goal_index)
 
 
     start = [0.0, 10.0]
@@ -41,6 +41,116 @@ def scenario_aimakerspace_no_obs(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+
+def scenario_triangle(goal_index=None):
+    label = "tri" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal3 = [0.0, 8.66]
+    goal1 = [5.0, 0.0]
+    goal2 = [-5.0, 0.0]
+
+    obs_pts = []
+    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 150])
+    # obs_pts.append([goal2[0] - 1.5, goal2[1], 30])
+
+    start       = goal2
+    target_goal = goal3
+    all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_triangle2(goal_index=None):
+    label = "tri" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    start = [0.0, 8.66]
+    goal1 = [5.0, 0.0]
+    goal2 = [-5.0, 0.0]
+
+    obs_pts = []
+    obs_pts.append([start[0], start[1] + 1.5, 270])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 150])
+    # obs_pts.append([goal2[0] - 1.5, goal2[1], 30])
+
+    target_goal = goal1
+    all_goals   = [goal1, goal2]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
+
+    N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_parallelogram(goal_index=None):
+    label = "para" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    start = [2.0, 4.0]
+    goal3 = [4.0, 2.0]
+    goal2 = [3.0, 6.0]
+    goal1 = [5.0, 4.0]
+
+    obs_pts = []
+    obs_pts.append([goal3[0], goal3[1] - 1.5, 90])
+    obs_pts.append([goal1[0] + 1.5, goal1[1], 180])
+    obs_pts.append([goal2[0], goal2[1] + 1.5, 270])
+    obs_pts.append([start[0] - 1.5, start[1], 0])
+
+
+    target_goal = goal1
+    all_goals   = [goal1, goal2, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2, goal3])
+
     N = 26
     exp.set_N(N)
 
@@ -88,8 +198,8 @@ def scenario_equidist3(goal_index=None):
 
 
     start = [0.0, 0.0]
-    goal3 = [0.0, 15.0]
-    goal1 = [0.0, -15.0]
+    goal3 = [5.0, 2.5]
+    goal1 = [5.0, -2.5]
 
     obs_pts = []
     obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
@@ -123,8 +233,8 @@ def scenario_equidist2(goal_index=None):
 
 
     start = [0.0, 0.0]
-    goal3 = [0.0, 10.0]
-    goal1 = [0.0, -10.0]
+    goal3 = [5.0, 5.0]
+    goal1 = [5.0, -5.0]
 
     obs_pts = []
     obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
@@ -1159,6 +1269,16 @@ def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
     # TEST SCENARIO
+    label, exp = scenario_triangle(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_parallelogram(goal_index=0)
+    scenarios[label] = exp
+
+    return scenarios
+
+    # TEST SCENARIO
     label, exp = scenario_aimakerspace(goal_index=0)
     scenarios[label] = exp
 
@@ -1166,9 +1286,10 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_equidist(goal_index=0)
     scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_equidist2(goal_index=0)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_equidist2(goal_index=0)
+    # scenarios[label] = exp
+    return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_equidist3(goal_index=0)
