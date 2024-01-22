@@ -54,14 +54,20 @@ def scenario_triangle(goal_index=None):
     label = "tri" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
-    goal3 = [0.0, 8.66]
-    goal1 = [5.0, 0.0]
     goal2 = [-5.0, 0.0]
 
+    goal1 = [5.0, 0.0]
+    goal3 = [0.0, 8.66]
+
+    obs2 = [goal2[0] - 1.5, goal2[1], 30]
+
+    obs1 = [goal3[0], goal3[1] + 1.5, 270]
+    obs3 = [goal1[0] + 1.5, goal1[1], 150]
+
     obs_pts = []
-    obs_pts.append([goal3[0], goal3[1] + 1.5, 270])
-    obs_pts.append([goal1[0] + 1.5, goal1[1], 150])
-    # obs_pts.append([goal2[0] - 1.5, goal2[1], 30])
+    obs_pts.append(obs1)
+    obs_pts.append(obs3)
+    # obs_pts.append()
 
     start       = goal2
     target_goal = goal3
@@ -78,7 +84,7 @@ def scenario_triangle(goal_index=None):
     # Make sure these have the same order
     exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
 
-    N = 26
+    N = 15 #26
     exp.set_N(N)
 
     obs_scale = 10000.0
