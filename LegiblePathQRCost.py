@@ -1210,7 +1210,64 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
-    def get_info_grad(self, verts):
+    def get_info_grad_single(self, verts, observer):
+        observers = [observer]
+        total_observers = 1
+
+        cg1 = self.get_color_gradient('#000000', '#a83266', total_observers + 1)
+        cg2 = self.get_color_gradient('#000000', '#3246a8', total_observers + 1)
+
+        cg1 = self.get_color_gradient('#000000', '#FF0000', total_observers + 1)
+        cg2 = self.get_color_gradient('#000000', '#0000FF', total_observers + 1)
+
+        print("FINAL SUMMARY IMAGE")
+
+        info_grad = []
+        info_outline_grad = []
+        for i in range(len(verts)):
+            x = verts[i]
+
+            vis_target, target_ang  = self.exp.get_visibility_of_pt_w_observer_ilqr(x, observer, normalized=True, RETURN_ANGLE=True)
+            can_see = vis_target
+
+            is_local = (self.exp.dist_between(x, observer.get_center()) < self.exp.get_local_distance())
+
+
+            neutral_color = '#aaaaaa'
+
+            print("LALALA")
+            print(self.exp.get_target_observer().get_center(), observer.get_center())
+
+            if self.exp.get_target_observer().get_center() == observer.get_center():
+                if is_local and can_see:
+                    paint_color = '#8E44AD' # purple
+
+                elif is_local and not can_see:
+                    paint_color = '#F1948A' # light red
+
+                elif not is_local and can_see:
+                    paint_color = '#85C1E9' # light blue
+                else:
+                    paint_color = neutral_color
+            else:
+                if is_local and can_see:
+                    paint_color = '#27AE60' # green
+
+                elif is_local and not can_see:
+                    paint_color = '#F9E79F' # yellow
+
+                elif not is_local and can_see:
+                    paint_color = '#EB984E' # light orange
+
+                else:
+                    paint_color = neutral_color
+
+            info_grad.append(paint_color)
+
+        return info_grad
+
+    def get_info_grad(self, verts, observer=None):
+        observers = self.exp.get_observers()
         total_observers = len(self.exp.get_observers())
 
         cg1 = self.get_color_gradient('#000000', '#a83266', total_observers + 1)
@@ -1476,14 +1533,24 @@ class LegiblePathQRCost(FiniteDiffCost):
             # # print("plotted ax3")
             # ax4.plot(ts, tcs, 'o--', lw=2, color=color, label=goal, markersize=3)
 
-            for v in vs:
-                ax7.scatter(ts, v, c=info_grad, s=8)
-                # ax7.scatter(ts, v, c=color_grad, s=5)
-                ax7.plot(ts, v, lw=1, color=color_connect, label=goal, markersize=0)
+        for observer in self.exp.get_observers():
+            vis_log = []
 
-                # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
-            # print("plotted ax4")
-            # print("Plotted all data")
+            for i in range(len(verts)):
+                x = verts[i]
+
+                bin_v, v = self.exp.get_visibility_of_pt_w_observer_ilqr(x, observer, normalized=True, RETURN_ANGLE=True)
+                vis_log.append(v)
+
+
+            info_grad_goal = self.get_info_grad_single(verts, observer)
+            ax7.scatter(ts, vis_log, c=info_grad_goal, s=8)
+            # ax7.scatter(ts, v, c=color_grad, s=5)
+            ax7.plot(ts, vis_log, lw=1, color=color_connect, label=goal, markersize=0)
+
+        # ax7.plot(ts, v, 'o--', lw=2, color=color, label=goal, markersize=3)
+        # print("plotted ax4")
+        # print("Plotted all data")
 
         ax_p_dist_exp.plot(ts, p_dist_exp, lw=1, color=color_connect, label=goal, markersize=0)
         ax_p_dist_sqr.plot(ts, p_dist_sqr, lw=1, color=color_connect, label=goal, markersize=0)
