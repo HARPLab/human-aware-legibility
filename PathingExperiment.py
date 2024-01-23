@@ -339,8 +339,23 @@ class PathingExperiment():
     def get_target_goal(self):
         return self.target_goal
 
+    def get_observer_for_goal(self, target_goal):
+        print("LA TARGET GOAL: " + str(target_goal))
+        min_dist = np.inf
+
+        for o in self.get_observers():
+            dist = self.dist_between(target_goal, o.get_center())
+            if dist < min_dist:
+                min_dist = dist
+                target_obs = o
+
+        return target_obs
+
+
     def get_target_observer(self):
-        return self.target_observer
+        target_goal = self.get_target_goal()
+        return self.get_observer_for_goal(target_goal)
+
 
     def get_secondary_goals(self):
         print("SECONDARIES")
@@ -508,7 +523,7 @@ class PathingExperiment():
 
         blurb += "\nJ=" + str(J_opt)
 
-        return blurb
+        return blurb        
 
     def set_target_goal_index(self, ti):
         self.target_goal        = self.goals[ti]
@@ -614,6 +629,10 @@ class PathingExperiment():
         target_obs      = self.get_target_observer()
         secondary_obs   = self.get_secondary_observers()
 
+        print("VIS TARGETS AND SEC")
+        print(target_obs.get_center())
+        print(secondary_obs[0].get_center())
+
         # what to do if there are no observers
         if len(observers) == 0:
             return True, [True]
@@ -664,14 +683,14 @@ class PathingExperiment():
 
         print("LOCAL CHECK")
 
+        print("TARGET DIST BETWEEN " + str(x) + " and " +  str(target_obs.get_center()) + " is...")
+        print(self.dist_between(x, target_obs.get_center()))
+        print(self.dist_between(x, target_obs.get_center()) < self.get_local_distance())
         if self.dist_between(x, target_obs.get_center()) < self.get_local_distance():
-            print("DIST BETWEEN " + str(x) + " and " +  str(target_obs.get_center()) + " is...")
-            print(self.dist_between(x, target_obs.get_center()))
-            print(self.dist_between(x, target_obs.get_center()) )
             islocal_target = True
     
         for o in self.get_secondary_observers():
-            print("DIST BETWEEN " + str(x) + " and " +  str(o.get_center()) + " is...")
+            print("SEC DIST BETWEEN " + str(x) + " and " +  str(o.get_center()) + " is...")
             print(self.dist_between(x, o.get_center()))
             print(self.dist_between(x, o.get_center()) < self.get_local_distance())
             if self.dist_between(x, o.get_center()) < self.get_local_distance():
