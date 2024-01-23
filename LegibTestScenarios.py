@@ -50,8 +50,8 @@ def scenario_aimakerspace_no_obs(goal_index=None):
     return label, exp
 
 
-def scenario_triangle(goal_index=None):
-    label = "tri" # _g" + str(goal_index)
+def scenario_triangle_equid(goal_index=None):
+    label = "tri_equid" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
     goal2 = [-5.0, 0.0]
@@ -72,6 +72,48 @@ def scenario_triangle(goal_index=None):
     start       = goal2
     target_goal = goal3
     all_goals   = [goal1, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
+
+    N = 20 #26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_triangle_thin(goal_index=None):
+    label = "tri_isos" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal2 = [-3.0, 0.0]
+    goal1 = [3.0, 0.0]
+
+    goal3 = [0.0, -8.66]
+
+    obs3 = [goal3[0], goal3[1] + 1.5, 270]
+
+    obs2 = [goal2[0] - 1.5, goal2[1], 0]
+    obs1 = [goal1[0] + 1.5, goal1[1], 180]
+
+    obs_pts = []
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append()
+
+    start       = goal3
+    target_goal = goal2
+    all_goals   = [goal1, goal2]
 
     if goal_index is not None:
         target_goal = all_goals[goal_index]
@@ -1282,7 +1324,11 @@ def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
     # TEST SCENARIO
-    label, exp = scenario_triangle(goal_index=0)
+    label, exp = scenario_triangle_thin(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_triangle_equid(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
