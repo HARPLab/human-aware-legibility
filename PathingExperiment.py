@@ -344,7 +344,12 @@ class PathingExperiment():
         min_dist = np.inf
 
         for o in self.get_observers():
-            dist = self.dist_between(target_goal, o.get_center())
+            try:
+                o_center = o.get_center()
+            except:
+                o_center = o
+
+            dist = self.dist_between(target_goal, o_center)
             if dist < min_dist:
                 min_dist = dist
                 target_obs = o
@@ -628,6 +633,7 @@ class PathingExperiment():
         observers       = self.get_observers()
         target_obs      = self.get_target_observer()
         secondary_obs   = self.get_secondary_observers()
+
 
         print("VIS TARGETS AND SEC")
         print(target_obs.get_center())
