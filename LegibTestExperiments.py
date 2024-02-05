@@ -1,4 +1,4 @@
-purpose = "understanding_pilot"
+purpose = "pilot_exp_21_pd_lin_exp"
 # purpose = "test_dist_k"
 
 import os
@@ -234,16 +234,23 @@ def test_locality_set(dash_folder, scenario_filters):
     # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
     scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
 
-    scale_set = [1, 3/2.0, 3/1.0][::-1]
+    # scale_set = [1, 3/2.0, 3/1.0][::-1]
+    scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
     # scale_set = [1, 5/4.0, 5/2.0][::-1]
 
     observer_gap = 1.5
+    
+    # observer_gap = 2.0
 
     for key in scenarios.keys():
         scenario = scenarios[key]
         scenario.set_run_filters(scenario_filters)
 
         longest_distance = scenario.get_max_dist()
+
+        # if label == 'diam':
+        #     longest_distance = longest_distance / 1.5
+
 
         outputs = {}
         label_dict = {}
@@ -273,7 +280,7 @@ def test_locality_set(dash_folder, scenario_filters):
                 mega_scenario.set_target_goal_index(g_index)
 
                 mega_scenario.set_local_distance(new_N)
-                mega_scenario.set_fn_note("locdist_" + str(new_N))
+                mega_scenario.set_fn_note("locdist_" + str(int(new_N)))
 
                 save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
 
