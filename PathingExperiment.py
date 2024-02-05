@@ -594,6 +594,9 @@ class PathingExperiment():
 
         angle       = self.angle_between_points(observer.get_center(), pt)
         x1, x2      = pt, observer.get_center()
+        x1 = (x1[0], x1[1])
+        x2 = (x2[0], x2[1])
+
         distance    = distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
 
         in_view     = False
@@ -610,12 +613,14 @@ class PathingExperiment():
         print("angle diff = " + str(angle_diff))
 
         half_fov = (obs_FOV / 2.0)
-        if angle_diff < half_fov:
+        if np.abs(angle_diff) < np.abs(half_fov):
             from_center = half_fov - angle_diff
             if normalized:
                 from_center = from_center / (half_fov)
 
             in_view = True
+
+        print("Is in view? " + str(in_view))
 
         if RETURN_ANGLE:
             return in_view, angle_diff
@@ -637,7 +642,7 @@ class PathingExperiment():
 
         print("VIS TARGETS AND SEC")
         print(target_obs.get_center())
-        print(secondary_obs[0].get_center())
+        print([so.get_center() for so in secondary_obs])
 
         # what to do if there are no observers
         if len(observers) == 0:
@@ -646,14 +651,13 @@ class PathingExperiment():
         # if self.exp.get_is_oa_on() is True:
         is_vis_observers = []
     
-        vis_target, target_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, self.get_target_observer(), normalized=True, RETURN_ANGLE=True)
-        is_vis_target = vis_target
+        vis_target, target_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, target_obs, normalized=True, RETURN_ANGLE=True)
 
         for o in self.get_secondary_observers():
-            vis_target, secondary_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
-            is_vis_target = vis_target
+            vis_sec, secondary_ang  = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
+            is_vis_sec = vis_sec
 
-            is_vis_observers.append(is_vis_target)
+            is_vis_observers.append(is_vis_sec)
 
         # if self.ti == 0:
         #     is_vis_target = not is_vis_target
@@ -665,7 +669,7 @@ class PathingExperiment():
 
         print("END VIS")
 
-        return is_vis_target, is_vis_observers
+        return vis_target, is_vis_observers
 
     def dist_between(self, x1, x2):
         # print(x1)
