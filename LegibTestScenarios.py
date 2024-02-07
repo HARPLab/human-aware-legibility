@@ -66,8 +66,8 @@ def scenario_triangle_equid(goal_index=None):
 
     obs_pts = []
     obs_pts.append(obs1)
+    obs_pts.append(obs2)
     obs_pts.append(obs3)
-    # obs_pts.append()
 
     start       = goal2
     target_goal = goal3
@@ -82,7 +82,7 @@ def scenario_triangle_equid(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     # Make sure these have the same order
-    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal3])
 
     N = 20 #26
     exp.set_N(N)
@@ -124,7 +124,49 @@ def scenario_triangle_thin(goal_index=None):
 
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     # Make sure these have the same order
-    exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2])
+
+    N = 12 #26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_triangle_thin_alt(goal_index=None):
+    label = "tri_isos" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal2 = [-3.0, 0.0]
+    goal1 = [3.0, 0.0]
+
+    goal3 = [0.0, -8.66]
+
+    obs3 = [goal3[0], goal3[1] + 1.5, 270]
+
+    obs2 = [goal2[0] - 1.5, goal2[1], 0]
+    obs1 = [goal1[0] + 1.5, goal1[1], 180]
+
+    obs_pts = []
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append()
+
+    start       = goal3
+    target_goal = goal2
+    all_goals   = [goal1, goal2, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2])
 
     N = 20 #26
     exp.set_N(N)
@@ -133,6 +175,7 @@ def scenario_triangle_thin(goal_index=None):
     exp.set_solver_scale_obstacle(obs_scale)
 
     return label, exp
+
 
 def scenario_triangle2(goal_index=None):
     label = "tri" # _g" + str(goal_index)
@@ -145,7 +188,7 @@ def scenario_triangle2(goal_index=None):
     obs_pts = []
     obs_pts.append([start[0], start[1] + 1.5, 270])
     obs_pts.append([goal1[0] + 1.5, goal1[1], 150])
-    # obs_pts.append([goal2[0] - 1.5, goal2[1], 30])
+    obs_pts.append([goal2[0] - 1.5, goal2[1], 30])
 
     target_goal = goal1
     all_goals   = [goal1, goal2]
@@ -162,6 +205,406 @@ def scenario_triangle2(goal_index=None):
     exp.set_observer_goal_pairs(exp.get_observers(), [start, goal1, goal2])
 
     N = 26
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_diamond(goal_index=None):
+    label = "diam" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [0.0, -5.0]
+    goal3 = [10.0, 0.0]
+    goal2 = [0.0, 5.0]
+    goal1 = [-10.0, 0.0]
+
+    start       = goal1
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+
+    target_goal = goal1
+    all_goals   = [goal2, goal3, goal4]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal3, goal4])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent_asymm0(goal_index=None):
+    label = "pent2_0" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [1.0, -5.0]
+    goal2 = [-1.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    start       = goal1
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal1
+    all_goals   = [goal1, goal2, goal4, goal34, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent_asymm1(goal_index=None):
+    label = "pent2_1" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [1.0, -5.0]
+    goal2 = [-1.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+    start       = goal2
+    target_goal = goal2
+    all_goals   = [goal1, goal2, goal4, goal34, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent_asymm2(goal_index=None):
+    label = "pent2_2" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [1.0, -5.0]
+    goal2 = [-1.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    start       = goal4
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal4
+    all_goals   = [goal1, goal2, goal1, goal34, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent_asymm3(goal_index=None):
+    label = "pent2_3" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [1.0, -5.0]
+    goal2 = [-1.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    start       = goal34
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal34
+    all_goals   = [goal1, goal2, goal4, goal1, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent_asymm4(goal_index=None):
+    label = "pent2_4" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [1.0, -5.0]
+    goal2 = [-1.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    start       = goal32
+
+    obs_pts = []
+    obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal32
+    all_goals   = [goal1, goal2, goal4, goal34, goal1]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_pent(goal_index=None):
+    label = "pent" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [0.0, -5.0]
+    goal2 = [0.0, 5.0]
+
+    goal1 = [-10.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -5.0]
+    goal32 = [10.0, 5.0]
+
+    start       = goal1
+
+    obs_pts = []
+    # obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - 1.5, 90]
+    obs2 = [goal2[0], goal2[1] + 1.5, 270]
+
+    obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    # obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal1
+    all_goals   = [goal2, goal4, goal34, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -240,7 +683,7 @@ def scenario_aimakerspace(goal_index=None):
     # Make sure these have the same order
     exp.set_observer_goal_pairs(exp.get_observers(), all_goals[::-1])
 
-    N = 26
+    N = 16
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -321,7 +764,6 @@ def scenario_equidist2(goal_index=None):
 
 def scenario_equidist(goal_index=None):
     label = "pilot_equidist" # _g" + str(goal_index)
-
 
     start = [0.0, 0.0]
     goal3 = [0.0, 10.0]
@@ -1324,22 +1766,53 @@ def get_scenario_set(scenario_filters=[]):
     scenarios = {}
 
     # TEST SCENARIO
+    label, exp = scenario_pent_asymm0(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_pent_asymm1(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_pent_asymm2(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_pent_asymm3(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_pent_asymm4(goal_index=0)
+    scenarios[label] = exp
+
+    ############
+
+    # TEST SCENARIO
+    label, exp = scenario_pent(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
     label, exp = scenario_triangle_thin(goal_index=0)
     scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_triangle_equid(goal_index=0)
-    scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_parallelogram(goal_index=0)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_diamond(goal_index=0)
+    # scenarios[label] = exp
+
+    # # TEST SCENARIO
+    # label, exp = scenario_triangle_equid(goal_index=0)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_aimakerspace(goal_index=0)
     scenarios[label] = exp
 
     return scenarios
+
+    # TEST SCENARIO
+    label, exp = scenario_parallelogram(goal_index=0)
+    scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_equidist(goal_index=0)

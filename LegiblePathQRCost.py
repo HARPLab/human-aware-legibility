@@ -40,7 +40,7 @@ PREFIX_EXPORT = 'experiment_outputs/'
 
 FLAG_SHOW_IMAGE_POPUP = False
 
-goal_colors = ['red', 'blue', 'purple', 'green']
+goal_colors = ['red', 'blue', 'purple', 'green', 'orange', 'pink']
 
 # Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
@@ -1112,6 +1112,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
 
         ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        print("Overall legibility of path to goal")
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
         
         in_vis = None
@@ -1224,6 +1225,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         info_grad = []
         info_outline_grad = []
+
+        is_target = self.exp.get_target_observer().get_center() == observer.get_center()
+        print("LALA is target = " + str(is_target) + " because " + str(is_target))
         for i in range(len(verts)):
             x = verts[i]
 
@@ -1235,10 +1239,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             neutral_color = '#aaaaaa'
 
-            print("LALALA")
-            print(self.exp.get_target_observer().get_center(), observer.get_center())
-
-            if self.exp.get_target_observer().get_center() == observer.get_center():
+            if is_target:
                 if is_local and can_see:
                     paint_color = '#8E44AD' # purple
 
@@ -1608,7 +1609,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax4.set_title("Term cost during path", fontweight='bold')
         # ax4.legend() #loc="upper left")
 
-        _ = ax7.set_xlabel("Visibility", fontweight='bold')
+        _ = ax7.set_xlabel("Time", fontweight='bold')
         _ = ax7.set_ylabel("Percent", fontweight='bold')
         _ = ax7.set_title("Vis over path", fontweight='bold')
         # ax7.legend() #loc="upper left")
@@ -1629,6 +1630,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax6.set_ylabel("Magnitude of U", fontweight='bold')
         _ = ax6.set_title("Magnitude of U Over Path", fontweight='bold')
         ax6.set_ylim(bottom=0)
+
+        ax7.set_ylim([0, 100.0])
         # ax6.legend()
 
         if False:
