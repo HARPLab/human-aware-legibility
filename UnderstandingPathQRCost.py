@@ -37,6 +37,9 @@ np.set_printoptions(suppress=True)
 np.seterr(divide='raise')
 MATH_EPSILON = 0 #.0000001
 
+FLAG_SECONDARY_CONSIDERED   = False
+FLAG_PD_WITH_ALTS           = False
+
 class UnderstandingPathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
     FLAG_DEBUG_STAGE_AND_TERM = True
@@ -1197,6 +1200,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         start   = self.start
         goal    = self.target_goal
         thresh  = .0001
+        target_goal    = self.target_goal
 
         u = copy.copy(input_u)
         x = copy.copy(input_x)
@@ -1271,7 +1275,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         # cost_dict = self.get_costs_relative_to_goals()
 
         wt_legib        = 1.0
-        wt_lam          = 0.2 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = 0.25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
@@ -1352,57 +1356,70 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
                 secondary_costs.append(secondary_cost)
         elif True:
-            # p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-            p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'lin_exp', 'mode_blend':None})
+            p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            # p_d = self.prob_distance(start, target_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
 
             # p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
 
-            if len(input_x) == 4:
-                p_h = self.prob_heading_from_pt_seq(x, x_prev, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
-            else:
-                p_h = self.prob_heading(x, u, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
-                # TODO get max p_h
-                # Compare to the current p_h
+        
+            if False:
+                if len(input_x) == 4:
+                    p_h = self.prob_heading_from_pt_seq(x, x_prev, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+                else:
+                    p_h = self.prob_heading(x, u, i, goal, True, override={'mode_heading':'lin', 'mode_dist':None, 'mode_blend':None})
+                    # TODO get max p_h
+                    # Compare to the current p_h
 
             # ADA TODO check
             # max of the signals
             # P_overall = min(p_d, p_h)
-            P_overall = p_d #* p_h
-            #sum
+
+            if FLAG_PD_WITH_ALTS:
+                P_val_max = 1.0
+                P_overall = p_d
+            else:
+                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # print("probs me and all alts")
+                # print(p_d, p_alts)
+                P_overall = sum(map(lambda i: i * i, p_alts))
+                P_val_max = 1.0 * len(p_alts)
 
             # P_overall = p_d * p_d # + p_h * p_h
 
-            # if True:
-            #     val_overall = np.log(P_overall)
 
-            # if p_h > (1.0 / ):
-            #     val_overall += 1000.0 * p_h
+            # if False:
+            #     val_overall = P_overall
 
+            # elif True:
+            #     # INVERT PROBABILITIES INTO COSTS
+            #     val_overall = P_val_max - P_overall    # * val_heading
+            #     max_penalty = 2.0 * (len(self.exp.get_goals()) - 1)
 
-            if False:
-                # INVERT PROBABILITIES INTO COSTS
-                val_overall = 1.0 - P_overall    # * val_heading
-            else:
-                # VANILLA FORM, PULLED TOWARDS ZERO
-                # COST IS NEGATIVE, REWARD IS POSITIVE
-                val_overall = -1 * P_overall
-                wt_lam = wt_lam # * -1.0
-                max_penalty = 5.0
+            # else:
+            #     # VANILLA FORM, PULLED TOWARDS ZERO
+            #     # COST IS NEGATIVE, REWARD IS POSITIVE
+            #     val_overall = -1 * P_overall
+            #     wt_lam = wt_lam # * -1.0
+            #     max_penalty = 2.0
+
+            val_overall = 1.0 - p_d
+            max_penalty = 1.0
 
 
             target_costs        = val_overall # + val_heading
 
-            for i in range(len(self.exp.get_secondary_observers())):
+            for local, vis in zip(islocal_secondary, is_vis_secondary):
                 # sec_val_legib       = (1.0 - val_legib)
                 # sec_val_heading     = (1.0 - val_heading)
                 # secondary_cost     = max(sec_val_legib, sec_val_heading)
 
-                # TODO Will need more elaborate math with more goals
-                secondary_cost  = val_overall
-                secondary_costs.append(secondary_cost)
+                # Currently just mirrors the same stuff
+                # Upgrade: would consider relative to their particular goal
+                if local and vis and FLAG_SECONDARY_CONSIDERED:
+                    # TODO Will need more elaborate math with more goals
+                    secondary_cost  = val_overall
+                    secondary_costs.append(secondary_cost)
 
-
-        undetectable_multiplier = 10.0
 
         ###### UNDERSTANDING COSTS: TARGET
         ### Depending on mode taken from the exp packet...
@@ -1413,7 +1430,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             val_understanding_target = target_costs
             print("IS LOCAL == YES")
         else:
-            wt_lam = wt_lam * .25
+            # wt_lam = wt_lam * .5
             val_understanding_target = max_penalty
             print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
 
@@ -1692,7 +1709,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         elif mode_dist == 'lin_exp':
             # val = (np.exp(self.inversely_proportional_to_distance(dist)))
             # print("mode dist is lin_exp, dist inv value is " + str(val))
-            val = self.get_legibility_component_exp(start, goal, x, i_step)
+            val = self.get_legibility_component_og(start, goal, x, i_step)
             return val
 
         elif mode_dist == 'exp':
@@ -1748,72 +1765,100 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
 
         total_steps = self.exp.get_N()
+
         diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
         diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
-        diff_all_v = self.get_estimated_cost(diff_all_v, self.exp.get_N())
-
-        print("vals")
-        print(start, x)
-        print(x, goal)
-        print(start, goal)
-
-        print("exp diffs")
-        # print(diff_curr, diff_goal, diff_all)
-        # print(np.dot(np.dot((diff_curr.T), Q), ((diff_curr)))
-        # print(((diff_goal).T.dot(Q).dot(diff_goal)))
-        # print((diff_all).T.dot(Q).dot(diff_all))
-        print(diff_curr_v)
-        print(diff_goal_v)
-        print(diff_all_v)
-        print("==")
-
-        # print("exp norms")
-        # # print(diff_curr, diff_goal, diff_all)
-        # print(np.linalg.norm(diff_curr))
-        # print(np.linalg.norm(diff_goal))
-        # print(np.linalg.norm(diff_all))
-        # print("==")
-
-        # diff_curr   = diff_curr.T
-        # diff_goal   = diff_goal.T
-        # diff_all    = diff_all.T
-
-
-        # diff_curr_size = np.linalg.norm(diff_curr)
-        # diff_goal_size = np.linalg.norm(diff_goal)
-        # diff_all_size  = np.linalg.norm(diff_all)
-
-        if np.array_equal(goal[:2], [3.79, -6.99]) or np.array_equal(goal[:2], [7.41, -6.99]):
-            # Apply roughly the scalar to match the OG dimensions, 
-            # versus the units from unity we're using currently for display purposes
-            diff_curr   = diff_curr  * 100.0
-            diff_goal   = diff_goal  * 100.0
-            diff_all    = diff_all  * 100.0
-
-            print("exp diffs")
-            # print(diff_curr, diff_goal, diff_all)
-            print(diff_curr_v)
-            print(diff_goal_v)
-            print(diff_all_v)
-            print("==")
-        # else:
-        #     print("Alert: goal is " + str(goal))
-
-        # diff_curr_size = diff_curr_size * diff_curr_size
-        # diff_goal_size = diff_goal_size * diff_goal_size
-        # diff_all_size  = diff_all_size * diff_all_size
-
-        # n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
-        # d = (diff_all).T.dot(Q).dot(diff_all)
+        diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
 
         n = - (diff_curr_v) - (diff_goal_v)
         d = diff_all_v
 
-        print("n, d")
-        print(n, d)
         J = np.exp(n) / np.exp(d)
 
         return J
+
+    # def get_legibility_component_og(self, start, goal, x, i_step):
+    #     Q       = np.eye(2)
+
+    #     goal_diff   = start - goal
+    #     start_diff  = (start - np.array(x))
+    #     togoal_diff = (np.array(x) - goal)
+
+    #     diff_curr   = start - x
+    #     diff_goal   = x - goal
+    #     diff_all    = start - goal
+
+    #     diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+    #     diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+    #     diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+    #     total_steps = self.exp.get_N()
+    #     diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
+    #     diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
+    #     diff_all_v = self.get_estimated_cost(diff_all_v, self.exp.get_N())
+
+    #     print("vals")
+    #     print(start, x)
+    #     print(x, goal)
+    #     print(start, goal)
+
+    #     print("exp diffs")
+    #     # print(diff_curr, diff_goal, diff_all)
+    #     # print(np.dot(np.dot((diff_curr.T), Q), ((diff_curr)))
+    #     # print(((diff_goal).T.dot(Q).dot(diff_goal)))
+    #     # print((diff_all).T.dot(Q).dot(diff_all))
+    #     print(diff_curr_v)
+    #     print(diff_goal_v)
+    #     print(diff_all_v)
+    #     print("==")
+
+    #     # print("exp norms")
+    #     # # print(diff_curr, diff_goal, diff_all)
+    #     # print(np.linalg.norm(diff_curr))
+    #     # print(np.linalg.norm(diff_goal))
+    #     # print(np.linalg.norm(diff_all))
+    #     # print("==")
+
+    #     # diff_curr   = diff_curr.T
+    #     # diff_goal   = diff_goal.T
+    #     # diff_all    = diff_all.T
+
+
+    #     # diff_curr_size = np.linalg.norm(diff_curr)
+    #     # diff_goal_size = np.linalg.norm(diff_goal)
+    #     # diff_all_size  = np.linalg.norm(diff_all)
+
+    #     if np.array_equal(goal[:2], [3.79, -6.99]) or np.array_equal(goal[:2], [7.41, -6.99]):
+    #         # Apply roughly the scalar to match the OG dimensions, 
+    #         # versus the units from unity we're using currently for display purposes
+    #         diff_curr   = diff_curr  * 100.0
+    #         diff_goal   = diff_goal  * 100.0
+    #         diff_all    = diff_all  * 100.0
+
+    #         print("exp diffs")
+    #         # print(diff_curr, diff_goal, diff_all)
+    #         print(diff_curr_v)
+    #         print(diff_goal_v)
+    #         print(diff_all_v)
+    #         print("==")
+    #     # else:
+    #     #     print("Alert: goal is " + str(goal))
+
+    #     # diff_curr_size = diff_curr_size * diff_curr_size
+    #     # diff_goal_size = diff_goal_size * diff_goal_size
+    #     # diff_all_size  = diff_all_size * diff_all_size
+
+    #     # n = - (diff_curr.T).dot(Q).dot((diff_curr)) - ((diff_goal).T.dot(Q).dot(diff_goal))
+    #     # d = (diff_all).T.dot(Q).dot(diff_all)
+
+    #     n = - (diff_curr_v) - (diff_goal_v)
+    #     d = diff_all_v
+
+    #     print("n, d")
+    #     print(n, d)
+    #     J = np.exp(n) / np.exp(d)
+
+    #     return J
 
 
     def get_legibility_dist_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff):
@@ -1932,6 +1977,25 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         return P_oa
 
+    def get_legibility_component_alts(self, start, goal, x, u, i, terminal, visibility_coeff, override_block=None):
+        p_alt_list = []
+        goals =  self.exp.get_goals()
+
+        print("Get all components")
+        for gi in range(len(self.exp.get_goals())):
+            g_test = goals[gi]
+            p_d_g = self.prob_distance(start, g_test, x, u, i, terminal, visibility_coeff, override=override_block)
+
+            print("p_d_g == " + str(p_d_g))
+            print(g_test)
+
+            if g_test != goal:
+                p_alt_list.append(p_d_g)
+
+
+        p_g_target = self.prob_distance(start, goal, x, u, i, terminal, visibility_coeff, override=override_block)
+
+        return p_g_target, p_alt_list
 
     def stage_cost(self, x, u, i, terminal=False):
         print("DOING STAGE COST")
