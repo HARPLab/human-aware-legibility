@@ -605,7 +605,7 @@ def scenario_pent_wide(goal_index=None):
     exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 10
+    N = 15
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -664,7 +664,66 @@ def scenario_pent(goal_index=None):
     exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 10
+    N = 15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_fan(goal_index=None):
+    label = "fan" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [10.0, -5.0]
+    goal2 = [10.0, 5.0]
+
+    goal1 = [0.0, 0.0]
+
+    # goal3 = [0.0, -5.0]
+
+    goal34 = [10.0, -10.0]
+    goal32 = [10.0, 10.0]
+
+    start       = goal1
+
+    obs_pts = []
+    # obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0] - 1.5, goal4[1], 180]
+    obs2 = [goal2[0] - 1.5, goal2[1], 180]
+
+    obs34 = [goal34[0] - 1.5, goal34[1], 180]
+    obs32 = [goal32[0] - 1.5, goal32[1], 180]
+
+    # obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs34)
+    obs_pts.append(obs32)
+
+
+    target_goal = goal1
+    all_goals   = [goal2, goal4, goal34, goal32]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 15
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -1827,6 +1886,10 @@ def get_scenario_set(scenario_filters=[]):
 
     # TEST SCENARIO
     label, exp = scenario_pent(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_fan(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
