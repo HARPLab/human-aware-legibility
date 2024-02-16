@@ -1,4 +1,5 @@
-purpose = "pilot_exp_21_pd_lin_exp"
+purpose = "40_target_sqr_falloff_all_have" #sum_exp_of_lin_sqr" #multi_alts_sum"
+# purpose = "pilot_exp_24_pd_lam25_discount5_max2"
 # purpose = "test_dist_k"
 
 import os
@@ -234,11 +235,11 @@ def test_locality_set(dash_folder, scenario_filters):
     # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
     scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
 
-    # scale_set = [1, 3/2.0, 3/1.0][::-1]
-    scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
+    scale_set = [1, 3/2.0, 3/1.0][::-1]
+    # scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
     # scale_set = [1, 5/4.0, 5/2.0][::-1]
 
-    observer_gap = 1.5
+    observer_gap = 2 #1.5
     
     # observer_gap = 2.0
 
@@ -265,7 +266,9 @@ def test_locality_set(dash_folder, scenario_filters):
             new_N = str("{0:.3g}".format((new_N)))
             new_N = float(new_N)
 
-            label_dict[multiplier] = new_N
+            scale_text = str("{0:.3g}".format((1.0 / multiplier)))
+
+            label_dict[multiplier] = scale_text
 
             test['label']           = 'local=' + str("{0:.3g}".format((new_N)))
             test['local_distance']  = new_N
@@ -280,7 +283,7 @@ def test_locality_set(dash_folder, scenario_filters):
                 mega_scenario.set_target_goal_index(g_index)
 
                 mega_scenario.set_local_distance(new_N)
-                mega_scenario.set_fn_note("locdist_" + str(int(new_N)))
+                mega_scenario.set_fn_note("locdist_" + str((scale_text)))
 
                 save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
 
