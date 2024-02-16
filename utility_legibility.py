@@ -532,7 +532,11 @@ def get_dist(p0, p1):
 	p0_x, p0_y = p0
 	p1_x, p1_y = p1
 
-	min_distance = np.sqrt((p0_x-p1_x)**2 + (p0_y-p1_y)**2)
+	value = (p0_x-p1_x)**2 + (p0_y-p1_y)**2
+	if value == 0:
+		return 0
+
+	min_distance = np.sqrt(float(value))
 	return min_distance
 
 def get_min_direct_path_cost_angle_between(r, p0, p1, exp_settings):
