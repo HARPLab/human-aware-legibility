@@ -627,9 +627,26 @@ class PathingExperiment():
 
         return in_view
 
+    def get_vislocal_status_of_point(self, x):
+        observers       = self.get_observers()
+        target_obs      = self.get_target_observer()
+        secondary_obs   = self.get_secondary_observers()
+        goals           = self.get_goals()
+
+        status_dict = {}
+
+        for g in goals:
+            o = self.get_observer_for_goal(g)
+            vis     = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True)
+            local   = self.dist_between(x, o.get_center()) < self.get_local_distance()
+
+            status_dict[(g[0], g[1])] = (vis, local)
+
+        return status_dict
+
     # RETURN TRUE IF IN SIGHT, FALSE IF NO
     # TARGET, then list of SECONDARY
-    def get_visibility_of_all(self, x_in):
+    def get_visibility_of_all(self, x_in, dict_on=False):
         is_vis_target = 0
         is_vis_secondary = []
 
