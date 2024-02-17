@@ -692,11 +692,11 @@ def scenario_fan(goal_index=None):
     # obs1 = [goal1[0] - 1.5, goal1[1], 0]
     # obs3 = [goal3[0] + 1.5, goal3[1], 180]
 
-    obs4 = [goal4[0] - 1.5, goal4[1], 180]
-    obs2 = [goal2[0] - 1.5, goal2[1], 180]
+    obs4 = [goal4[0] + 1.5, goal4[1], 180]
+    obs2 = [goal2[0] + 1.5, goal2[1], 180]
 
-    obs34 = [goal34[0] - 1.5, goal34[1], 180]
-    obs32 = [goal32[0] - 1.5, goal32[1], 180]
+    obs34 = [goal34[0] + 1.5, goal34[1], 180]
+    obs32 = [goal32[0] + 1.5, goal32[1], 180]
 
     # obs_pts.append(obs1)
     obs_pts.append(obs2)
