@@ -1276,7 +1276,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         ###### SET VALUES SET WT
         wt_legib        = 1.0
-        wt_lam          = 0.000001 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = 0.1 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
@@ -1371,9 +1371,66 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
                     # TODO get max p_h
                     # Compare to the current p_h
 
+            goals = self.exp.get_goals()
+            P_d_dict = {}
+            for maybe_goal in goals:
+                prob = self.prob_distance(start, maybe_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                key = (maybe_goal[0], maybe_goal[1])
+                P_d_dict[key] = prob
+
 
             ###### SINGLE VANILLA CASE
-            if True and 37 == 37:
+            if True and 42 == 42:
+                key = (goal[0], goal[1])
+                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            
+                FLAG_SECONDARY_CONSIDERED = True
+                
+                # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
+
+                val_overall = (1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+                max_penalty = 4.0 #0.0 #np.exp(2.0)
+                wt_lam = .5
+
+            elif True and 41 == 41:
+                key = (goal[0], goal[1])
+                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            
+                FLAG_SECONDARY_CONSIDERED = True
+                
+                # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
+
+                val_overall = (1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+                max_penalty = 4.0 #0.0 #np.exp(2.0)
+                wt_lam = 100 * np.abs(wt_lam) # * -1
+
+            elif True and 38 == 38:
+                key = (goal[0], goal[1])
+                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            
+                FLAG_SECONDARY_CONSIDERED = False
+                
+                closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
+
+                val_overall = (1.0 - p_d) * closeness_scalar #+ max(p_alts)
+                max_penalty = 4.0 #0.0 #np.exp(2.0)
+                wt_lam = 100 * np.abs(wt_lam) # * -1
+
+            elif True and 38 == 38:
+                key = (goal[0], goal[1])
+                p_d = P_d_dict[key]    #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            
+                FLAG_SECONDARY_CONSIDERED = True
+                
+                val_overall = (1.0 - p_d) #+ max(p_alts)
+                max_penalty = 4.0 #0.0 #np.exp(2.0)
+                wt_lam = 100 * np.abs(wt_lam) # * -1
+
+            elif True and 37 == 37:
                 p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
                 p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
                 p_d = p_d_target
@@ -1445,14 +1502,36 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
 
             target_costs        = val_overall # + val_heading
+            secondary_costs     = 0
 
-            for local, vis in zip(islocal_secondary, is_vis_secondary):
-                # Currently just mirrors the same stuff
-                # Upgrade: would consider relative to their particular goal
-                if local and vis and FLAG_SECONDARY_CONSIDERED:
-                    # TODO Will need more elaborate math with more goals
-                    secondary_cost  = val_overall
-                    secondary_costs.append(secondary_cost)
+            # Old handling of secondary
+            # for local, vis in zip(islocal_secondary, is_vis_secondary):
+            #     # Currently just mirrors the same stuff
+            #     # Upgrade: would consider relative to their particular goal
+            #     if local and vis and FLAG_SECONDARY_CONSIDERED:
+            #         # TODO Will need more elaborate math with more goals
+            #         secondary_cost  = val_overall
+            #         secondary_costs.append(secondary_cost)
+
+
+        val_understanding_secondary = 0
+
+        status_dict = self.exp.get_vislocal_status_of_point(x)
+        for alt_goal in self.exp.get_goals():
+            vis, local = status_dict[(alt_goal[0], alt_goal[1])]
+
+            if vis and local:
+                if (goal != alt_goal) and FLAG_SECONDARY_CONSIDERED:
+                    key = (alt_goal[0], alt_goal[1])
+                    cost_falloff = self.get_relative_distance_value(i, start, alt_goal, x, False, 'exp')
+
+                    val_understanding_secondary += P_d_dict[key] * 2.0 # * cost_falloff #* 2.0
+                    print("sec exp and no scaling")
+
+                    print("Secondary costs")
+                    print(P_d_dict[key], cost_falloff)
+                else:
+                    print("Not secondary: this is the target")
 
 
         ###### UNDERSTANDING COSTS: TARGET
@@ -1473,7 +1552,6 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             if False:
                 val_understanding_target = np.exp((.5 - p_d)**2)  + max_penalty
 
-        val_understanding_secondary = 0
 
 
         wt_legib     = (wt_legib)
