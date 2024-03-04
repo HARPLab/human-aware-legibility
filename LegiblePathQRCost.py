@@ -3,6 +3,7 @@ import sys
 module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
     sys.path.append(module_path)
+import copy
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ import copy
 import time
 from datetime import timedelta, datetime
 import matplotlib.ticker as mtick
+from matplotlib import cm
 
 from ilqr import iLQR
 from ilqr.cost import Cost
@@ -754,13 +756,17 @@ class LegiblePathQRCost(FiniteDiffCost):
        
         return self.rgb_to_hex(new_rgb)
 
-    def get_window_dimensions_for_envir(self, start, goals, pts):
+    def get_window_dimensions_for_envir(self, start, goals, pts, observers=None):
         xmin, ymin = start
         xmax, ymax = start
 
         all_points = copy.copy(goals)
         all_points.append(start)
         all_points.extend(pts)
+
+        if observers != None:
+            for obs in observers:
+                all_points.append(obs.get_center())
         
         for pt in all_points:
             x, y = pt[0], pt[1]
@@ -1368,6 +1374,536 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return info_grad
 
+    def draw_force_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
+        axarr = ax
+
+        axarr.set_aspect('equal')
+        axarr.grid(axis='y')
+
+        # TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = self.exp.get_observer_radius()
+        GOAL_RADIUS     = self.exp.get_goal_radius()
+        OBS_BUFFER      = self.exp.get_obstacle_buffer()
+
+        # TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+
+        # tables      = self.restaurant.get_tables()
+        observers   = self.restaurant.get_observers()
+        local_distance = self.exp.get_local_distance()
+
+        if self.exp.get_state_size() == 4:
+            xs, ys, x_o, y_o = zip(*verts)
+        elif self.exp.get_state_size() == 3:
+            xs, ys, thetas = zip(*verts)
+        else:
+            xs, ys = zip(*verts)
+
+        gx, gy = zip(*self.goals)
+        sx, sy = self.start[0], self.start[1]
+
+
+        # Deprecated method because this only accounts for one set of points, 
+        # and since we only add them by each run, it's better to autoscale
+        # it was useful for the colinear case, however- maybe add a case for this
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts, observers)
+        x_min_cur, x_max_cur = axarr.get_xlim()
+        y_min_cur, y_max_cur = axarr.get_ylim()        
+
+        xmin -= 10.0
+        ymin -= 10.0
+        xmax += 10.0
+        ymax += 10.0
+
+        xmin = int(xmin)
+        ymin = int(ymin)
+        xmax = int(xmax) + 1
+        ymax = int(ymax) + 1
+
+        if xmin < x_min_cur:
+            axarr.set_xlim(left=xmin)
+        if ymin < y_min_cur:
+            axarr.set_ylim(bottom=ymin)
+        if xmax > x_max_cur:
+            axarr.set_xlim(right=xmax)
+        if ymax > y_max_cur:
+            axarr.set_ylim(top=ymax)
+
+        nx = (xmax - xmin) * 4
+        ny = (ymax - ymin) * 4
+
+        ##### GET THE FORCE DIAGRAM BACKGROUND GRADIENT
+        x1 = np.linspace(xmin, xmax, 200) #nx) # np.arange(xmin, xmax, .25)
+        x2 = np.linspace(ymin, ymax, 200) #ny) # np.arange(ymin, ymax, .25) #
+        Y = np.zeros(shape=(x1.size, x2.size))
+
+        for i, value1 in enumerate(x1):
+            for j, value2 in enumerate(x2):
+                input_x = np.array([value1, value2, value1, value2])
+                input_u = np.array([0, 0])
+
+                Y[i, j] = self.l(input_x, None, None, just_stage=True) #gradient_descent(w_temp, X_scaled, y)[1]
+
+
+        # step = 0.02
+        # m = np.amax(Y)
+        # levels = np.arange(0.0, m, step) + step
+        levels = [0.0, .99, .999, .9999, .99999, 1.0, 2.0, 3.0]
+        print("LEVEL LIST")
+        print(np.unique(Y))
+        levels = np.unique(Y)
+
+        # axarr.axhline(0, color='black', alpha=.5, dashes=[2, 4],linewidth=1)
+        # axarr.axvline(0, color='black', alpha=0.5, dashes=[2, 4],linewidth=1)
+        # for i in range(len(old_w) - 1):
+        #     plt.annotate('', xy=all_ws[i + 1, :], xytext=all_ws[i, :],
+        #                  arrowprops={'arrowstyle': '->', 'color': 'r', 'lw': 1},
+        #                  va='center', ha='center')
+         
+        axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+        axarr.set_title("Contour Plot of Gradient Descent")
+
+        axarr.set_xlim([xmin, xmax])
+        axarr.set_ylim([ymin, ymax])
+
+        plt.savefig(self.get_export_label(dash_folder) + '-forcelite.png')
+        CS = axarr.contour(x1, x2, Y.transpose(), levels, linewidths=1) #, colors='black')
+        axarr.clabel(CS, inline=1, fontsize=8)
+
+
+        # cbar = fig.colorbar(cs)
+
+
+        # https://stackoverflow.com/questions/21712068/overlaying-contour-lines-on-top-of-contourf-plot
+        # axarr.xlabel("w0")
+        # axarr.ylabel("w1")
+
+        # for table in tables:
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
+        #     axarr.add_patch(table)
+
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
+        #     axarr.add_patch(table)
+
+        for observer in observers:
+            obs_color = 'orange'
+            obs_color_outer = '#f8d568'
+            obs_pt  = observer.get_center()
+            if not multilayer_draw:
+                obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
+                axarr.add_patch(obs)
+
+                obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
+                axarr.add_patch(obs)
+
+            ox, oy = obs_pt
+            THETA_ARROW_RADIUS = 1
+            r = THETA_ARROW_RADIUS
+
+            # u, v = x * (np.cos(y), np.sin(y))
+
+            angle = observer.get_orientation()
+            angle_rads = angle * np.pi / 180
+            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
+
+            half_fov = 60
+            obs_color = 'yellow'
+            fov1 = (angle + half_fov) % 360
+            fov2 = (angle - half_fov) % 360
+
+            fov1_rads = fov1 * np.pi / 180
+            fov2_rads = fov2 * np.pi / 180
+
+            # print("fov1, angle, fov2")
+            # print(fov1, angle, fov2)
+
+            # print("arrow1")
+            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            # print("arrow2")
+            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+                        
+            axarr.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
+
+            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
+
+        # # COLOR BASED ON VISIBILITY
+        # # Color code the goals for ease of reading graphs
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        path_color = '#000000'
+        for j in range(len(self.goals)):
+            goal = self.goals[j]
+            color = goal_colors[j]
+            plt.Circle(goal, local_distance, color='#555555', clip_on=False)
+
+            if goal is self.target_goal:
+                target_color = color
+
+            gx, gy = goal[:2]
+            if gx == target[0] and gy == target[1]:
+                path_color = color
+            if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
+                path_color = color
+
+        # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        print("Overall legibility of path to goal")
+        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        
+        in_vis = None
+        if len(vs) > 0:
+            in_vis = [i > 0 for i in vs[0]]
+        else:
+            in_vis = [True for i in ls]
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
+
+        color_grad = []
+        outline_grad = []
+        for i in range(len(in_vis)):
+            can_see = in_vis[i]
+            print(can_see)
+
+            if can_see == True:
+                color_grad.append(color_grad_1[i])
+                outline_grad.append(color_grad_2[i])
+                # outline_grad.append('#13678A')
+            else:
+                color_grad.append(color_grad_2[i])
+                outline_grad.append(color_grad_1[i])
+                # outline_grad.append('#f4722b')
+
+        axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = axarr.set_xlabel("X", fontweight='bold')
+        _ = axarr.set_ylabel("Y", fontweight='bold')
+        blurb = self.exp.get_solver_status_blurb()
+        _ = axarr.set_title("Path through space", fontweight='bold')
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        # for each goal, graph legibility
+        for j in range(len(self.exp.get_goals())):
+            goal = self.exp.get_goals()[j]
+            color = goal_colors[j]
+
+            gx, gy = goal
+
+            if gx == target[0] and gy == target[1]:
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
+            else:
+                if not multilayer_draw:
+                    g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
+                    axarr.add_patch(g)
+
+                    g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
+                    axarr.add_patch(g)
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+        # Draw the path itself
+        axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+        axarr.scatter(xs, ys, c=outline_grad, s=20, zorder=1)
+        axarr.scatter(xs, ys, c=color_grad, s=10, zorder=1)
+
+        axarr.legend(loc="upper left")
+        axarr.grid(False)
+
+        plt.savefig(self.get_export_label(dash_folder) + '-force.png')
+        # plt.show()
+        # exit()
+
+        return axarr
+
+    def draw_vislocal_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
+        axarr = ax
+
+        axarr.set_aspect('equal')
+        axarr.grid(axis='y')
+
+        # TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = self.exp.get_observer_radius()
+        GOAL_RADIUS     = self.exp.get_goal_radius()
+        OBS_BUFFER      = self.exp.get_obstacle_buffer()
+
+        # TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+
+        # tables      = self.restaurant.get_tables()
+        observers   = self.restaurant.get_observers()
+        local_distance = self.exp.get_local_distance()
+
+        if self.exp.get_state_size() == 4:
+            xs, ys, x_o, y_o = zip(*verts)
+        elif self.exp.get_state_size() == 3:
+            xs, ys, thetas = zip(*verts)
+        else:
+            xs, ys = zip(*verts)
+
+        gx, gy = zip(*self.goals)
+        sx, sy = self.start[0], self.start[1]
+
+
+        # Deprecated method because this only accounts for one set of points, 
+        # and since we only add them by each run, it's better to autoscale
+        # it was useful for the colinear case, however- maybe add a case for this
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts, observers)
+        x_min_cur, x_max_cur = axarr.get_xlim()
+        y_min_cur, y_max_cur = axarr.get_ylim()        
+
+        xmin -= 10.0
+        ymin -= 10.0
+        xmax += 10.0
+        ymax += 10.0
+
+        if xmin < x_min_cur:
+            axarr.set_xlim(left=xmin)
+        if ymin < y_min_cur:
+            axarr.set_ylim(bottom=ymin)
+        if xmax > x_max_cur:
+            axarr.set_xlim(right=xmax)
+        if ymax > y_max_cur:
+            axarr.set_ylim(top=ymax)
+
+
+        ##### GET THE FORCE DIAGRAM BACKGROUND GRADIENT
+        x1 = np.linspace(xmin, xmax, 100)
+        x2 = np.linspace(ymin, ymax, 100)
+        Y = np.zeros(shape=(x1.size, x2.size))
+
+        g_target = self.exp.get_target_goal()
+        g_target_key = (g_target[0], g_target[1])
+        for i, value1 in enumerate(x1):
+            for j, value2 in enumerate(x2):
+                # w_temp = np.array((value1, value2))
+
+                # input_x = np.array([value1, value2, value1, value2])
+                # input_u = np.array([0, 0])
+
+                # is_vis_target, is_vis_secondary           = self.exp.get_visibility_of_all(input_x)
+                # islocal_target, islocal_secondary         = self.exp.get_is_local_of_all(input_x)
+
+                goal_dict = self.exp.get_vislocal_status_of_point([value1, value2])
+
+                color_value = -10                
+                for g in self.exp.get_goals():
+                    g_target_key = (g[0], g[1])
+                    is_vis_target, islocal_target, local_dist = goal_dict[g_target_key]
+
+                    # print("g_target_key")
+                    # print(g_target_key, self.exp.get_observer_for_goal(g).get_center())
+
+                    # color_value = 0
+                    if islocal_target and is_vis_target:
+                        color_value += 10.0
+                    elif islocal_target and not is_vis_target:
+                        color_value += 5.0
+                    elif not islocal_target and is_vis_target:
+                        color_value += 3.0
+
+                    # if islocal_target:
+                    #     color_value += self.exp.get_local_distance() - local_dist
+
+                # exit()
+
+
+                # if not islocal_target:
+                #     local_dist = 0
+                Y[i, j] = color_value #local_dist #color_value
+
+                # print("LOOKUP VISLOCAL")
+                # # print(i, value1, j, value2)
+                # print(value2, value1)
+                # print(color_value)
+                # exit()
+
+
+        # step = 0.02
+        # m = np.amax(Y)
+        # levels = np.arange(0.0, m, step) + step
+        levels = np.unique(Y)
+
+        # axarr.axhline(0, color='black', alpha=.5, dashes=[2, 4],linewidth=1)
+        # axarr.axvline(0, color='black', alpha=0.5, dashes=[2, 4],linewidth=1)
+        # for i in range(len(old_w) - 1):
+        #     plt.annotate('', xy=all_ws[i + 1, :], xytext=all_ws[i, :],
+        #                  arrowprops={'arrowstyle': '->', 'color': 'r', 'lw': 1},
+        #                  va='center', ha='center')
+         
+        axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8, cmap = "plasma") #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+        axarr.set_title("Contour Plot of Gradient Descent")
+
+        axarr.set_xlim([xmin, xmax])
+        axarr.set_ylim([ymin, ymax])
+
+        plt.savefig(self.get_export_label(dash_folder) + '-vislocal-lite.png')
+        # plt.show()
+        # CS = axarr.contour(x1, x2, Y.transpose(), levels, linewidths=1, colors='black')
+        # axarr.clabel(CS, inline=1, fontsize=8)
+
+
+        # cbar = fig.colorbar(cs)
+
+
+        # https://stackoverflow.com/questions/21712068/overlaying-contour-lines-on-top-of-contourf-plot
+        # axarr.xlabel("w0")
+        # axarr.ylabel("w1")
+
+        # for table in tables:
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
+        #     axarr.add_patch(table)
+
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
+        #     axarr.add_patch(table)
+
+        for observer in observers:
+            obs_color = 'orange'
+            obs_color_outer = '#f8d568'
+            obs_pt  = observer.get_center()
+            if not multilayer_draw:
+                obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
+                axarr.add_patch(obs)
+
+                obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
+                axarr.add_patch(obs)
+
+            ox, oy = obs_pt
+            THETA_ARROW_RADIUS = 1
+            r = THETA_ARROW_RADIUS
+
+            # u, v = x * (np.cos(y), np.sin(y))
+
+            angle = observer.get_orientation()
+            angle_rads = angle * np.pi / 180
+            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
+
+            half_fov = 60
+            obs_color = 'yellow'
+            fov1 = (angle + half_fov) % 360
+            fov2 = (angle - half_fov) % 360
+
+            fov1_rads = fov1 * np.pi / 180
+            fov2_rads = fov2 * np.pi / 180
+
+            # print("fov1, angle, fov2")
+            # print(fov1, angle, fov2)
+
+            # print("arrow1")
+            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            # print("arrow2")
+            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+                        
+            axarr.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
+
+            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
+
+        # # COLOR BASED ON VISIBILITY
+        # # Color code the goals for ease of reading graphs
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        path_color = '#000000'
+        for j in range(len(self.goals)):
+            goal = self.goals[j]
+            color = goal_colors[j]
+            plt.Circle(goal, local_distance, color='#555555', clip_on=False)
+
+            if goal is self.target_goal:
+                target_color = color
+
+            gx, gy = goal[:2]
+            if gx == target[0] and gy == target[1]:
+                path_color = color
+            if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
+                path_color = color
+
+        # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        print("Overall legibility of path to goal")
+        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        
+        in_vis = None
+        if len(vs) > 0:
+            in_vis = [i > 0 for i in vs[0]]
+        else:
+            in_vis = [True for i in ls]
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
+
+        color_grad = []
+        outline_grad = []
+        for i in range(len(in_vis)):
+            can_see = in_vis[i]
+            print(can_see)
+
+            if can_see == True:
+                color_grad.append(color_grad_1[i])
+                outline_grad.append(color_grad_2[i])
+                # outline_grad.append('#13678A')
+            else:
+                color_grad.append(color_grad_2[i])
+                outline_grad.append(color_grad_1[i])
+                # outline_grad.append('#f4722b')
+
+        axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = axarr.set_xlabel("X", fontweight='bold')
+        _ = axarr.set_ylabel("Y", fontweight='bold')
+        blurb = self.exp.get_solver_status_blurb()
+        _ = axarr.set_title("Path through space \n" + blurb, fontweight='bold')
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        # for each goal, graph legibility
+        for j in range(len(self.exp.get_goals())):
+            goal = self.exp.get_goals()[j]
+            color = goal_colors[j]
+
+            gx, gy = goal
+
+            if gx == target[0] and gy == target[1]:
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
+            else:
+                if not multilayer_draw:
+                    g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
+                    axarr.add_patch(g)
+
+                    g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
+                    axarr.add_patch(g)
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+        # Draw the path itself
+        axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+        axarr.scatter(xs, ys, c=outline_grad, s=20, zorder=1)
+        axarr.scatter(xs, ys, c=color_grad, s=10, zorder=1)
+
+        axarr.legend(loc="upper left")
+        axarr.grid(False)
+
+        plt.savefig(self.get_export_label(dash_folder) + '-vislocal.png')
+        # plt.show()
+        # exit()
+
+        return axarr
+
     def graph_legibility_over_time(self, verts, us, elapsed_time=None, status_packet=None, dash_folder=None, suptitle=None):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
@@ -1385,6 +1921,14 @@ class LegiblePathQRCost(FiniteDiffCost):
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
 
+        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        ax0 = axes0['A']
+        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
+
+        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        ax0 = axes0['A']
+        ax0 = self.draw_force_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
+        
         # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
         
         # plt.figure(figsize=(12, 6))
