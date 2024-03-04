@@ -2,6 +2,7 @@ import sys
 import os
 import autograd.numpy as np
 import decimal
+import copy
 
 from datetime import timedelta, datetime
 
@@ -577,6 +578,8 @@ class PathingExperiment():
         x2, y2 = p2[:2]
         angle = np.arctan2(y2 - y1, x2 - x1)
 
+        # angle = np.arctan2(x2 - x1, y2 - y1)
+
         # ang1 = np.arctan2(*p1[::-1])
         # ang2 = np.arctan2(*p2[::-1])
         return np.rad2deg(angle)
@@ -588,16 +591,18 @@ class PathingExperiment():
         observers   = []
         score       = []
 
+        obs_pt = copy.copy(observer.get_center())
+
         MAX_DISTANCE    =  np.inf
         obs_orient      = observer.get_orientation() 
         obs_FOV         = angle_fov #observer.get_FOV()
 
-        angle       = self.angle_between_points(observer.get_center(), pt)
-        x1, x2      = pt, observer.get_center()
-        x1 = (x1[0], x1[1])
-        x2 = (x2[0], x2[1])
+        angle       = self.angle_between_points(obs_pt, pt)
+        x1, x2      = pt, obs_pt
+        x1          = (x1[0], x1[1])
+        x2          = (x2[0], x2[1])
 
-        distance    = distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
+        distance    = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
 
         in_view     = False
 
@@ -605,12 +610,12 @@ class PathingExperiment():
         signed_angle_diff   = (a + 180) % 360 - 180
         angle_diff          = abs(signed_angle_diff)
 
-        print("Observer test")
-        print(observer.get_center(), observer.get_orientation())
+        # print("Observer test")
+        # print(observer.get_center(), observer.get_orientation())
 
-        print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
-        print("observer looking at... " + str(obs_orient))
-        print("angle diff = " + str(angle_diff))
+        # print(str(pt) + " -> " + str(observer.get_center()) + " = angle " + str(angle))
+        # print("observer looking at... " + str(obs_orient))
+        # print("angle diff = " + str(angle_diff))
 
         half_fov = (obs_FOV / 2.0)
         if np.abs(angle_diff) < np.abs(half_fov):
@@ -620,14 +625,14 @@ class PathingExperiment():
 
             in_view = True
 
-        print("Is in view? " + str(in_view))
+        # print("Is in view? " + str(in_view))
 
         if RETURN_ANGLE:
             return in_view, angle_diff
 
         return in_view
 
-    def get_vislocal_status_of_point(self, x):
+    def get_vislocal_status_of_point(self, x_input):
         observers       = self.get_observers()
         target_obs      = self.get_target_observer()
         secondary_obs   = self.get_secondary_observers()
@@ -635,12 +640,25 @@ class PathingExperiment():
 
         status_dict = {}
 
-        for g in goals:
-            o = self.get_observer_for_goal(g)
-            vis     = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True)
-            local   = self.dist_between(x, o.get_center()) < self.get_local_distance()
+        x = x_input #np.asarray([x_input[1], x_input[0]])
 
-            status_dict[(g[0], g[1])] = (vis, local)
+        for g in goals:
+            o            = self.get_observer_for_goal(g)
+            vis          = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True)
+            local_dist   = np.abs(self.dist_between(x, o.get_center()))
+            is_local     = local_dist <= self.get_local_distance()
+
+            status_dict[(g[0], g[1])] = (vis, is_local, local_dist)
+
+            # print()
+            # print("PE LOOKUP VISLOCAL")
+            # # print(i, value1, j, value2)
+            # print(x)
+            # print("obs == " + str(o.get_center()) + " goal == " + str(g))
+            # print(vis, is_local, local_dist, " < " + str(self.get_local_distance()))
+
+            # print("CENTER IS ")
+            # print(o.get_center())
 
         return status_dict
 
