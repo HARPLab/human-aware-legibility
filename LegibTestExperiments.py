@@ -1,4 +1,5 @@
-purpose = "40_target_sqr_falloff_all_have" #sum_exp_of_lin_sqr" #multi_alts_sum"
+purpose = "exp_48_vanilla_target3" #_10x"
+# purpose = "42_sec_falloff_none_have_2x" #sum_exp_of_lin_sqr" #multi_alts_sum"
 # purpose = "pilot_exp_24_pd_lam25_discount5_max2"
 # purpose = "test_dist_k"
 
@@ -6,6 +7,7 @@ import os
 import sys
 import copy
 import time
+
 
 module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
@@ -226,6 +228,98 @@ def test_understanding_set(dash_folder, scenario_filters):
         plt.clf()
 
 
+def do_scenario_tests(scenario):
+    # goals at x_input = [-3.0, 0.0]
+    # x_input = [3.0, 0.0]
+
+    x_input = [91.0, 10.0]
+    print(x_input)
+    print(scenario.get_vislocal_status_of_point(x_input))
+    print(x_input)
+    print("QUE SERA")
+    print()
+
+    x_input = [101, 10.0]
+    print(x_input)
+    print(scenario.get_vislocal_status_of_point(x_input))
+    print(x_input)
+    print("QUE SERA")
+    print()
+
+    x_input = [110.0, 10.0]
+    print(x_input)
+    print(scenario.get_vislocal_status_of_point(x_input))
+    print(x_input)
+    print("QUE SERA")
+    print()
+
+    x_input = [91.0, 5.0]
+    print(x_input)
+    print(scenario.get_vislocal_status_of_point(x_input))
+    print(x_input)
+    print("QUE SERA")
+    print()
+
+    if False:
+        x_input = [-3.0, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [3.0, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [-2.5, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [2.5, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [-3, 1.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [3, 1.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [-4.5, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+        x_input = [4.5, 0.0]
+        print(x_input)
+        print(scenario.get_vislocal_status_of_point(x_input))
+        print(x_input)
+        print("QUE SERA")
+        print()
+
+    print("~~~~~")
+    # exit()
+
 def test_locality_set(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "locality"
@@ -286,6 +380,8 @@ def test_locality_set(dash_folder, scenario_filters):
                 mega_scenario.set_fn_note("locdist_" + str((scale_text)))
 
                 save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
+
+                do_scenario_tests(mega_scenario)
 
                 verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
                 outputs[(multiplier, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
