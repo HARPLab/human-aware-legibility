@@ -339,7 +339,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         J = self.michelle_stage_cost(start, goal, x, u, i, terminal) * f_value
 
         wt_legib     = -1.0
-        wt_lam       = .001
+        wt_lam       = .1
         wt_control   = 3.0
 
         J =  (wt_legib       * J)
@@ -1232,16 +1232,16 @@ class LegiblePathQRCost(FiniteDiffCost):
         info_grad = []
         info_outline_grad = []
 
+        g_target = self.exp.get_target_goal()
+
         is_target = self.exp.get_target_observer().get_center() == observer.get_center()
         print("LALA is target = " + str(is_target) + " because " + str(is_target))
         for i in range(len(verts)):
             x = verts[i]
 
-            vis_target, target_ang  = self.exp.get_visibility_of_pt_w_observer_ilqr(x, observer, normalized=True, RETURN_ANGLE=True)
-            can_see = vis_target
-
-            is_local = (self.exp.dist_between(x, observer.get_center()) < self.exp.get_local_distance())
-
+            goal_dict = self.exp.get_vislocal_status_of_point(x)
+            g_target_key = (g_target[0], g_target[1])
+            can_see, is_local, local_dist = goal_dict[g_target_key]
 
             neutral_color = '#aaaaaa'
 
@@ -1411,15 +1411,15 @@ class LegiblePathQRCost(FiniteDiffCost):
         x_min_cur, x_max_cur = axarr.get_xlim()
         y_min_cur, y_max_cur = axarr.get_ylim()        
 
-        xmin -= 10.0
-        ymin -= 10.0
-        xmax += 10.0
-        ymax += 10.0
+        # xmin -= 10.0
+        # ymin -= 10.0
+        # xmax += 10.0
+        # ymax += 10.0
 
-        xmin = int(xmin)
-        ymin = int(ymin)
-        xmax = int(xmax) + 1
-        ymax = int(ymax) + 1
+        # xmin = int(xmin)
+        # ymin = int(ymin)
+        # xmax = int(xmax) + 1
+        # ymax = int(ymax) + 1
 
         if xmin < x_min_cur:
             axarr.set_xlim(left=xmin)
@@ -1434,8 +1434,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         ny = (ymax - ymin) * 4
 
         ##### GET THE FORCE DIAGRAM BACKGROUND GRADIENT
-        x1 = np.linspace(xmin, xmax, 200) #nx) # np.arange(xmin, xmax, .25)
-        x2 = np.linspace(ymin, ymax, 200) #ny) # np.arange(ymin, ymax, .25) #
+        x1 = np.linspace(xmin, xmax, 100) #nx) # np.arange(xmin, xmax, .25)
+        x2 = np.linspace(ymin, ymax, 100) #ny) # np.arange(ymin, ymax, .25) #
         Y = np.zeros(shape=(x1.size, x2.size))
 
         for i, value1 in enumerate(x1):
@@ -1452,8 +1452,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         levels = [0.0, .99, .999, .9999, .99999, 1.0, 2.0, 3.0]
         print("LEVEL LIST")
         print(np.unique(Y))
-        levels = np.unique(Y)
+        levels = list(np.unique(Y))
 
+      
         # axarr.axhline(0, color='black', alpha=.5, dashes=[2, 4],linewidth=1)
         # axarr.axvline(0, color='black', alpha=0.5, dashes=[2, 4],linewidth=1)
         # for i in range(len(old_w) - 1):
@@ -1461,15 +1462,18 @@ class LegiblePathQRCost(FiniteDiffCost):
         #                  arrowprops={'arrowstyle': '->', 'color': 'r', 'lw': 1},
         #                  va='center', ha='center')
          
-        axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+        if len(levels) > 1:
+            axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8, cmap=cm.PuBu_r, locator=mtick.LogLocator()) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+        else:
+            print("no levels just " + str(levels))
         axarr.set_title("Contour Plot of Gradient Descent")
 
         axarr.set_xlim([xmin, xmax])
         axarr.set_ylim([ymin, ymax])
 
         plt.savefig(self.get_export_label(dash_folder) + '-forcelite.png')
-        CS = axarr.contour(x1, x2, Y.transpose(), levels, linewidths=1) #, colors='black')
-        axarr.clabel(CS, inline=1, fontsize=8)
+        # CS = axarr.contour(x1, x2, Y.transpose(), levels, locator=mtick.LogLocator()) #, colors='black') linewidths=1, 
+        # axarr.clabel(CS, inline=1, fontsize=8)
 
 
         # cbar = fig.colorbar(cs)
@@ -1624,7 +1628,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
-    def draw_vislocal_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
+    def draw_vislocal_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None, just_target=False):
         axarr = ax
 
         axarr.set_aspect('equal')
@@ -1661,10 +1665,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         x_min_cur, x_max_cur = axarr.get_xlim()
         y_min_cur, y_max_cur = axarr.get_ylim()        
 
-        xmin -= 10.0
-        ymin -= 10.0
-        xmax += 10.0
-        ymax += 10.0
+        # xmin -= 10.0
+        # ymin -= 10.0
+        # xmax += 10.0
+        # ymax += 10.0
 
         if xmin < x_min_cur:
             axarr.set_xlim(left=xmin)
@@ -1695,9 +1699,9 @@ class LegiblePathQRCost(FiniteDiffCost):
 
                 goal_dict = self.exp.get_vislocal_status_of_point([value1, value2])
 
-                color_value = -10                
-                for g in self.exp.get_goals():
-                    g_target_key = (g[0], g[1])
+                if just_target:
+                    color_value = -10                
+                    g_target_key = (g_target[0], g_target[1])
                     is_vis_target, islocal_target, local_dist = goal_dict[g_target_key]
 
                     # print("g_target_key")
@@ -1710,6 +1714,23 @@ class LegiblePathQRCost(FiniteDiffCost):
                         color_value += 5.0
                     elif not islocal_target and is_vis_target:
                         color_value += 3.0
+
+                else:
+                    color_value = -10                
+                    for g in self.exp.get_goals():
+                        g_target_key = (g[0], g[1])
+                        is_vis_target, islocal_target, local_dist = goal_dict[g_target_key]
+
+                        # print("g_target_key")
+                        # print(g_target_key, self.exp.get_observer_for_goal(g).get_center())
+
+                        # color_value = 0
+                        if islocal_target and is_vis_target:
+                            color_value += 10.0
+                        elif islocal_target and not is_vis_target:
+                            color_value += 5.0
+                        elif not islocal_target and is_vis_target:
+                            color_value += 3.0
 
                     # if islocal_target:
                     #     color_value += self.exp.get_local_distance() - local_dist
@@ -1731,7 +1752,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # step = 0.02
         # m = np.amax(Y)
         # levels = np.arange(0.0, m, step) + step
-        levels = np.unique(Y)
+        levels = list(np.unique(Y))
 
         # axarr.axhline(0, color='black', alpha=.5, dashes=[2, 4],linewidth=1)
         # axarr.axvline(0, color='black', alpha=0.5, dashes=[2, 4],linewidth=1)
@@ -1740,13 +1761,17 @@ class LegiblePathQRCost(FiniteDiffCost):
         #                  arrowprops={'arrowstyle': '->', 'color': 'r', 'lw': 1},
         #                  va='center', ha='center')
          
-        axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8, cmap = "plasma") #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+        if len(levels) > 1:
+            axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8, cmap = "plasma") #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
         axarr.set_title("Contour Plot of Gradient Descent")
 
         axarr.set_xlim([xmin, xmax])
         axarr.set_ylim([ymin, ymax])
 
-        plt.savefig(self.get_export_label(dash_folder) + '-vislocal-lite.png')
+        if just_target:
+            plt.savefig(self.get_export_label(dash_folder) + '-targ-vislocal-lite.png')
+        else:
+            plt.savefig(self.get_export_label(dash_folder) + '-vislocal-lite.png')
         # plt.show()
         # CS = axarr.contour(x1, x2, Y.transpose(), levels, linewidths=1, colors='black')
         # axarr.clabel(CS, inline=1, fontsize=8)
@@ -1867,7 +1892,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = axarr.set_xlabel("X", fontweight='bold')
         _ = axarr.set_ylabel("Y", fontweight='bold')
         blurb = self.exp.get_solver_status_blurb()
-        _ = axarr.set_title("Path through space \n" + blurb, fontweight='bold')
+        _ = axarr.set_title("Path through space", fontweight='bold')
         # plt.show()
         # exit()
 
@@ -1898,7 +1923,11 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.legend(loc="upper left")
         axarr.grid(False)
 
-        plt.savefig(self.get_export_label(dash_folder) + '-vislocal.png')
+        if just_target:
+            plt.savefig(self.get_export_label(dash_folder) + '-targ-vislocal.png')
+        else:
+            plt.savefig(self.get_export_label(dash_folder) + '-vislocal.png')
+
         # plt.show()
         # exit()
 
@@ -1918,12 +1947,17 @@ class LegiblePathQRCost(FiniteDiffCost):
             xs, ys, thetas = zip(*verts)
         else:
             xs, ys = zip(*verts)
+
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
 
         fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         ax0 = axes0['A']
-        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
+        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=True)
+
+        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        ax0 = axes0['A']
+        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=False)
 
         fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         ax0 = axes0['A']
