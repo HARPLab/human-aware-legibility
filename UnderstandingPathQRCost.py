@@ -1105,8 +1105,11 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         #     print("ALERT: U is wrong?")
         #     print(x, u, u_calc)
         #     print(x[:2], x[2:])
-            
-        if u.any() == None:
+           
+        try: 
+            if u.any() == None:
+                return 0.0
+        except:
             return 0.0
 
         # print("incoming " + str(u))
@@ -1229,6 +1232,9 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             return np.inf
 
 
+        # if goal[:2] == input_x[:2]:
+        #     return 1.0
+
         scale_term  = self.exp.get_solver_scale_term() #0.01 # 1/100
         scale_stage = self.exp.get_solver_scale_stage() #1.5
 
@@ -1246,7 +1252,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             term_cost = self.term_cost(x, i)
             return scale_term * self.term_cost(x, i)
         else:
-            if self.FLAG_DEBUG_STAGE_AND_TERM:
+            if self.FLAG_DEBUG_STAGE_AND_TERM and just_stage != True:
                 term_cost = self.term_cost(x, i)
 
                 # difference between this step and the end
@@ -1276,7 +1282,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         ###### SET VALUES SET WT
         wt_legib        = 1.0
-        wt_lam          = 0.1 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = 1.0 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
@@ -1295,7 +1301,8 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         # Get the values if necessary
         if True: #wt_legib > 0:
-            val_legib       = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, if_seen)
+            # val_legib        = self.get_legibility_dist_stage_cost(start, goal, x, u, i, terminal, if_seen)
+            val_legib        = self.get_legibility_component_og(start, goal, x, i, raw=True)
         
         if True: #wt_heading > 0:
             if self.exp.get_state_size() < 4:
@@ -1375,170 +1382,43 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             P_d_dict = {}
             for maybe_goal in goals:
                 prob = self.prob_distance(start, maybe_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                # prob = self.get_legibility_component_new(start, maybe_goal, x, i, raw=True)
+                # cost = self.get_legibility_cost_ada(start, maybe_goal, x, i, raw=True)
+
+                # prob = self.prob_distance(start, maybe_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp_local', 'mode_blend':None})
+
+                # cost = self.get_legibility_component_ada2(start, maybe_goal, x, i, raw=True)
+                cost = prob
+
+
                 key = (maybe_goal[0], maybe_goal[1])
-                P_d_dict[key] = prob
+                P_d_dict[key] = cost
 
+            cost_d_dict = P_d_dict
+            print("Relative costs")
+            print(cost_d_dict)
 
             ###### SINGLE VANILLA CASE
-            ###### SINGLE VANILLA CASE
-            if True and 46 == 46:
+            if True and 50 == 50:
                 key = (goal[0], goal[1])
-                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+                cost_d = cost_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
                 # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
             
+                # exp_cost
+
                 FLAG_SECONDARY_CONSIDERED = True
                 
                 # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
 
-                val_overall = (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-                max_penalty = 2.0 #(1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
-                wt_lam = .5
-
-            elif True and 45 == 45:
-                key = (goal[0], goal[1])
-                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            
-                FLAG_SECONDARY_CONSIDERED = True
-                
-                # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-
-                val_overall = -1.0 * p_d #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-                max_penalty = 0 #(1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
-                wt_lam = .5
-
-            elif True and 42 == 42:
-                key = (goal[0], goal[1])
-                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            
-                FLAG_SECONDARY_CONSIDERED = True
-                
-                # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-
-                val_overall = (1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-                max_penalty = 4.0 #0.0 #np.exp(2.0)
-                wt_lam = .5
-
-            elif True and 41 == 41:
-                key = (goal[0], goal[1])
-                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            
-                FLAG_SECONDARY_CONSIDERED = True
-                
-                # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-
-                val_overall = (1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-                max_penalty = 4.0 #0.0 #np.exp(2.0)
-                wt_lam = 100 * np.abs(wt_lam) # * -1
-
-            elif True and 38 == 38:
-                key = (goal[0], goal[1])
-                p_d = P_d_dict[key]   #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            
-                FLAG_SECONDARY_CONSIDERED = False
-                
-                closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-
-                val_overall = (1.0 - p_d) * closeness_scalar #+ max(p_alts)
-                max_penalty = 4.0 #0.0 #np.exp(2.0)
-                wt_lam = 100 * np.abs(wt_lam) # * -1
-
-            elif True and 38 == 38:
-                key = (goal[0], goal[1])
-                p_d = P_d_dict[key]    #self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-            
-                FLAG_SECONDARY_CONSIDERED = True
-                
-                val_overall = (1.0 - p_d) #+ max(p_alts)
-                max_penalty = 4.0 #0.0 #np.exp(2.0)
-                wt_lam = 100 * np.abs(wt_lam) # * -1
-
-            elif True and 37 == 37:
-                p_d = self.prob_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-                p_d = p_d_target
-
-                val_overall = (1.0 - p_d) #+ max(p_alts)
-                max_penalty = 4.0 #0.0 #np.exp(2.0)
-                wt_lam = 100 * np.abs(wt_lam) # * -1
-
-            elif True and 35 == 35:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-
-                val_overall = (1.0 - p_d_target) + max(p_alts)
-                max_penalty = 5.0 #np.exp(2.0)
-                wt_lam = np.abs(wt_lam) # * -1
-
-            elif False and 31 == 31:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-
-                val_overall = (1.0 - p_d)
-                max_penalty = 5.0 #np.exp(2.0)
-                wt_lam = np.abs(wt_lam) # * -1
-
-            elif True and 31 == 31:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-
-                val_overall = np.exp(2.0 + max(p_alts)**2 - p_d_target**2)
-                max_penalty = np.exp(4.0)
-
-            elif True and 30 == 30:
-                closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-                val_overall = (1.0 - p_d) * closeness_scalar
-                max_penalty = 1.5 * closeness_scalar
-                wt_lam      = wt_lam * 1.0
-
-            elif False and 29 == 29:
-                val_overall = 1.0 - p_d
-                max_penalty = 1.5
-                wt_lam      = wt_lam * 1.0
-
-            elif False:
-                val_overall = 1.0 - p_d
-                max_penalty = 1.0
-
-            elif True:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-
-                val_overall = sum(map(lambda i: np.exp(i * i), p_alts))
-                max_penalty = np.exp(1.0) * len(p_alts)
-            
-            elif False:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-
-                val_overall = sum(map(lambda i: np.exp(i), p_alts))
-                max_penalty = 1.0 * len(p_alts)
-
-            ###### MULTIPLE CASE
-            elif False:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
-
-                val_overall = sum(map(lambda i: i * i, p_alts))
-                max_penalty = 1.0 * len(p_alts)
-
-            else:
-                p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'lin', 'mode_blend':None})
-
-                val_overall = max(p_alts) - p_d_target # sum(map(lambda i: i * i, p_alts))
-                max_penalty = 1.0 * len(p_alts)
+                val_overall = (1.0 - cost_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+                max_penalty = 3.0 #0.0 #10.0 #(1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
+                wt_lam = 0.01
 
 
 
             target_costs        = val_overall # + val_heading
+            # max_penalty         = 10.0
             secondary_costs     = 0
-
-            # Old handling of secondary
-            # for local, vis in zip(islocal_secondary, is_vis_secondary):
-            #     # Currently just mirrors the same stuff
-            #     # Upgrade: would consider relative to their particular goal
-            #     if local and vis and FLAG_SECONDARY_CONSIDERED:
-            #         # TODO Will need more elaborate math with more goals
-            #         secondary_cost  = val_overall
-            #         secondary_costs.append(secondary_cost)
 
 
         val_understanding_secondary = 0
@@ -1546,31 +1426,36 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         if FLAG_SECONDARY_CONSIDERED:
             status_dict = self.exp.get_vislocal_status_of_point(x)
             for alt_goal in self.exp.get_goals():
-                vis, local = status_dict[(alt_goal[0], alt_goal[1])]
+                if (self.exp.get_target_goal() != alt_goal):
+                    vis, local, dist = status_dict[(alt_goal[0], alt_goal[1])]
 
-                # np.exp
-                offset = (alt_goal - x[:2]) / self.exp.get_local_distance()
-                print("offset percent " + str(offset))
-                cost_falloff = np.exp((np.dot(np.dot(offset.T, np.eye(2)), offset))) #self.get_relative_distance_value(i, start, alt_goal, x, False, 'lin')
-                val_secondary = 0 #P_d_dict[key] * (cost_falloff) #* .001
+                    # np.exp
+                    offset = (alt_goal - x[:2]) / self.exp.get_local_distance()
+                    # print("offset percent " + str(offset))
+                    cost_falloff    = np.exp((np.dot(np.dot(offset.T, np.eye(2)), offset))) #self.get_relative_distance_value(i, start, alt_goal, x, False, 'lin')
+                    val_secondary   = 0 #P_d_dict[key] * (cost_falloff) #* .001
 
-                if vis and local:
-                    if (self.exp.get_target_goal() != alt_goal):
+                    target_key = (goal[0], goal[1])
+                    if vis and local:
                         key = (alt_goal[0], alt_goal[1])
 
-                        val_secondary = P_d_dict[key] #* cost_falloff # * .25 # * 10.0
+                        k = 2.0
+                        # This creates divide by 0 errors
+                        # val_secondary = cost_d_dict[key] / (cost_d_dict[key] + cost_d_dict[target_key] + .000001) #* cost_falloff # * .25 # * 10.0
+
+                        val_secondary = cost_d_dict[key] #- cost_d_dict[target_key]
 
                         print("Secondary costs at " + str(alt_goal))
                         print(P_d_dict[key], cost_falloff)
+                        # else:
+                        #     print("Not secondary: this is the target")
+
+                    elif local and not vis:
+                        val_secondary = 0 #1.0 # * cost_falloff
                     else:
-                        print("Not secondary: this is the target")
+                        print("not relevant secondary at " + str(alt_goal))
 
-                elif local and not vis:
-                    val_secondary = 0 #1.0 # * cost_falloff
-                else:
-                    print("not relevant secondary at " + str(alt_goal))
-
-                val_understanding_secondary += val_secondary #* 2.0 # * cost_falloff #* 2.0
+                    val_understanding_secondary += val_secondary #* 2.0 # * cost_falloff #* 2.0
 
         val_understanding_secondary = (val_understanding_secondary)
 
@@ -1580,18 +1465,23 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         #### Also needs update for multi-goal
         # TARGET
-        if islocal_target and is_vis_target:
-            val_understanding_target = target_costs
-            print("IS LOCAL == YES")
+        if False:
+            if islocal_target and is_vis_target:
+                val_understanding_target = target_costs
+                print("IS LOCAL == YES")
+            elif islocal_target and not is_vis_target:
+                val_understanding_target = max_penalty #(target_costs + max_penalty) / 2.0
+            else:
+                wt_lam = wt_lam
+                val_understanding_target = max_penalty
+                print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
+
+
+                # Tweak for walking up centerline
+                if False:
+                    val_understanding_target = np.exp((.5 - p_d)**2)  + max_penalty
         else:
-            wt_lam = wt_lam * .5
-            val_understanding_target = max_penalty
-            print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
-
-
-            # Tweak for walking up centerline
-            if False:
-                val_understanding_target = np.exp((.5 - p_d)**2)  + max_penalty
+            val_understanding_target = target_costs
 
 
 
@@ -1780,7 +1670,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         return norm
 
-    def get_estimated_cost(self, distance, num_steps):
+    def get_estimated_cost(self, distance):
         FLAG_SCALE_FOR_VARIANCE = True
         k = 1.0
         if FLAG_SCALE_FOR_VARIANCE:
@@ -1789,8 +1679,8 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             print("scaling by ")
             print(k)
 
-        if num_steps == 0:
-            return 0
+        # if num_steps == 0:
+        #     return 0
 
         # est_dist = distance / num_steps
         # est_dist = num_steps * (est_dist * est_dist)
@@ -1842,8 +1732,14 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
         elif mode_dist == 'exp':
             J = self.get_legibility_component_og(start, goal, x, i_step)
 
+        elif mode_dist == 'exp_local':
+            J = self.get_stage_cost_if_vis(start, goal, x, i_step)
+
         elif mode_dist == 'exp_raw':
             J = self.get_legibility_component_og(start, goal, x, i_step, raw=True)
+
+        elif mode_dist == 'loc_exp':
+            J = self.get_legibility_component_new(start, goal, x, i_step, raw=True)
 
         else:
             J = np.abs(n / d)
@@ -1936,9 +1832,11 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         return J
 
-
-    def get_legibility_component_og(self, start, goal, x, i_step, raw=False):
+    def get_legibility_component_ada2(self, start, true_goal, x, i_step, raw=False):
         Q       = np.eye(2)
+        x       = x[:2]
+
+        goal = true_goal
 
         goal_diff   = start - goal
         start_diff  = (start - np.array(x))
@@ -1954,14 +1852,276 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         total_steps = self.exp.get_N()
 
-        diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
-        diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
-        diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
+        diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+        diff_all_v  = self.get_estimated_cost(diff_all_v) #, self.exp.get_N())
+
+        n = - (diff_goal_v) - diff_curr_v
+        d = diff_all_v
+
+        alt_goal_costs  = []
+        correct_goal    = None
+
+        for g in self.exp.get_goals():
+            diff_goal   = x - g
+            diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+            diff_goal_v = self.get_estimated_cost(diff_goal_v)
+
+            if g == true_goal:
+                correct_goal = diff_goal_v
+            else:
+                alt_goal_costs.append(diff_goal_v)
+
+
+        print("CUSTOM all goals")
+        print(self.exp.get_goals())
+        print(true_goal)
+
+        if correct_goal == None:
+            print("Dead goal")
+            exit()
+
+
+        J = sum(alt_goal_costs) - correct_goal
+        J = np.exp(J) / np.exp(d)
+
+        # J = np.exp(n) / np.exp(d)
+
+
+        # xmag, ymag = diff_goal
+        # goal_dist = np.sqrt(xmag**2 + ymag**2)
+
+        # J = goal_dist / self.exp.get_local_distance()
+
+        # J = np.exp(J)
+        return J
+
+    def get_stage_cost_if_vis(self, start, input_goal, x, i_step):
+        # function stage_cost(x,u,xref,uref, start, goal1, all_goals, nongoal_scale)
+        # Legibility LQR cost at each knot point (depends on both x and u)    
+
+        Q       = np.eye(2)
+        x       = x[:2]
+        
+        a = np.dot(np.dot((start - input_goal).T, Q), (start - input_goal)) 
+        b = np.dot(np.dot((start - x).T, Q), (start - x))
+        c = np.dot(np.dot((input_goal - x).T, Q), (input_goal - x)) 
+
+
+        J_g1 = a - b - c
+        J_g1 *= 0.5
+
+        log_sum = 0
+        for g in self.exp.get_goals():
+
+            goal_diff   = start - goal
+            start_diff  = (start - np.array(x))
+            togoal_diff = (np.array(x) - goal)
+
+            diff_curr   = start - x
+            diff_goal   = x - goal
+            diff_all    = start - goal
+
+            diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+            diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+            diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+            total_steps = self.exp.get_N()
+
+            diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+            diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+            diff_all_v  = self.get_estimated_cost(diff_all_v)
+
+
+            n = - np.dot(np.dot((start - x).T, Q), (start - x)) - np.dot(np.dot((g - x).T, Q), (g - x))
+            d = np.dot(np.dot((start - g).T, Q), (start - g))
+            log_sum += (np.exp(n) / np.exp(d))
+                
+        J = J_g1 - np.log(log_sum)
+
+        J *= -1
+        # J += 0.5 *  (u-uref)'*R*(u-uref)
+
+        return J
+
+
+    def get_legibility_component_new(self, start, goal, x, i_step, raw=False):
+        Q       = np.eye(2)
+        x       = x[:2]
+
+        goal_diff   = start - goal
+        start_diff  = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        diff_curr   = start - x
+        diff_goal   = x - goal
+        diff_all    = start - goal
+
+        diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+        diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+        diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+        total_steps = self.exp.get_N()
+
+        diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+        diff_all_v  = self.get_estimated_cost(diff_all_v) #, self.exp.get_N())
+
+        n = - (diff_goal_v) # - diff_curr_v
+        d = diff_all_v
+
+        J = np.exp(n) / np.exp(d)
+
+
+        # xmag, ymag = diff_goal
+        # goal_dist = np.sqrt(xmag**2 + ymag**2)
+
+        # J = goal_dist / self.exp.get_local_distance()
+
+        # J = np.exp(J)
+        return J
+
+    def get_legibility_cost_ada(self, start, real_goal, x, i_step, raw=False):
+        Q       = np.eye(2)
+        x       = x[:2]
+
+
+        cost_list = []
+
+        target_remaining    = np.inf
+        nextbest_remaining  = np.inf
+
+        longest_dist = 0.0
+
+        J_target    = 1.0
+        J_alt       = 1.0
+
+        for goal in self.exp.get_goals():
+            goal_diff   = start - goal
+            start_diff  = (start - np.array(x))
+            togoal_diff = (np.array(x) - goal)
+
+            diff_curr   = start - x
+            diff_goal   = x - goal
+            diff_all    = start - goal
+
+            diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+            diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+            diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+            total_steps = self.exp.get_N()
+
+            diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+            diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+            diff_all_v  = self.get_estimated_cost(diff_all_v) #, self.exp.get_N())
+
+            n = - (diff_goal_v) - diff_curr_v
+            d = diff_all_v
+
+            J = np.exp(n) / np.exp(d)
+
+            dist_to_goal = self.dist_between(x, goal)
+
+            if nextbest_remaining > dist_to_goal:
+                # nextbest_remaining = diff_goal
+                nextbest_remaining = dist_to_goal
+                J_alt = J
+
+            elif goal == real_goal:
+                target_remaining = diff_goal
+                target_remaining = dist_to_goal
+                J_target = J
+                print("Found real goal")
+
+            if longest_dist < dist_to_goal:
+                # longest_dist = diff_all
+                longest_dist = dist_to_goal
+
+            cost_list.append(J)
+
+
+        # J = np.exp(nextbest_remaining - target_remaining) / np.exp(diff_all_v)   #np.exp(-1 * target_remaining + nextbest_remaining)
+
+        J = (target_remaining - nextbest_remaining) / (longest_dist)
+        print("target, next, longest_dist")
+        print(target_remaining, nextbest_remaining, longest_dist)
+        # J = J ** 2
+
+        # xmag, ymag = diff_goal
+        # goal_dist = np.sqrt(xmag**2 + ymag**2)
+
+        # J = goal_dist / self.exp.get_local_distance()
+
+        # J = np.exp(J)
+        return J #sum(cost_list)
+
+
+    def get_relative_legibility_cost(self, start, goal, x, i_step, raw=False):
+        Q       = np.eye(2)
+        x       = x[:2]
+
+        goal_diff   = start - goal
+        start_diff  = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        diff_curr   = start - x
+        diff_goal   = x - goal
+        diff_all    = start - goal
+
+        diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+        diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+        diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+        total_steps = self.exp.get_N()
+
+        diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+        diff_all_v  = self.get_estimated_cost(diff_all_v) #, self.exp.get_N())
+
+        n = - (diff_goal_v) - diff_curr_v
+        d = diff_all_v
+
+        J = np.exp(n) / np.exp(d)
+
+        
+        # xmag, ymag = diff_goal
+        # goal_dist = np.sqrt(xmag**2 + ymag**2)
+
+        # J = goal_dist / self.exp.get_local_distance()
+
+        # J = np.exp(J)
+        return J
+
+
+    def get_legibility_component_og(self, start, goal, x, i_step, raw=False):
+        Q       = np.eye(2)
+        x       = x[:2]
+
+        goal_diff   = start - goal
+        start_diff  = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        diff_curr   = start - x
+        diff_goal   = x - goal
+        diff_all    = start - goal
+
+        diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+        diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+        diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+        total_steps = self.exp.get_N()
+
+        diff_curr_v = self.get_estimated_cost(diff_curr_v) #, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v) #, self.exp.get_N() - i_step)
+        diff_all_v  = self.get_estimated_cost(diff_all_v) #, self.exp.get_N())
 
         n = - (diff_curr_v) - (diff_goal_v)
         d = diff_all_v
 
         J = np.exp(n) / np.exp(d)
+
+        if raw:
+            return J
 
         return J
 
@@ -2047,6 +2207,49 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
     #     J = np.exp(n) / np.exp(d)
 
     #     return J
+
+    def get_legib_adamich(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None):
+        x       = (x_triplet[:2])
+        u       = u_input
+        start   = (start_input[:2])
+        goal    = (goal_input[:2])
+        all_goals = self.goals
+
+        goal_values = []
+        target_index = -1
+
+        for j in range(len(all_goals)):
+            alt_goal = all_goals[j]
+            alt_goal_xy = np.asarray(alt_goal[:2])
+
+            goal_values.append(goal_val)
+
+        total = sum([abs(ele) for ele in goal_values])
+
+        # if mode_dist in ['exp', 'exp_lin']:
+        #     print("small value norm")
+        #     goal_values_norm = self.small_value_norm(goal_values)  
+        #     # goal_values_norm_v1 = self.small_value_norm_v1(goal_values)   
+        #     print("LOGSUMEXP")
+        #     print(goal_values_norm)
+        #     # print(goal_values_norm_v1)
+        #     dist_prob = goal_values_norm[target_index]
+        #     # dist_prob = target_val / np.linalg.norm(goal_values, ord=1)
+
+        #     print("Dist normalized")
+        #     print(dist_prob, goal_values)
+
+        # elif total == 0:
+        #     print("ALERT: in prob distance division")
+        #     num_goals = len(all_goals)
+        #     dist_prob = ((1.0/num_goals))
+        # else:
+        #     dist_prob = (goal_values[target_index]) / total
+
+
+
+        return P_oa
+
 
 
     def get_legibility_dist_stage_cost(self, start, goal, x, u, i_step, terminal, visibility_coeff):
