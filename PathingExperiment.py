@@ -16,6 +16,7 @@ from OALegiblePathQRCost import OALegiblePathQRCost
 from OAObsPathQRCost import OAObsPathQRCost
 from SocLegPathQRCost import SocLegPathQRCost
 from UnderstandingPathQRCost import UnderstandingPathQRCost
+from RelevantPathQRCost import RelevantPathQRCost
 
 from LegiblePathCost import LegiblePathCost
 # from SocLegPathCost import SocLegPathCost
@@ -230,7 +231,8 @@ class PathingExperiment():
             exit()
             return SocLegPathQRCost(self, Xrefline, Urefline), Urefline
         elif solver_label is COST_UNDERSTANDING:
-            return UnderstandingPathQRCost(self, Xrefline, Urefline), Urefline
+            return RelevantPathQRCost(self, Xrefline, Urefline), Urefline
+            # return UnderstandingPathQRCost(self, Xrefline, Urefline), Urefline
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
         print("''''''" + str(solver_label) + "''''''")
@@ -388,11 +390,51 @@ class PathingExperiment():
     def get_Qf(self):
         return np.eye(self.state_size)
 
-    def set_N(self, N):
-        self.N = N
+    def set_N(self, n):
+        self.N = n
+
+
+    def get_goal_squad(self):
+        goal_a  = [1.0, -1.0]
+        goal_b  = [3.0, -1.0] 
+        goal_c  = [5.0, -1.0]
+
+        goal_d  = [1.0, -3.0]
+        goal_e  = [3.0, -3.0]
+        goal_f  = [5.0, -3.0]
+
+        return goal_a, goal_b, goal_c, goal_d, goal_e, goal_f
 
     def get_N(self):
-        return self.N
+
+        tar_goal    = self.get_target_goal()
+        start_goal  = self.get_start()
+
+        resolution = .66
+
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+
+        ##### SHORT EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_b):
+            return int(resolution * 8)
+
+        ##### LONG EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_c):
+            return int(resolution * 8 * 2)
+
+        ##### SHORT DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_e):
+            return int(resolution * 8 * np.sqrt(2))
+
+        ##### LONG DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_f):
+            return int(resolution * 8 * np.sqrt(3))
+
+
+        # else
+        return self.N #* 10
+
+
 
     def set_dt(self, dt):
         self.dt = dt
@@ -436,14 +478,18 @@ class PathingExperiment():
     def set_table_radius(self, trad):
         self.obstacle_table_radius = trad
 
+    def get_observer_offset(self):
+        return 1.0
+
     def get_observer_radius(self):
-        return self.OBSERVER_RADIUS
+        return self.get_local_distance() / 2.0 # + self.get_observer_offset()
+        # return self.OBSERVER_RADIUS
 
     def get_goal_radius(self):
-        return self.GOAL_RADIUS
+        return 0 #self.get_local_distance()
 
     def get_obstacle_buffer(self):
-        return self.OBSTACLE_BUFFER
+        return self.get_observer_offset()
 
     def get_lambda_cost_path_coeff(self):
         return self.lambda_cost_path_coeff
@@ -584,10 +630,14 @@ class PathingExperiment():
         # ang2 = np.arctan2(*p2[::-1])
         return np.rad2deg(angle)
 
+
+    def get_FOV(self):
+        return 180
+
     # ADA MASTER VISIBILITY EQUATION
     # ILQR OBSERVER-AWARE EQUATION
     # RETURN HERE
-    def get_visibility_of_pt_w_observer_ilqr(self, pt, observer, normalized=True, epsilon=.01, angle_fov=120, RETURN_ANGLE=False):
+    def get_visibility_of_pt_w_observer_ilqr(self, pt, observer, normalized=True, epsilon=.01, angle_fov=180, RETURN_ANGLE=False, also_evil=False):
         observers   = []
         score       = []
 
@@ -595,7 +645,7 @@ class PathingExperiment():
 
         MAX_DISTANCE    =  np.inf
         obs_orient      = observer.get_orientation() 
-        obs_FOV         = angle_fov #observer.get_FOV()
+        obs_FOV         = self.get_FOV()
 
         angle       = self.angle_between_points(obs_pt, pt)
         x1, x2      = pt, obs_pt
@@ -644,11 +694,11 @@ class PathingExperiment():
 
         for g in goals:
             o            = self.get_observer_for_goal(g)
-            vis          = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True)
+            vis, vis_angle   = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
             local_dist   = np.abs(self.dist_between(x, o.get_center()))
             is_local     = local_dist <= self.get_local_distance()
 
-            status_dict[(g[0], g[1])] = (vis, is_local, local_dist)
+            status_dict[(g[0], g[1])] = (vis, is_local, vis_angle, local_dist)
 
             # print()
             # print("PE LOOKUP VISLOCAL")
