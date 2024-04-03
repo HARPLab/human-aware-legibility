@@ -19,6 +19,334 @@ SCENARIO_FILTER_FAST_SOLVE = 'fastsolve'
 DASHBOARD_FOLDER = None
 
 
+def scenario_study_edge(goal_index=None):
+    label = "study_edge" # _g" + str(goal_index)
+
+    goal_a  = [1.0, -1.0]
+    goal_b  = [3.0, -1.0] 
+    goal_c  = [5.0, -1.0]
+
+    goal_d  = [1.0, -3.0]
+    goal_e  = [3.0, -3.0]
+    goal_f  = [5.0, -3.0]
+
+    start       = goal_a
+
+    obs_offset = 1
+    obs_pts = []
+    obs_a = [goal_a[0],   goal_a[1] + obs_offset,  270]
+    obs_d = [goal_d[0],   goal_d[1] - obs_offset,  90]
+
+    obs_b = [goal_b[0],   goal_b[1] + obs_offset,  270]
+    obs_e = [goal_e[0],   goal_e[1] - obs_offset,  90]
+
+    obs_c = [goal_c[0],   goal_c[1] + obs_offset,  270]
+    obs_f = [goal_f[0],   goal_f[1] - obs_offset,  90]
+
+    obs_pts.append(obs_a)
+    obs_pts.append(obs_b)
+    obs_pts.append(obs_c)
+    obs_pts.append(obs_d)
+    obs_pts.append(obs_e)
+    obs_pts.append(obs_f)
+
+
+    all_goals   = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+    all_goals   = [x for x in all_goals if x not in [start]]
+    target_goal = all_goals[0]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    # exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32, goal52])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 30
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_study_middle(goal_index=None):
+    label = "study_mid" # _g" + str(goal_index)
+
+    goal_a  = [1.0, -1.0]
+    goal_b  = [3.0, -1.0] 
+    goal_c  = [5.0, -1.0]
+
+    goal_d  = [1.0, -3.0]
+    goal_e  = [3.0, -3.0]
+    goal_f  = [5.0, -3.0]
+
+    start       = goal_a
+
+    obs_offset = 1
+    obs_pts = []
+    obs_a = [goal_a[0],   goal_a[1] + obs_offset,  270]
+    obs_d = [goal_d[0],   goal_d[1] - obs_offset,  90]
+
+    obs_b = [goal_b[0],   goal_b[1] + obs_offset,  270]
+    obs_e = [goal_e[0],   goal_e[1] - obs_offset,  90]
+
+    obs_c = [goal_c[0],   goal_c[1] + obs_offset,  270]
+    obs_f = [goal_f[0],   goal_f[1] - obs_offset,  90]
+
+    obs_pts.append(obs_a)
+    obs_pts.append(obs_b)
+    obs_pts.append(obs_c)
+    obs_pts.append(obs_d)
+    obs_pts.append(obs_e)
+    obs_pts.append(obs_f)
+
+    all_goals   = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+    all_goals   = [x for x in all_goals if x not in [start]]
+    target_goal = all_goals[0]
+
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    # exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal52, goal54])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 30
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_study_pent_head(goal_index=None):
+    label = "s_pent_head" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [0.0, -5.0] # [101.0, -4.0] #
+    goal2 = [0.0, 5.0] # [101.0, 14.0] #
+
+    goal1 = [-10.0, -1.0] # [81.0, 10.0] #
+
+    # goal3 = [0.0, -5.0]
+
+    # goal34 = [5.0, -5.0] # [111.0, 4.0]
+    # goal32 = [5.0, 5.0]  # [111.0, 32.0]
+
+    goal54 = [10.0, -5.0] # [111.0, 4.0]
+    goal52 = [10.0, 5.0]  # [111.0, 32.0]
+
+    start       = goal1
+
+    obs_pts = []
+    # obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    offset = 2.5
+
+    obs4 = [goal4[0], goal4[1] - offset, 90]
+    obs2 = [goal2[0], goal2[1] + offset, 270]
+
+    # obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    # obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs54 = [goal54[0], goal54[1] - offset, 90]
+    obs52 = [goal52[0], goal52[1] + offset, 270]
+
+    # obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    # obs_pts.append(obs34)
+    # obs_pts.append(obs32)
+
+    obs_pts.append(obs54)
+    obs_pts.append(obs52)
+
+
+    target_goal = goal1
+    all_goals   = [goal52, goal54, goal2, goal4]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal52, goal54])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 25
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_study_pent_mid(goal_index=None):
+    label = "s_pent_mid" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [0.0, -5.0] # [101.0, -4.0] #
+    goal2 = [0.0, 5.0] # [101.0, 14.0] #
+
+    goal1 = [-10.0, -1.0] # [81.0, 10.0] #
+
+    # goal3 = [0.0, -5.0]
+
+    # goal34 = [5.0, -5.0] # [111.0, 4.0]
+    # goal32 = [5.0, 5.0]  # [111.0, 32.0]
+
+    goal54 = [10.0, -5.0] # [111.0, 4.0]
+    goal52 = [10.0, 5.0]  # [111.0, 32.0]
+
+    offset = 2.5
+
+    obs_pts = []
+    obs1 = [goal1[0] - offset, goal1[1], 0]
+
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - offset, 90]
+    obs2 = [goal2[0], goal2[1] + offset, 270]
+
+    # obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    # obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs54 = [goal54[0], goal54[1] - offset, 90]
+    obs52 = [goal52[0], goal52[1] + offset, 270]
+
+    obs_pts.append(obs1)
+    # obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    # obs_pts.append(obs34)
+    # obs_pts.append(obs32)
+
+    obs_pts.append(obs52)
+    obs_pts.append(obs54)
+
+
+    start       = goal2
+
+    target_goal = goal1
+    all_goals   = [goal1, goal52, goal54, goal2, goal4]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal4, goal52, goal54])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 25
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_study_pent_edge(goal_index=None):
+    label = "s_pent_edge" # _g" + str(goal_index)
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [0.0, -5.0] # [101.0, -4.0] #
+    goal2 = [0.0, 5.0] # [101.0, 14.0] #
+
+    goal1 = [-10.0, -1.0] # [81.0, 10.0] #
+
+    # goal3 = [0.0, -5.0]
+
+    # goal34 = [5.0, -5.0] # [111.0, 4.0]
+    # goal32 = [5.0, 5.0]  # [111.0, 32.0]
+
+    goal54 = [10.0, -5.0] # [111.0, 4.0]
+    goal52 = [10.0, 5.0]  # [111.0, 32.0]
+
+    offset = 2.5
+
+    obs_pts = []
+    obs1 = [goal1[0] - offset, goal1[1], 0]
+
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] - offset, 90]
+    obs2 = [goal2[0], goal2[1] + offset, 270]
+
+    # obs34 = [goal34[0], goal34[1] - 1.5, 90]
+    # obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    obs54 = [goal54[0], goal54[1] - offset, 90]
+    obs52 = [goal52[0], goal52[1] + offset, 270]
+
+    obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    # obs_pts.append(obs34)
+    # obs_pts.append(obs32)
+
+    obs_pts.append(obs54)
+    # obs_pts.append(obs52)
+
+    start       = goal2
+
+    target_goal = goal1
+    all_goals   = [goal1, goal54, goal52, goal4]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal4, goal52, goal54])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 25
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+
+
+
 def scenario_pilot_a(goal_index=None):
     label = "aims-a" # _g" + str(goal_index)
 
@@ -442,7 +770,7 @@ def scenario_pent_asymm0(goal_index=None):
     # exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 15
+    N = 25
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -499,7 +827,7 @@ def scenario_pent_asymm1(goal_index=None):
     exp.set_observer_goal_pairs(exp.get_observers(), [goal1, goal2, goal4, goal34, goal32])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 15
+    N = 25
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -745,8 +1073,8 @@ def scenario_pent_wide(goal_index=None):
     return label, exp
 
 
-def scenario_study_mini_middle(goal_index=None):
-    label = "study_mid" # _g" + str(goal_index)
+def scenario_study_mini_edge(goal_index=None):
+    label = "study_mi_edge" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
     goal4 = [0.0, -6.0] # [101.0, -4.0] #
@@ -813,83 +1141,23 @@ def scenario_study_mini_middle(goal_index=None):
 
     return label, exp
 
-def scenario_study_mini_middle(goal_index=None):
-    label = "study_mid" # _g" + str(goal_index)
+
+def scenario_s_edge(goal_index=None):
+    label = "s_edge" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
-    goal4 = [0.0, -6.0] # [101.0, -4.0] #
+    goal4 = [0.0, -4.0] # [101.0, -4.0] #
     goal2 = [0.0, 4.0] # [101.0, 14.0] #
 
     goal1 = [-9.0, 0.0] # [81.0, 10.0] #
 
     # goal3 = [0.0, -5.0]
 
-    goal34 = [10.0, -6.0] # [111.0, 4.0]
-    goal32 = [10.0, 4.0]  # [111.0, 32.0]
+    goal34 = [8.0, -4.0] # [111.0, 4.0]
+    goal32 = [8.0, 4.0]  # [111.0, 32.0]
 
-    start       = goal32
-
-    obs_pts = []
-    # obs1 = [goal1[0] - 1.5, goal1[1], 0]
-    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
-
-    obs4 = [goal4[0], goal4[1] - 1.5, 90]
-    obs2 = [goal2[0], goal2[1] + 1.5, 270]
-
-    obs34 = [goal34[0], goal34[1] - 1.5, 90]
-    obs32 = [goal32[0], goal32[1] + 1.5, 270]
-
-
-    # obs_pts.append(obs1)
-    obs_pts.append(obs2)
-    # obs_pts.append(obs3)
-    # obs_pts.append(obs3)
-    obs_pts.append(obs4)
-    obs_pts.append(obs34)
-    # obs_pts.append(obs32)
-
-
-    target_goal = goal32
-    all_goals   = [goal34, goal2, goal4]
-
-    if goal_index is not None:
-        target_goal = all_goals[goal_index]
-    else:
-        target_goal = all_goals[0]
-
-    table_pts = []
-
-    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
-    # Make sure these have the same order
-
-    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34])
-    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
-
-    N = 15
-    exp.set_N(N)
-
-    obs_scale = 10000.0
-    exp.set_solver_scale_obstacle(obs_scale)
-
-    return label, exp
-
-
-def scenario_study_edge(goal_index=None):
-    label = "study_edge" # _g" + str(goal_index)
-
-    # (2, 4), (4,2), (3,6), (5,4))
-    goal4 = [0.0, -6.0] # [101.0, -4.0] #
-    goal2 = [0.0, 4.0] # [101.0, 14.0] #
-
-    goal1 = [-9.0, 0.0] # [81.0, 10.0] #
-
-    # goal3 = [0.0, -5.0]
-
-    goal34 = [10.0, -6.0] # [111.0, 4.0]
-    goal32 = [10.0, 4.0]  # [111.0, 32.0]
-
-    goal54 = [20.0, -6.0] # [111.0, 4.0]
-    goal52 = [20.0, 4.0]  # [111.0, 32.0]
+    goal54 = [16.0, -4.0] # [111.0, 4.0]
+    goal52 = [16.0, 4.0]  # [111.0, 32.0]
 
     start       = goal54
 
@@ -931,10 +1199,10 @@ def scenario_study_edge(goal_index=None):
     exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
     # Make sure these have the same order
 
-    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32, goal52, goal54])
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32, goal52])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 15
+    N = 30
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -942,22 +1210,22 @@ def scenario_study_edge(goal_index=None):
 
     return label, exp
 
-def scenario_study_middle(goal_index=None):
-    label = "study_mid" # _g" + str(goal_index)
+def scenario_s_middle(goal_index=None):
+    label = "s_mid" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
-    goal4 = [0.0, -6.0] # [101.0, -4.0] #
+    goal4 = [0.0, -4.0] # [101.0, -4.0] #
     goal2 = [0.0, 4.0] # [101.0, 14.0] #
 
     goal1 = [-9.0, 0.0] # [81.0, 10.0] #
 
     # goal3 = [0.0, -5.0]
 
-    goal34 = [10.0, -6.0] # [111.0, 4.0]
-    goal32 = [10.0, 4.0]  # [111.0, 32.0]
+    goal34 = [8.0, -4.0] # [111.0, 4.0]
+    goal32 = [8.0, 4.0]  # [111.0, 32.0]
 
-    goal54 = [20.0, -6.0] # [111.0, 4.0]
-    goal52 = [20.0, 4.0]  # [111.0, 32.0]
+    goal54 = [16.0, -4.0] # [111.0, 4.0]
+    goal52 = [16.0, 4.0]  # [111.0, 32.0]
 
     start       = goal32
 
@@ -1002,7 +1270,7 @@ def scenario_study_middle(goal_index=None):
     exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal52, goal54])
     # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
 
-    N = 15
+    N = 30
     exp.set_N(N)
 
     obs_scale = 10000.0
@@ -2430,32 +2698,41 @@ def get_scenario_set(scenario_filters=[]):
     # label, exp = scenario_hept90(goal_index=0)
     # scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_study_mini_middle(goal_index=0)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_study_pent_head(goal_index=0)
+    # scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_study_mini_edge(goal_index=0)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_study_pent_mid(goal_index=0)
+    # scenarios[label] = exp
+
+    # # TEST SCENARIO
+    # label, exp = scenario_study_pent_edge(goal_index=0)
+    # scenarios[label] = exp
+
+    # ###################
 
 
-
-    # TEST SCENARIO
-    label, exp = scenario_study_middle(goal_index=0)
-    scenarios[label] = exp
+    # # TEST SCENARIO
+    # label, exp = scenario_study_mini_edge(goal_index=0)
+    # scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_study_edge(goal_index=0)
     scenarios[label] = exp
 
-    ############
     # TEST SCENARIO
-    label, exp = scenario_hept(goal_index=0)
+    label, exp = scenario_study_middle(goal_index=0)
     scenarios[label] = exp
 
-    # TEST SCENARIO
-    label, exp = scenario_pent(goal_index=0)
-    scenarios[label] = exp
+    # ############
+    # # TEST SCENARIO
+    # label, exp = scenario_hept(goal_index=0)
+    # scenarios[label] = exp
+
+    # # TEST SCENARIO
+    # label, exp = scenario_pent(goal_index=0)
+    # scenarios[label] = exp
 
     ############
     # TEST SCENARIO
@@ -2466,7 +2743,7 @@ def get_scenario_set(scenario_filters=[]):
     label, exp = scenario_fan(goal_index=0)
     scenarios[label] = exp
 
-    # return scenarios
+    return scenarios
 
 
     # TEST SCENARIO
