@@ -21,6 +21,8 @@ state_dict['E'] = goal_e
 state_dict['F'] = goal_f
 
 # GENERATED PATHS
+export_name = 'null'
+
 # generate_vanilla_straight_line_paths_for_testing(goal_a, [goal_b, goal_c, goal_d, goal_e, goal_f])
 path_ab = [[1.0, -1.0], [1.25, -1.0], [1.5, -1.0], [1.75, -1.0], [2.0, -1.0], [2.25, -1.0], [2.5, -1.0], [2.75, -1.0], [3.0, -1.0]]
 path_ac = [[1.0, -1.0], [1.5, -1.0], [2.0, -1.0], [2.5, -1.0], [3.0, -1.0], [3.5, -1.0], [4.0, -1.0], [4.5, -1.0], [5.0, -1.0]]
@@ -172,7 +174,37 @@ def setup_path_dict():
 	else:
 		print("All paths added and checked for reasonableness!")
 
-setup_path_dict()
+	return path_dict
+
+def export_path_dict(export_name, path_dict):
+	directory_name = "paths/"
+
+	for key in path_dict.keys():
+		path = path_dict[key]
+
+		csv_content = ""
+		# line format for ROS is 
+		for pt in path:
+			x, y = pt
+			z = 0
+
+			qx, qy, qz, qw = 0, 0, 0, 0
+
+			csv_content += str(x) + ", " + str(y) + ", " + str(z) + ", " + str(qx) + ", " + str(qy) + ", " + str(qz) + ", " + str(qw) + "\n"
+
+
+		filename = directory_name + key + "-" + export_name + ".csv"
+		f = open(filename, "w")
+		f.write(csv_content)
+		f.close()
+		print("wrote out " + filename)
+
+
+path_dict = setup_path_dict()
+export_path_dict(export_name, path_dict)
+
+print("All exported to paths/")
+
 # augment_to_find_all_paths()
 
 
