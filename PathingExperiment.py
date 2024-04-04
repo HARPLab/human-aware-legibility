@@ -139,7 +139,7 @@ class PathingExperiment():
     ti = 0
 
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
-        self.exp_label = label
+        self.exp_label  = label
         self.restaurant = restaurant
 
         self.start          = restaurant.get_start()
@@ -254,7 +254,10 @@ class PathingExperiment():
     def setup_file_id(self):
         # Create a new folder for this experiment, along with sending debug output there
         g_index = self.get_g_index()
-        self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label + "-" + str(g_index)
+
+        file_name = self.get_pretty_study_label(g_index, self.get_target_goal())
+
+        self.file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + self.exp_label + "-" + file_name
 
         # try:
         #     os.mkdir(PREFIX_EXPORT + self.file_id)
@@ -913,3 +916,41 @@ class PathingExperiment():
 
     def get_local_distance(self):
         return self.local_distance
+
+    def get_pretty_study_label(self, g_index, goal_in):
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+        start   = self.get_start()
+        goal    = goal_in[:2]
+
+        label = ''
+
+        if start == goal_a:
+            label += 'a'
+        if start == goal_b:
+            label += 'b'
+        if start == goal_c:
+            label += 'c'
+        if start == goal_d:
+            label += 'd'
+        if start == goal_e:
+            label += 'e'
+        if start == goal_f:
+            label += 'f'
+
+        if goal == goal_a:
+            label += 'a'
+        if goal == goal_b:
+            label += 'b'
+        if goal == goal_c:
+            label += 'c'
+        if goal == goal_d:
+            label += 'd'
+        if goal == goal_e:
+            label += 'e'
+        if goal == goal_f:
+            label += 'f'
+
+        if label == '':
+            label = str(g_index)
+
+        return label

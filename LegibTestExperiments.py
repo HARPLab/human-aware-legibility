@@ -397,7 +397,9 @@ def test_study_set(dash_folder, scenario_filters):
                 mega_scenario.set_local_distance(local_def)
                 mega_scenario.set_fn_note("locdist_" + str((local_def)))
 
-                save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
+                goal_name = mega_scenario.get_pretty_study_label(g_index, scenario.get_goals()[g_index])
+
+                save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_" + goal_name)
 
                 do_scenario_tests(mega_scenario)
 
@@ -437,7 +439,9 @@ def test_study_set(dash_folder, scenario_filters):
                 ax_mappings[ax_index].axis('off')
 
             mega_scenario.set_target_goal_index(gi)
-            save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(gi))
+
+            goal_name       = mega_scenario.get_pretty_study_label(gi, scenario.get_goals()[g_index])
+            save_location   = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_" + goal_name)
 
             fig.suptitle("=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
