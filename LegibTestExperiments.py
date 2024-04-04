@@ -1,4 +1,7 @@
-purpose = "exp_48_vanilla_target3" #_10x"
+purpose = "exp_52_rel_vanil_2_speedlim" #5t_10s_l10_weighted_both"
+# purpose = "53_sec_diff"
+# purpose = "exp_52_solo_maxp5_2xval" #local_revert"  #og_more_dense" #
+# purpose = "exp_48_legnew_novisl_raw_wthd_e-4" #_10x"
 # purpose = "42_sec_falloff_none_have_2x" #sum_exp_of_lin_sqr" #multi_alts_sum"
 # purpose = "pilot_exp_24_pd_lam25_discount5_max2"
 # purpose = "test_dist_k"
@@ -44,7 +47,8 @@ def run_all_tests():
     scenario_filters[test_scenarios.DASHBOARD_FOLDER]           = dashboard_folder
 
     # test_understanding_set(dashboard_folder, scenario_filters)
-    test_locality_set(dashboard_folder, scenario_filters)
+    # test_locality_set(dashboard_folder, scenario_filters)
+    test_study_set(dashboard_folder, scenario_filters)
 
 def get_file_id_for_exp(dash_folder, label):
     # Create a new folder for this experiment, along with sending debug output there
@@ -320,6 +324,157 @@ def do_scenario_tests(scenario):
     print("~~~~~")
     # exit()
 
+def test_study_set(dash_folder, scenario_filters):
+    scenarios = test_scenarios.get_scenarios(scenario_filters)
+    test_group = "study"
+
+    test_template      = {'label':"ll-",    'title':'Understanding Local Local',    'und_target': 'local',  'und_secondary': 'local'}
+
+    # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
+    scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
+
+    # scale_set = [1, 3/2.0, 3/1.0][::-1]
+
+    scale_set = [14.0/3, 14.0/2.0, 14.0/1.0][::-1]
+    # scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
+    # scale_set = [1, 5/4.0, 5/2.0][::-1]
+
+
+    # scale_exp = [8, 4, 2, 0]
+    # observer_gap = 1 #1.5
+
+    scale_exp = [2, 1, .5, 0][::-1]
+
+    scale_exp = [1, .5][::-1]
+    
+    # observer_gap = 2.0
+
+    for key in scenarios.keys():
+        scenario = scenarios[key]
+        scenario.set_run_filters(scenario_filters)
+
+        longest_distance = scenario.get_max_dist()
+
+        # if label == 'diam':
+        #     longest_distance = longest_distance / 1.5
+
+        outputs = {}
+        label_dict = {}
+
+        test_setups = []
+
+        for exp_index in range(len(scale_exp)):
+            test = copy.copy(test_template)
+
+            # print("Radius math")
+            # print(longest_distance)
+            # print((longest_distance / multiplier))
+            # print((longest_distance / multiplier) + observer_gap)
+
+            # new_N = (longest_distance / multiplier) + observer_gap
+            # n_percent = int(100.0 * multiplier)
+            # new_N = str("{0:.3g}".format((new_N)))
+            # new_N = float(new_N)
+
+            # scale_text = str("{0:.3g}".format((1.0 / multiplier)))
+
+            local_def = scale_exp[exp_index]
+
+            # label_dict[multiplier] = local_def
+
+            test['label']           = 'local=' + str(local_def)
+            test['local_distance']  = local_def
+
+            test_setups.append(test)
+
+            for g_index in range(len(scenario.get_goals())):
+                # RUN THE SOLVER WITH CONSTRAINTS ON EACH
+                mega_scenario = copy.copy(scenario)
+                # mega_scenario.set_fn_note(test['label'])
+                mega_scenario.set_test_options(test)
+                mega_scenario.set_target_goal_index(g_index)
+
+                mega_scenario.set_local_distance(local_def)
+                mega_scenario.set_fn_note("locdist_" + str((local_def)))
+
+                save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_g" + str(g_index))
+
+                do_scenario_tests(mega_scenario)
+
+                verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
+                outputs[(local_def, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
+
+                test_log.append(mega_scenario.get_solve_quality_status(test_group))
+
+                collate_and_report_on_results(dash_folder)
+
+
+        # This placement of the figure statement is actually really important
+        # numpy only likes to have one plot open at a time, 
+        # so this is a fresh one not dependent on the graphing within the solver for each
+        
+        # EXPORT PATHS FOR EACH GOAL
+        print("Exporting paths pic for each goal")
+        goal_indexes = range(len(mega_scenario.get_goals()))
+        for gi in goal_indexes:
+            fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups)
+            # EXPORT GRAPH ACROSS ALL GOALS
+            for key in outputs.keys():
+                ax_number, goal_key = key
+                ax_key = scale_exp.index(ax_number)
+
+                if goal_key == gi:
+                    ax = ax_mappings[ax_key]
+                    verts, us, cost, label = outputs[key]
+                    
+                    cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
+                    _ = ax.set_title(label, fontweight='bold')
+                    ax.set_aspect('equal')
+                    ax.get_legend().remove()
+                    max_key = key
+
+            for ax_index in range(len(test_setups), len(ax_mappings)):
+                ax_mappings[ax_index].axis('off')
+
+            mega_scenario.set_target_goal_index(gi)
+            save_location = get_file_id_for_exp(dash_folder, "cross-" + mega_scenario.get_exp_label() + "_g" + str(gi))
+
+            fig.suptitle("=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
+            plt.subplots_adjust(top=0.9)
+            # plt.tight_layout()
+            plt.savefig(save_location + ".png")
+            plt.close()
+            plt.clf()
+
+
+        print("Exporting paths pic for all goals")
+        fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups)
+        # EXPORT GRAPH ACROSS ALL GOALS
+        for key in outputs.keys():
+            ax_number, goal_key = key
+            ax_key = scale_exp.index(ax_number)
+
+            ax = ax_mappings[ax_key]
+            verts, us, cost, label = outputs[key]
+            
+            cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
+            _ = ax.set_title(label, fontweight='bold')
+            ax.get_legend().remove()
+            max_key = key
+
+        for ax_index in range(len(test_setups), len(ax_mappings)):
+            ax_mappings[ax_index].axis('off')
+
+        save_location = get_file_id_for_exp(dash_folder, "cross-" + "-" + mega_scenario.get_exp_label() + "-all")
+        save_location = get_file_id_for_exp(dash_folder, "all-cross-" + "-" + mega_scenario.get_exp_label() + "-all")
+
+        fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
+        plt.subplots_adjust(top=0.9)
+        # plt.tight_layout()
+        plt.savefig(save_location + ".png")
+        plt.close()
+        plt.clf()
+
 def test_locality_set(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "locality"
@@ -329,7 +484,9 @@ def test_locality_set(dash_folder, scenario_filters):
     # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
     scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
 
-    scale_set = [1, 3/2.0, 3/1.0][::-1]
+    # scale_set = [1, 3/2.0, 3/1.0][::-1]
+
+    scale_set = [14.0/3, 14.0/2.0, 14.0/1.0][::-1]
     # scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
     # scale_set = [1, 5/4.0, 5/2.0][::-1]
 
@@ -346,7 +503,6 @@ def test_locality_set(dash_folder, scenario_filters):
         # if label == 'diam':
         #     longest_distance = longest_distance / 1.5
 
-
         outputs = {}
         label_dict = {}
 
@@ -354,6 +510,11 @@ def test_locality_set(dash_folder, scenario_filters):
 
         for multiplier in scale_set:
             test = copy.copy(test_template)
+
+            print("Radius math")
+            print(longest_distance)
+            print((longest_distance / multiplier))
+            print((longest_distance / multiplier) + observer_gap)
 
             new_N = (longest_distance / multiplier) + observer_gap
             n_percent = int(100.0 * multiplier)
