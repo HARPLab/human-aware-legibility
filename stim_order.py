@@ -49,7 +49,6 @@ titles['FC'] = 'strt_right_away'
 label_dict = {}
 for key in titles.keys():
 	name_label 				= titles[key]
-
 	label_dict[name_label] 	= key
 
 
@@ -141,9 +140,11 @@ while len(checked_off) < len(checklist) and i < 100:
 	link_name = current_state + next_state
 	path.append(link_name)
 
+	if link_name in remaining:
+		remaining.remove(link_name)
+
 	if link_name in checklist and link_name not in checked_off:
 		checked_off.append(link_name)
-		remaining.remove(link_name)
 
 
 	current_state = next_state
@@ -151,6 +152,8 @@ while len(checked_off) < len(checklist) and i < 100:
 
 print(path)
 print(len(path))
+print(len(remaining))
+print(remaining)
 
 saved = ['AC', 'CD', 'DF', 'FD', 'DC', 'CE', 'EF', 'FC', 'CD', 'DE', 'ED', 'DE', 'EF', 'FA', 'AB', 'BE', 'EA', 'AB', 'BA', 'AE', 'ED', 'DE', 'ED', 'DC', 'CF', 'FD', 'DC', 'CB', 'BE', 'EA', 'AE', 'EC', 'CF', 'FA', 'AF', 'FE']
 
