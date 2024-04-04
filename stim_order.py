@@ -124,17 +124,14 @@ i = 0
 while len(checked_off) < len(checklist) and i < 100:
 	i += 1
 
-	next_state_options =  [y for y in states if y != current_state]
+	# next_state_options =  [y for y in states if y != current_state]
 	
-	if False: # could choose randomly
-		next_state = random.choice(next_state_options)
-	else: # could prefer those on the list
-		useful_options = [y for y in remaining if y[0] == current_state]
+	useful_options = [y for y in remaining if y[0] == current_state]
 
-		if len(useful_options) > 0:
-			next_state = random.choice(useful_options)[1]
-		else:
-			next_state = random.choice(next_state_options)
+	if len(useful_options) > 0:
+		next_state = random.choice(useful_options)[1]
+	else:
+		next_state = random.choice(next_state_options)
 
 
 	link_name = current_state + next_state
@@ -148,6 +145,7 @@ while len(checked_off) < len(checklist) and i < 100:
 
 
 	current_state = next_state
+
 
 
 print(path)
