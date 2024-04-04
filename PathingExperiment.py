@@ -213,9 +213,7 @@ class PathingExperiment():
         # print(Xrefline.shape, state_size)
         Xrefline = np.reshape(Xrefline, (-1, state_size))
 
-        u_blank  = np.asarray([0.0, 0.0])
-        Urefline = np.tile(u_blank, (N, 1))
-        Urefline = np.reshape(Urefline, (-1, action_size))
+        Urefline = self.setup_Urefline(x_goal_raw, action_size)
 
         solver_label = self.cost_label
 
@@ -236,6 +234,21 @@ class PathingExperiment():
 
         print("ERROR, NO KNOWN SOLVER, PLEASE ADD A VALID SOLVER TO EXP")
         print("''''''" + str(solver_label) + "''''''")
+
+
+    def setup_Urefline(self, goal, action_size):
+        start = self.get_start()
+        N = self.get_N()
+
+        crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
+        step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
+
+
+        u_blank  = np.asarray(step_vector)
+        Urefline = np.tile(u_blank, (N, 1))
+        Urefline = np.reshape(Urefline, (-1, action_size))
+
+        return Urefline
 
 
     def setup_file_id(self):
