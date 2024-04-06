@@ -959,7 +959,7 @@ class PathingExperiment():
 
         return label
 
-    def get_closest_goalp_to_x(self, x_in, num=1):
+    def get_closest_nontarget_goalp_to_x(self, x_in, num=1):
         x = x_in[:2]
 
         dist_for_goals = []

@@ -1193,7 +1193,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
                 if start[0] == special[0] and start[1] == special[1]: 
                     is_special = True
 
-            if is_special:
+            if not is_special:
                 # If it's not our targeted goal scenario,
                 # then reduce the lambda for more expressiveness
                 wt_lam = wt_lam / 10.0
@@ -1755,7 +1755,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         mode_heading = self.exp.get_mode_type_heading()
         mode_blend   = self.exp.get_mode_type_blend()
 
-        comparison_goals_group = self.exp.get_closest_goalp_to_x(x, num=num)
+        comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x(x, num=num)
         comparison_goals_group.append(goal)
 
         print(comparison_goals_group)
