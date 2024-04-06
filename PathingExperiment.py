@@ -244,7 +244,11 @@ class PathingExperiment():
         step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
 
 
-        u_blank  = np.asarray(step_vector)
+        # u_blank  = np.asarray(step_vector)
+        # Urefline = np.tile(u_blank, (N, 1))
+        # Urefline = np.reshape(Urefline, (-1, action_size))
+
+        u_blank  = np.asarray([0.0, 0.0])
         Urefline = np.tile(u_blank, (N, 1))
         Urefline = np.reshape(Urefline, (-1, action_size))
 
@@ -426,7 +430,7 @@ class PathingExperiment():
         tar_goal    = self.get_target_goal()
         start_goal  = self.get_start()
 
-        resolution = .66
+        resolution = 2
 
         goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
 
@@ -709,10 +713,10 @@ class PathingExperiment():
         x = x_input #np.asarray([x_input[1], x_input[0]])
 
         for g in goals:
-            o            = self.get_observer_for_goal(g)
-            vis, vis_angle   = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
-            local_dist   = np.abs(self.dist_between(x, o.get_center()))
-            is_local     = local_dist <= self.get_local_distance()
+            o                   = self.get_observer_for_goal(g)
+            vis, vis_angle      = self.get_visibility_of_pt_w_observer_ilqr(x, o, normalized=True, RETURN_ANGLE=True)
+            local_dist          = np.abs(self.dist_between(x, o.get_center()))
+            is_local            = local_dist <= self.get_local_distance()
 
             status_dict[(g[0], g[1])] = (vis, is_local, vis_angle, local_dist)
 
@@ -954,3 +958,31 @@ class PathingExperiment():
             label = str(g_index)
 
         return label
+
+    def get_closest_goalp_to_x(self, x_in, num=1):
+        x = x_in[:2]
+
+        dist_for_goals = []
+
+        for goal in self.get_goals():
+            dist = self.dist_between(x, goal)
+
+            if goal != self.get_target_goal():
+                dist_for_goals.append((dist, goal))
+
+        print("format what")
+        print(dist_for_goals)
+
+        dist_for_goals.sort(key=lambda name: name[0])
+
+        subset_goals = dist_for_goals[:num]
+
+        print(subset_goals)
+
+        print("trm to goals")
+        print( [t[1] for t in subset_goals])
+        return  [t[1] for t in subset_goals]
+
+
+
+
