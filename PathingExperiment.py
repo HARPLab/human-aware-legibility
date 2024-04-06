@@ -983,6 +983,22 @@ class PathingExperiment():
         print( [t[1] for t in subset_goals])
         return  [t[1] for t in subset_goals]
 
+    def get_closest_any_goal_to_x(self, x_in):
+        x = x_in[:2]
+        num = 1
+
+        dist_for_goals = []
+
+        for goal in self.get_goals():
+            dist = self.dist_between(x, goal)
+
+            dist_for_goals.append((dist, goal))
+
+        dist_for_goals.sort(key=lambda name: name[0])
+        # subset_goals = dist_for_goals[:num]
+        closest_goal_info = dist_for_goals[0]
+
+        return  closest_goal_info[1]
 
 
 
