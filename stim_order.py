@@ -73,7 +73,7 @@ def get_hitlist():
 	diag_long = ['AF', 'DC']
 	hitlist.extend(to_target)
 
-	# past_back = ['AC', 'CA']
+	# past_back = ['AD', 'DA']
 	# hitlist.extend(to_target)
 
 	# to_hit = diag_full
@@ -134,12 +134,17 @@ print(all_paths)
 
 checklist, full_hitlist = get_hitlist()
 
+checklist = all_paths
+
+print()
 print("Paths to hit")
 print(checklist)
 
-print(full_hitlist)
+# print(full_hitlist)
 
-start = "A"
+start = random.choice([y for y in targets if y != participant])
+print("start at: ")
+print(start)
 
 path = []
 checked_off = []
@@ -148,17 +153,24 @@ current_state = start
 remaining = copy.copy(checklist)
 
 i = 0
-while len(checked_off) < len(checklist) and i < 100:
+while len(remaining) > 0 and i < 100:
 	i += 1
 
+	# Could go to any other state
 	next_state_options =  [y for y in states if y != current_state]
-	useful_options = [y for y in remaining if y[0] == current_state]
+
+	# Or, could complete a link that's not checked off yet
+	useful_options = [y[1] for y in remaining if y[0] == current_state]
+	
+	# OR could move to a place where I can check something off next
+	setup_for_useful_options = [y[0] for y in remaining if y[0] != current_state]
 
 	if len(useful_options) > 0:
-		next_state = random.choice(useful_options)[1]
+		next_state = random.choice(useful_options)
+	elif len(setup_for_useful_options) > 0:
+		next_state = random.choice(setup_for_useful_options)
 	else:
 		next_state = random.choice(next_state_options)
-
 
 	link_name = current_state + next_state
 	path.append(link_name)
@@ -172,16 +184,24 @@ while len(checked_off) < len(checklist) and i < 100:
 
 	current_state = next_state
 
-
+print()
 print(path)
 print(len(path))
 print(len(remaining))
 print(remaining)
 
+final_route = []
+
+for p in path:
+	# final_route.append(p + '-null')
+	final_route.append(p + '-toptwo')
+
+print(final_route)
+
 # print("estimated total path time")
 # print(get_total_path_time(path))
 
-saved = ['AC', 'CD', 'DF', 'FD', 'DC', 'CE', 'EF', 'FC', 'CD', 'DE', 'ED', 'DE', 'EF', 'FA', 'AB', 'BE', 'EA', 'AB', 'BA', 'AE', 'ED', 'DE', 'ED', 'DC', 'CF', 'FD', 'DC', 'CB', 'BE', 'EA', 'AE', 'EC', 'CF', 'FA', 'AF', 'FE']
+# saved = ['AC', 'CD', 'DF', 'FD', 'DC', 'CE', 'EF', 'FC', 'CD', 'DE', 'ED', 'DE', 'EF', 'FA', 'AB', 'BE', 'EA', 'AB', 'BA', 'AE', 'ED', 'DE', 'ED', 'DC', 'CF', 'FD', 'DC', 'CB', 'BE', 'EA', 'AE', 'EC', 'CF', 'FA', 'AF', 'FE']
 
 #### CALCULATE THE PROJECTED TIME ALSO
 
