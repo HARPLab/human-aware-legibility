@@ -764,7 +764,7 @@ class Observer:
 	cone_depth = 2000
 	focus_angle = 120.0 / 2.0
 	# peripheral_angle = 120 / 2.0
-	FOV_angle = 120
+	FOV_angle = 180
 
 	orientation = 0
 
@@ -1835,8 +1835,8 @@ class Restaurant:
 		else:
 			print("Incorrect generate_type")
 
-		self.img = self.generate_obstacle_map_and_img(self.observers)
-		self.generate_visibility_maps()
+		# self.img = self.generate_obstacle_map_and_img(self.observers)
+		# self.generate_visibility_maps()
 
 	def get_goal_index(self, goal):
 		if goal not in self.goals:
