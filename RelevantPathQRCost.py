@@ -1163,7 +1163,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         goals = self.exp.get_goals()
         P_d_dict = {}
         for maybe_goal in goals:
-            prob = self.cost_nextbest_distance(start, maybe_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+            prob = self.cost_nextbest_distance(start, maybe_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
             key = (maybe_goal[0], maybe_goal[1])
             P_d_dict[key] = prob
 
@@ -1173,11 +1173,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if True and 50 == 50:
             key = (goal[0], goal[1])
             # P_d_dict[key]   #
-            p_d = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+            p_d = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
             # p_d_target, p_alts = self.get_legibility_component_alts(start, goal, x, u, i, terminal, True, override_block={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
         
-            # closest_goal = self.exp.get_get
-
             FLAG_SECONDARY_CONSIDERED = False
             
             # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
@@ -1185,8 +1183,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
             # relevance_scale = np.exp(i) / np.exp(self.exp.get_N())
 
             val_overall = 1.0 - p_d   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-            max_penalty = 1.0           # (1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
-            wt_lam      = 6.0 #.0
+            max_penalty = 1.1           # (1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
+            wt_lam      = 2.0 #.0
 
             is_special = False
             for special in self.exp.get_goal_squad():
@@ -1196,7 +1194,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
             if not is_special:
                 # If it's not our targeted goal scenario,
                 # then reduce the lambda for more expressiveness
-                wt_lam = wt_lam / 10.0
+                wt_lam = wt_lam / 30.0
 
 
         # else:
@@ -1212,66 +1210,33 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         val_understanding_secondary = 0
 
-        # target_key = (goal[0], goal[1])
-
-        # if FLAG_SECONDARY_CONSIDERED:
-        #     status_dict = self.exp.get_vislocal_status_of_point(x)
-        #     for alt_goal in self.exp.get_goals():
-        #         vis, local, vis_angle, dist = status_dict[(alt_goal[0], alt_goal[1])]
-
-        #         # np.exp
-        #         offset = (alt_goal - x[:2]) / self.exp.get_local_distance()
-        #         print("offset percent " + str(offset))
-        #         # cost_falloff = np.exp((np.dot(np.dot(offset.T, np.eye(2)), offset)))
-        #         cost_falloff = self.get_relative_distance_value(i, start, alt_goal, x, False, 'lin')
-        #         val_secondary = 0 #P_d_dict[key] * (cost_falloff) #* .001
-
-        #         if vis and local:
-        #             if (self.exp.get_target_goal() != alt_goal):
-        #                 key = (alt_goal[0], alt_goal[1])
-
-        #                 secondary_multiplier = cost_falloff * 10.0
-
-        #                 val_secondary = secondary_multiplier * P_d_dict[key] #* cost_falloff # * .25 # * 10.0
-        #                 # val_secondary = P_d_dict[key] - P_d_dict[target_key]
-
-        #                 if vis_angle > 90:
-        #                     val_secondary = vis_angle * 100.0
-
-
-        #                 print("Secondary costs at " + str(alt_goal))
-        #                 print(P_d_dict[key], cost_falloff)
-        #             else:
-        #                 print("Not secondary: this is the target")
-
-        #         elif local and not vis:
-        #             val_secondary = 0 #1.0 # * cost_falloff
-        #         else:
-        #             print("not relevant secondary at " + str(alt_goal))
-
-        #         val_understanding_secondary += val_secondary #* 2.0 # * cost_falloff #* 2.0
-
-        # val_understanding_secondary = (val_understanding_secondary)
-
-
         ###### UNDERSTANDING COSTS: TARGET
         ### Depending on mode taken from the exp packet...
 
         #### Also needs update for multi-goal
         # TARGET
-        if islocal_target and is_vis_target:
-            val_understanding_target = target_costs
-            print("IS LOCAL == YES")
+        # if islocal_target and is_vis_target:
+        #     val_understanding_target = target_costs
+        #     print("IS LOCAL == YES")
+        # else:
+        #     # wt_lam = wt_lam * .5
+        #     val_understanding_target = max_penalty
+        #     print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
+
+
+        if True:
+            closest_goal = self.exp.get_closest_any_goal_to_x(x)
+
+            if closest_goal == goal:
+                val_understanding_target = target_costs
+            else:
+                # if it's a different goal and close enough
+                if self.exp.dist_between(closest_goal, x) < self.exp.get_local_distance():
+                    # note that this is NOT inverted
+                    val_understanding_target = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1, goal_list=[goal, closest_goal])
         else:
-            # wt_lam = wt_lam * .5
-            val_understanding_target = max_penalty
-            print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
+            val_understanding_secondary = target_costs
 
-        # val_understanding_target = target_costs
-
-
-
-        val_understanding_target = target_costs
 
 
         wt_legib     = (wt_legib)
@@ -1744,7 +1709,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         return (1.0) - P_oa
 
 
-    def cost_nextbest_distance(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None, num=2):
+    def cost_nextbest_distance(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None, num=2, goal_list=None):
         x       = (x_triplet[:2])
         u       = u_input
         start   = (start_input[:2])
@@ -1755,9 +1720,13 @@ class RelevantPathQRCost(LegiblePathQRCost):
         mode_heading = self.exp.get_mode_type_heading()
         mode_blend   = self.exp.get_mode_type_blend()
 
-        comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x(x, num=num)
-        comparison_goals_group.append(goal)
+        if goal_list == None:
+            comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x(x, num=num)
+            comparison_goals_group.append(goal)
+        else:
+            comparison_goals_group = goal_list
 
+        print("Comparison goals are: ")
         print(comparison_goals_group)
 
         goal_values = []
