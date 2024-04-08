@@ -843,7 +843,7 @@ class PathingExperiment():
         scenario    = self.get_exp_label()
         purpose     = self.get_fn_note()[1:]
 
-        return (scenario, self.get_goal_label(), test_group, purpose, converged_text, converged, iteration_count, info, J_opt)
+        return (scenario, self.get_pretty_study_label(), test_group, purpose, converged_text, converged, iteration_count, info, J_opt)
 
     def get_solve_quality_columns(self):
         return ('scenario', 'goal', 'test', 'condition', 'status_summary', 'converged', 'num_iterations', 'info', 'J_opt')
@@ -955,7 +955,7 @@ class PathingExperiment():
             label += 'f'
 
         if label == '':
-            label = str(g_index)
+            label = "g" + str(g_index)
 
         return label
 
