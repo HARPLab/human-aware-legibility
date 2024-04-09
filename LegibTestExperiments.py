@@ -1,4 +1,4 @@
-purpose = "exp_52_rel_vanil_2_speedlim" #5t_10s_l10_weighted_both"
+purpose = "exp_53_nova2_lm2_u_force_sec_n15_sl" #_sec" #5t_10s_l10_weighted_both" force_
 # purpose = "53_sec_diff"
 # purpose = "exp_52_solo_maxp5_2xval" #local_revert"  #og_more_dense" #
 # purpose = "exp_48_legnew_novisl_raw_wthd_e-4" #_10x"
@@ -32,6 +32,9 @@ from LegiblePathQRCost import LegiblePathQRCost
 import LegibTestScenarios as test_scenarios
 
 import utility_environ_descrip as resto
+import shutil
+
+FLAG_DO_SCENARIO_TESTS = False
 
 test_log = []
 np.set_printoptions(suppress=True)
@@ -56,6 +59,7 @@ def get_file_id_for_exp(dash_folder, label):
     n = 5
     rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
     # sys.stdout = open(dash_folder + file_id + "_" + str(rand_id) + '_output.txt','a')
+
     return dash_folder + file_id
 
 def get_dashboard_folder():
@@ -73,6 +77,9 @@ def get_dashboard_folder():
 
     dash_folder = LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + "/"
     # sys.stdout = open(dash_folder + '/output.txt','a')
+
+    shutil.copy("RelevantPathQRCost.py", dash_folder + "QRCost.py")
+
     return dash_folder
 
 def collate_and_report_on_results(dash_folder):
@@ -328,7 +335,7 @@ def test_study_set(dash_folder, scenario_filters):
     scenarios = test_scenarios.get_scenarios(scenario_filters)
     test_group = "study"
 
-    test_template      = {'label':"ll-",    'title':'Understanding Local Local',    'und_target': 'local',  'und_secondary': 'local'}
+    test_template      = {'label':"",    'title':'',    'und_target': '',  'und_secondary': ''}
 
     # scale_set = [.5, 0.625, .75, 0.875, 1, 1.125, 1.25, 1.375, 1.5]
     scale_set = [1, 2, 4, 8, 16, 32, 64, 128][::-1]
@@ -343,10 +350,20 @@ def test_study_set(dash_folder, scenario_filters):
     # scale_exp = [8, 4, 2, 0]
     # observer_gap = 1 #1.5
 
-    scale_exp = [2, 1, .5, 0][::-1]
+    # scale_exp = [2, 1, .5, 0][::-1]
 
-    scale_exp = [1, .5][::-1]
-    
+    # scale_exp = [4, 2, 1] #[::-1]
+    # scale_exp = [.5, 1.5, 10][::-1]
+        
+    # Tuples contain local_dist, secondary_dist
+    # scale_exp = [(10, 0), (10, .5), (10, .25)]
+    # scale_exp = [(1.5, 0), (1.5, .5), (1.5, .25)]
+
+    scale_exp           = [.5, 1.5, 10][::-1]
+    target_buffer_dist  = [0, 0, 0]
+    lam_values          = [.00001, .00001, .00001]
+    num_itr_list             = [15, 15, 15] # [1, 1, 1]
+
     # observer_gap = 2.0
 
     for key in scenarios.keys():
@@ -378,7 +395,10 @@ def test_study_set(dash_folder, scenario_filters):
 
             # scale_text = str("{0:.3g}".format((1.0 / multiplier)))
 
-            local_def = scale_exp[exp_index]
+            local_def       = scale_exp[exp_index]
+            keepout_dist    = target_buffer_dist[exp_index]
+            lam             = lam_values[exp_index]
+            num_itr         = num_itr_list[exp_index]
 
             # label_dict[multiplier] = local_def
 
@@ -395,13 +415,18 @@ def test_study_set(dash_folder, scenario_filters):
                 mega_scenario.set_target_goal_index(g_index)
 
                 mega_scenario.set_local_distance(local_def)
-                mega_scenario.set_fn_note("locdist_" + str((local_def)))
+                mega_scenario.set_goal_keepout_distance(keepout_dist)
+                mega_scenario.set_lambda(lam)
+                mega_scenario.set_N(num_itr)
+
+                mega_scenario.set_fn_note("lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam))
 
                 goal_name = mega_scenario.get_pretty_study_label(g_index, scenario.get_goals()[g_index])
 
                 save_location = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_" + goal_name)
 
-                do_scenario_tests(mega_scenario)
+                if FLAG_DO_SCENARIO_TESTS:
+                    do_scenario_tests(mega_scenario)
 
                 verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
                 outputs[(local_def, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
@@ -443,7 +468,7 @@ def test_study_set(dash_folder, scenario_filters):
             goal_name       = mega_scenario.get_pretty_study_label(gi, scenario.get_goals()[g_index])
             save_location   = get_file_id_for_exp(dash_folder, "dist-" + mega_scenario.get_exp_label() + "_" + goal_name)
 
-            fig.suptitle("=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
+            fig.suptitle("=g" + str(goal_name)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
             plt.savefig(save_location + ".png")
