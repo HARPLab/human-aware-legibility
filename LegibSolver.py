@@ -93,7 +93,7 @@ def run_solver(exp):
     cost.init_output_log(dash_folder)
 
     tol = 1e-8 #8 #1e-5
-    num_iterations = 60 #25 #50
+    num_iterations = exp.get_N() #50 #25 #50
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1
