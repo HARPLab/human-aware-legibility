@@ -430,25 +430,25 @@ class PathingExperiment():
         tar_goal    = self.get_target_goal()
         start_goal  = self.get_start()
 
-        resolution = 2
+        resolution = 16
 
         goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
 
         ##### SHORT EDGES
         if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_b):
-            return int(resolution * 8)
+            return int(resolution)
 
         ##### LONG EDGES
         if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_c):
-            return int(resolution * 8 * 2)
+            return int(resolution * 2)
 
         ##### SHORT DIAG
         if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_e):
-            return int(resolution * 8 * np.sqrt(2))
+            return int(resolution * np.sqrt(2))
 
         ##### LONG DIAG
         if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_f):
-            return int(resolution * 8 * np.sqrt(3))
+            return int(resolution * np.sqrt(3))
 
 
         # else
@@ -592,6 +592,12 @@ class PathingExperiment():
             blurb = converged_text
         else:
             blurb = ""
+
+        local_def       = self.get_local_distance()
+        keepout_dist    = self.get_goal_keepout_distance()
+        lam             = self.get_lambda()
+
+        blurb += "\nlc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
 
         blurb += "\nJ=" + str(J_opt)
 
@@ -1000,5 +1006,17 @@ class PathingExperiment():
 
         return  closest_goal_info[1]
 
+
+    def set_goal_keepout_distance(self, dist):
+        self.keepout_dist = dist
+
+    def get_goal_keepout_distance(self):
+        return self.keepout_dist
+
+    def set_lambda(self, lam):
+        self.lam = lam
+
+    def get_lambda(self):
+        return self.lam
 
 
