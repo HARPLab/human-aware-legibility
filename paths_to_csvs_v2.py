@@ -1,6 +1,6 @@
 from scipy.spatial.transform import Rotation
 import numpy as np
-# from tensorflow.transformations import *
+import matplotlib.pyplot as plt
 
 ### ABC
 ### DEF
@@ -8,13 +8,13 @@ import numpy as np
 # ab = cb horizontal flip
 # cd = fd horizontal flip
 
-goal_a  = [-1.0, -1.0]
-goal_b  = [2.0, -1.0] 
+goal_a  = [1.0, -1.0]
+goal_b  = [3.0, -1.0] 
 goal_c  = [5.0, -1.0]
 
-goal_d  = [-1.0, -4.0]
-goal_e  = [2.0, -4.0]
-goal_f  = [5.0, -4.0]
+goal_d  = [1.0, -3.0]
+goal_e  = [3.0, -3.0]
+goal_f  = [5.0, -3.0]
 
 state_dict = {}
 state_dict['A'] = goal_a
@@ -27,18 +27,17 @@ state_dict['F'] = goal_f
 # GENERATED PATHS
 export_name = 'toptwo' #'null' #'toptwo'
 
-def inspect_path_set(path_dict):
-	inspection_save_path = "study_paths"
+def inspect_path_set():
+	inspection_save_path = "study_paths/"
 
-	early_dict 	= get_early_paths()
-	late_dict 	= get_late_paths()
-	even_dict	= get_even_paths()
+	early_dict 	= setup_path_dict('early')
+	late_dict 	= setup_path_dict('late')
+	even_dict	= setup_path_dict('even')
 
 	obstacle_paths = get_obstacle_paths()
 
 	##### Calculate the path lengths, also
 	count_path_lengths(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths)
-
 
 	##### draw them in groups by the path segment
 	draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict)
@@ -49,27 +48,57 @@ def inspect_path_set(path_dict):
 	##### special drawings for obstacle avoidance
 	draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths)
 
+def get_xy_from_path(path):
+	if len(path) == 0:
+		return [], []
+
+	x_list, y_list = list(map(list, zip(*path)))
+
+	return x_list, y_list
+
 def draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict):
-	for key in early_dict.get_keys():
-		path_early = early_dict[key]
-		late_early = late_dict[key]
-		even_early = even_dict[key]
+	goal_list = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+	goal_colors = ['red', 'blue', 'purple', 'green', 'orange', 'pink']
 
-		early_x, early_y 	= list(map(list, zip(*path_early)))
-		late_x, late_y 		= list(map(list, zip(*path_early)))
-		even_x, even_y 		= list(map(list, zip(*path_early)))
+	plt.figure(figsize=(5, 4))
 
- 		plt.plot(x1, y1, label = "line 1")
-		plt.plot(x2, y2, label = "line 2")
+	buffer = 2
+	ax = plt.gca()
+	# ax.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	# ax.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax.set_aspect('equal')
+
+	for key in ['AD']: #early_dict.keys():
+		path_early 	= early_dict[key]
+		path_late 	= late_dict[key]
+		path_even 	= even_dict[key]
+
+		early_x, early_y 	= get_xy_from_path(path_early)
+		late_x, late_y 		= get_xy_from_path(path_late)
+		even_x, even_y 		= get_xy_from_path(path_even)
+
+		plt.plot(early_x, 	early_y, 	label = "early", color='red')
+		plt.plot(late_x, 	late_y, 	label = "late", color='green')
+		plt.plot(even_x, 	even_y, 	label = "even", color='blue')
 		 
 		plt.title('Path options for ' + key)
-		 
+			 
+		for j in range(len(goal_list)):
+			goal 	= goal_list[j]
+			color = goal_colors[j]
+			circle = plt.Circle(goal, .1, color=color)
+			ax.add_patch(circle)
+
 		# show a legend on the plot
-		plt.legend()
+		plt.legend() #loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
 		 
 		# function to show the plot
-		plt.imsave()		
+		plt.savefig(inspection_save_path + key + '.png')
+		plt.clf()
+		plt.close()
 
+	
+	print("Exported images of all paths")		
 
 
 def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict):
@@ -84,6 +113,8 @@ def count_path_lengths(inspection_save_path, early_dict, late_dict, even_dict, o
 
 
 def get_early_paths():
+	tag = 'early'
+
 	path_ab = []
 	path_ac = []
 	path_ad = []
@@ -97,13 +128,26 @@ def get_early_paths():
 	path_be = []
 	path_bf = []
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ac
+	path_dict['AD'] = path_ad
+	path_dict['AE'] = path_ae
+	path_dict['AF'] = path_af
+
+	path_dict['BA'] = path_ba
+	path_dict['BC'] = path_bc
+	path_dict['BD'] = path_bd
+	path_dict['BE'] = path_be
+	path_dict['BF'] = path_bf
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 def get_late_paths():
 	path_ab = []
 	path_ac = []
-	path_ad = []
+	path_ad = [[ 1., -1.], [ 0.43814402, -1.49705433], [-0.01379929, -1.87088852], [-0.35609953, -2.16668864], [-0.59500778, -2.39667103], [-0.74460785, -2.58158456], [-0.81344605, -2.73129475], [-0.80554059, -2.84918306], [-0.72294926, -2.93450258], [-0.57059295, -2.98493332], [-0.36167342, -3.00075196], [-0.16288852, -3.03459423], [ 0.05345099, -3.05153597], [ 0.27634019, -3.05724956], [ 0.50081657, -3.05673042], [ 0.72551991, -3.05297824], [ 0.95003615, -3.04740445], [1.0, -3]]
 	path_ae = []
 	path_af = []
 
@@ -114,13 +158,26 @@ def get_late_paths():
 	path_be = []
 	path_bf = []
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ac
+	path_dict['AD'] = path_ad
+	path_dict['AE'] = path_ae
+	path_dict['AF'] = path_af
+
+	path_dict['BA'] = path_ba
+	path_dict['BC'] = path_bc
+	path_dict['BD'] = path_bd
+	path_dict['BE'] = path_be
+	path_dict['BF'] = path_bf
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 def get_even_paths():
 	path_ab = []
 	path_ac = []
-	path_ad = []
+	path_ad = [[ 1., -1.], [ 0.88768633, -1.15630132], [ 0.80524659, -1.29759949], [ 0.74658819, -1.43105059], [ 0.70474532, -1.5614607], [ 0.67549602, -1.69076969], [ 0.65620035, -1.81981969], [ 0.64518372, -1.94896821], [ 0.6414097,  -2.07834285], [ 0.64430734, -2.20795136], [ 0.65369887, -2.33772252], [ 0.66981571, -2.46750169], [ 0.69343503, -2.59698916], [ 0.72626452, -2.72553795], [ 0.77202397, -2.85143547], [ 0.84019242, -2.96828326], [ 0.94936774, -3.04021608], [1.0, -3]]
 	path_ae = []
 	path_af = []
 
@@ -131,8 +188,21 @@ def get_even_paths():
 	path_be = []
 	path_bf = []
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ac
+	path_dict['AD'] = path_ad
+	path_dict['AE'] = path_ae
+	path_dict['AF'] = path_af
+
+	path_dict['BA'] = path_ba
+	path_dict['BC'] = path_bc
+	path_dict['BD'] = path_bd
+	path_dict['BE'] = path_be
+	path_dict['BF'] = path_bf
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 def get_obstacle_paths():
 	path_ac = []
@@ -159,8 +229,21 @@ def get_straight_line_paths():
 	path_be = [[3.0, -1.0], [3.0, -1.25], [3.0, -1.5], [3.0, -1.75], [3.0, -2.0], [3.0, -2.25], [3.0, -2.5], [3.0, -2.75], [3.0, -3.0]]
 	path_bf = [[3.0, -1.0], [3.25, -1.25], [3.5, -1.5], [3.75, -1.75], [4.0, -2.0], [4.25, -2.25], [4.5, -2.5], [4.75, -2.75], [5.0, -3.0]]
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ab
+	path_dict['AD'] = path_ab
+	path_dict['AE'] = path_ab
+	path_dict['AF'] = path_ab
+
+	path_dict['BA'] = path_ab
+	path_dict['BC'] = path_ab
+	path_dict['BD'] = path_ab
+	path_dict['BE'] = path_ab
+	path_dict['BF'] = path_ab
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 def get_bigger_path_rectangle_1():
 	path_ab = [[-1.0, -1.0], [-0.625, -1.0], [-0.25, -1.0], [0.125, -1.0], [0.5, -1.0], [0.875, -1.0], [1.25, -1.0], [1.625, -1.0], [2.0, -1.0]]
@@ -176,8 +259,21 @@ def get_bigger_path_rectangle_1():
 	path_be = [[-1.0, -1.0], [-0.625, -1.375], [-0.25, -1.75], [0.125, -2.125], [0.5, -2.5], [0.875, -2.875], [1.25, -3.25], [1.625, -3.625], [2.0, -4.0]]
 	path_bf = [[-1.0, -1.0], [-0.25, -1.375], [0.5, -1.75], [1.25, -2.125], [2.0, -2.5], [2.75, -2.875], [3.5, -3.25], [4.25, -3.625], [5.0, -4.0]]
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ab
+	path_dict['AD'] = path_ab
+	path_dict['AE'] = path_ab
+	path_dict['AF'] = path_ab
+
+	path_dict['BA'] = path_ab
+	path_dict['BC'] = path_ab
+	path_dict['BD'] = path_ab
+	path_dict['BE'] = path_ab
+	path_dict['BF'] = path_ab
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 
 def get_curvey_line_paths_1():
@@ -195,8 +291,21 @@ def get_curvey_line_paths_1():
 	path_be = [[ 3.0, -1.], [ 2.99576749, -1.21327589], [ 2.99156891, -1.41977882], [ 2.98743628, -1.61833005], [ 2.98339959, -1.80779615], [ 2.9794867,  -1.98709555], [ 2.97572318, -2.15520468], [ 2.97213222, -2.31116383], [ 2.96873454, -2.45408261], [ 2.9655482,  -2.58314505], [ 2.96258854, -2.69761425], [ 2.95986808, -2.79683658], [ 2.95739636, -2.88024544], [ 2.95517987, -2.94736445], [ 2.95322195, -2.99781021], [ 2.95152268, -3.03129447], [ 2.9500788,  -3.04762575], [3.0, -3.0]]
 	path_bf = [[ 3.0, -1.], [ 3.05262313, -1.13295336], [ 3.10357956, -1.26325768], [ 3.15359442, -1.39067955], [ 3.20337847, -1.51499112], [ 3.25363395, -1.63597215], [ 3.30506041, -1.75341204], [ 3.35836053, -1.86711181], [ 3.41424601, -1.97688612], [ 3.47344346, -2.08256518], [ 3.53670065, -2.1839967], [ 3.60479279, -2.28104788], [ 3.67852922, -2.37360729], [ 3.7587604,  -2.46158692], [ 3.84638532, -2.54492408], [ 3.94235941, -2.6235835], [ 4.04770301, -2.69755936], [ 4.16351046, -2.76687743], [ 4.29095991, -2.83159729], [ 4.43132403, -2.89181456], [ 4.58598152, -2.94766335], [ 4.75642971, -2.99931873], [ 4.94429833, -3.04699939], [5.0, -3.0]]
 
+	path_dict = {}
+	path_dict['AB'] = path_ab
+	path_dict['AC'] = path_ab
+	path_dict['AD'] = path_ab
+	path_dict['AE'] = path_ab
+	path_dict['AF'] = path_ab
+
+	path_dict['BA'] = path_ab
+	path_dict['BC'] = path_ab
+	path_dict['BD'] = path_ab
+	path_dict['BE'] = path_ab
+	path_dict['BF'] = path_ab
+
 	# Return the name and the list
-	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+	return path_dict
 
 def get_all_possible_path_names():
 	all_paths = []
@@ -233,6 +342,10 @@ def horizontal_flip(path):
 
 	new_path = []
 	for p in path:
+		print(path)
+		print(p)
+
+
 		offset = (center_horiz - p[0])
 		new_x = center_horiz + (offset)
 
@@ -300,45 +413,42 @@ def quaternion_multiply(q0, q1):
 def setup_path_dict(path_title):
 	all_paths = get_all_possible_path_names()
 	# print(all_paths)
-	path_dict = {}
-	for name in all_paths:
-		path_dict[name] = None
-
+	# path_dict = {}
+	# for name in all_paths:
+	# 	path_dict[name] = None
 
 	if path_title == 'null':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_straight_line_paths()
+		path_dict = get_straight_line_paths()
 
 	elif path_title == 'toptwo':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_curvey_line_paths_1()
+		path_dict = get_curvey_line_paths_1()
 
 	elif path_title == 'bigger':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_curvey_line_paths_1()
+		path_dict = get_curvey_line_paths_1()
 
 	elif path_title == 'early':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_early_paths()
+		path_dict = get_early_paths()
 
 	elif path_title == 'late':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_late_paths()
+		path_dict = get_late_paths()
 
 	elif path_title == 'even':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_even_paths()
+		path_dict = get_even_paths()
 	
 	elif path_title == 'obstacles_special':
-		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_obstacle_paths()
+		path_dict = get_obstacle_paths()
 
+	path_ab = path_dict['AB']
+	path_ac = path_dict['AC']
+	path_ad = path_dict['AD']
+	path_ae = path_dict['AE']
+	path_af = path_dict['AF']
 
-
-	path_dict['AB'] = path_ab
-	path_dict['AC'] = path_ac
-	path_dict['AD'] = path_ad
-	path_dict['AE'] = path_ae
-	path_dict['AF'] = path_af
-
-	path_dict['BA'] = path_ba
-	path_dict['BC'] = path_bc
-	path_dict['BD'] = path_bd
-	path_dict['BE'] = path_be
-	path_dict['BF'] = path_bf
+	path_ba = path_dict['BA']
+	path_bc = path_dict['BC']
+	path_bd = path_dict['BD']
+	path_be = path_dict['BE']
+	path_bf = path_dict['BF']
 
 	path_dict['CB'] = horizontal_flip(path_ab)
 	path_dict['CA'] = horizontal_flip(path_ac)
@@ -380,13 +490,16 @@ def setup_path_dict(path_title):
 		start 	= state_dict[key[0]]
 		end 	= state_dict[key[1]]
 
-		if path[0] != start:
-			print("Broken in " + key + " bad start")
-			is_problem = True
+		if len(path) > 0:
+			if path[0] != start:
+				print("Broken in " + key + " bad start")
+				is_problem = True
 
-		if path[-1] != end:
-			print("Broken in " + key + " bad end")
-			is_problem = True
+			if path[-1] != end:
+				print("Broken in " + key + " bad end")
+				is_problem = True
+		else:
+			print("No path yet for \n\t" + path_title + " -> " + key)
 
 	if is_problem:
 		print("Problem in path transformations")
