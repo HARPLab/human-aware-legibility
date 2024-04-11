@@ -27,20 +27,61 @@ state_dict['F'] = goal_f
 # GENERATED PATHS
 export_name = 'toptwo' #'null' #'toptwo'
 
-def draw_path_set(path_dict):
+def inspect_path_set(path_dict):
+	inspection_save_path = "study_paths"
+
 	early_dict 	= get_early_paths()
 	late_dict 	= get_late_paths()
 	even_dict	= get_even_paths()
 
 	obstacle_paths = get_obstacle_paths()
 
-	##### draw them in groups by the path segment
+	##### Calculate the path lengths, also
+	count_path_lengths(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths)
 
+
+	##### draw them in groups by the path segment
+	draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict)
 
 	##### draw them in groups by the early/late/etc/group
-
+	draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict)
 
 	##### special drawings for obstacle avoidance
+	draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths)
+
+def draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict):
+	for key in early_dict.get_keys():
+		path_early = early_dict[key]
+		late_early = late_dict[key]
+		even_early = even_dict[key]
+
+		early_x, early_y 	= list(map(list, zip(*path_early)))
+		late_x, late_y 		= list(map(list, zip(*path_early)))
+		even_x, even_y 		= list(map(list, zip(*path_early)))
+
+ 		plt.plot(x1, y1, label = "line 1")
+		plt.plot(x2, y2, label = "line 2")
+		 
+		plt.title('Path options for ' + key)
+		 
+		# show a legend on the plot
+		plt.legend()
+		 
+		# function to show the plot
+		plt.imsave()		
+
+
+
+def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict):
+	pass
+
+def draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths):
+	pass
+
+def count_path_lengths(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths):
+	# Create a csv of the lengths for each path
+	pass
+
 
 def get_early_paths():
 	path_ab = []
@@ -438,7 +479,7 @@ if False:
 	print("All exported to paths/")
 
 if True:
-	draw_path_set()
+	inspect_path_set()
 
 
 
