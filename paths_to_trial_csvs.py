@@ -8,13 +8,13 @@ import numpy as np
 # ab = cb horizontal flip
 # cd = fd horizontal flip
 
-goal_a  = [1.0, -1.0]
-goal_b  = [3.0, -1.0] 
+goal_a  = [-1.0, -1.0]
+goal_b  = [2.0, -1.0] 
 goal_c  = [5.0, -1.0]
 
-goal_d  = [1.0, -3.0]
-goal_e  = [3.0, -3.0]
-goal_f  = [5.0, -3.0]
+goal_d  = [-1.0, -4.0]
+goal_e  = [2.0, -4.0]
+goal_f  = [5.0, -4.0]
 
 state_dict = {}
 state_dict['A'] = goal_a
@@ -27,24 +27,45 @@ state_dict['F'] = goal_f
 # GENERATED PATHS
 export_name = 'toptwo' #'null' #'toptwo'
 
+
 def get_straight_line_paths():
 	# VANILLA PATHS
-	# generate_vanilla_straight_line_paths_for_testing(goal_a, [goal_b, goal_c, goal_d, goal_e, goal_f])
-	path_ab = [[1.0, -1.0], [1.25, -1.0], [1.5, -1.0], [1.75, -1.0], [2.0, -1.0], [2.25, -1.0], [2.5, -1.0], [2.75, -1.0], [3.0, -1.0]]
-	path_ac = [[1.0, -1.0], [1.5, -1.0], [2.0, -1.0], [2.5, -1.0], [3.0, -1.0], [3.5, -1.0], [4.0, -1.0], [4.5, -1.0], [5.0, -1.0]]
-	path_ad = [[1.0, -1.0], [1.0, -1.25], [1.0, -1.5], [1.0, -1.75], [1.0, -2.0], [1.0, -2.25], [1.0, -2.5], [1.0, -2.75], [1.0, -3.0]]
-	path_ae = [[1.0, -1.0], [1.25, -1.25], [1.5, -1.5], [1.75, -1.75], [2.0, -2.0], [2.25, -2.25], [2.5, -2.5], [2.75, -2.75], [3.0, -3.0]]
-	path_af = [[1.0, -1.0], [1.5, -1.25], [2.0, -1.5], [2.5, -1.75], [3.0, -2.0], [3.5, -2.25], [4.0, -2.5], [4.5, -2.75], [5.0, -3.0]]
+	generate_vanilla_straight_line_paths_for_testing(goal_a, [goal_b, goal_c, goal_d, goal_e, goal_f])
 
-	# generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
-	path_ba = [[3.0, -1.0], [2.75, -1.0], [2.5, -1.0], [2.25, -1.0], [2.0, -1.0], [1.75, -1.0], [1.5, -1.0], [1.25, -1.0], [1.0, -1.0]]
-	path_bc = [[3.0, -1.0], [3.25, -1.0], [3.5, -1.0], [3.75, -1.0], [4.0, -1.0], [4.25, -1.0], [4.5, -1.0], [4.75, -1.0], [5.0, -1.0]]
-	path_bd = [[3.0, -1.0], [2.75, -1.25], [2.5, -1.5], [2.25, -1.75], [2.0, -2.0], [1.75, -2.25], [1.5, -2.5], [1.25, -2.75], [1.0, -3.0]]
-	path_be = [[3.0, -1.0], [3.0, -1.25], [3.0, -1.5], [3.0, -1.75], [3.0, -2.0], [3.0, -2.25], [3.0, -2.5], [3.0, -2.75], [3.0, -3.0]]
-	path_bf = [[3.0, -1.0], [3.25, -1.25], [3.5, -1.5], [3.75, -1.75], [4.0, -2.0], [4.25, -2.25], [4.5, -2.5], [4.75, -2.75], [5.0, -3.0]]
+
+	# path_ab = [[1.0, -1.0], [1.25, -1.0], [1.5, -1.0], [1.75, -1.0], [2.0, -1.0], [2.25, -1.0], [2.5, -1.0], [2.75, -1.0], [3.0, -1.0]]
+	# path_ac = [[1.0, -1.0], [1.5, -1.0], [2.0, -1.0], [2.5, -1.0], [3.0, -1.0], [3.5, -1.0], [4.0, -1.0], [4.5, -1.0], [5.0, -1.0]]
+	# path_ad = [[1.0, -1.0], [1.0, -1.25], [1.0, -1.5], [1.0, -1.75], [1.0, -2.0], [1.0, -2.25], [1.0, -2.5], [1.0, -2.75], [1.0, -3.0]]
+	# path_ae = [[1.0, -1.0], [1.25, -1.25], [1.5, -1.5], [1.75, -1.75], [2.0, -2.0], [2.25, -2.25], [2.5, -2.5], [2.75, -2.75], [3.0, -3.0]]
+	# path_af = [[1.0, -1.0], [1.5, -1.25], [2.0, -1.5], [2.5, -1.75], [3.0, -2.0], [3.5, -2.25], [4.0, -2.5], [4.5, -2.75], [5.0, -3.0]]
+
+	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
+	# path_ba = [[3.0, -1.0], [2.75, -1.0], [2.5, -1.0], [2.25, -1.0], [2.0, -1.0], [1.75, -1.0], [1.5, -1.0], [1.25, -1.0], [1.0, -1.0]]
+	# path_bc = [[3.0, -1.0], [3.25, -1.0], [3.5, -1.0], [3.75, -1.0], [4.0, -1.0], [4.25, -1.0], [4.5, -1.0], [4.75, -1.0], [5.0, -1.0]]
+	# path_bd = [[3.0, -1.0], [2.75, -1.25], [2.5, -1.5], [2.25, -1.75], [2.0, -2.0], [1.75, -2.25], [1.5, -2.5], [1.25, -2.75], [1.0, -3.0]]
+	# path_be = [[3.0, -1.0], [3.0, -1.25], [3.0, -1.5], [3.0, -1.75], [3.0, -2.0], [3.0, -2.25], [3.0, -2.5], [3.0, -2.75], [3.0, -3.0]]
+	# path_bf = [[3.0, -1.0], [3.25, -1.25], [3.5, -1.5], [3.75, -1.75], [4.0, -2.0], [4.25, -2.25], [4.5, -2.5], [4.75, -2.75], [5.0, -3.0]]
 
 	# Return the name and the list
 	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+
+def get_bigger_path_rectangle_1():
+	path_ab = [[-1.0, -1.0], [-0.625, -1.0], [-0.25, -1.0], [0.125, -1.0], [0.5, -1.0], [0.875, -1.0], [1.25, -1.0], [1.625, -1.0], [2.0, -1.0]]
+	path_ac = [[-1.0, -1.0], [-0.25, -1.0], [0.5, -1.0], [1.25, -1.0], [2.0, -1.0], [2.75, -1.0], [3.5, -1.0], [4.25, -1.0], [5.0, -1.0]]
+	path_ad = [[-1.0, -1.0], [-1.0, -1.375], [-1.0, -1.75], [-1.0, -2.125], [-1.0, -2.5], [-1.0, -2.875], [-1.0, -3.25], [-1.0, -3.625], [-1.0, -4.0]]
+	path_ae = [[-1.0, -1.0], [-0.625, -1.375], [-0.25, -1.75], [0.125, -2.125], [0.5, -2.5], [0.875, -2.875], [1.25, -3.25], [1.625, -3.625], [2.0, -4.0]]
+	path_af = [[-1.0, -1.0], [-0.25, -1.375], [0.5, -1.75], [1.25, -2.125], [2.0, -2.5], [2.75, -2.875], [3.5, -3.25], [4.25, -3.625], [5.0, -4.0]]
+
+
+	path_ba = [[-1.0, -1.0], [-0.625, -1.0], [-0.25, -1.0], [0.125, -1.0], [0.5, -1.0], [0.875, -1.0], [1.25, -1.0], [1.625, -1.0], [2.0, -1.0]]
+	path_bc = [[-1.0, -1.0], [-0.25, -1.0], [0.5, -1.0], [1.25, -1.0], [2.0, -1.0], [2.75, -1.0], [3.5, -1.0], [4.25, -1.0], [5.0, -1.0]]
+	path_bd = [[-1.0, -1.0], [-1.0, -1.375], [-1.0, -1.75], [-1.0, -2.125], [-1.0, -2.5], [-1.0, -2.875], [-1.0, -3.25], [-1.0, -3.625], [-1.0, -4.0]]
+	path_be = [[-1.0, -1.0], [-0.625, -1.375], [-0.25, -1.75], [0.125, -2.125], [0.5, -2.5], [0.875, -2.875], [1.25, -3.25], [1.625, -3.625], [2.0, -4.0]]
+	path_bf = [[-1.0, -1.0], [-0.25, -1.375], [0.5, -1.75], [1.25, -2.125], [2.0, -2.5], [2.75, -2.875], [3.5, -3.25], [4.25, -3.625], [5.0, -4.0]]
+
+	# Return the name and the list
+	return path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf
+
 
 def get_curvey_line_paths_1():
 	# # Curvier paths from my code!
@@ -94,7 +115,6 @@ def generate_vanilla_straight_line_paths_for_testing(start, goal_list):
 
 		print(path)
 
-
 def horizontal_flip(path):
 	center_horiz = goal_b[0]
 
@@ -108,7 +128,6 @@ def horizontal_flip(path):
 
 
 	return new_path
-
 
 def vertical_flip(path):
 	center_horiz = (goal_a[1] + goal_d[1]) / 2.0
@@ -177,6 +196,9 @@ def setup_path_dict(path_title):
 		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_straight_line_paths()
 
 	elif path_title == 'toptwo':
+		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_curvey_line_paths_1()
+
+	elif path_title == 'bigger':
 		path_ab, path_ac, path_ad, path_ae, path_af, path_ba, path_bc, path_bd, path_be, path_bf = get_curvey_line_paths_1()
 
 
@@ -314,11 +336,20 @@ def export_path_dict(export_name, path_dict):
 		f.close()
 		print("wrote out " + filename)
 
+def draw_path_set(path_dict):
+	for key in path_dict.keys():
 
-path_dict1 = setup_path_dict('null')
-path_dict2 = setup_path_dict('toptwo')
+		pass
 
-if False:
+# generate_vanilla_straight_line_paths_for_testing(goal_a, [goal_b, goal_c, goal_d, goal_e, goal_f])
+
+path_dict = setup_path_dict('bigger')
+export_name = 'bigger'
+
+# path_dict1 = setup_path_dict('null')
+# path_dict2 = setup_path_dict('toptwo')
+
+if True:
 	export_path_dict(export_name, path_dict)
 	print("All exported to paths/")
 
