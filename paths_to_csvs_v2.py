@@ -1,6 +1,7 @@
 from scipy.spatial.transform import Rotation
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 ### ABC
 ### DEF
@@ -24,14 +25,21 @@ state_dict['D'] = goal_d
 state_dict['E'] = goal_e
 state_dict['F'] = goal_f
 
+goal_list 	= [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+goal_colors = ['red', 'blue', 'purple', 'green', 'orange', 'pink']
+
 # GENERATED PATHS
 export_name = 'toptwo' #'null' #'toptwo'
 
-def inspect_path_set():
-	inspection_save_path = "study_paths/"
+inspection_save_path = "study_paths/"
 
+def inspect_path_set():
+
+	print("\nEarly dict")
 	early_dict 	= setup_path_dict('early')
+	print("\nLate dict")
 	late_dict 	= setup_path_dict('late')
+	print("\nEven dict")
 	even_dict	= setup_path_dict('even')
 
 	obstacle_paths = get_obstacle_paths()
@@ -57,18 +65,8 @@ def get_xy_from_path(path):
 	return x_list, y_list
 
 def draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict):
-	goal_list = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
-	goal_colors = ['red', 'blue', 'purple', 'green', 'orange', 'pink']
 
-	plt.figure(figsize=(5, 4))
-
-	buffer = 2
-	ax = plt.gca()
-	# ax.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
-	# ax.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
-	ax.set_aspect('equal')
-
-	for key in ['AD']: #early_dict.keys():
+	for key in early_dict.keys():
 		path_early 	= early_dict[key]
 		path_late 	= late_dict[key]
 		path_even 	= even_dict[key]
@@ -76,6 +74,16 @@ def draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict
 		early_x, early_y 	= get_xy_from_path(path_early)
 		late_x, late_y 		= get_xy_from_path(path_late)
 		even_x, even_y 		= get_xy_from_path(path_even)
+
+
+		plt.figure(figsize=(5, 4))
+		f, ax = plt.subplots()
+
+		buffer = 2
+		ax = plt.gca()
+		ax.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+		ax.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+		ax.set_aspect('equal')
 
 		plt.plot(early_x, 	early_y, 	label = "early", color='red')
 		plt.plot(late_x, 	late_y, 	label = "late", color='green')
@@ -109,17 +117,50 @@ def draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, o
 
 def count_path_lengths(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths):
 	# Create a csv of the lengths for each path
-	pass
+
+	length_rows = []
+	for key in early_dict.keys():
+		early_length 	= get_path_length(early_dict[key])
+		late_length 	= get_path_length(late_dict[key])
+		even_length 	= get_path_length(even_dict[key])
+
+
+		row = [key, early_length, late_length, even_length]
+
+		length_rows.append(row)
+
+	df = pd.DataFrame(length_rows, columns=['PATH', 'early', 'late', 'even'])
+	df.to_csv(inspection_save_path + "lengths.csv")
+
+	
+def dist_between(x1, x2):
+        # print(x1)
+        # print(x2)
+        # print(x1[0], x2[0], x1[1], x2[1])
+
+        distance = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)
+        return distance
+
+def get_path_length(path):
+	total_length = 0
+	for pi in range(1, len(path)):
+		p0 = path[pi - 1]
+		p1 = path[pi]
+
+		total_length += dist_between(p0, p1)
+	return total_length
 
 
 def get_early_paths():
 	tag = 'early'
 
 	path_ab = []
-	path_ac = []
+	# lambda = .5
+	path_ac = [[1.0, -1.0], [1.04065768459355, -0.8025269589536208], [1.0832820306943416, -0.6428797381248794], [1.1289671228738964, -0.520291416533252], [1.178297200741314, -0.43463636687906226], [1.2317275172872229, -0.3860285587022211], [1.2899242335737382, -0.37457777669235376], [1.354073492123451, -0.4001353434456025], [1.4261565961136102, -0.46194243336133384], [1.5093078882123554, -0.5583418730791333], [1.6083265900046784, -0.6862238827870129], [1.7302703112864044, -0.8399812701548578], [1.8815774859518668, -1.0109144416391176], [2.0638327496633893, -1.185564825071889], [2.324015164619231, -1.3487475016256674], [2.620565009283986, -1.4950484644766342], [2.928805660621607, -1.5929197458787965], [3.2036970182689366, -1.6157328305102625], [3.412249052071795, -1.59291055140455], [3.5677396553885448, -1.5557374590877289], [3.6943844884166372, -1.5158174111676148], [3.807271734569141, -1.4760576897013469], [3.914319738581377, -1.4367844563674157], [4.018986217513451, -1.3978392570240676], [4.122864068930434, -1.3590717974386204], [4.226428865679596, -1.3203942512526454], [4.329868588194759, -1.2817585230696944], [4.433257922902051, -1.2431413632867923], [4.536626792037579, -1.2045322350607006], [4.639987301979826, -1.1659265454572667], [4.743344406136944, -1.1273223454306298], [4.846700155040498, -1.0887188248365482], [4.950055375561886, -1.0501156447204016], [5.0, -1.0]]
 	path_ad = []
 	path_ae = []
-	path_af = []
+	#lambda = .5
+	path_af = [[1.0, -1.0], [1.0991582958233899, -1.0535995715065836], [1.2054995687527843, -1.128755627849251], [1.318910697996311, -1.2245294902341564], [1.4387202601755114, -1.3376550339473323], [1.5643505795637391, -1.4637884952705154], [1.6937217344466156, -1.5978215370657187], [1.8075726305258117, -1.727808400041792], [1.8885559497260362, -1.8455889985412222], [2.0002661445698893, -1.9313141418208644], [2.1399491606334915, -1.9898547969492113], [2.310146935403822, -2.0315584984408344], [2.512141909104358, -2.0649334466923093], [2.7334214460920716, -2.0967421055051365], [2.957843238047969, -2.1412962181346606], [3.1624654780441928, -2.201387040978193], [3.341435454279852, -2.269391123841004], [3.5023279099631113, -2.3397717029046032], [3.6536594137322593, -2.4107484905687384], [3.8002634765477215, -2.4819712319065723], [3.9446233198483114, -2.5537777946919276], [4.088100690425985, -2.6255625988355638], [4.231406617789381, -2.6968351190392297], [4.374752245662607, -2.7677079777437865], [4.518319998953866, -2.838327283751149], [4.662116965698759, -2.9087748726420766], [4.805903922920515, -2.9792196302946694], [4.9496862434653455, -3.049663881571495], [5.0, -3.0]]
 
 	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
 	path_ba = []
@@ -147,7 +188,7 @@ def get_early_paths():
 def get_late_paths():
 	path_ab = []
 	path_ac = []
-	path_ad = [[ 1., -1.], [ 0.43814402, -1.49705433], [-0.01379929, -1.87088852], [-0.35609953, -2.16668864], [-0.59500778, -2.39667103], [-0.74460785, -2.58158456], [-0.81344605, -2.73129475], [-0.80554059, -2.84918306], [-0.72294926, -2.93450258], [-0.57059295, -2.98493332], [-0.36167342, -3.00075196], [-0.16288852, -3.03459423], [ 0.05345099, -3.05153597], [ 0.27634019, -3.05724956], [ 0.50081657, -3.05673042], [ 0.72551991, -3.05297824], [ 0.95003615, -3.04740445], [1.0, -3]]
+	path_ad = [[1.0, -1.0], [0.9377472188193802, -1.1313138813759849], [0.8755887909846766, -1.2625829068627166], [0.813639590666305, -1.3937985505723576], [0.7520838274787641, -1.524982179850364], [0.6912934754087431, -1.6561962242184276], [0.6320135204169774, -1.7876154010070489], [0.5756616835456827, -1.9196603344682395], [0.5245883505786609, -2.0531602248369065], [0.48176407879385436, -2.1893046145894726], [0.44989731795327736, -2.3292211999125447], [0.4313834831974936, -2.473689999843728], [0.4295299321260866, -2.62322559672261], [0.4508121636321869, -2.777936470450879], [0.5100823185347512, -2.935661221511133], [0.6487617384298013, -3.079205125677861], [0.9501441916802964, -3.0454736413054415], [1.0, -3.0]]
 	path_ae = []
 	path_af = []
 
@@ -205,12 +246,21 @@ def get_even_paths():
 	return path_dict
 
 def get_obstacle_paths():
-	path_ac = []
-	path_af = []
+	path_ac_5_early = []
+	path_ac_5 = []
+	path_ac_5 = []
+	path_ac_5 = []
+
+	path_af_25 = []
+	path_af_25 = []
+	path_af_25 = []
+	path_af_25 = []
+
+	obstacle_paths = {}
 
 	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
 	# Return the name and the list
-	return path_ac, path_af
+	return obstacle_paths
 
 def get_straight_line_paths():
 	# VANILLA PATHS
@@ -342,10 +392,6 @@ def horizontal_flip(path):
 
 	new_path = []
 	for p in path:
-		print(path)
-		print(p)
-
-
 		offset = (center_horiz - p[0])
 		new_x = center_horiz + (offset)
 
@@ -559,7 +605,7 @@ def export_path_dict(export_name, path_dict):
 			# # Convert to quaternions and print
 			# rot_quat = rot.as_quat()
 
-			x, y, z = curr_x, curr_y, 0
+			x, y, z = prev_x, prev_y, 0
 			qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
 			qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
 			qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
@@ -568,12 +614,14 @@ def export_path_dict(export_name, path_dict):
 
 			csv_content += str(x) + ", " + str(y) + ", " + str(z) + ", " + str(qx) + ", " + str(qy) + ", " + str(qz) + ", " + str(qw) + "\n"
 
+		x, y, z = curr_x, curr_y, 0
+		csv_content += str(x) + ", " + str(y) + ", " + str(z) + ", " + str(qx) + ", " + str(qy) + ", " + str(qz) + ", " + str(qw) + "\n"
 
 		filename = directory_name + key + "-" + export_name + ".csv"
 		f = open(filename, "w")
 		f.write(csv_content)
 		f.close()
-		print("wrote out " + filename)
+		# print("wrote out " + filename)
 
 
 
