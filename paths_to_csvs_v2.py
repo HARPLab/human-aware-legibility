@@ -110,7 +110,153 @@ def draw_paths_by_segment(inspection_save_path, early_dict, late_dict, even_dict
 
 
 def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict):
-	pass
+	fig, axes = plt.subplot_mosaic("ABC;DEF;HIJ", figsize=(8, 6), gridspec_kw={'width_ratios':[1, 1, 1], 'height_ratios':[1, 1, 1]})
+
+	ax_mappings = {}
+	ax_early 	= axes['A']
+	ax_even 	= axes['B']
+	ax_late 	= axes['C']
+
+	ax_early2 	= axes['D']
+	ax_even2 	= axes['E']
+	ax_late2 	= axes['F']
+
+	ax_early3 	= axes['H']
+	ax_even3 	= axes['I']
+	ax_late3 	= axes['J']
+
+	buffer = 1
+	ax_early.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early.set_aspect('equal')
+
+	ax_even.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_even.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_even.set_aspect('equal')
+
+	ax_late.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late.set_aspect('equal')
+
+	ax_early2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early2.set_aspect('equal')
+
+	ax_even2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_even2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_even2.set_aspect('equal')
+
+	ax_late2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late2.set_aspect('equal')
+
+	ax_early3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early3.set_aspect('equal')
+
+	ax_even3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_even3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_even3.set_aspect('equal')
+
+	ax_late3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late3.set_aspect('equal')
+
+	### -AB AC AD AE AF -BA -BC -BD -BE -BF CA -CB CD CE CF -DA DB DC DE DF -EA EB -EC ED EF FA FB -FC FD FE
+
+	title1 = "Inwards / Up"
+	group1 = ['AB', 'CB', 'DA', 'FC', 'EA', 'EC']
+
+	title2 = "Outwards / Down"
+	group2 = ['BA', 'BC', 'BD', 'BE', 'BF', 'EF', 'ED', "AD", 'CF']
+
+	title3 = "Diagonal"
+	group3 = ['AF'] # FA, DC CD
+
+	ax_early.set_title("Early " + title1)
+	ax_even.set_title("Even " + title1)
+	ax_late.set_title("Late " + title1)
+
+	ax_early2.set_title("Early " + title2)
+	ax_even2.set_title("Even " + title2)
+	ax_late2.set_title("Late " + title2)
+
+	ax_early3.set_title("Early " + title3)
+	ax_even3.set_title("Even " + title3)
+	ax_late3.set_title("Late " + title3)
+
+	for j in range(len(goal_list)):
+		goal 	= goal_list[j]
+		color = goal_colors[j]
+
+		circle1 = plt.Circle(goal, .1, color=color)
+		ax_early.add_patch(circle1)
+
+		circle2 = plt.Circle(goal, .1, color=color)
+		ax_late.add_patch(circle2)
+		
+		circle3 = plt.Circle(goal, .1, color=color)
+		ax_even.add_patch(circle3)
+
+		circle4 = plt.Circle(goal, .1, color=color)
+		ax_early2.add_patch(circle4)
+
+		circle5 = plt.Circle(goal, .1, color=color)
+		ax_late2.add_patch(circle5)
+		
+		circle6 = plt.Circle(goal, .1, color=color)
+		ax_even2.add_patch(circle6)
+
+		circle7 = plt.Circle(goal, .1, color=color)
+		ax_early3.add_patch(circle7)
+
+		circle8 = plt.Circle(goal, .1, color=color)
+		ax_late3.add_patch(circle8)
+		
+		circle9 = plt.Circle(goal, .1, color=color)
+		ax_even3.add_patch(circle9)
+
+
+	for key in early_dict.keys():
+		path_early 	= early_dict[key]
+		path_late 	= late_dict[key]
+		path_even 	= even_dict[key]
+
+		early_x, early_y 	= get_xy_from_path(path_early)
+		late_x, late_y 		= get_xy_from_path(path_late)
+		even_x, even_y 		= get_xy_from_path(path_even)
+
+
+		if key in group1:
+			ax_early.plot(early_x, 	early_y, 	label = "early", color='red')
+			ax_late.plot(late_x, 	late_y, 	label = "late", color='green')
+			ax_even.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+		elif key in group2:
+			ax_early2.plot(early_x, 	early_y, 	label = "early", color='red')
+			ax_late2.plot(late_x, 	late_y, 	label = "late", color='green')
+			ax_even2.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+		elif key in group3:
+			ax_early3.plot(early_x, 	early_y, 	label = "early", color='red')
+			ax_late3.plot(late_x, 	late_y, 	label = "late", color='green')
+			ax_even3.plot(even_x, 	even_y, 	label = "even", color='blue')
+		 
+		# plt.title('Path options for ' + key)
+			 
+
+	# show a legend on the plot
+	# plt.legend() #loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+	 
+	# function to show the plot
+	plt.tight_layout()
+	plt.savefig(inspection_save_path + "overview" + '.png')
+	plt.clf()
+	plt.close()
+
+	
+	print("Exported images of all paths")
+
 
 def draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, obstacle_paths):
 	pass
@@ -165,7 +311,7 @@ def get_early_paths():
 	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
 	path_ba = []
 	path_bc = []
-	path_bd = []
+	path_bd = [[3.0, -1.0], [2.8151567547193466, -1.034837630355256], [2.658300421233472, -1.0603998486870254], [2.5200126362645254, -1.080997401815841], [2.401126624367022, -1.1051899940540792], [2.285916668544337, -1.1559027494427274], [2.202547761542928, -1.207097586684332], [2.063081492715015, -1.2266046377769482], [1.9615488700495058, -1.3013343508298092], [1.8623113515454934, -1.4129341700691218], [1.7586265398418375, -1.5572375507981187], [1.6538875535269935, -1.7177070653779396], [1.5578025478112731, -1.8746166824468138], [1.4754779559331495, -2.0183627925022645], [1.404046182791465, -2.150220374795527], [1.3383147614361495, -2.27487280884503], [1.274793376272212, -2.395926730160667], [1.2119036593675796, -2.515336013906572], [1.148789808349915, -2.634334640314398], [1.0857685844142675, -2.7528768994704045], [1.022856676953108, -2.871160444470788], [0.9600060432877389, -2.989340552627151], [0.9526342248415421, -3.046793019405786], [1.0, -3.0]]
 	path_be = []
 	path_bf = []
 
@@ -180,7 +326,7 @@ def get_early_paths():
 	path_dict['BC'] = path_bc
 	path_dict['BD'] = path_bd
 	path_dict['BE'] = path_be
-	path_dict['BF'] = path_bf
+	path_dict['BF'] = horizontal_flip(path_bd)
 
 	# Return the name and the list
 	return path_dict
@@ -195,7 +341,7 @@ def get_late_paths():
 	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
 	path_ba = []
 	path_bc = []
-	path_bd = []
+	path_bd = [[3.0, -1.0], [2.58081664372207, -1.2295810501226574], [2.1807996381181, -1.4156858048134164], [1.810430039045488, -1.5603377196024366], [1.4859718486242444, -1.675243082784352], [1.21449196345031, -1.772489442303213], [0.9927849043793966, -1.8630481470578508], [0.814987664386918, -1.955616757648514], [0.6792017816152023, -2.054385704160934], [0.6149711993635933, -2.1685664927304646], [0.6061853768997771, -2.3214668557215337], [0.6518513258228685, -2.481636048076541], [0.7269770879681339, -2.6250069510540643], [0.8026383457982718, -2.735195581726224], [0.8635526412923983, -2.8163870613129554], [0.9097585623852698, -2.8810063407249804], [0.9466924026689033, -2.9375851882478914], [0.9804684935136008, -2.990632514171067], [1.0132083207816516, -3.0415363990000377], [1.0458852331569712, -3.0913331973380154], [1.0, -3.0]]
 	path_be = []
 	path_bf = []
 
@@ -210,7 +356,7 @@ def get_late_paths():
 	path_dict['BC'] = path_bc
 	path_dict['BD'] = path_bd
 	path_dict['BE'] = path_be
-	path_dict['BF'] = path_bf
+	path_dict['BF'] = horizontal_flip(path_bd)
 
 	# Return the name and the list
 	return path_dict
@@ -225,7 +371,7 @@ def get_even_paths():
 	# # generate_vanilla_straight_line_paths_for_testing(goal_b, [goal_a, goal_c, goal_d, goal_e, goal_f])
 	path_ba = []
 	path_bc = []
-	path_bd = []
+	path_bd = [[3.0, -1.0], [2.8478937741441226, -1.0642573492781595], [2.711606479455638, -1.1217111050822017], [2.5898248090940013, -1.1826277325251255], [2.4769772373915098, -1.250101934025108], [2.3696942513674397, -1.3240305136679402], [2.2662005684951083, -1.4037048582847758], [2.165534091560716, -1.4884574634430487], [2.067155665556317, -1.5777799363820195], [1.9707666051530455, -1.6713225294088159], [1.8762228731093995, -1.7688742305379557], [1.7834974189406547, -1.8703463948495465], [1.6926712488635447, -1.9757643128824558], [1.6039480156283168, -2.085266220200051], [1.5176965845340376, -2.1991062085730846], [1.4345364542871502, -2.3176495416895158], [1.3554928128026473, -2.4413217949823913], [1.2822338783644363, -2.570382835569], [1.2171272187434061, -2.7041347875278388], [1.1608255835435721, -2.838970174124964], [1.097258153836457, -2.9688144838591457], [0.979459729585684, -3.0753048792324083], [0.954074848251972, -3.042409263413039], [1.0, -3.0]]
 	path_be = []
 	path_bf = []
 
@@ -240,7 +386,7 @@ def get_even_paths():
 	path_dict['BC'] = path_bc
 	path_dict['BD'] = path_bd
 	path_dict['BE'] = path_be
-	path_dict['BF'] = path_bf
+	path_dict['BF'] = horizontal_flip(path_bd)
 
 	# Return the name and the list
 	return path_dict
