@@ -35,6 +35,7 @@ DIAG_OBS_LONG_FROM			= 'diag_obs_long_from'
 
 targets = [FRONT_SHORT_TO, BACK_SHORT_TO, SIDE_SHORT_TO, SIDE_SHORT_FROM, BACK_LONG, FRONT_LONG, DIAG_LONG_TO, DIAG_LONG_FROM, DIAG_SHORT_TO]
 
+all_options = [FRONT_SHORT_TO, BACK_SHORT_TO, FRONT_SHORT_FROM, BACK_SHORT_FROM, SIDE_SHORT_TO, SIDE_SHORT_FROM, BACK_LONG, FRONT_LONG, DIAG_LONG_TO, DIAG_LONG_FROM, DIAG_SHORT_TO, DIAG_SHORT_FROM, MID_SHORT, BACK_DIAG_SHORT_TO, BACK_DIAG_SHORT_FROM, BACK_LONG_OBS, FRONT_LONG_OBS, DIAG_OBS_LONG_TO, DIAG_OBS_LONG_FROM]
 
 # name the routes for easier understanding
 titles = {}
@@ -149,13 +150,13 @@ def get_hitlist():
 	# to_hit = diag_full
 	full_hitlist = []
 
-	for h in hitlist:
-		full_hitlist.append(h + "-HI")
-		full_hitlist.append(h + "-MID")
-		full_hitlist.append(h + "-LOW")
+	# for h in hitlist:
+	# 	full_hitlist.append(h + "-HI")
+	# 	full_hitlist.append(h + "-MID")
+	# 	full_hitlist.append(h + "-LOW")
 
 
-	return hitlist, full_hitlist
+	return hitlist
 
 
 def dist_between(x1, x2):
@@ -174,7 +175,7 @@ for i in goal_points:
 print("All possible paths")
 print(all_paths)
 
-checklist, full_hitlist = get_hitlist()
+checklist = get_hitlist()
 
 print()
 print("Paths to hit")
@@ -183,7 +184,7 @@ print(checklist)
 # print(full_hitlist)
 
 
-def get_setup_for_useful_options_after(current_state):
+def get_setup_for_useful_options_after(current_state, remaining):
 
 	# Make a lil histogram and go for the most likely option
 	options = []
@@ -205,7 +206,7 @@ def get_setup_for_useful_options_after(current_state):
 	return best_setups
 
 
-def get_useful_options_after(current_state):
+def get_useful_options_after(current_state, remaining):
 	options = []
 
 	for key in label_dict.keys():
@@ -218,90 +219,190 @@ def get_useful_options_after(current_state):
 	return options
 
 
-start = random.choice([y for y in goal_points if y != participant])
-print()
-print("start at: ")
-print(start)
-
-path = []
-checked_off = []
-
-current_state = start
-remaining = copy.copy(checklist)
-
-i = 0
-while len(remaining) > 0 and i < 30:
-	i += 1
-
-	# Could go to any other state
-	next_state_options =  [y for y in states if y != current_state]
-
-	# Or, could complete a link that's not checked off yet
-	useful_options 		= get_useful_options_after(current_state)
-	
-	# OR could move to a place where I can check something off next
-	setup_for_useful_options 	= get_setup_for_useful_options_after(current_state)
-
-	# print("Useful next steps")
-	# print(useful_options)
-	# print("Setup steps")
-	# print(setup_for_useful_options)
-
-	if len(useful_options) > 0:
-		next_link = random.choice(useful_options)
-	elif len(setup_for_useful_options) > 0:
-		next_link = random.choice(setup_for_useful_options)
+def get_path(start_link=None):
+	if start_link == None:
+		start = random.choice([y for y in goal_points if y != participant])
 	else:
-		print("Eeek")
-		exit()
-		# next_link = random.choice(next_state_options)
+		start = start_link[1]
 
-	link_name = next_link
-	path.append(link_name)
+	print()
+	print("start at: ")
+	print(start)
 
-	checkoff_name = titles[link_name]
+	path = []
+	checked_off = []
 
-	if checkoff_name in remaining:
-		remaining.remove(checkoff_name)
-		# print("Completed: " + checkoff_name)
+	current_state = start
+	remaining = copy.copy(checklist)
 
-	if checkoff_name in checklist and checkoff_name not in checked_off:
-		checked_off.append(checkoff_name)
+	i = 0
+	while len(remaining) > 0 and i < 30:
+		i += 1
 
-	current_state = link_name[1]
+		# Could go to any other state
+		next_state_options =  [y for y in states if y != current_state]
 
-	# print("remaining")
-	# print(remaining)
+		# Or, could complete a link that's not checked off yet
+		useful_options 		= get_useful_options_after(current_state, remaining)
+		
+		# OR could move to a place where I can check something off next
+		setup_for_useful_options 	= get_setup_for_useful_options_after(current_state, remaining)
 
-	# print("check off")
-	# print(checked_off)
+		# print("Useful next steps")
+		# print(useful_options)
+		# print("Setup steps")
+		# print(setup_for_useful_options)
+
+		if len(useful_options) > 0:
+			next_link = random.choice(useful_options)
+		elif len(setup_for_useful_options) > 0:
+			next_link = random.choice(setup_for_useful_options)
+		else:
+			print("Eeek")
+			exit()
+			# next_link = random.choice(next_state_options)
+
+		link_name = next_link
+		path.append(link_name)
+
+		checkoff_name = titles[link_name]
+
+		if checkoff_name in remaining:
+			remaining.remove(checkoff_name)
+			# print("Completed: " + checkoff_name)
+
+		if checkoff_name in checklist and checkoff_name not in checked_off:
+			checked_off.append(checkoff_name)
+
+		current_state = link_name[1]
+
+		# print("remaining")
+		# print(remaining)
+
+		# print("check off")
+		# print(checked_off)
+
+	return path
+
+
+def latin_squares_ify(path1, path2, path3):
+	hitlist = get_hitlist()
+
+	hitlist1 = {}
+	hitlist2 = {}
+	hitlist3 = {}
+
+	for target in all_options:
+		# Latin Squares is:
+		# ABC 
+		# BCA 
+		# CAB
+
+		options = [['early', 'even', 'late'], ['even', 'late', 'early'], ['late', 'early', 'even']]
+		random.shuffle(options)
+
+		hitlist1[target] = options[0]
+		hitlist2[target] = options[1]
+		hitlist3[target] = options[2]
+
+	# for each relevant link, assign it a label per person
+	# walk through the specific path and paint it at that point with the label
+
+	### apply those labels to the relevant paths
+	augpath1 = []
+	augpath2 = []
+	augpath3 = []
+
+	for link in path1:
+		checkoff_name = titles[link]
+
+		if checkoff_name in hitlist:
+			person1_exp = hitlist1[checkoff_name][0]
+			person2_exp = hitlist2[checkoff_name][0]
+			person3_exp = hitlist3[checkoff_name][0]
+		else:
+			person1_exp = 'null'
+			person2_exp = 'null'
+			person3_exp = 'null'
+
+		augpath1.append(link + "-" + person1_exp)
+		augpath2.append(link + "-" + person2_exp)
+		augpath3.append(link + "-" + person3_exp)
+
+	for link in path2:
+		checkoff_name = titles[link]
+
+		if checkoff_name in hitlist:
+			person1_exp = hitlist1[checkoff_name][1]
+			person2_exp = hitlist2[checkoff_name][1]
+			person3_exp = hitlist3[checkoff_name][1]
+		else:
+			person1_exp = 'null'
+			person2_exp = 'null'
+			person3_exp = 'null'
+
+		augpath1.append(link + "-" + person1_exp)
+		augpath2.append(link + "-" + person2_exp)
+		augpath3.append(link + "-" + person3_exp)
+
+	for link in path3:
+		checkoff_name = titles[link]
+
+		if checkoff_name in hitlist:
+			person1_exp = hitlist1[checkoff_name][2]
+			person2_exp = hitlist2[checkoff_name][2]
+			person3_exp = hitlist3[checkoff_name][2]
+		else:
+			person1_exp = 'null'
+			person2_exp = 'null'
+			person3_exp = 'null'
+
+		augpath1.append(link + "-" + person1_exp)
+		augpath2.append(link + "-" + person2_exp)
+		augpath3.append(link + "-" + person3_exp)
+
+	return augpath1, augpath2, augpath3
+
+def setup_exp_set():
+	path1 = get_path()
+	path2 = get_path(start_link=path1[-1])
+	path3 = get_path(start_link=path2[-1])
+
+	print()
+	print(path1)
+	print(len(path1))
+	print(path2)
+	print(len(path2))
+	print(path3)
+	print(len(path3))
+
+	exp1, exp2, exp3 = latin_squares_ify(path1, path2, path3)
+	return exp1, exp2, exp3
 
 
 
-print()
-print(path)
-print(len(path))
-# print(len(remaining))
-# print(remaining)
 
-final_route = []
-
-for p in path:
-	final_route.append(p + '-even')
-	# final_route.append(p + '-toptwo')
-
-print(final_route)
 
 # print("estimated total path time")
 # print(get_total_path_time(path))
 
 # saved = ['AC', 'CD', 'DF', 'FD', 'DC', 'CE', 'EF', 'FC', 'CD', 'DE', 'ED', 'DE', 'EF', 'FA', 'AB', 'BE', 'EA', 'AB', 'BA', 'AE', 'ED', 'DE', 'ED', 'DC', 'CF', 'FD', 'DC', 'CB', 'BE', 'EA', 'AE', 'EC', 'CF', 'FA', 'AF', 'FE']
 
+### good ones
+# C=11 ['CB', 'BD', 'DC_OBS', 'CA', 'AC_OBS', 'CD_OBS', 'DA', 'AD', 'DF', 'FD_OBS', 'DE']
+# F=12 ['FD', 'DA', 'AB', 'BD', 'DC_OBS', 'CA', 'AC_OBS', 'CF', 'FA_OBS', 'AD', 'DF_OBS', 'FE']
 
 
+exp1, exp2, exp3 = setup_exp_set()
 
-
-
+print()
+print("Final orderings")
+print(exp1)
+print("~~~")
+print(exp2)
+print("~~~")
+print(exp3)
+print("~~~")
 
 
 
