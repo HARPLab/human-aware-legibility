@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import copy
 import numpy as np
+import matplotlib.pyplot as plt  
 
 pd.set_option('display.max_colwidth', None)
 np.set_printoptions(suppress=True)
@@ -103,8 +104,8 @@ if FLAG_ANALYZE_EXPANDED:
 rows_for_analysis = []
 
 trials_for_analysis = df_robot_trials['path_type_unique_id'].unique()
-print("TRIALS FOR ANALYSIS")
-print(trials_for_analysis)
+# print("TRIALS FOR ANALYSIS")
+# print(trials_for_analysis)
 
 weird_recordings = []
 
@@ -131,6 +132,9 @@ for trial in trials_for_analysis:
     except:
         print("Issue with collecting all statuses for " + trial)
         weird_recordings.append(trial)
+
+        # timestamp_start     = df_relevant_data[df_relevant_data['status'].str.contains('START')]['time'].item()
+        # timestamp_end       = df_relevant_data[df_relevant_data['status'].str.contains('END')]['time'].item()
         continue
 
     # print(timestamp_prep, timestamp_start, timestamp_end)
@@ -147,14 +151,19 @@ for trial in trials_for_analysis:
     ## Get the relevant clicks
     df_clicks = df_keypress[df_keypress['timestamp'].between(timestamp_prep, timestamp_end, inclusive='both')]
     # print(df_relevant_data[['path_name', 'path_style', 'status', 'path_type']])
-    print(df_clicks)
-    print("")
+    # print(df_clicks)
+    # print("")
 
     path_name = df_relevant_data['path_name'].unique()[0]
     correct_answer = path_name[1]
-    print("Correct answer")
-    print(correct_answer)
+    # print("Correct answer")
+    # print(correct_answer)
 
+    path_type   = df_relevant_data['path_type'].unique()[0]
+    path_style  = df_relevant_data['path_style'].unique()[0]
+
+    with_obs = df_relevant_data['path_name'].unique()[0]
+    with_obs = "OBS" in with_obs
 
     # Guess time offset from start
     for index, click in df_clicks.iterrows():
@@ -170,19 +179,68 @@ for trial in trials_for_analysis:
             ### How many times do people ring in after the robot is at the goal?s
             pass
 
-        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), phase, trial]
+        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), with_obs, phase, path_type, path_style, trial]
 
         results_list.append(result)
 
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'phase', 'trial'])
-print(df_results)
+df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
+# print(df_results['guess'])
 
-exit()
-# print(df_keypress['timestamp']) ## time.time()
-# print(df_robot_trials['time'])  ##rospy.Time.now()
+##### Graph the results
+path_style_options  = list(df_results['path_style'].unique())
+path_type_options   = list(df_results['path_type'].unique())
 
 
-# 1713543645
+df_results_correct = df_results[df_results['is_correct'] == True]
+df_pivot_correct_all = df_results_correct.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean')
+df_pivot_correct_all.to_csv("graphics/" + "avgs.csv")
+
+
+df_results_incorrect = df_results[df_results['is_correct'] == False]
+df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
+
+
+
+
+export_location = 'graphics/'
+for pt in path_type_options:
+    df_inspect = df_results[df_results['path_type'] == pt]
+
+    df_inspect_last_correct     =  df_inspect[df_inspect['is_correct'] == True]
+    df_inspect_all_incorrect    =  df_inspect[df_inspect['is_correct'] == False]
+
+    print(df_inspect[['time_before_end', 'path_type', 'path_style', 'is_correct']])
+
+    if len(df_inspect_last_correct) > 0:
+        fig = plt.figure();
+        bp = df_inspect_last_correct.boxplot(by =['path_style', 'with_obs'], column =['time_before_end']) #, by=['time_before_end']
+        bp.set_title(pt)
+        plt.savefig(export_location + pt + ".png")
+        plt.clf()
+
+
+    fig, ax = plt.subplots(1)
+    df_pivot_incorrect = df_inspect_all_incorrect.pivot_table(values='is_correct', index=['path_style'], aggfunc='count', fill_value=0)
+
+    # df_inspect.groupby(['is_correct']).count().plot(kind='bar')
+    # counts = df_inspect_all_incorrect[['path_style', 'is_correct']].groupby(['path_style', 'is_correct']).agg(len)
+    # print(counts)
+    # if len(counts) > 0:
+
+    # print("PIVOT TABLE")
+    # print(df_pivot_incorrect)
+
+    if len(df_pivot_incorrect) > 0:
+        df_pivot_incorrect.plot(kind='bar')
+
+        # bp = df_inspect_all_incorrect.boxplot(by =['path_style', 'with_obs'], column =['time_before_end']) #, by=['time_before_end']
+        bp.set_title(pt)
+        ax.set_ylim(ymin=0)
+        plt.savefig(export_location + "misclicks-" + pt + ".png")
+        plt.clf()
+
+
 
 
 
