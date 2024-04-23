@@ -227,6 +227,10 @@ df_results_ambig = df_results_incorrect.pivot_table(values='time_before_end', in
 df_results_ambig.to_csv('graphics/' + "ambig.csv")
 
 
+df_inspect_correct              =  df_results[df_results['is_correct'] == True]
+df_inspect_early_confused       =  df_results[df_results['is_final'] == False]
+df_results_ambig.to_csv('graphics/' + "right_then_wrong.csv")
+
 
 export_location = 'graphics/'
 for pt in path_type_options:
