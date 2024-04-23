@@ -66,8 +66,10 @@ for file_name in mini_list:
     ### If needed, also put participant number on here
     df_chunk["path_type"] = df_chunk['path_name'].replace(titles_dict)
     df_chunk["path_type_unique_id"] = df_chunk['path_type'] + "-" + df_chunk['path_style'] + " @ " + df_chunk['participant_id']
+
+    df_chunk['is_ambig'] = df_chunk['path_type'].isin(['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from'])
     
-    df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'participant_id', 'path_type_unique_id']]
+    df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'participant_id', 'path_type_unique_id']]
 
     trial_names.append(path_name)
     df_chunks_mini.append(copy.copy(df_chunk))
@@ -184,7 +186,6 @@ for trial in trials_for_analysis:
         results_list.append(result)
 
 df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
-# print(df_results['guess'])
 
 ##### Graph the results
 path_style_options  = list(df_results['path_style'].unique())
@@ -200,6 +201,9 @@ df_results_incorrect = df_results[df_results['is_correct'] == False]
 df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
 
+df_results_diag_long = df_results[df_results['path_type'].isin(['diag_long_to', 'diag_long_from'])]
+# df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+# df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
 
 
 
