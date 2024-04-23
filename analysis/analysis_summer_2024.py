@@ -168,7 +168,13 @@ for trial in trials_for_analysis:
     with_obs = "OBS" in with_obs
 
     # Guess time offset from start
-    for index, click in df_clicks.iterrows():
+    ## move backwards through the thing
+
+    to_add = []
+    is_final = True
+    guess_from_end = None
+
+    for index, click in df_clicks.iloc[::-1].iterrows():
         click_time          = click['timestamp']
         click_guess         = click['guess']
 
@@ -181,11 +187,22 @@ for trial in trials_for_analysis:
             ### How many times do people ring in after the robot is at the goal?s
             pass
 
-        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), with_obs, phase, path_type, path_style, trial]
+        guess_from_end = click_guess
 
-        results_list.append(result)
+        if is_final and (guess_from_end == correct_answer):
+            is_final = True
+        else:
+            is_final = False
 
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
+        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), is_final, with_obs, phase, path_type, path_style, trial]
+        to_add.append(result)
+
+
+    results_list.extend(to_add[::-1])
+
+    ### The last correct guess is_final
+
+df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
 
 ##### Graph the results
 path_style_options  = list(df_results['path_style'].unique())
@@ -193,6 +210,7 @@ path_type_options   = list(df_results['path_type'].unique())
 
 
 df_results_correct = df_results[df_results['is_correct'] == True]
+df_results_correct = df_results_correct[df_results_correct['is_final'] == True]
 df_pivot_correct_all = df_results_correct.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean')
 df_pivot_correct_all.to_csv("graphics/" + "avgs.csv")
 
@@ -204,6 +222,9 @@ df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
 df_results_diag_long = df_results[df_results['path_type'].isin(['diag_long_to', 'diag_long_from'])]
 # df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 # df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
+
+df_results_ambig = df_results_incorrect.pivot_table(values='time_before_end', index=['path_type'], columns=['with_obs', 'path_style'], aggfunc='mean', fill_value=0)
+df_results_ambig.to_csv('graphics/' + "ambig.csv")
 
 
 
