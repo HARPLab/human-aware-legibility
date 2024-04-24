@@ -269,6 +269,11 @@ for trial in trials_for_analysis:
 
 df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
 
+### TODO MAKE THIS BETTER SO JUST WHETHER THERE'S MORE THAN ONE CLICK PER
+df_pivot_count = df_results.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+df_pivot_count.to_csv("graphics/csvs/" + "counts.csv")
+
+
 ##### Graph the results
 path_style_options  = list(df_results['path_style'].unique())
 path_type_options   = list(df_results['path_type'].unique())
