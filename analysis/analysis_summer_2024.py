@@ -45,38 +45,64 @@ label_dict = {'back_short_to': ['AB', 'CB'], 'back_short_from': ['BA', 'BC'], 'f
 df_chunks_mini      = []
 df_chunks_mission   = []
 
+def add_trial_numbers(df):
+    # df = df.assign(iteration_number=range(len(df)))
+    # df['iteration_number'] = pd.Series(df_chunk['iteration_number'], dtype="int")
+
+    count = 1
+    df_chunks = []
+    num_splits = (len(df) / 4) + 1
+    for chunk in np.array_split(df, num_splits):
+        chunk['iteration_number'] = count
+        count += 1
+
+        df_chunks.append(chunk)
+
+    df = pd.concat(df_chunks)
+    # exit()
+    return df
+
+ellie_list = ['2024_04_19-09_37_28_PM-mini_report.csv', '2024_04_19-10_02_13_PM-mini_report.csv']
+
 trial_names = []
 ### SIMPLIFIED DATA
-for file_name in mini_list:
+for file_name in ellie_list:
     waypoints_path = "mission_reports/" + file_name
     path_name = file_name.replace('.csv','')
+    # print(path_name)
 
-    keypress_file   = open(waypoints_path)    
+    keypress_file   = open(waypoints_path)
     df_chunk        = pd.read_csv(waypoints_path, index_col=False) #, columns=['path_label', 'status', 'timestamp', 'time_elapsed'])
-    df_chunk = df_chunk.rename(columns={" status": "status", " time": "time"})
+    df_chunk = df_chunk.rename(columns={" status": "status", " time": "time", " iteration_number": "iteration_number"})
+
+    # if file_name in ellie_list:
+    #     df_chunk = add_trial_numbers(df_chunk)
 
     df_chunk['trial']       = df_chunk['point'].str.replace("[", "").str.replace("'", "")
     df_chunk['status']      = df_chunk['status'].str.replace("'", "")
-    df_chunk['time']        = df_chunk['time'].str.replace("'", "")
+    
+    if df_chunk['time'].dtype == str:
+        df_chunk['time']        = df_chunk['time'].str.replace("'", "")
 
-    df_chunk['participant_id'] = file_name
+    df_chunk['participant_id'] = path_name
     df_chunk[['path_name', 'path_style']] = df_chunk['trial'].str.split('-', n=1, expand=True)
+
+    df_chunk['iteration_string'] = pd.Series(df_chunk['iteration_number'], dtype="string")
 
     ### Label with the matching mission file
     ### If needed, also put participant number on here
     df_chunk["path_type"] = df_chunk['path_name'].replace(titles_dict)
-    df_chunk["path_type_unique_id"] = df_chunk['path_type'] + "-" + df_chunk['path_style'] + " @ " + df_chunk['participant_id']
+    df_chunk["path_type_unique_id"] = df_chunk['path_name'] + "-" + df_chunk['path_style'] + "-" + df_chunk['iteration_string'] + " @ " + df_chunk['participant_id']
+    df_chunk["path_type_unique_id"] = pd.Series(df_chunk['path_type_unique_id'], dtype="string")
 
     df_chunk['is_ambig'] = df_chunk['path_type'].isin(['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from'])
-    
-    df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'participant_id', 'path_type_unique_id']]
+    df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'iteration_number', 'participant_id', 'path_type_unique_id']]
 
     trial_names.append(path_name)
     df_chunks_mini.append(copy.copy(df_chunk))
 
 
 df_robot_trials = pd.concat(df_chunks_mini)
-
 
 if FLAG_ANALYZE_EXPANDED:
     ### FULL DATA
@@ -105,42 +131,81 @@ if FLAG_ANALYZE_EXPANDED:
 
 rows_for_analysis = []
 
-trials_for_analysis = df_robot_trials['path_type_unique_id'].unique()
+df_weird = copy.copy(df_robot_trials)
+
+
+order_style = ["early", "even", "late"]
+order_status = ["PREP", "START", "END", "PARK"]
+
+# df_weird["path_style"] = pd.Categorical(df_weird["path_style"], categories=order_style)
+# df_weird = df_weird.sort_values('path_style')
+# df_weird["status"] = pd.Categorical(df_weird["status"], categories=order_status)
+# df_weird = df_weird.sort_values('status')
+
+# df_weird["path_style"]  = df_weird["path_style"].astype(pd.api.types.CategoricalDtype(categories=["early", "even", "late"]))
+# df_weird["status"]      = df_weird["status"].astype(pd.api.types.CategoricalDtype(categories=["PREP", "START", "END", "PARK"]))
+# df_weird["path_style"].cat.set_categories(order_style)
+# df_weird["status"].cat.set_categories(order_status)
+
+# df_weird['path_style']  = pd.Categorical(df_weird['path_style'], categories=["early", "even", "late"], ordered=True)
+# df_weird['status']      = pd.Categorical(df_weird['status'], categories=["PREP", "START", "END", "PARK"], ordered=True)
+df_weird = df_weird.pivot_table(values='time', index=['path_name'], columns=['path_style', 'status'], aggfunc='count', fill_value=0)
+
+
+# new_index = pd.MultiIndex.from_product(
+#     [order_style, order_status], 
+#     names=['path_style', 'status']
+# )
+# print(new_index)
+# df_weird.reindex(new_index)
+# df_weird = df_weird.reindex(axis='index', level=0, labels=yourlabels_list)
+
+df_weird.to_csv('graphics/csvs/' + "weird_situations.csv")
+
+trials_for_analysis = list(df_robot_trials['path_type_unique_id'].dropna().unique())
+
 # print("TRIALS FOR ANALYSIS")
 # print(trials_for_analysis)
 
-weird_recordings = []
+weird_recordings_no_start   = []
+weird_recordings_weirder    = []
 
 results_list = []
 for trial in trials_for_analysis:
     # Get the start and end points
 
     df_relevant_data = df_robot_trials[df_robot_trials['path_type_unique_id'] == trial]
+    # print(df_relevant_data)
     # 'time', 'trial', 'path_name', 'path_type', 'status', 'participant_id', 'path_type_unique_id'
 
     # print(df_relevant_data[['path_name', 'path_style', 'status', 'path_type']])
     # PREP, START, END, PARKED
 
-    # print(df_relevant_data['status'])
-
+    # What if there are multiple to examine?
     try:
         timestamp_prep      = df_relevant_data[df_relevant_data['status'].str.contains('PREP')]['time'].item()
         timestamp_start     = df_relevant_data[df_relevant_data['status'].str.contains('START')]['time'].item()
         timestamp_end       = df_relevant_data[df_relevant_data['status'].str.contains('END')]['time'].item()
 
-        timestamp_prep      = float(timestamp_prep)
-        timestamp_start     = float(timestamp_start)
-        timestamp_end       = float(timestamp_end)
     except:
-        print("Issue with collecting all statuses for " + trial)
-        weird_recordings.append(trial)
+        # print("Issue with collecting all statuses for " + trial)
+        # weird_recordings.append(trial)
+        # print(df_relevant_data[['time', 'status']])
 
-        # timestamp_start     = df_relevant_data[df_relevant_data['status'].str.contains('START')]['time'].item()
-        # timestamp_end       = df_relevant_data[df_relevant_data['status'].str.contains('END')]['time'].item()
-        continue
+        # try:
+        timestamp_prep      = df_relevant_data[df_relevant_data['status'].str.contains('PREP')]['time'].item()
+        timestamp_start     = timestamp_prep #df_relevant_data[df_relevant_data['status'].str.contains('START')]['time'].item()
+        timestamp_end       = df_relevant_data[df_relevant_data['status'].str.contains('END')]['time'].item()
 
-    # print(timestamp_prep, timestamp_start, timestamp_end)
-    # exit()
+        weird_recordings_no_start.append(trial)
+        # print(df_relevant_data[['time', 'status']])
+        # print(timestamp_prep, timestamp_start, timestamp_end)
+
+    
+
+    timestamp_prep      = float(timestamp_prep)
+    timestamp_start     = float(timestamp_start)
+    timestamp_end       = float(timestamp_end)
 
     time_conversion = 1000000000 # ROS is much more precise, so convert between them
     timestamp_prep  /= time_conversion
@@ -212,24 +277,25 @@ path_type_options   = list(df_results['path_type'].unique())
 df_results_correct = df_results[df_results['is_correct'] == True]
 df_results_correct = df_results_correct[df_results_correct['is_final'] == True]
 df_pivot_correct_all = df_results_correct.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean')
-df_pivot_correct_all.to_csv("graphics/" + "avgs.csv")
+df_pivot_correct_all.to_csv("graphics/csvs/" + "avgs.csv")
 
 
 df_results_incorrect = df_results[df_results['is_correct'] == False]
 df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
-df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
+df_pivot_incorrect_all.to_csv("graphics/csvs/" + "miscues.csv")
 
 df_results_diag_long = df_results[df_results['path_type'].isin(['diag_long_to', 'diag_long_from'])]
 # df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 # df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
 
 df_results_ambig = df_results_incorrect.pivot_table(values='time_before_end', index=['path_type'], columns=['with_obs', 'path_style'], aggfunc='mean', fill_value=0)
-df_results_ambig.to_csv('graphics/' + "ambig.csv")
+df_results_ambig.to_csv('graphics/csvs/' + "ambig.csv")
 
 
 df_inspect_correct              =  df_results[df_results['is_correct'] == True]
-df_inspect_early_confused       =  df_results[df_results['is_final'] == False]
-df_results_ambig.to_csv('graphics/' + "right_then_wrong.csv")
+df_inspect_early_confused       =  df_inspect_correct[df_inspect_correct['is_final'] == False]
+df_pivot_right_wrong            = df_inspect_early_confused.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+df_pivot_right_wrong.to_csv('graphics/csvs/' + "right_then_wrong.csv")
 
 
 export_location = 'graphics/'
@@ -239,7 +305,7 @@ for pt in path_type_options:
     df_inspect_last_correct     =  df_inspect[df_inspect['is_correct'] == True]
     df_inspect_all_incorrect    =  df_inspect[df_inspect['is_correct'] == False]
 
-    print(df_inspect[['time_before_end', 'path_type', 'path_style', 'is_correct']])
+    # print(df_inspect[['time_before_end', 'path_type', 'path_style', 'is_correct', 'is_final']])
 
     if len(df_inspect_last_correct) > 0:
         fig = plt.figure();
@@ -270,7 +336,8 @@ for pt in path_type_options:
         plt.clf()
 
 
-
+print("Done with analysis")
+# print(df_results)
 
 
 
