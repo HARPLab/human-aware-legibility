@@ -66,7 +66,7 @@ ellie_list = ['2024_04_19-09_37_28_PM-mini_report.csv', '2024_04_19-10_02_13_PM-
 
 trial_names = []
 ### SIMPLIFIED DATA
-for file_name in ellie_list:
+for file_name in mini_list:
     waypoints_path = "mission_reports/" + file_name
     path_name = file_name.replace('.csv','')
     # print(path_name)
@@ -268,6 +268,7 @@ for trial in trials_for_analysis:
     ### The last correct guess is_final
 
 df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
+df_results.to_csv("results.csv")
 
 ### TODO MAKE THIS BETTER SO JUST WHETHER THERE'S MORE THAN ONE CLICK PER
 df_pivot_count = df_results.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
