@@ -271,6 +271,7 @@ for trial in trials_for_analysis:
     # print("Correct answer")
     # print(correct_answer)
 
+    path_name   = df_relevant_data['path_name'].unique()[0]
     path_type   = df_relevant_data['path_type'].unique()[0]
     path_style  = df_relevant_data['path_style'].unique()[0]
 
@@ -304,7 +305,7 @@ for trial in trials_for_analysis:
 
         guess_from_end = click_guess
 
-        result = [click_guess, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_type, path_style, trial, participant_id]
+        result = [click_guess, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
         to_add.append(result)
 
         if is_final and (guess_from_end == correct_answer):
@@ -323,7 +324,7 @@ for trial in trials_for_analysis:
     ### The last correct guess is_final
 
 ####### SET UP RESULTS #######################
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_type', 'path_style', 'trial', 'participant_id'])
+df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_name', 'path_type', 'path_style', 'trial', 'participant_id'])
 
 ### Add sorting labels for convenience ###
 df_results['is_ambig'] = df_results['path_type'].isin(ambig_list)
@@ -376,8 +377,10 @@ for participant_id in list(df_results['participant_id'].unique()):
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part.groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-guesses.csv")
+    df_guesses.to_csv("individuals/" + participant_id + "-correctness.csv")
 
+    df_guesses = df_part.groupby(['path_name', 'path_style']).agg({'guess': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-raw-guesses.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
