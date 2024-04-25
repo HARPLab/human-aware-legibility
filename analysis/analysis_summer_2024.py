@@ -7,6 +7,7 @@ import pingouin as pg
 
 pd.set_option('display.max_colwidth', None)
 np.set_printoptions(suppress=True)
+plt.rcParams.update({'figure.max_open_warning': 0})
 
 
 ##### Import keypress file data
@@ -99,6 +100,10 @@ for file_name in mini_list:
     df_chunk['is_ambig'] = df_chunk['path_type'].isin(['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from'])
     df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'iteration_number', 'participant_id', 'path_type_unique_id']]
 
+    df_chunk['is_long']     = ("long" in df_chunk['path_type'])
+    df_chunk['is_short']    = ("short" in df_chunk['path_type'])
+    df_chunk['respect_obs'] = ("obs" in df_chunk['path_type'])
+    
     trial_names.append(path_filename)
     df_chunks_mini.append(copy.copy(df_chunk))
 
@@ -308,6 +313,8 @@ df_pivot_right_wrong            = df_inspect_early_confused.pivot_table(values='
 df_pivot_right_wrong.to_csv('graphics/csvs/' + "right_then_wrong.csv")
 
 
+fig, ax = plt.subplots(1)
+
 export_location = 'graphics/'
 for pt in path_type_options:
     df_inspect = df_results[df_results['path_type'] == pt]
@@ -318,14 +325,11 @@ for pt in path_type_options:
     # print(df_inspect[['time_before_end', 'path_type', 'path_style', 'is_correct', 'is_final']])
 
     if len(df_inspect_last_correct) > 0:
-        fig = plt.figure();
         bp = df_inspect_last_correct.boxplot(by =['path_style', 'with_obs'], column =['time_before_end']) #, by=['time_before_end']
         bp.set_title(pt)
         plt.savefig(export_location + pt + ".png")
         plt.clf()
 
-
-    fig, ax = plt.subplots(1)
     df_pivot_incorrect = df_inspect_all_incorrect.pivot_table(values='is_correct', index=['path_style'], aggfunc='count', fill_value=0)
     df_pivot_incorrect.to_csv("graphics/csvs/" + "incorrect_guesses.csv")
 
@@ -339,12 +343,12 @@ for pt in path_type_options:
 
     if len(df_pivot_incorrect) > 0:
         df_pivot_incorrect.plot(kind='bar')
-
         # bp = df_inspect_all_incorrect.boxplot(by =['path_style', 'with_obs'], column =['time_before_end']) #, by=['time_before_end']
         bp.set_title(pt)
         ax.set_ylim(ymin=0)
         plt.savefig(export_location + "misclicks-" + pt + ".png")
         plt.clf()
+
 
 
 print("Done with analysis")
