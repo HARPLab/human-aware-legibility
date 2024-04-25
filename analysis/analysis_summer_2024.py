@@ -45,6 +45,8 @@ print(mission_list)
 titles_dict = {'AB': 'back_short_to', 'BA': 'back_short_from', 'BC': 'back_short_from', 'CB': 'back_short_to', 'DE': 'front_short_to', 'ED': 'front_short_from', 'EF': 'front_short_from', 'FE': 'front_short_to', 'AC': 'back_long', 'CA': 'back_long', 'DF': 'front_long', 'FD': 'front_long', 'DC': 'diag_long_to', 'CD': 'diag_long_from', 'AF': 'diag_long_to', 'FA': 'diag_long_from', 'AE': 'diag_short_to', 'EA': 'diag_short_from', 'CE': 'diag_short_to', 'EC': 'diag_short_from', 'BE': 'mid_short', 'EB': 'mid_short', 'AD': 'side_short_to', 'DA': 'side_short_from', 'CF': 'side_short_to', 'FC': 'side_short_from', 'BD': 'back_diag_short_from', 'BF': 'back_diag_short_from', 'DB': 'back_diag_short_to', 'FB': 'back_diag_short_to', 'DC_OBS': 'diag_obs_long_to', 'CD_OBS': 'diag_obs_long_from', 'AF_OBS': 'diag_obs_long_to', 'FA_OBS': 'diag_obs_long_from', 'AC_OBS': 'back_long_obs', 'CA_OBS': 'back_long_obs', 'DF_OBS': 'front_long_obs', 'FD_OBS': 'front_long_obs'}
 label_dict = {'back_short_to': ['AB', 'CB'], 'back_short_from': ['BA', 'BC'], 'front_short_to': ['DE', 'FE'], 'front_short_from': ['ED', 'EF'], 'back_long': ['AC', 'CA'], 'front_long': ['DF', 'FD'], 'diag_long_to': ['DC', 'AF'], 'diag_long_from': ['CD', 'FA'], 'diag_short_to': ['AE', 'CE'], 'diag_short_from': ['EA', 'EC'], 'mid_short': ['BE', 'EB'], 'side_short_to': ['AD', 'CF'], 'side_short_from': ['DA', 'FC'], 'back_diag_short_from': ['BD', 'BF'], 'back_diag_short_to': ['DB', 'FB'], 'diag_obs_long_to': ['DC_OBS', 'AF_OBS'], 'diag_obs_long_from': ['CD_OBS', 'FA_OBS'], 'back_long_obs': ['AC_OBS', 'CA_OBS'], 'front_long_obs': ['DF_OBS', 'FD_OBS']}
 
+ambig_list = ['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from', 'front_long_obs', 'back_long_obs']
+
 df_chunks_mini      = []
 df_chunks_mission   = []
 
@@ -89,6 +91,7 @@ def format_duration(duration):
 
 ellie_list = ['2024_04_19-09_37_28_PM-mini_report.csv', '2024_04_19-10_02_13_PM-mini_report.csv']
 
+
 trial_names = []
 ### SIMPLIFIED DATA
 for file_name in mini_list:
@@ -131,12 +134,12 @@ for file_name in mini_list:
     df_chunk["path_type_unique_id"] = df_chunk['path_name'] + "-" + df_chunk['path_style'] + "-" + df_chunk['iteration_string'] + " @ " + df_chunk['participant_id']
     df_chunk["path_type_unique_id"] = pd.Series(df_chunk['path_type_unique_id'], dtype="string")
 
-    df_chunk['is_ambig'] = df_chunk['path_type'].isin(['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from'])
+    df_chunk['is_ambig'] = df_chunk['path_type'].isin(ambig_list)
     df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'iteration_number', 'participant_id', 'path_type_unique_id']]
 
-    df_chunk['is_long']     = ("long" in df_chunk['path_type'])
-    df_chunk['is_short']    = ("short" in df_chunk['path_type'])
-    df_chunk['respect_obs'] = ("obs" in df_chunk['path_type'])
+    df_chunk['is_long']     = df_chunk['path_type'].str.contains("long")
+    df_chunk['is_short']    = df_chunk['path_type'].str.contains("short")
+    df_chunk['respect_obs'] = df_chunk['path_type'].str.contains("obs")
     
     trial_names.append(path_filename)
     df_chunks_mini.append(copy.copy(df_chunk))
@@ -175,7 +178,7 @@ df_weird = copy.copy(df_robot_trials)
 
 
 order_style = ["early", "even", "late"]
-order_status = ["PREP", "START", "END", "PARK"]
+order_status = ["PREP", "START", "END", "PARKED"]
 
 # df_weird["path_style"] = pd.Categorical(df_weird["path_style"], categories=order_style)
 # df_weird = df_weird.sort_values('path_style')
@@ -241,22 +244,24 @@ for trial in trials_for_analysis:
         # print(df_relevant_data[['time', 'status']])
         # print(timestamp_prep, timestamp_start, timestamp_end)
 
-    
+
+    timestamp_parked    = df_relevant_data[df_relevant_data['status'].str.contains('PARK')]['time'].item()
 
     timestamp_prep      = float(timestamp_prep)
     timestamp_start     = float(timestamp_start)
     timestamp_end       = float(timestamp_end)
 
-    time_conversion = 1000000000 # ROS is much more precise, so convert between them
-    timestamp_prep  /= time_conversion
-    timestamp_start /= time_conversion
-    timestamp_end   /= time_conversion
+    time_conversion     = 1000000000 # ROS is much more precise, so convert between them
+    timestamp_prep      /= time_conversion
+    timestamp_start     /= time_conversion
+    timestamp_end       /= time_conversion
+    timestamp_parked    /= time_conversion
 
     ### skim those zones from the button click database
     # print(timestamp_prep, timestamp_start, timestamp_end)
 
     ## Get the relevant clicks
-    df_clicks = df_keypress[df_keypress['timestamp'].between(timestamp_prep, timestamp_end, inclusive='both')]
+    df_clicks = df_keypress[df_keypress['timestamp'].between(timestamp_prep, timestamp_parked, inclusive='both')]
     # print(df_relevant_data[['path_name', 'path_style', 'status', 'path_type']])
     # print(df_clicks)
     # print("")
@@ -279,6 +284,9 @@ for trial in trials_for_analysis:
     is_final = True
     guess_from_end = None
 
+    is_final_park = True
+    guess_from_park = None
+
     participant_id = df_relevant_data['participant_id'].unique()[0]
 
     for index, click in df_clicks.iloc[::-1].iterrows():
@@ -296,7 +304,7 @@ for trial in trials_for_analysis:
 
         guess_from_end = click_guess
 
-        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), is_final, with_obs, phase, path_type, path_style, trial, participant_id]
+        result = [click_guess, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_type, path_style, trial, participant_id]
         to_add.append(result)
 
         if is_final and (guess_from_end == correct_answer):
@@ -304,16 +312,29 @@ for trial in trials_for_analysis:
         else:
             is_final = False
 
+        if is_final_park and (guess_from_park == correct_answer):
+            is_final_park = True
+        else:
+            is_final_park = False
+
 
     results_list.extend(to_add[::-1])
 
     ### The last correct guess is_final
 
-####### PIVOT TABLES
+####### SET UP RESULTS #######################
+df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_type', 'path_style', 'trial', 'participant_id'])
 
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial', 'participant_id'])
+### Add sorting labels for convenience ###
+df_results['is_ambig'] = df_results['path_type'].isin(ambig_list)
+df_results['is_long']     = df_results['path_type'].str.contains("long")
+df_results['is_short']    = df_results['path_type'].str.contains("short")
+df_results['respect_obs'] = df_results['path_type'].str.contains("obs")
+
 df_results.to_csv("results.csv")
+############################################
 
+####### PIVOT TABLES #######################
 ### TODO MAKE THIS BETTER SO JUST WHETHER THERE'S MORE THAN ONE CLICK PER
 df_pivot_count = df_results.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 df_pivot_count.to_csv("graphics/csvs/" + "raw_counts.csv")
@@ -326,25 +347,66 @@ path_type_options   = list(df_results['path_type'].unique())
 df_results_correct = df_results[df_results['is_correct'] == True]
 df_results_correct = df_results_correct[df_results_correct['is_final'] == True]
 df_pivot_correct_all = df_results_correct.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean')
-df_pivot_correct_all.to_csv("graphics/csvs/" + "avgs.csv")
+df_pivot_correct_all.to_csv("graphics/csvs/" + "avgs-end.csv")
+df_pivot_correct_all = df_results_correct.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='count')
+df_pivot_correct_all.to_csv("graphics/csvs/" + "correct-before-end.csv")
 
 
 df_results_incorrect = df_results[df_results['is_correct'] == False]
 df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 df_pivot_incorrect_all.to_csv("graphics/csvs/" + "miscues.csv")
 
-df_results_diag_long = df_results[df_results['path_type'].isin(['diag_long_to', 'diag_long_from'])]
-# df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
-# df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
-
 df_results_ambig = df_results_incorrect.pivot_table(values='time_before_end', index=['path_type'], columns=['with_obs', 'path_style'], aggfunc='mean', fill_value=0)
-df_results_ambig.to_csv('graphics/csvs/' + "ambig.csv")
-
+df_results_ambig.to_csv('graphics/csvs/' + "ambig-end.csv")
 
 df_inspect_correct              =  df_results[df_results['is_correct'] == True]
 df_inspect_early_confused       =  df_inspect_correct[df_inspect_correct['is_final'] == False]
 df_pivot_right_wrong            = df_inspect_early_confused.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 df_pivot_right_wrong.to_csv('graphics/csvs/' + "right_then_wrong.csv")
+
+
+#########################
+for participant_id in list(df_results['participant_id'].unique()):
+    df_part = df_results[df_results['participant_id'] == participant_id]
+
+    ### get the click sequence for each participant
+    df_pivot_count = df_part.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+    df_pivot_count.to_csv("individuals/" + participant_id + "-raw_counts.csv")
+
+    ### get the click sequence for each participant
+    # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
+    df_guesses = df_part.groupby(['path_type', 'path_style']).agg({'is_correct': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-guesses.csv")
+
+
+    ### get the click sequence for each participant
+    # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
+    df_guesses = df_part[df_part['is_long'] == True].groupby(['path_type', 'path_style']).agg({'is_correct': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-long-guesses.csv")
+
+
+    ### get the click sequence for each participant
+    # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
+    df_guesses = df_part[df_part['is_long'] == False].groupby(['path_type', 'path_style']).agg({'is_correct': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-short-guesses.csv")
+
+    ### get the click sequence for each participant
+    # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
+    df_guesses = df_part[df_part['is_ambig'] == True].groupby(['path_type', 'path_style']).agg({'is_correct': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-ambig-guesses.csv")
+
+    ### get the click sequence for each participant
+    # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
+    df_guesses = df_part[df_part['is_ambig'] == False].groupby(['path_type', 'path_style']).agg({'is_correct': list})
+    df_guesses.to_csv("individuals/" + participant_id + "-unambig-guesses.csv")
+
+
+#########################
+### COMPARE THE SUBGROUPS
+df_results_diag_long = df_results[df_results['path_type'].isin(['diag_long_to', 'diag_long_from'])]
+# df_pivot_incorrect_all = df_results_incorrect.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
+# df_pivot_incorrect_all.to_csv("graphics/" + "miscues.csv")
+
 
 
 fig, ax = plt.subplots(1)
@@ -361,7 +423,12 @@ for pt in path_type_options:
     if len(df_inspect_last_correct) > 0:
         bp = df_inspect_last_correct.boxplot(by =['path_style', 'with_obs'], column =['time_before_end']) #, by=['time_before_end']
         bp.set_title(pt)
-        plt.savefig(export_location + pt + ".png")
+        plt.savefig(export_location + pt + "before-end.png")
+        plt.clf()
+
+        bp = df_inspect_last_correct.boxplot(by =['path_style', 'with_obs'], column =['time_before_park']) #, by=['time_before_end']
+        bp.set_title(pt)
+        plt.savefig(export_location + pt + "before-park.png")
         plt.clf()
 
     df_pivot_incorrect = df_inspect_all_incorrect.pivot_table(values='is_correct', index=['path_style'], aggfunc='count', fill_value=0)
