@@ -1,6 +1,7 @@
 import random
 import copy 
 import numpy as np
+from pprint import pprint
 
 ### A B C
 ### D E F
@@ -103,6 +104,12 @@ for key in titles.keys():
 	name_label 				= titles[key]
 	label_dict[name_label].append(key)
 
+
+print("TITLES")
+print(titles)
+print("LABEL DICT")
+print(label_dict)
+
 # Show given paths in shuffled order overall
 def get_hitlist():
 	hitlist = []
@@ -117,6 +124,8 @@ def get_hitlist():
 	hitlist.append(DIAG_OBS_LONG_FROM)
 	hitlist.append(BACK_LONG_OBS)
 	hitlist.append(FRONT_LONG_OBS)
+
+	hitlist.append(DIAG_SHORT_TO)
 
 
 
@@ -155,6 +164,8 @@ def get_hitlist():
 	# 	full_hitlist.append(h + "-MID")
 	# 	full_hitlist.append(h + "-LOW")
 
+
+	return all_options
 
 	return hitlist
 
@@ -313,6 +324,10 @@ def latin_squares_ify(path1, path2, path3):
 	augpath2 = []
 	augpath3 = []
 
+	checklist1 = {} #copy.copy(hitlist)
+	checklist2 = {} #copy.copy(hitlist)
+	checklist3 = {} #copy.copy(hitlist)
+
 	for link in path1:
 		checkoff_name = titles[link]
 
@@ -320,6 +335,7 @@ def latin_squares_ify(path1, path2, path3):
 			person1_exp = hitlist1[checkoff_name][0]
 			person2_exp = hitlist2[checkoff_name][0]
 			person3_exp = hitlist3[checkoff_name][0]
+
 		else:
 			person1_exp = 'null'
 			person2_exp = 'null'
@@ -328,6 +344,12 @@ def latin_squares_ify(path1, path2, path3):
 		augpath1.append(link + "-" + person1_exp)
 		augpath2.append(link + "-" + person2_exp)
 		augpath3.append(link + "-" + person3_exp)
+
+		checklist1[checkoff_name + "_1"] = (link, person1_exp)
+		checklist2[checkoff_name + "_1"] = (link, person2_exp)
+		checklist3[checkoff_name + "_1"] = (link, person3_exp)
+
+
 
 	for link in path2:
 		checkoff_name = titles[link]
@@ -345,6 +367,10 @@ def latin_squares_ify(path1, path2, path3):
 		augpath2.append(link + "-" + person2_exp)
 		augpath3.append(link + "-" + person3_exp)
 
+		checklist1[checkoff_name + "_2"] = (link, person1_exp)
+		checklist2[checkoff_name + "_2"] = (link, person2_exp)
+		checklist3[checkoff_name + "_2"] = (link, person3_exp)
+
 	for link in path3:
 		checkoff_name = titles[link]
 
@@ -360,6 +386,18 @@ def latin_squares_ify(path1, path2, path3):
 		augpath1.append(link + "-" + person1_exp)
 		augpath2.append(link + "-" + person2_exp)
 		augpath3.append(link + "-" + person3_exp)
+
+		checklist1[checkoff_name + "_3"] = (link, person1_exp)
+		checklist2[checkoff_name + "_3"] = (link, person2_exp)
+		checklist3[checkoff_name + "_3"] = (link, person3_exp)
+
+	print()
+	pprint(checklist1)
+	print()
+	pprint(checklist2)
+	print()
+	pprint(checklist3)
+	print()
 
 	return augpath1, augpath2, augpath3
 
@@ -404,6 +442,7 @@ print("~~~")
 print(exp3)
 print("~~~")
 
+print(len(exp3))
 
 
 
