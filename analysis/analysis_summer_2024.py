@@ -4,6 +4,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt  
 import pingouin as pg
+from datetime import datetime as dt
 
 pd.set_option('display.max_colwidth', None)
 np.set_printoptions(suppress=True)
@@ -64,6 +65,28 @@ def add_trial_numbers(df):
     # exit()
     return df
 
+def format_duration(duration):
+    duration = duration / 1000000000.0
+
+    mapping = [
+        ('s', 60),
+        ('m', 60),
+        ('h', 24),
+    ]
+    duration = int(duration)
+    result = []
+    for symbol, max_amount in mapping:
+        amount = duration % max_amount
+        result.append(f'{amount}{symbol}')
+        duration //= max_amount
+        if duration == 0:
+            break
+
+    if duration:
+        result.append(f'{duration}d')
+
+    return ' '.join(reversed(result))
+
 ellie_list = ['2024_04_19-09_37_28_PM-mini_report.csv', '2024_04_19-10_02_13_PM-mini_report.csv']
 
 trial_names = []
@@ -76,6 +99,17 @@ for file_name in mini_list:
     keypress_file   = open(waypoints_path)
     df_chunk        = pd.read_csv(waypoints_path, index_col=False) #, columns=['path_label', 'status', 'timestamp', 'time_elapsed'])
     df_chunk = df_chunk.rename(columns={" status": "status", " time": "time", " iteration_number": "iteration_number"})
+
+    time_last   = int(df_chunk['time'].max())
+    time_first  = int(df_chunk['time'].min())
+    # time_last   = dt.fromtimestamp(time_last)
+    # time_first  = dt.fromtimestamp(time_first)
+
+    total_time = time_last - time_first
+    # print("Total trial time of " + str(total_time))
+
+    print(path_filename)
+    print("\t " + format_duration(total_time))
 
     # if file_name in ellie_list:
     #     df_chunk = add_trial_numbers(df_chunk)
