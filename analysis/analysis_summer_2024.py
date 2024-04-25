@@ -3,6 +3,7 @@ import pandas as pd
 import copy
 import numpy as np
 import matplotlib.pyplot as plt  
+import pingouin as pg
 
 pd.set_option('display.max_colwidth', None)
 np.set_printoptions(suppress=True)
@@ -68,7 +69,7 @@ trial_names = []
 ### SIMPLIFIED DATA
 for file_name in mini_list:
     waypoints_path = "mission_reports/" + file_name
-    path_name = file_name.replace('.csv','')
+    path_filename = file_name.replace('.csv','')
     # print(path_name)
 
     keypress_file   = open(waypoints_path)
@@ -84,7 +85,7 @@ for file_name in mini_list:
     if df_chunk['time'].dtype == str:
         df_chunk['time']        = df_chunk['time'].str.replace("'", "")
 
-    df_chunk['participant_id'] = path_name
+    df_chunk['participant_id'] = path_filename
     df_chunk[['path_name', 'path_style']] = df_chunk['trial'].str.split('-', n=1, expand=True)
 
     df_chunk['iteration_string'] = pd.Series(df_chunk['iteration_number'], dtype="string")
@@ -98,7 +99,7 @@ for file_name in mini_list:
     df_chunk['is_ambig'] = df_chunk['path_type'].isin(['diag_long_to', 'diag_long_from', 'back_long', 'front_long', 'diag_obs_long_to', 'diag_obs_long_from'])
     df_chunk = df_chunk.loc[:,['time', 'trial', 'path_name', 'path_style', 'path_type', 'status', 'is_ambig', 'iteration_number', 'participant_id', 'path_type_unique_id']]
 
-    trial_names.append(path_name)
+    trial_names.append(path_filename)
     df_chunks_mini.append(copy.copy(df_chunk))
 
 
@@ -149,7 +150,7 @@ order_status = ["PREP", "START", "END", "PARK"]
 
 # df_weird['path_style']  = pd.Categorical(df_weird['path_style'], categories=["early", "even", "late"], ordered=True)
 # df_weird['status']      = pd.Categorical(df_weird['status'], categories=["PREP", "START", "END", "PARK"], ordered=True)
-df_weird = df_weird.pivot_table(values='time', index=['path_name'], columns=['path_style', 'status'], aggfunc='count', fill_value=0)
+df_weird = df_weird.pivot_table(values='time', index=['path_name'], columns=['path_style'], aggfunc='count', fill_value=0)
 
 
 # new_index = pd.MultiIndex.from_product(
@@ -239,6 +240,8 @@ for trial in trials_for_analysis:
     is_final = True
     guess_from_end = None
 
+    participant_id = df_relevant_data['participant_id'].unique()[0]
+
     for index, click in df_clicks.iloc[::-1].iterrows():
         click_time          = click['timestamp']
         click_guess         = click['guess']
@@ -254,26 +257,27 @@ for trial in trials_for_analysis:
 
         guess_from_end = click_guess
 
+        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), is_final, with_obs, phase, path_type, path_style, trial, participant_id]
+        to_add.append(result)
+
         if is_final and (guess_from_end == correct_answer):
             is_final = True
         else:
             is_final = False
-
-        result = [click_guess, timestamp_end - click_time, (correct_answer == click_guess), is_final, with_obs, phase, path_type, path_style, trial]
-        to_add.append(result)
 
 
     results_list.extend(to_add[::-1])
 
     ### The last correct guess is_final
 
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial'])
+####### PIVOT TABLES
+
+df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'is_correct', 'is_final', 'with_obs', 'phase', 'path_type', 'path_style', 'trial', 'participant_id'])
 df_results.to_csv("results.csv")
 
 ### TODO MAKE THIS BETTER SO JUST WHETHER THERE'S MORE THAN ONE CLICK PER
 df_pivot_count = df_results.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
-df_pivot_count.to_csv("graphics/csvs/" + "counts.csv")
-
+df_pivot_count.to_csv("graphics/csvs/" + "raw_counts.csv")
 
 ##### Graph the results
 path_style_options  = list(df_results['path_style'].unique())
@@ -323,6 +327,7 @@ for pt in path_type_options:
 
     fig, ax = plt.subplots(1)
     df_pivot_incorrect = df_inspect_all_incorrect.pivot_table(values='is_correct', index=['path_style'], aggfunc='count', fill_value=0)
+    df_pivot_incorrect.to_csv("graphics/csvs/" + "incorrect_guesses.csv")
 
     # df_inspect.groupby(['is_correct']).count().plot(kind='bar')
     # counts = df_inspect_all_incorrect[['path_style', 'is_correct']].groupby(['path_style', 'is_correct']).agg(len)
@@ -343,7 +348,87 @@ for pt in path_type_options:
 
 
 print("Done with analysis")
-# print(df_results)
+
+def do_anova_and_posthoc(df, analysis_label):
+    subject_id = 'participant_id'
+    method_label = 'path_style'
+
+    aov = pg.rm_anova(dv=analysis_label, within=method_label, subject=subject_id, data=df)
+    aov.round(3)
+
+    aov.to_csv(analysis_label + '_anova.csv')
+
+    # read off the p-value
+    p_val = aov['p-unc'][0]
+    if p_val < .05:
+        # then something is here
+        print("(+) ANOVA found significance for " + analysis_label + "!")
+        f_val = str(aov['F'][0])
+        dof1 = str(aov['ddof1'][0])
+        dof2 = str(aov['ddof2'][0])
+
+        if float(p_val) < .001:
+            lt      = '.001'
+        elif float(p_val) < .01:
+            lt      = '.01'
+        elif float(p_val) < .05:
+            lt      = '.05'
+        
+        print("(" + "F(" + str(dof1) + "," + dof2 + ") = " + f_val + ", p<" +  lt + ")")
+    else:
+        print("(-) ANOVA found no significance for " + analysis_label + ".")
+        return
+    
+    posthocs = pg.pairwise_tukey(dv=analysis_label, between=method_label, data=df)
+    posthocs.to_csv(analysis_label + '_posthocs.csv')
+
+    # print("Look at the values saved in " + analysis_label + '_posthocs.csv' + " to find which differences are ss")
+    # print('p<.05 = *,     p<.01 = **,     p<.001 = ***')
+    # print("Then you can denote it on your graphs and in results")
+    
+    for index, row in posthocs.iterrows():
+
+        a   = str(row['A'])
+        b   = str(row['B'])
+
+        a_mean = str(row['mean(A)'])
+        b_mean = str(row['mean(A)'])
+
+        p   = str(row['p-tukey'])
+
+        lt              = 'ns'
+        stars           = ''
+        relationship    = '~='
+
+        if float(p) < .001:
+            lt      = '.001'
+            stars   = '***'
+        elif float(p) < .01:
+            lt      = '.01'
+            stars   = '**'
+        elif float(p) < .05:
+            lt      = '.05'
+            stars   = '*'
+
+        if lt != 'ns':
+            if a_mean > b_mean:
+                relationship = ' > '
+            else:
+                relationship = ' < '
+
+        output = "\t" + a + relationship + b + " \t:\t" + stars
+        if lt != 'ns':
+            output += "\t(p<" + lt + ")"
+
+        print(output)
+
+
+# print(df_results.columns)
+
+
+# metric_col = 'time_before_end'
+# do_anova_and_posthoc(df_results, metric_col)
+
 
 
 
