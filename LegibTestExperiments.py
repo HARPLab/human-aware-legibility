@@ -9,7 +9,7 @@ import os
 import sys
 import copy
 import time
-
+from pathlib import Path
 
 module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
@@ -67,9 +67,9 @@ def get_dashboard_folder():
 
     dashboard_file_id = datetime.now().strftime("%Y_%m_%d-%I_%M_%S_%p") + "-" + "exp-" + purpose_fn
     try:
-        os.mkdir(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id)
+        os.mkdir(Path(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id))
 
-        with open(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + '/readme.txt', 'w') as f:
+        with open(Path(LegiblePathQRCost.PREFIX_EXPORT + dashboard_file_id + '/readme.txt'), 'w') as f:
             f.write(purpose)
     except:
         print("FILE ALREADY EXISTS " + file_id)
@@ -207,7 +207,7 @@ def test_understanding_set(dash_folder, scenario_filters):
             fig.suptitle("=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
-            plt.savefig(save_location + ".png")
+            plt.savefig(Path(save_location + ".png"))
             plt.close()
             plt.clf()
 
@@ -234,7 +234,7 @@ def test_understanding_set(dash_folder, scenario_filters):
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         # plt.tight_layout()
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close()
         plt.clf()
 
@@ -643,7 +643,7 @@ def test_study_set(dash_folder, scenario_filters):
             fig.suptitle("=g" + str(goal_name)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
-            plt.savefig(save_location + ".png")
+            plt.savefig(Path(save_location + ".png"))
             plt.close()
             plt.clf()
 
@@ -682,7 +682,7 @@ def test_study_set(dash_folder, scenario_filters):
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         # plt.tight_layout()
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close()
         plt.clf()
 
@@ -796,7 +796,7 @@ def test_locality_set(dash_folder, scenario_filters):
             fig.suptitle("=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
-            plt.savefig(save_location + ".png")
+            plt.savefig(Path(save_location + ".png"))
             plt.close()
             plt.clf()
 
@@ -825,7 +825,7 @@ def test_locality_set(dash_folder, scenario_filters):
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         # plt.tight_layout()
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close()
         plt.clf()
 
@@ -914,7 +914,7 @@ def test_raw_set(dash_folder, scenario_filters):
             fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
-            plt.savefig(save_location + ".png")
+            plt.savefig(Path(save_location + ".png"))
             plt.close()
             plt.clf()
 
@@ -941,7 +941,7 @@ def test_raw_set(dash_folder, scenario_filters):
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         # plt.tight_layout()
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close()
         plt.clf()
 
@@ -1044,7 +1044,7 @@ def test_full_set(dash_folder, scenario_filters):
             fig.suptitle("cross=g" + str(gi)) # + " " + mega_scenario.get_goal_label())
             plt.subplots_adjust(top=0.9)
             # plt.tight_layout()
-            plt.savefig(save_location + ".png")
+            plt.savefig(Path(save_location + ".png"))
             plt.close()
             plt.clf()
 
@@ -1071,7 +1071,7 @@ def test_full_set(dash_folder, scenario_filters):
         fig.suptitle("cross=all") # + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
         # plt.tight_layout()
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close()
         plt.clf()
 
@@ -1141,7 +1141,7 @@ def test_vanilla_set(dash_folder, scenario_filters):
         plt.tight_layout()
         fig.suptitle("legib=" + " " + mega_scenario.get_goal_label())
         plt.subplots_adjust(top=0.9)
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
 
 
         collate_and_report_on_results(dash_folder)
@@ -1210,7 +1210,7 @@ def test_amount_of_slack(dash_folder, scenario_filters):
     
         plt.tight_layout()
         fig.suptitle("N=" + str(base_N) + " " + n_scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1275,7 +1275,7 @@ def test_observers_rotated(dash_folder, scenario_filters):
     
         plt.tight_layout()
         fig.suptitle("Goal = " + rot_scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
     # collate_and_report_on_results(dash_folder)
@@ -1349,7 +1349,7 @@ def test_heading_useful_or_no(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + pure_heading.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1407,7 +1407,7 @@ def test_heading_sqr_or_no(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + heading_sqr.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1468,7 +1468,7 @@ def test_normalized_or_no(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + with_heading.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1529,7 +1529,7 @@ def test_weighted_by_distance_or_no(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1568,7 +1568,7 @@ def test_obstacles_being_avoided(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + scenario.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)
@@ -1617,7 +1617,7 @@ def test_observers_being_respected(dash_folder, scenario_filters):
 
         plt.tight_layout()
         fig.suptitle("Goal = " + cost_wout_oa.get_goal_label())
-        plt.savefig(save_location + ".png")
+        plt.savefig(Path(save_location + ".png"))
         plt.close('all')
 
         collate_and_report_on_results(dash_folder)

@@ -4,6 +4,7 @@ module_path = os.path.abspath(os.path.join('../ilqr'))
 if module_path not in sys.path:
     sys.path.append(module_path)
 import copy
+from pathlib import Path
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -200,10 +201,8 @@ class LegiblePathQRCost(FiniteDiffCost):
     def init_output_log(self, dash_folder):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
-        try:
-            sys.stdout = open(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt','a')
-        except:
-            print("Can't log to " + self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt')
+
+        sys.stdout = open(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt','a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
