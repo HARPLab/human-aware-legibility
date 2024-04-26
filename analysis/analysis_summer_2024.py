@@ -353,22 +353,21 @@ for participant_id in list(df_results['participant_id'].unique()):
 
     df_clicks = df_keypress[df_keypress['timestamp'].between(part_time_first, part_time_last, inclusive='both')]
 
-    print(part_time_first, part_time_last)
-    print(key_time_first, key_time_last)
+    # print(part_time_first, part_time_last)
+    # print(key_time_first, key_time_last)
 
     # print(len(df_clicks))
     # print(len(df_part))
 
+    keypresses  = (df_clicks['timestamp'].unique())
+    guesses     = df_part['time'].unique()
 
-    keypresses = set(df_clicks['timestamp'].unique())
-    guesses = df_part['time'].unique()
+    remaining = keypresses - guesses
+    # print("REMAINING")
+    # print(remaining)
 
-    # for index, row in df_part.iterrows():
-    #     if row['time'] not in keypresses:
-    #         print("Unassigned keypress: " + row)
-
-    print(len(keypresses))
-    print(len(guesses))
+    # print(len(keypresses))
+    # print(len(guesses))
 
 
 
