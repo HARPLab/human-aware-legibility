@@ -138,6 +138,8 @@ class PathingExperiment():
 
     ti = 0
 
+    new_N = 1
+
     def __init__(self, label, restaurant, f_label=None, cost_label=None):
         self.exp_label  = label
         self.restaurant = restaurant
@@ -243,10 +245,27 @@ class PathingExperiment():
         crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
         step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
 
+        ##### LONG EDGES
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_c):
+            # return int(resolution * 2)
+            step_vector = [step_vector[0], step_vector[1] + -.05] # Add a bias
 
-        # u_blank  = np.asarray(step_vector)
-        # Urefline = np.tile(u_blank, (N, 1))
-        # Urefline = np.reshape(Urefline, (-1, action_size))
+            u_blank  = np.asarray(step_vector)
+            Urefline = np.tile(u_blank, (N, 1))
+            Urefline = np.reshape(Urefline, (-1, action_size))
+
+            return Urefline
+
+        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_c) and self.get_target_goal() == goal_d:
+            # return int(resolution * 2)
+            step_vector = [step_vector[0] + -.05, step_vector[1]] # Add a bias
+
+            u_blank  = np.asarray(step_vector)
+            Urefline = np.tile(u_blank, (N, 1))
+            Urefline = np.reshape(Urefline, (-1, action_size))
+
+            return Urefline
 
         u_blank  = np.asarray([0.0, 0.0])
         Urefline = np.tile(u_blank, (N, 1))
@@ -1017,6 +1036,98 @@ class PathingExperiment():
         self.lam = lam
 
     def get_lambda(self):
-        return self.lam
+        tar_goal    = self.get_target_goal()
+        start       = self.get_start()
+        start_goal  = start
+
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+
+        # if self.dist_between(tar_goal, start_goal) != self.dist_between(goal_a, goal_b):
+        #     return 100000.0
+
+        ### MODE FOR FASTER SEARCH OF KEY SUBSECTIONS
+        # If AB chunk
+        if start[0] == goal_a[0] and start[1] == goal_a[1] and tar_goal[0] == goal_b[0] and tar_goal[0] == goal_b[0]:
+            return self.lam
+
+        if start[0] == goal_b[0] and start[1] == goal_b[1] and tar_goal[0] == goal_a[0] and tar_goal[0] == goal_a[0]:
+            return self.lam
+
+        if start[0] == goal_a[0] and start[1] == goal_a[1] and tar_goal[0] == goal_e[0] and tar_goal[0] == goal_e[0]:
+            return self.lam
+
+        if start[0] == goal_a[0] and start[1] == goal_a[1] and tar_goal[0] == goal_c[0] and tar_goal[0] == goal_c[0]:
+            return self.lam
+
+        # return 100000.0
+
+        resolution = self.lam
 
 
+
+        ##### SHORT EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_b):
+            return self.lam
+
+        ##### LONG EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_c):
+            return self.lam
+
+        ##### SHORT DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_e):
+            return self.lam # * np.sqrt(2)
+
+        ##### LONG DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_f):
+            return self.lam # * np.sqrt(3))
+
+        # else
+        return self.N #* 10
+
+
+    def set_num_iterations(self, n):
+        self.new_N = n
+
+    def get_num_iterations(self):
+        return self.new_N
+
+
+    def get_initial_path(self):
+        state_size  = self.get_state_size()
+        start   = self.get_start()
+        goal    = self.get_target_goal()
+
+        if state_size == 4:
+            x0_raw          = np.asarray([start[0],    start[1],   start[0],    start[1]]).T
+            x_goal_raw      = np.asarray([goal[0],     goal[1],    goal[0],     goal[1]]).T
+
+        elif state_size == 3:
+            x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
+            x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
+
+        elif state_size == 2:
+            x_goal_raw = x_goal_raw[:2]
+            x0_raw = x0_raw[:2]
+
+        return x_goal_raw, x0_raw
+
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+
+        ##### SHORT EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_b):
+            return int(resolution)
+
+        ##### LONG EDGES
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_c):
+            return int(resolution * 2)
+
+        ##### SHORT DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_e):
+            return int(resolution * np.sqrt(2))
+
+        ##### LONG DIAG
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(goal_a, goal_f):
+            return int(resolution * np.sqrt(3))
+
+
+        return 
