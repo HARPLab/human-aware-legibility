@@ -822,7 +822,7 @@ class LegiblePathQRCost(FiniteDiffCost):
     
         overall_name = folder_name + self.file_id + self.exp.get_fn_notes_ada()
         try:
-            os.mkdir(folder_name)
+            os.mkdir(Path(folder_name))
         except:
             print("FILE ALREADY EXISTS " + self.file_id)
 
