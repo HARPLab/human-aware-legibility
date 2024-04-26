@@ -42,7 +42,7 @@ FLAG_PD_WITH_ALTS           = False
 
 class RelevantPathQRCost(LegiblePathQRCost):
     FLAG_DEBUG_J = False
-    FLAG_DEBUG_STAGE_AND_TERM = True
+    FLAG_DEBUG_STAGE_AND_TERM = False
 
     FLAG_COST_PATH_OVERALL  = True
     FLAG_OBS_FLAT_PENALTY   = True
@@ -141,30 +141,30 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # print("obspenalty is: ")
         # print(Fpsp)
 
-        if Fpsp < 0:
-            print("ALERT: REWARD FOR ENTERING OBSTACLE!")
+        # if Fpsp < 0:
+        #     print("ALERT: REWARD FOR ENTERING OBSTACLE!")
 
-        if obst_dist < obstacle_radius:
-            print("Inside the actual obj")
-            print(x, obst_center)
-            print("Distance")
-            print(obst_dist, self.dist_between(obst_center, x))
-            if Fpsp == 0:
-                print("ALERT: no penalty")
-        elif obst_dist < obstacle_buffer + obstacle_radius:
-            print("Inside the overall force diagram")
-            print(x, obst_center)
-            print("Distance")
-            print(obst_dist, self.dist_between(obst_center, x))
-            if Fpsp == 0:
-                print("ALERT: no penalty")
-        else:
-            print("Not in an obstacle")
-            if Fpsp > 0:
-                print("ALERT: obstacle penalty when not in object")
+        # if obst_dist < obstacle_radius:
+        #     print("Inside the actual obj")
+        #     print(x, obst_center)
+        #     print("Distance")
+        #     print(obst_dist, self.dist_between(obst_center, x))
+        #     if Fpsp == 0:
+        #         print("ALERT: no penalty")
+        # elif obst_dist < obstacle_buffer + obstacle_radius:
+        #     print("Inside the overall force diagram")
+        #     print(x, obst_center)
+        #     print("Distance")
+        #     print(obst_dist, self.dist_between(obst_center, x))
+        #     if Fpsp == 0:
+        #         print("ALERT: no penalty")
+        # else:
+        #     print("Not in an obstacle")
+        #     if Fpsp > 0:
+        #         print("ALERT: obstacle penalty when not in object")
 
-        if Fpsp > 0:
-            print("Penalty: " + str(Fpsp))
+        # if Fpsp > 0:
+        #     print("Penalty: " + str(Fpsp))
 
         return 0.0
         return Fpsp
@@ -210,8 +210,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
         #     obstacle_penalty += np.exp(np.abs(y_val - goal_a[1])) * 1000
 
 
-        print("OBSTACLE PENALTY IS")
-        print(obstacle_penalty)
+        # print("OBSTACLE PENALTY IS")
+        # print(obstacle_penalty)
 
         return obstacle_penalty
 
@@ -281,17 +281,17 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # if angle < 0:
         #     angle = 360 - angle
 
-        print("Robot looking at " + str(prev_angle))
-        print("Opp: " + str(prev_angle_rev))
-        print("Angle to goal is " + str(goal_angle))
+        # print("Robot looking at " + str(prev_angle))
+        # print("Opp: " + str(prev_angle_rev))
+        # print("Angle to goal is " + str(goal_angle))
 
         offset = np.abs(prev_angle - goal_angle)
-        print("OG offset " + str(offset))
+        # print("OG offset " + str(offset))
 
         if offset > 180:
             offset = 360 - offset
 
-        print("final offset " + str(offset))
+        # print("final offset " + str(offset))
 
 
         return offset
@@ -390,9 +390,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
         v1_u = self.unit_vector(v1)
         v2_u = self.unit_vector(v2)
         
-        print("unit vecs")
-        print(v1_u)
-        print(v2_u)
+        # print("unit vecs")
+        # print(v1_u)
+        # print(v2_u)
         ang = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
         return ang
 
@@ -535,7 +535,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # Version that uses pt differences
         heading_P_oa_4d = self.prob_heading_from_pt_seq_alt_4d(x_cur, x_prev, u_output, i_in, goal_in, visibility_coeff, override=override)
 
-        print("HEADCOMP: " + str(heading_P_oa_4d))
+        # print("HEADCOMP: " + str(heading_P_oa_4d))
         # print("HEADCOMP: " + str(heading_P_oa) + " vs " + str(heading_P_oa_4d))
 
         # If you did nothing and stood in the same spot, 
@@ -555,7 +555,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if override != None:
             if 'mode_heading' in override.keys():
                 mode_heading = override['mode_heading']
-                print("OO: override to do heading mode")
+                # print("OO: override to do heading mode")
 
         if u_in is not None:
             u = copy.copy(u_in)
@@ -570,13 +570,14 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
             print("WARNING: Goal and exp goal not the same in prob heading")
             print(goal[:2], self.exp.get_target_goal()[:2])
+            pass
             # exit()
 
         x_total = np.concatenate((x_cur, x_prev))
         debug_dict = {'x': x_total, 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(), 'override': override, 'mode_heading': mode_heading}
         
-        print("HEADING EFFORT COST INPUTS")
-        print(debug_dict)
+        # print("HEADING EFFORT COST INPUTS")
+        # print(debug_dict)
 
         target_vector           = None
         all_goal_headings       = []
@@ -598,7 +599,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
             # all_goal_vectors.append(goal_vector)
 
             if np.array_equal(alt_goal[:2], goal[:2]):
-                print("Yes, is target")
+                # print("Yes, is target")
                 target_index = j
 
             # effort_made = self.get_angle_between_triplet(x_prev, x, alt_goal)
@@ -608,10 +609,10 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
             if angle_to_look < 0:
                 print(goal_angle_diff)
-                print("eeek negative angle diff")
+                # print("eeek negative angle diff")
 
-            print("Angle to look at goal " + str(alt_goal) + " is " + str(angle_to_look))
-            print("Effort is " + str(effort_made))
+            # print("Angle to look at goal " + str(alt_goal) + " is " + str(angle_to_look))
+            # print("Effort is " + str(effort_made))
 
             # if (effort_made) > 180 or (effort_made) < 0:
             #     print("ALERT: Get angle between needs some work")
@@ -624,8 +625,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
             all_effort_measures.append(effort_made)
 
-        print("All effort measures")
-        print(all_effort_measures)
+        # print("All effort measures")
+        # print(all_effort_measures)
 
         target_val  = all_effort_measures[target_index]
         total       = sum(all_effort_measures)
@@ -633,11 +634,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         try:
             all_probs = [x/total for x in all_effort_measures]
-            print(all_probs)
+            # print(all_probs)
 
             P_heading   = ((target_val) / total)
         except (ValueError, decimal.InvalidOperation, ZeroDivisionError):
-            print("Alert: Heading has divide by 0")
+            # print("Alert: Heading has divide by 0")
             P_heading = (1.0 / num_goals)
             P_heading = 0.0
 
@@ -657,7 +658,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if override != None:
             if 'mode_heading' in override.keys():
                 mode_heading = override['mode_heading']
-                print("OO: override to do heading mode")
+                # print("OO: override to do heading mode")
 
         if u_in is not None:
             u = copy.copy(u_in)
@@ -672,19 +673,20 @@ class RelevantPathQRCost(LegiblePathQRCost):
         x_current = x_triplet[:2]
 
         debug_dict = {'x': x_triplet, 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(), 'override': override, 'mode_heading': mode_heading}
-        print("HEADING COST INPUTS")
-        print(debug_dict)
+        # print("HEADING COST INPUTS")
+        # print(debug_dict)
 
         if x_triplet[2] == None:
-            print("Robot theta not yet set in theta solve mode, is that a problem?")
+            # print("Robot theta not yet set in theta solve mode, is that a problem?")
             return (0.0)
         else:
             robot_theta = x_triplet[2]
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
-            print("Goal and exp goal not the same in prob heading")
-            print(goal, self.exp.get_target_goal())
+            # print("Goal and exp goal not the same in prob heading")
+            # print(goal, self.exp.get_target_goal())
             # exit()
+            pass
 
 
         # # if we are at the goal, we by definition are arriving correctly
@@ -706,25 +708,26 @@ class RelevantPathQRCost(LegiblePathQRCost):
             # all_goal_vectors.append(goal_vector)
 
             if np.array_equal(alt_goal[:2], goal[:2]):
-                print("Yes, is target")
+                # print("Yes, is target")
                 target_index = j
             else:
-                print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
+                # print("no, mismatch of " + str(alt_goal) + " != " + str(goal))
+                pass
 
             goal_heading = self.get_heading_of_pt_diff_p2_p1(alt_goal, x_current)
             all_goal_headings.append(goal_heading)
 
-        print("All goal headings")
-        print(all_goal_headings)
+        # print("All goal headings")
+        # print(all_goal_headings)
 
         all_effort_measures         = []
         all_offset_angles           = []
         for ghead in all_goal_headings:
-            print("Goal angle diff for " + str(robot_theta) + " -> " + str(ghead))
+            # print("Goal angle diff for " + str(robot_theta) + " -> " + str(ghead))
             goal_angle_diff  = self.get_min_rotate_angle_diff(robot_theta, ghead)
-            print("goal angle diff " + str(goal_angle_diff))
+            # print("goal angle diff " + str(goal_angle_diff))
             effort_made = (180.0 - goal_angle_diff)
-            print("effort made " + str(effort_made))
+            # print("effort made " + str(effort_made))
 
             # effort_two = self.get_angle_between_triplet(a, b, c)
 
@@ -732,9 +735,10 @@ class RelevantPathQRCost(LegiblePathQRCost):
             #     print("ALERT: Get angle between needs some work")
             #     # exit()
             if goal_angle_diff < 0:
-                print(goal_angle_diff)
-                print("eeek negative angle diff")
+                # print(goal_angle_diff)
+                # print("eeek negative angle diff")
                 # exit()
+                pass
 
             if mode_heading == 'sqr':
                 effort_made = effort_made**2
@@ -742,17 +746,17 @@ class RelevantPathQRCost(LegiblePathQRCost):
             all_offset_angles.append(goal_angle_diff)
             all_effort_measures.append(effort_made)
 
-        print("All angle vectors to goals")
-        print(all_offset_angles)
-        print("All effort measures")
-        print(all_effort_measures)
+        # print("All angle vectors to goals")
+        # print(all_offset_angles)
+        # print("All effort measures")
+        # print(all_effort_measures)
 
         target_val  = all_effort_measures[target_index]
         total       = sum(all_effort_measures)
 
         try:
             all_probs = [x/total for x in all_effort_measures]
-            print(all_probs)
+            # print(all_probs)
 
             P_heading   = (target_val) / total
         except (ValueError, decimal.InvalidOperation):
@@ -772,18 +776,19 @@ class RelevantPathQRCost(LegiblePathQRCost):
         else:
             x0 = x
 
-        print("Points in a row")
-        print(x0, x1)
+        # print("Points in a row")
+        # print(x0, x1)
 
         if x1 == x0:
-            print("Robot has no diff, so no heading")
-            print(i)
+            # print("Robot has no diff, so no heading")
+            # print(i)
             while j > 0 and x1 == x0:
                 j = j - 1
                 x0 = self.x_path[j - 1]
 
         if x1 == x0:
-            print("Still a problem here with heading diff")
+            # print("Still a problem here with heading diff")
+            pass
 
         return x1 - x0
 
@@ -805,11 +810,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
                 target_vector = goal_vector
             all_goal_vectors.append(goal_vector)
 
-        print("robot vector")
-        print(robot_vector)
+        # print("robot vector")
+        # print(robot_vector)
 
-        print("all goal vectors")
-        print(all_goal_vectors)
+        # print("all goal vectors")
+        # print(all_goal_vectors)
 
         all_goal_angles   = []
         for gvec in all_goal_vectors:
@@ -818,8 +823,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         target_angle = self.get_angle_between(robot_vector, target_vector)
 
-        print("all target angles")
-        print(all_goal_angles)
+        # print("all target angles")
+        # print(all_goal_angles)
 
         angles_squared = []
         for i in range(len(all_goal_angles)):
@@ -838,12 +843,12 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         total = sum(angles_squared)
 
-        print("total")
-        print(total)
-        print("target_angle")
-        print(target_angle)
-        print("target angle sqr")
-        print(target_angle_sqr)
+        # print("total")
+        # print(total)
+        # print("target_angle")
+        # print(target_angle)
+        # print("target angle sqr")
+        # print(target_angle_sqr)
 
         denominator = (180*180) * len(all_goal_angles)
 
@@ -851,11 +856,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # heading_clarity_cost = (total - target_angle_sqr) / (denominator)
         # alt_goal_part_log = alt_goal_part_log / (total)
 
-        print("Heading component of pathing ")
-        print("Given x of " + str(x) + " and robot vector of " + str(robot_vector))
-        print("for goals " + str(goals))
-        # print(alt_goal_part_log)
-        print(heading_clarity_cost)
+        # print("Heading component of pathing ")
+        # print("Given x of " + str(x) + " and robot vector of " + str(robot_vector))
+        # print("for goals " + str(goals))
+        # # print(alt_goal_part_log)
+        # print(heading_clarity_cost)
         # print("good parts, bad parts")
         # print(good_part, bad_parts)
 
@@ -867,26 +872,26 @@ class RelevantPathQRCost(LegiblePathQRCost):
     def term_cost(self, x_triplet, i):
         start = self.start
         goal1 = self.target_goal
-        print("TERM GOAL IS " + str(self.target_goal))
+        # print("TERM GOAL IS " + str(self.target_goal))
 
         x               = x_triplet[:2]
         squared_x_cost  = self.get_x_diff(x, i)
 
-        print("IS TERM EVIL?")
-        print(x_triplet, self.x_path[i], squared_x_cost)
+        # print("IS TERM EVIL?")
+        # print(x_triplet, self.x_path[i], squared_x_cost)
 
         terminal_cost = squared_x_cost
 
         if terminal_cost is np.nan:
-            print("Alert: Terminal cost of nan, but how?")
-            print(x)
-            print(x_diff)
-            print(self.x_path)
+            # print("Alert: Terminal cost of nan, but how?")
+            # print(x)
+            # print(x_diff)
+            # print(self.x_path)
             terminal_cost = np.inf
 
         if self.FLAG_DEBUG_STAGE_AND_TERM:
-            print("term cost squared x cost")
-            print(squared_x_cost)
+            # print("term cost squared x cost")
+            # print(squared_x_cost)
             pass
 
         FLAG_CUTOFF_AFTER_AT_GOAL = False
@@ -895,12 +900,12 @@ class RelevantPathQRCost(LegiblePathQRCost):
             k = 10.0
             actual_goal_dist = np.linalg.norm(x - goal1)
             sufficient_goal_dist = (np.linalg.norm(start - goal1)) / (self.exp.get_N() * k)
-            print("sufficient_goal_dist = " + str(sufficient_goal_dist))
-            print("actual_goal_dist = " + str(actual_goal_dist))
+            # print("sufficient_goal_dist = " + str(sufficient_goal_dist))
+            # print("actual_goal_dist = " + str(actual_goal_dist))
 
             if actual_goal_dist < sufficient_goal_dist:
                 terminal_cost = 0.0
-                print("POP: WITHIN SUFFICIENT GOAL DIST")
+                # print("POP: WITHIN SUFFICIENT GOAL DIST")
 
 
         # We want to value this highly enough that we don't not end at the goal
@@ -908,8 +913,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
         coeff_terminal = self.exp.get_solver_scale_term()
         terminal_cost = terminal_cost * coeff_terminal
 
-        print("actual terminal cost")
-        print(terminal_cost)
+        # print("actual terminal cost")
+        # print(terminal_cost)
 
         # Once we're at the goal, the terminal cost is 0
         
@@ -956,9 +961,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
             print("FLAT PENALTY FOR NANS")
             return 0.0 #val_u_diff * 10000.0
 
-        print("udiff calc")
-        print(u, "-", self.u_path[i], u_diff, val_u_diff)
-        print(u_calc)
+        # print("udiff calc")
+        # print(u, "-", self.u_path[i], u_diff, val_u_diff)
+        # print(u_calc)
 
         return val_u_diff
 
@@ -998,9 +1003,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
         x_ref   = self.exp.get_target_goal()[:2]
         x_cur   = np.asarray([x_input[0], x_input[1]])
         x_diff  = x_cur - x_ref
-        print("xdiff detail")
-        print("x_input, x_ref, x_cur, x_diff")
-        print(x_input, x_ref, x_cur, x_diff)
+        # print("xdiff detail")
+        # print("x_input, x_ref, x_cur, x_diff")
+        # print(x_input, x_ref, x_cur, x_diff)
 
         Q = np.eye(2)
         squared_x_cost = .5 * x_diff.T.dot(Q).dot(x_diff)
@@ -1086,9 +1091,6 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         val_angle_diff  = 0
 
-
-        print("LE GOAL")
-        print(goal)
         ### USE ORIGINAL LEGIBILITY WHEN THERE ARE NO OBSERVERS
         is_vis_target, is_vis_secondary           = self.exp.get_visibility_of_all(x)
         islocal_target, islocal_secondary         = self.exp.get_is_local_of_all(x)
@@ -1098,7 +1100,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         ###### SET VALUES SET WT
         wt_legib        = 1.0
-        wt_lam          = 1.0 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = self.exp.get_lambda()  #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
@@ -1178,28 +1180,22 @@ class RelevantPathQRCost(LegiblePathQRCost):
             p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, P_all_returned=True)
         
             FLAG_SECONDARY_CONSIDERED = True
-            if self.exp.get_local_distance() == 10.0:
-                FLAG_SECONDARY_CONSIDERED = False
-
             
-            # closeness_scalar = self.get_relative_distance_value(i, start, goal, x, terminal, 'lin')
-            # relevance_scale = np.exp(i) / np.exp(self.exp.get_N())
-
-            target_costs = 1.0 - p_d   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+            target_costs = (1.0 - p_d)   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
             max_penalty = 1.0         # (1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
-            wt_lam      = 2.0 #.0
+            wt_lam      = self.exp.get_lambda() #.0
 
             ##### If it's not the key scenario we've calibrated to, fix that
             is_special = False
             for special in self.exp.get_goal_squad():
                 if start[0] == special[0] and start[1] == special[1]: 
-                    # Check if it's my perfect 
+                    # Check if it's my set of study points
                     is_special = True
 
             if not is_special:
                 # If it's not our targeted goal scenario,
                 # then reduce the lambda for more expressiveness
-                wt_lam = wt_lam / 10.0
+                wt_lam = wt_lam * 10.0
 
 
         # else:
@@ -1213,57 +1209,130 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         #### Also needs update for multi-goal
         # TARGET
-        if islocal_target and is_vis_target:
-            val_understanding_target = target_costs
-            print("IS LOCAL == YES")
+        # if islocal_target and is_vis_target:
+        #     val_understanding_target = target_costs # * (i / self.exp.get_N())#* (self.exp.get_N() - i + 1)
+
+        #     # closer to the end, more valuable
+        #     print("IS LOCAL == YES")
+
+        # elif not is_vis_target:
+        #     val_understanding_target = max_penalty * 2.0  #* (self.exp.get_N() + 100.0)
+
+        # else:
+        #     # locality_quotient        = (self.exp.get_local_distance() - self.exp.dist_between(goal, x)) / self.exp.get_local_distance()
+        #     # nonlocality_quotient     = (self.exp.dist_between(goal, x)) / self.exp.get_local_distance()
+
+        #     # val_understanding_target = max_penalty * nonlocality_quotient + target_costs * locality_quotient
+        #     print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
+        #     # local_scalar             = 5.0    #1.0
+        #     val_understanding_target = 5.0 * target_costs # * (self.exp.get_N() + 1) # self.target_costs * #target_costs * local_scalar #(self.exp.get_N() - i)
+
+
+        
+        flipped = False
+        is_flat = False
+        if self.exp.get_local_distance() == 0:
+            is_flat = True
+        elif self.exp.get_local_distance() < 0:
+            flipped = True
+
+        local_dist_ratio = np.abs(self.exp.get_local_distance())
+
+        t_index = i
+        if flipped:
+            t_index = (self.exp.get_N() - i) + 1
+
+        sigmoid_midpoint = int(local_dist_ratio * (self.exp.get_N() + 1))
+
+        # flips at 0
+        k_val = 1.0 #2 / self.exp.get_N()
+        sigmoid_scalar = 1 / (1 + np.exp(-1 * k_val * (t_index - sigmoid_midpoint)))
+
+        if is_flat:
+            sigmoid_scalar = .5
+
+        if is_flat:
+            linear_scalar = .5
+        elif flipped:
+            linear_scalar = (self.exp.get_N() - i / self.exp.get_N())
         else:
+            linear_scalar = (i / self.exp.get_N())
 
-            locality_quotient        = (self.exp.get_local_distance() - self.exp.dist_between(goal, x)) / self.exp.get_local_distance()
-            nonlocality_quotient     = (self.exp.dist_between(goal, x)) / self.exp.get_local_distance()
-
-            val_understanding_target = max_penalty * nonlocality_quotient + target_costs * locality_quotient
-            print("IS LOCAL == NO == " + str(is_vis_target) + "---" + str(islocal_target))
-
-            val_understanding_target = max_penalty
+        val_understanding_target = target_costs * sigmoid_scalar #* 10.0
 
 
-        val_understanding_target    = target_costs
+        if not is_vis_target:
+            val_understanding_target += 1000000000.0
 
         val_understanding_secondary = 0
         max_val = 0
 
+        # penalties for secondary only matter if local, not visible
         if FLAG_SECONDARY_CONSIDERED:
-            closest_goal = self.exp.get_closest_any_goal_to_x(x)
 
-            for tg, tval in zip(top_goals, top_values):
+            goal_keepout_distance = self.exp.get_goal_keepout_distance()
 
-                # Add a k to weight this part of the ratio by in order to keep summing to 1
-                # but disproportionately penaize obstacles
-                # each could have a different value of k for their relative importance not to miscue
-                # or even one that varies as you get closer- but we want to stick to summing to 1
+            # for tg in self.exp.get_goals():
+            #     if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
+            #         val_understanding_secondary += self.exp.get_N() * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
 
-                # k = 10.0
+            closest_goal    = self.exp.get_closest_any_goal_to_x(x)
+            tg              = closest_goal
 
-                if goal != tg and self.exp.dist_between(tg, x) < self.exp.get_local_distance():
+            if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
+                val_understanding_secondary = 100.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
 
-                    scalar = (self.exp.get_local_distance() - self.exp.dist_between(tg, x)) / self.exp.get_local_distance()
-                    force = self.get_secondary_goal_force(x, tg)
+                if x[1] > -1.0:
+                    val_understanding_secondary += 10000.0 * x[1]
 
-                    # tval does from something additional to 1 at the goal itself
-                    val_understanding_secondary += tval * (force)
+            # tg = closest_goal
 
-                    # note that this is NOT inverted
-                    # val_understanding_secondary += tval
-                    # max_val = max(max_val, self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, goal_list=[tg, goal]))
-                    # You also get charged for the cost of this goal, if you're in its radius
+            # other_options = self.exp.get_closest_nontarget_goalp_to_x(x, num=2)
+
+            # if goal != tg and (self.exp.dist_between(tg, x) < goal_keepout_distance):
+            #     # force = self.get_secondary_goal_force(x, tg)
+            #     val_understanding_secondary = self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1) #, goal_list=[tg, goal])
+
+
+            #     # force = self.get_secondary_goal_force(x, tg)
+            #     # val_understanding_secondary = force * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2) #, goal_list=[tg, goal])
+
+            if False:
+                # for tg, tval in zip(top_goals, top_values):
+
+                #     # Add a k to weight this part of the ratio by in order to keep summing to 1
+                #     # but disproportionately penaize obstacles
+                #     # each could have a different value of k for their relative importance not to miscue
+                #     # or even one that varies as you get closer- but we want to stick to summing to 1
+
+                #     # k = 10.0
+                #     goal_keepout_distance = self.exp.get_goal_keepout_distance()
+
+                #     if goal != tg and (self.exp.dist_between(tg, x) < goal_keepout_distance):
+
+                #         scalar = (goal_keepout_distance - self.exp.dist_between(tg, x)) / goal_keepout_distance
+                #         force = self.get_secondary_goal_force(x, tg)
+
+                #         # tval does from something additional to 1 at the goal itself
+                #         val_understanding_secondary += tval * (force)
+
+                #         # note that this is NOT inverted
+                #         # val_understanding_secondary += tval
+                #         max_val += self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=, goal_list=[tg, goal])
+                #         # You also get charged for the cost of this goal, if you're in its radius
+                pass
 
             # val_understanding_secondary = max_val
+
+        # goal_keepout_distance = self.exp.get_goal_keepout_distance()
+        # if x[1] > -1 and (x[0] < 3 - goal_keepout_distance or x[0] > (3 + goal_keepout_distance)) :
+        #     wt_understanding_secondary += np.abs(x[1] - -1.0) * 100.0
 
 
         if (val_legib) < 0 or (val_lam) < 0 or (val_heading) < 0 or (val_obstacle) < 0:
             print("ALERT: NEGATIVE COST")
 
-        J = 0        
+        J = 0
 
         J += wt_understanding_target    * val_understanding_target
         J += wt_understanding_secondary * val_understanding_secondary
@@ -1315,7 +1384,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
     def get_secondary_goal_force(self, x, tg):
         obstacle_radius = 0.0
 
-        p0  = self.exp.get_local_distance()
+        p0  = self.exp.get_goal_keepout_distance()
         p   = self.exp.dist_between(tg, x)
         rho = p - obstacle_radius
 
@@ -1492,6 +1561,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
             print("WARN: LINALG IS DIFFERENT")
             print("dist, dist_linalg")
             print(dist, dist_linalg)
+            pass
 
         print("dist to the goal at <" + str(goal) + ">")
         print(dist)
@@ -1631,9 +1701,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         total_steps = self.exp.get_N()
 
-        # diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
-        # diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N())
-        # diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
+        diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
+        diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N())
+        diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
 
         n = - (diff_curr_v) - (diff_goal_v)
         d = diff_all_v
@@ -1836,12 +1906,13 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if override is not None:
             if 'mode_dist' in override.keys():
                 mode_dist = override['mode_dist']
-                print("OO: Dist override: " + str(mode_dist))
+                # print("OO: Dist override: " + str(mode_dist))
 
 
         if not np.array_equal(goal[:2], self.exp.get_target_goal()[:2]):
-            print("Goal and exp goal not the same in prob_distance")
-            print(goal[:2], self.exp.get_target_goal()[:2])
+            # print("Goal and exp goal not the same in prob_distance")
+            # print(goal[:2], self.exp.get_target_goal()[:2])
+            pass
 
         if visibility_coeff == 1 or visibility_coeff == 0:
             pass
@@ -1859,7 +1930,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
             print("GOAL: " + str(goal))
 
         if np.array_equal(x, goal):
-            print("We are on the goal")
+            # print("We are on the goal")
             P_dist = (1.0)
 
             num_goals   = len(all_goals)
@@ -1900,17 +1971,17 @@ class RelevantPathQRCost(LegiblePathQRCost):
         total = sum([abs(ele) for ele in goal_values])
 
         if mode_dist in ['exp', 'exp_lin']:
-            print("small value norm")
+            # print("small value norm")
             goal_values_norm = self.small_value_norm(goal_values)  
             # goal_values_norm_v1 = self.small_value_norm_v1(goal_values)   
-            print("LOGSUMEXP")
-            print(goal_values_norm)
+            # print("LOGSUMEXP")
+            # print(goal_values_norm)
             # print(goal_values_norm_v1)
             dist_prob = goal_values_norm[target_index]
             # dist_prob = target_val / np.linalg.norm(goal_values, ord=1)
 
-            print("Dist normalized")
-            print(dist_prob, goal_values)
+            # print("Dist normalized")
+            # print(dist_prob, goal_values)
 
         elif total == 0:
             print("ALERT: in prob distance division")
