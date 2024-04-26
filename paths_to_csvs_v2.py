@@ -328,6 +328,7 @@ def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict, o
 	# function to show the plot
 	plt.tight_layout()
 	plt.savefig(inspection_save_path + "overview" + '.png')
+	print(inspection_save_path + "overview" + '.png')
 	plt.clf()
 	plt.close()
 
@@ -394,8 +395,21 @@ def add_offramps(path_dict):
 
 	for key in path_dict.keys():
 		end_point = key[1]
-
 		new_path_dict[key] = path_dict[key] + ramps[end_point]
+
+		# print("Ending " + key)
+		# print(end_point)
+		# print(path_dict[key][-1])
+		# print(ramps[end_point])
+		# print()
+
+
+		dist = dist_between(path_dict[key][-1], ramps[end_point][0])
+		if dist > .51:
+			print(key)
+			print(dist)
+
+
 
 	return new_path_dict
 
@@ -523,9 +537,9 @@ def get_obstacle_paths():
 	obstacle_paths['FD_OBS-even']	= horizontal_flip(vertical_flip(path_ac_even))
 	obstacle_paths['FD_OBS-late']	= horizontal_flip(vertical_flip(path_ac_late))
 
-	obstacle_paths['DF_OBS-early'] 	= horizontal_flip(path_af_early)
-	obstacle_paths['DF_OBS-even'] 	= horizontal_flip(path_af_even)
-	obstacle_paths['DF_OBS-late'] 	= horizontal_flip(path_af_late)
+	obstacle_paths['DF_OBS-early'] 	= vertical_flip(path_ac_early)
+	obstacle_paths['DF_OBS-even'] 	= vertical_flip(path_ac_even)
+	obstacle_paths['DF_OBS-late'] 	= vertical_flip(path_ac_late)
 
 	obstacle_paths['CA_OBS-early'] 	= horizontal_flip(path_ac_early)
 	obstacle_paths['CA_OBS-even']	= horizontal_flip(path_ac_even)
@@ -535,13 +549,15 @@ def get_obstacle_paths():
 	obstacle_paths['CD_OBS-even'] 	= horizontal_flip(path_af_even)
 	obstacle_paths['CD_OBS-late'] 	= horizontal_flip(path_af_late)
 
-	obstacle_paths['FA_OBS-early'] 	= horizontal_flip(vertical_flip(path_ac_early))
-	obstacle_paths['FA_OBS-even']	= horizontal_flip(vertical_flip(path_ac_even))
-	obstacle_paths['FA_OBS-late']	= horizontal_flip(vertical_flip(path_ac_late))
+	obstacle_paths['FA_OBS-early'] 	= horizontal_flip(vertical_flip(path_af_early))
+	obstacle_paths['FA_OBS-even']	= horizontal_flip(vertical_flip(path_af_even))
+	obstacle_paths['FA_OBS-late']	= horizontal_flip(vertical_flip(path_af_late))
 	
 	obstacle_paths['DC_OBS-early'] 	= vertical_flip(path_af_early)
 	obstacle_paths['DC_OBS-even'] 	= vertical_flip(path_af_even)
 	obstacle_paths['DC_OBS-late'] 	= vertical_flip(path_af_late)
+
+
 
 	obstacle_paths = add_offramps(obstacle_paths)
 
