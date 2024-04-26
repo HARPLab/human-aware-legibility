@@ -29,6 +29,7 @@ keypress_path           = "keypress_log.csv"
 keypress_data = []
 df_keypress = pd.read_csv(keypress_path)
 df_keypress = df_keypress.astype({"timestamp": int, "guess": str})
+df_keypress['time'] = df_keypress['timestamp']
 
 
 ##### Import the robot movement data
