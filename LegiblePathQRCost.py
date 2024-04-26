@@ -818,7 +818,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         else:
             folder_name = PREFIX_EXPORT + self.file_id + note + "/" 
     
-        overall_name = folder_name + self.file_id
+        overall_name = folder_name + self.file_id + self.exp.get_fn_notes_ada()
         try:
             os.mkdir(folder_name)
         except:
@@ -860,6 +860,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             if label == 'dist_exp':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None})
+            elif label == 'dist_exp_nn':
+                p = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
             elif label == 'dist_sqr':
                 p = self.prob_distance(start, goal, x, u, i, terminal, bin_visibility, override={'mode_heading':None, 'mode_dist':'sqr', 'mode_blend':None})
             elif label == 'dist_lin':
@@ -1017,13 +1019,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.grid(axis='y')
 
         TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = self.exp.get_observer_radius()
+        OBS_RADIUS      = 0 #self.exp.get_observer_radius()
         GOAL_RADIUS     = self.exp.get_goal_radius()
-        OBS_BUFFER      = self.exp.get_obstacle_buffer()
+        OBS_BUFFER      = 0 #self.exp.get_obstacle_buffer()
 
-        TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
-        OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
-        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+        TABLE_RADIUS_BUFFER             = 0 #self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = 0 # self.exp.get_local_distance() # self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = 0 #self.exp.get_goal_radius() #+ self.exp.get_obstacle_buffer()
 
         tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -1071,7 +1073,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
             axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
 
-            half_fov = 60
+            half_fov = self.exp.get_FOV() / 2.0
             obs_color = 'yellow'
             fov1 = (angle + half_fov) % 360
             fov2 = (angle - half_fov) % 360
@@ -1241,7 +1243,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             goal_dict = self.exp.get_vislocal_status_of_point(x)
             g_target_key = (g_target[0], g_target[1])
-            can_see, is_local, local_dist = goal_dict[g_target_key]
+            can_see, is_local, ang, local_dist = goal_dict[g_target_key]
 
             neutral_color = '#aaaaaa'
 
@@ -1381,13 +1383,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.grid(axis='y')
 
         # TABLE_RADIUS    = self.exp.get_table_radius()
-        OBS_RADIUS      = self.exp.get_observer_radius()
+        OBS_RADIUS      = 0 #self.exp.get_observer_radius()
         GOAL_RADIUS     = self.exp.get_goal_radius()
-        OBS_BUFFER      = self.exp.get_obstacle_buffer()
+        OBS_BUFFER      = 0 #self.exp.get_obstacle_buffer()
 
-        # TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
-        OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
-        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+        TABLE_RADIUS_BUFFER             = 0 #self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = 0 #self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = 0 #self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
 
         # tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -1513,7 +1515,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
             axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
 
-            half_fov = 60
+            half_fov = self.exp.get_FOV() / 2.0
             obs_color = 'yellow'
             fov1 = (angle + half_fov) % 360
             fov2 = (angle - half_fov) % 360
@@ -1641,7 +1643,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         # TABLE_RADIUS_BUFFER             = self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
         OBSERVER_RADIUS_BUFFER          = self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
-        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = self.exp.get_goal_radius()# + self.exp.get_obstacle_buffer()
 
         # tables      = self.restaurant.get_tables()
         observers   = self.restaurant.get_observers()
@@ -1702,7 +1704,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 if just_target:
                     color_value = -10                
                     g_target_key = (g_target[0], g_target[1])
-                    is_vis_target, islocal_target, local_dist = goal_dict[g_target_key]
+                    is_vis_target, islocal_target, angle, local_dist = goal_dict[g_target_key]
 
                     # print("g_target_key")
                     # print(g_target_key, self.exp.get_observer_for_goal(g).get_center())
@@ -1719,7 +1721,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                     color_value = -10                
                     for g in self.exp.get_goals():
                         g_target_key = (g[0], g[1])
-                        is_vis_target, islocal_target, local_dist = goal_dict[g_target_key]
+                        is_vis_target, islocal_target, ang, local_dist = goal_dict[g_target_key]
 
                         # print("g_target_key")
                         # print(g_target_key, self.exp.get_observer_for_goal(g).get_center())
@@ -1814,7 +1816,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
             axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
 
-            half_fov = 60
+            half_fov = self.exp.get_FOV() / 2.0
             obs_color = 'yellow'
             fov1 = (angle + half_fov) % 360
             fov2 = (angle - half_fov) % 360
@@ -1937,6 +1939,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
 
+        FLAG_BONUS_GRAPHICS = False #True
+
         print("verts")
         print(verts)
         print("Attempt to display this path")
@@ -1953,15 +1957,18 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         ax0 = axes0['A']
-        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=True)
+        if FLAG_BONUS_GRAPHICS:
+            ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=True)
 
         fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         ax0 = axes0['A']
-        ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=False)
+        if FLAG_BONUS_GRAPHICS:
+            ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=False)
 
         fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         ax0 = axes0['A']
-        ax0 = self.draw_force_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
+        if FLAG_BONUS_GRAPHICS:
+            ax0 = self.draw_force_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
         
         # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
         
@@ -2043,7 +2050,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
 
-        p_dist_exp    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_exp')
+        p_dist_exp    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_exp_nn')
         p_dist_sqr    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_sqr')
         p_dist_lin    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'dist_lin')
         p_head_sqr    = self.get_prob_of_path_to_goal(verts, us, self.exp.get_target_goal(), 'head_sqr')
@@ -2145,7 +2152,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         _ = ax_p_dist_exp.set_xlabel("Time", fontweight='bold')
         _ = ax_p_dist_exp.set_ylabel("P(G | xi)", fontweight='bold')
-        _ = ax_p_dist_exp.set_title("P dist exp", fontweight='bold')
+        _ = ax_p_dist_exp.set_title("P dist exp NN", fontweight='bold')
 
         _ = ax_p_dist_sqr.set_xlabel("Time", fontweight='bold')
         _ = ax_p_dist_sqr.set_ylabel("P(G | xi)", fontweight='bold')
@@ -2268,9 +2275,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         u_filler    = [0, 0]
         us          = np.vstack([us, u_filler])
 
-        zipped = list(zip(ts, verts, us, p_dist_exp, p_dist_sqr, p_dist_lin, p_head_sqr, p_head_lin))
+        trimmed_verts = [[x[0], x[1]] for x in verts]
+        zipped = list(zip(ts, trimmed_verts, verts, us, p_dist_exp, p_dist_sqr, p_dist_lin, p_head_sqr, p_head_lin))
 
-        df = pd.DataFrame(zipped, columns=['ts', 'verts', 'us', 'p_dist_exp', 'p_dist_sqr', 'p_dist_lin', 'p_head_sqr', 'p_head_lin'])
+        df = pd.DataFrame(zipped, columns=['ts', 'path', 'verts', 'us', 'p_dist_exp', 'p_dist_sqr', 'p_dist_lin', 'p_head_sqr', 'p_head_lin'])
         df.to_csv(self.get_export_label(dash_folder) + '-overview.csv')
 
 

@@ -622,6 +622,9 @@ class PathingExperiment():
 
         return blurb        
 
+    def get_fn_notes_ada(self):
+        return "lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
+
     def set_target_goal_index(self, ti):
         self.target_goal        = self.goals[ti]
         self.target_observer    = self.observers[ti]
