@@ -623,7 +623,7 @@ class PathingExperiment():
         return blurb        
 
     def get_fn_notes_ada(self):
-        return "lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
+        return self.get_pretty_study_label(self.get_target_goal(), self.get_start()) + "_lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
 
     def set_target_goal_index(self, ti):
         self.target_goal        = self.goals[ti]
