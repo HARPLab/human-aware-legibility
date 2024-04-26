@@ -1,11 +1,10 @@
-purpose = "exp_53_nova2_lm2_u_force_sec_n15_sl" #_sec" #5t_10s_l10_weighted_both" force_
+purpose = "exp_54_nova_which3_tune100" #sig_lite" #_sec" #5t_10s_l10_weighted_both" force_
 # purpose = "53_sec_diff"
 # purpose = "exp_52_solo_maxp5_2xval" #local_revert"  #og_more_dense" #
 # purpose = "exp_48_legnew_novisl_raw_wthd_e-4" #_10x"
 # purpose = "42_sec_falloff_none_have_2x" #sum_exp_of_lin_sqr" #multi_alts_sum"
 # purpose = "pilot_exp_24_pd_lam25_discount5_max2"
-# purpose = "test_dist_k"
-
+# purpose = "test_dist_k"n-t
 import os
 import sys
 import copy
@@ -79,6 +78,7 @@ def get_dashboard_folder():
     # sys.stdout = open(dash_folder + '/output.txt','a')
 
     shutil.copy("RelevantPathQRCost.py", dash_folder + "QRCost.py")
+    shutil.copy("PathingExperiment.py", dash_folder + "PathingEx.py")
 
     return dash_folder
 
@@ -359,10 +359,167 @@ def test_study_set(dash_folder, scenario_filters):
     # scale_exp = [(10, 0), (10, .5), (10, .25)]
     # scale_exp = [(1.5, 0), (1.5, .5), (1.5, .25)]
 
-    scale_exp           = [.5, 1.5, 10][::-1]
+    # study_vars
+    scale_exp           = [10, 1.5, .75]
     target_buffer_dist  = [0, 0, 0]
-    lam_values          = [.00001, .00001, .00001]
-    num_itr_list             = [15, 15, 15] # [1, 1, 1]
+    lam_values          = [8.0, 8.0, 8.0]
+    num_itr_list        = [5, 5, 5] # [1, 1, 1]
+
+
+    scale_exp           = [10, 10, 10]
+    target_buffer_dist  = [0, .5, 1.0]
+    lam_values          = [8.0, 8.0, 8.0]
+    num_itr_list        = [5, 5, 5] # [1, 1, 1]
+
+    scale_exp           = [10, 1.5, .75, 10, 10, 10]
+    target_buffer_dist  = [0, 0, 0, 0, .5, 1.0]
+    lam_values          = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
+    num_itr_list        = [50, 50, 50, 50, 50, 50] # [1, 1, 1]
+
+    scale_exp           = [.25, .5, .75, .25, .5, .75]
+    target_buffer_dist  = [0, 0, 0, 0, .5, 1.0]
+    lam_values          = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
+    num_itr_list        = [50, 50, 50, 50, 50, 50] # [1, 1, 1]
+
+    # scale_exp           = [-.5, .5, 0, -.5, .5, 0] #[-.5, .5, 0, -.5, .5, 0]
+    # target_buffer_dist  = [0, 0, 0, .25, .25, .25] #[.5, .5, .5, .95, .95, .95]       #, .5, 1.0]
+    # lam_values          = [lam, lam, lam, lam, lam, lam] #, lam, lam, lam, lam, lam, lam] #, 5.0, 5.0]
+    # num_itr_list        = [numit, numit, numit, numit, numit, numit] #, numit, numit, numit, numit, numit, numit]            #[25, 25, 25, 25, 25, 25] # [1, 1, 1]
+
+    # scale_exp           = [-.4, .4, 0, -.4, .4, 0] #[-.5, .5, 0, -.5, .5, 0]
+    # target_buffer_dist  = [0, 0, 0, .25, .25, .25] #[.5, .5, .5, .95, .95, .95]       #, .5, 1.0]
+    # lam_values          = [lam, lam, lam, lam, lam, lam] #, lam, lam, lam, lam, lam, lam] #, 5.0, 5.0]
+    # num_itr_list        = [numit, numit, numit, numit, numit, numit] #, numit, numit, numit, numit, numit, numit]            #[25, 25, 25, 25, 25, 25] # [1, 1, 1]
+    lam = 1.5
+    numit = 50
+
+
+    scale_exp           = [-.5,     .5,     0]
+    target_buffer_dist  = [0,       0,      0]
+    lam_values          = [lam,     lam,    lam]
+    num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
+    scale_exp           = [-.95,     .95,    .90,     -.90]
+    target_buffer_dist  = [0,       0,      0,      0]
+    lam_values          = [lam,     lam,    lam,    lam]
+    num_itr_list        = [numit,   numit,  numit,  numit] # [1, 1, 1]
+
+    # scale_exp           = [0]
+    # target_buffer_dist  = [0]
+    # lam_values          = [lam]
+    # num_itr_list        = [numit] # [1, 1, 1]
+
+
+    scale_exp           = [-.6,     .6,   .75,    -.75,     .85,  -.85]
+    # target_buffer_dist  = [0,       .5,     0,        .5,      0,   0.5]
+    # target_buffer_dist  = [.5,      0,       .5,     0,        .5,      0]
+    target_buffer_dist  = [0,      0,       0,     0,        0,      0]
+    lam_values          = [lam,     lam,    lam,      lam,    lam,  lam]
+    num_itr_list        = [numit,   numit,  numit,    numit,  numit, numit] # [1, 1, 1]
+
+    # scale_exp           = [-.6,     .6,   .75,    -.75,     .85,  -.85]
+
+    # target_buffer_dist  = [.75,      1.0,   .75,     1.0,      .75,   1.0]
+
+
+    lam = 1.3 #.75
+    numit = 100
+    obs_size = 0 #.5 #.95 #.5
+
+    scale_exp           = [.6,     -.6,    .65,     -.65,     .7,    -.7]
+    scale_exp           = [.75,     -.75,   .8,    -.8,     .85,  -.85]
+
+    scale_exp           = [.55,     -.55,   .9,    -.9,     .95,  -.95]
+
+    # scale_exp           = [.85,    .9,      .95,   .5,    -.5,     -.6]
+
+    scale_exp           = [-.8,    -.85,      -.75,   -.7,    -.65,     -.6]
+    # scale_exp           = [.55,    .6,      .65,   .7,    .75,     .8]
+
+
+    # lam = 1.3 #.75
+    # numit = 100
+    # obs_size = 0 #.5 #.95 #.5
+    # scale_exp           = [-.66,    .66,      0]
+    # target_buffer_dist  = [obs_size,      obs_size,       obs_size]
+    # lam_values          = [lam,     lam,    lam]
+    # num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
+    # scale_exp           = [0,       0,          0,      0,  0, 0]
+    # lam_values          = [1.1,     1.2,    1.3,      1.4,    1.5,  1.6]
+    # lam_values          = [.1,     .2,    .3,      .4,    .5,  .6]
+    # lam_values          = [.7,     .8,    .9,      1.,    1.7,  1.8]
+
+
+    # Ic_ -0.8_s0.5_Im1.3
+
+    # target_buffer_dist  = [obs_size,      obs_size,       obs_size,      obs_size,        obs_size,      obs_size]
+    # lam_values          = [lam,     lam,    lam,      lam,    lam,  lam]
+    # num_itr_list        = [numit,   numit,  numit,    numit,  numit, numit] # [1, 1, 1]
+
+    # scale_exp           = [-.6,     .6,   .75,    -.75,     .85,  -.85]
+    # scale_exp           = [-.85,     .85,   .75,    -.75,     .6,  -.6]
+
+
+
+
+
+    # locality = -.2
+    # scale_exp           = [locality,     locality,     locality]
+    # target_buffer_dist  = [0,       .5,     .95]
+    # lam_values          = [lam,     lam,    lam]
+    # num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
+
+    # scale_exp           = [.25,     .5,     .75,    1,      -.25,   -.5,    -.75,   -1]
+    # target_buffer_dist  = [0,       0,      0,      0,      0,      0,      0,      0]
+    # lam_values          = [lam,     lam,    lam,    lam,    lam,    lam,    lam,    lam]
+    # num_itr_list        = [numit,   numit,  numit,  numit,  numit,  numit,  numit,  numit] # [1, 1, 1]
+
+    # scale_exp           = [-.25,     -.5,     -.75,    -1]
+    # target_buffer_dist  = [0,       0,      0,      0]
+    # lam_values          = [2.0,     2.0,    2.0,    2.0]
+    # num_itr_list        = [10,      10,     10,     10] # [1, 1, 1]
+
+    # scale_exp           = [.25,     .5,     .75,    1]
+    # target_buffer_dist  = [0,       0,      0,      0]
+    # lam_values          = [1.0,     1.0,    1.0,    1.0]
+    # num_itr_list        = [10,       10,      10,      10] # [1, 1, 1]
+
+
+    # scale_exp           = [-.5,       .5,      0,   -.5,       .5,      0]
+    # target_buffer_dist  = [0,       0,      0,      .9, .9, .9]
+    # lam_values          = [3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+    # num_itr_list        = [15,      15,     15,     15] # [1, 1, 1]
+
+
+    # neatvars
+    # scale_exp           = [10.0, 10.0, 10.0]
+    # target_buffer_dist  = [0, .5, 1.0]
+    # lam_values          = [5.0, 5.0, 5.0]
+    # num_itr_list        = [15, 15, 15] # [1, 1, 1]
+
+
+    lam = 2.0 #.75
+    numit = 25
+    obs_size = 0 #.5 #.95 #.5
+
+    
+    scale_exp           = [-.66,    .66,      0]
+    # scale_exp           = [-.75,    .75,      0]
+    # scale_exp           = [-.8,    .8,      0]
+    target_buffer_dist  = [obs_size,      obs_size,       obs_size]
+    lam_values          = [lam,     lam,    lam]
+    num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
+    setups = []
+    for ind in range(len(scale_exp)):
+        setup = (scale_exp[ind], target_buffer_dist[ind], lam_values[ind], num_itr_list[ind])
+        setups.append(setup)
+
+
+    # setups.append((10, 0, 30.0, 2))
+
 
     # observer_gap = 2.0
 
@@ -380,7 +537,7 @@ def test_study_set(dash_folder, scenario_filters):
 
         test_setups = []
 
-        for exp_index in range(len(scale_exp)):
+        for setup_index in range(len(setups)):
             test = copy.copy(test_template)
 
             # print("Radius math")
@@ -395,14 +552,14 @@ def test_study_set(dash_folder, scenario_filters):
 
             # scale_text = str("{0:.3g}".format((1.0 / multiplier)))
 
-            local_def       = scale_exp[exp_index]
-            keepout_dist    = target_buffer_dist[exp_index]
-            lam             = lam_values[exp_index]
-            num_itr         = num_itr_list[exp_index]
+            local_def       = setups[setup_index][0]
+            keepout_dist    = setups[setup_index][1]
+            lam             = setups[setup_index][2]
+            num_itr         = setups[setup_index][3]
 
             # label_dict[multiplier] = local_def
 
-            test['label']           = 'local=' + str(local_def)
+            test['label']           = "lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
             test['local_distance']  = local_def
 
             test_setups.append(test)
@@ -417,9 +574,10 @@ def test_study_set(dash_folder, scenario_filters):
                 mega_scenario.set_local_distance(local_def)
                 mega_scenario.set_goal_keepout_distance(keepout_dist)
                 mega_scenario.set_lambda(lam)
-                mega_scenario.set_N(num_itr)
+                mega_scenario.set_num_iterations(num_itr)
 
-                mega_scenario.set_fn_note("lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam))
+                tag = "lc_" + str(local_def) + "_s" + str(keepout_dist) + "_lm" + str(lam)
+                mega_scenario.set_fn_note(tag)
 
                 goal_name = mega_scenario.get_pretty_study_label(g_index, scenario.get_goals()[g_index])
 
@@ -429,7 +587,9 @@ def test_study_set(dash_folder, scenario_filters):
                     do_scenario_tests(mega_scenario)
 
                 verts_with_n, us_with_n, cost_with_n, info_packet = solver.run_solver(mega_scenario)
-                outputs[(local_def, g_index)] = verts_with_n, us_with_n, cost_with_n, test['label']
+                # scale_exp[ind], target_buffer_dist[ind], lam_values[ind], num_itr_list[ind]
+
+                outputs[(local_def, keepout_dist, lam, num_itr), g_index] = verts_with_n, us_with_n, cost_with_n, test['label']
 
                 test_log.append(mega_scenario.get_solve_quality_status(test_group))
 
@@ -445,10 +605,21 @@ def test_study_set(dash_folder, scenario_filters):
         goal_indexes = range(len(mega_scenario.get_goals()))
         for gi in goal_indexes:
             fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups)
+
+            ax_key = -1
             # EXPORT GRAPH ACROSS ALL GOALS
             for key in outputs.keys():
-                ax_number, goal_key = key
-                ax_key = scale_exp.index(ax_number)
+                ax_tuple, goal_key = key
+
+                for si in range(len(setups)):
+                    print(si)
+                    print(setups[si])
+                    setup = setups[si]
+                    if setup[0] == ax_tuple[0] and setup[1] == ax_tuple[1] and setup[2] == ax_tuple[2] and setup[3] == ax_tuple[3]:
+                        ax_key = si
+                    else:
+                        print(setups[si], ax_tuple)
+
 
                 if goal_key == gi:
                     ax = ax_mappings[ax_key]
@@ -480,14 +651,24 @@ def test_study_set(dash_folder, scenario_filters):
         fig, axes, ax_mappings = setup_axes_for_test_setups(test_setups)
         # EXPORT GRAPH ACROSS ALL GOALS
         for key in outputs.keys():
-            ax_number, goal_key = key
-            ax_key = scale_exp.index(ax_number)
+            ax_tuple, goal_key = key
+
+            for si in range(len(setups)):
+                print(si)
+                print(setups[si])
+                if setups[si] == ax_tuple:
+                    ax_key = si
+                else:
+                    print(setups[si], ax_tuple)
 
             ax = ax_mappings[ax_key]
             verts, us, cost, label = outputs[key]
             
             cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
             _ = ax.set_title(label, fontweight='bold')
+            ax.set_xlim([-.05, 6.05])
+            ax.set_ylim([-4, 0])
+
             ax.get_legend().remove()
             max_key = key
 
@@ -1471,6 +1652,15 @@ def setup_axes_for_test_setups(test_setups_og):
         ax_mappings[0] = axes['A']
         ax_mappings[1] = axes['B']
         ax_mappings[2] = axes['C']
+    elif len(test_setups_og) == 5:
+        fig, axes = plt.subplot_mosaic("ABC;DE", figsize=(8, 4), gridspec_kw={'height_ratios':[1], 'width_ratios':[1, 1, 1]})
+        ax_mappings = {}
+        ax_mappings[0] = axes['A']
+        ax_mappings[1] = axes['B']
+        ax_mappings[2] = axes['C']
+        ax_mappings[3] = axes['D']
+        ax_mappings[4] = axes['E']
+
     else:
         fig, axes = plt.subplot_mosaic("ABC;DEF", figsize=(8, 6), gridspec_kw={'height_ratios':[1, 1], 'width_ratios':[1, 1, 1]})
         ax_mappings = {}

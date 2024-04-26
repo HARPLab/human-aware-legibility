@@ -73,7 +73,7 @@ def scenario_study_edge(goal_index=None):
 
     start       = goal_a
 
-    obs_offset = 1
+    obs_offset = 1.0
     obs_pts = []
     obs_a = [goal_a[0],   goal_a[1] + obs_offset,  270]
     obs_d = [goal_d[0],   goal_d[1] - obs_offset,  90]
@@ -123,6 +123,120 @@ def scenario_study_middle(goal_index=None):
     goal_a  = [1.0, -1.0]
     goal_b  = [3.0, -1.0] 
     goal_c  = [5.0, -1.0]
+
+    goal_d  = [1.0, -3.0]
+    goal_e  = [3.0, -3.0]
+    goal_f  = [5.0, -3.0]
+
+    start       = goal_b
+
+    obs_offset = 1
+    obs_pts = []
+    obs_a = [goal_a[0],   goal_a[1] + obs_offset,  270]
+    obs_d = [goal_d[0],   goal_d[1] - obs_offset,  90]
+
+    obs_b = [goal_b[0],   goal_b[1] + obs_offset,  270]
+    obs_e = [goal_e[0],   goal_e[1] - obs_offset,  90]
+
+    obs_c = [goal_c[0],   goal_c[1] + obs_offset,  270]
+    obs_f = [goal_f[0],   goal_f[1] - obs_offset,  90]
+
+    obs_pts.append(obs_a)
+    obs_pts.append(obs_b)
+    obs_pts.append(obs_c)
+    obs_pts.append(obs_d)
+    obs_pts.append(obs_e)
+    obs_pts.append(obs_f)
+
+    all_goals   = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+    all_goals   = [x for x in all_goals if x not in [start]]
+    target_goal = all_goals[0]
+
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    # exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal52, goal54])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 30
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_para_edge(goal_index=None):
+    label = "para_edge" # _g" + str(goal_index)
+
+    goal_a  = [2.0, -1.0]
+    goal_b  = [4.0, -1.0]
+    goal_c  = [6.0, -1.0]
+
+    goal_d  = [1.0, -3.0]
+    goal_e  = [3.0, -3.0]
+    goal_f  = [5.0, -3.0]
+
+    start       = goal_a
+
+    obs_offset = 1.0
+    obs_pts = []
+    obs_a = [goal_a[0],   goal_a[1] + obs_offset,  270]
+    obs_d = [goal_d[0],   goal_d[1] - obs_offset,  90]
+
+    obs_b = [goal_b[0],   goal_b[1] + obs_offset,  270]
+    obs_e = [goal_e[0],   goal_e[1] - obs_offset,  90]
+
+    obs_c = [goal_c[0],   goal_c[1] + obs_offset,  270]
+    obs_f = [goal_f[0],   goal_f[1] - obs_offset,  90]
+
+    obs_pts.append(obs_a)
+    obs_pts.append(obs_b)
+    obs_pts.append(obs_c)
+    obs_pts.append(obs_d)
+    obs_pts.append(obs_e)
+    obs_pts.append(obs_f)
+
+
+    all_goals   = [goal_a, goal_b, goal_c, goal_d, goal_e, goal_f]
+    all_goals   = [x for x in all_goals if x not in [start]]
+    target_goal = all_goals[0]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    # exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal34, goal32, goal52])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 30
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
+def scenario_para_middle(goal_index=None):
+    label = "para_mid" # _g" + str(goal_index)
+
+    goal_a  = [2.0, -1.0]
+    goal_b  = [4.0, -1.0] 
+    goal_c  = [6.0, -1.0]
 
     goal_d  = [1.0, -3.0]
     goal_e  = [3.0, -3.0]
@@ -2820,6 +2934,14 @@ def get_scenario_set(scenario_filters=[]):
     # label, exp = scenario_study_mini_edge(goal_index=0)
     # scenarios[label] = exp
 
+    # # TEST SCENARIO
+    # label, exp = scenario_para_edge(goal_index=0)
+    # scenarios[label] = exp
+
+    # # TEST SCENARIO
+    # label, exp = scenario_para_middle(goal_index=0)
+    # scenarios[label] = exp
+
     # TEST SCENARIO
     label, exp = scenario_study_edge(goal_index=0)
     scenarios[label] = exp
@@ -2827,6 +2949,8 @@ def get_scenario_set(scenario_filters=[]):
     # TEST SCENARIO
     label, exp = scenario_study_middle(goal_index=0)
     scenarios[label] = exp
+
+    return scenarios
 
     # TEST SCENARIO
     label, exp = scenario_triangle_thin(goal_index=0)
