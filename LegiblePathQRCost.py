@@ -202,7 +202,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
 
-        sys.stdout = open(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt','a')
+        sys.stdout = open(Path(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt'),'a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
@@ -1475,7 +1475,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.set_xlim([xmin, xmax])
         axarr.set_ylim([ymin, ymax])
 
-        plt.savefig(self.get_export_label(dash_folder) + '-forcelite.png')
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-forcelite.png'))
         # CS = axarr.contour(x1, x2, Y.transpose(), levels, locator=mtick.LogLocator()) #, colors='black') linewidths=1, 
         # axarr.clabel(CS, inline=1, fontsize=8)
 
@@ -1626,7 +1626,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.legend(loc="upper left")
         axarr.grid(False)
 
-        plt.savefig(self.get_export_label(dash_folder) + '-force.png')
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-force.png'))
         # plt.show()
         # exit()
 
@@ -1773,9 +1773,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.set_ylim([ymin, ymax])
 
         if just_target:
-            plt.savefig(self.get_export_label(dash_folder) + '-targ-vislocal-lite.png')
+            plt.savefig(Path(self.get_export_label(dash_folder) + '-targ-vislocal-lite.png'))
         else:
-            plt.savefig(self.get_export_label(dash_folder) + '-vislocal-lite.png')
+            plt.savefig(Path(self.get_export_label(dash_folder) + '-vislocal-lite.png'))
         # plt.show()
         # CS = axarr.contour(x1, x2, Y.transpose(), levels, linewidths=1, colors='black')
         # axarr.clabel(CS, inline=1, fontsize=8)
@@ -1928,9 +1928,9 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.grid(False)
 
         if just_target:
-            plt.savefig(self.get_export_label(dash_folder) + '-targ-vislocal.png')
+            plt.savefig(Path(self.get_export_label(dash_folder) + '-targ-vislocal.png'))
         else:
-            plt.savefig(self.get_export_label(dash_folder) + '-vislocal.png')
+            plt.savefig(Path(self.get_export_label(dash_folder) + '-vislocal.png'))
 
         # plt.show()
         # exit()
@@ -2244,7 +2244,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             _ = plt.ylabel("Magnitude of U", fontweight='bold')
             _ = plt.title("Magnitude of U Over Path", fontweight='bold')
             plt.tight_layout()
-            plt.savefig(self.get_export_label() + 'u_graph.png')
+            plt.savefig(Path(self.get_export_label() + 'u_graph.png'))
             if FLAG_SHOW_IMAGE_POPUP:
                 plt.show()
             plt.clf()
@@ -2266,7 +2266,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # plt.clf()
 
         plt.tight_layout()
-        plt.savefig(self.get_export_label(dash_folder) + '-overview.png')
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-overview.png'))
         if FLAG_SHOW_IMAGE_POPUP:
             plt.show()
         plt.clf()
