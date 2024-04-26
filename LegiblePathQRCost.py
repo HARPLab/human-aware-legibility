@@ -202,7 +202,13 @@ class LegiblePathQRCost(FiniteDiffCost):
         n = 5
         rand_id = ''.join(["{}".format(randint(0, 9)) for num in range(0, n)])
 
-        sys.stdout = open(Path(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt'),'a')
+        output_path = Path(self.get_export_label(dash_folder) + '-' + str(rand_id) + '--output.txt')
+
+        f = open(output_path, "w")
+        f.write("")
+        f.close()
+
+        sys.stdout = open(output_path,'a')
 
     def get_f(self):
         f_label = self.exp.get_f_label()
