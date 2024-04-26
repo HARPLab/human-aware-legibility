@@ -18,7 +18,7 @@ from SocLegPathQRCost import SocLegPathQRCost
 from UnderstandingPathQRCost import UnderstandingPathQRCost
 from RelevantPathQRCost import RelevantPathQRCost
 
-from LegiblePathCost import LegiblePathCost
+# from LegiblePathCost import LegiblePathCost
 # from SocLegPathCost import SocLegPathCost
 
 import utility_legibility as legib
