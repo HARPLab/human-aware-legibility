@@ -47,17 +47,6 @@ def run_solver(exp):
     start   = exp.get_start()
     goal    = exp.get_target_goal()
 
-    if state_size == 4:
-        x0_raw          = np.asarray([start[0],    start[1],   start[0],    start[1]]).T
-        x_goal_raw      = np.asarray([goal[0],     goal[1],    goal[0],     goal[1]]).T
-
-    elif state_size == 3:
-        x0_raw          = np.asarray([start[0],    start[1],   STATIC_ANGLE_DEFAULT]).T
-        x_goal_raw      = np.asarray([goal[0],     goal[1],    STATIC_ANGLE_DEFAULT]).T
-
-    elif state_size == 2:
-        x_goal_raw = x_goal_raw[:2]
-        x0_raw = x0_raw[:2]
 
     # dynamics = AutoDiffDynamics(f, [x], [u], t)
     if state_size < 4 or FLAG_FASTER_CHECK:
@@ -74,6 +63,9 @@ def run_solver(exp):
     dt      = exp.get_dt()
 
     x_T      = N
+
+
+    x_goal_raw, x0_raw = exp.get_initial_path()
 
     ### EXP IS USED AFTER THIS POINT
     cost, Urefline = exp.setup_cost(state_size, action_size, x_goal_raw, N)
@@ -92,8 +84,8 @@ def run_solver(exp):
 
     cost.init_output_log(dash_folder)
 
-    tol = 1e-8 #8 #1e-5
-    num_iterations = exp.get_N() #50 #25 #50
+    tol = 1e-12 #8 #1e-5
+    num_iterations = exp.get_num_iterations() #50 #25 #50
 
     if exp.get_run_filters()[test_scenarios.SCENARIO_FILTER_FAST_SOLVE] is True:
         num_iterations = 1

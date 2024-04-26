@@ -46,6 +46,12 @@ titles['DA'] = 'strt_left_away'
 titles['CF'] = 'strt_right_to'
 titles['FC'] = 'strt_right_away'
 
+# AC-early-obs.csv
+# AF-late-obs.csv
+# AF-even-obs.csv
+# AF-early-obs.csv
+# AC-late-obs.csv
+# AC-even-obs.csv
 
 label_dict = {}
 for key in titles.keys():
@@ -69,7 +75,16 @@ def get_hitlist():
 	past_back = ['AC', 'CA']
 	hitlist.extend(past_back)
 
+	more = ['AB', 'AD']
+	hitlist.extend(more)
+
 	# Also good
+	diag_long = ['AF', 'DC']
+	hitlist.extend(to_target)
+
+	diag_long = ['AC', 'CA', '']
+	hitlist.extend(to_target)
+
 	diag_long = ['AF', 'DC']
 	hitlist.extend(to_target)
 
@@ -193,8 +208,8 @@ print(remaining)
 final_route = []
 
 for p in path:
-	# final_route.append(p + '-null')
-	final_route.append(p + '-toptwo')
+	final_route.append(p + '-even')
+	# final_route.append(p + '-toptwo')
 
 print(final_route)
 

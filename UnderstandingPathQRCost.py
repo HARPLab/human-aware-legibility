@@ -1282,7 +1282,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
         ###### SET VALUES SET WT
         wt_legib        = 1.0
-        wt_lam          = 1.0 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
+        wt_lam          = 10.0 #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
         wt_heading      = 1.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
@@ -1412,8 +1412,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
 
                 val_overall = (1.0 - cost_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
                 max_penalty = 3.0 #0.0 #10.0 #(1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
-                wt_lam = 0.01
-
+                wt_lam = 1.0
 
 
             target_costs        = val_overall # + val_heading
@@ -1427,7 +1426,7 @@ class UnderstandingPathQRCost(LegiblePathQRCost):
             status_dict = self.exp.get_vislocal_status_of_point(x)
             for alt_goal in self.exp.get_goals():
                 if (self.exp.get_target_goal() != alt_goal):
-                    vis, local, dist = status_dict[(alt_goal[0], alt_goal[1])]
+                    vis, local, vis_angle, dist = status_dict[(alt_goal[0], alt_goal[1])]
 
                     # np.exp
                     offset = (alt_goal - x[:2]) / self.exp.get_local_distance()

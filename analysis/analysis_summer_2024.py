@@ -154,13 +154,12 @@ if FLAG_ANALYZE_EXPANDED:
         waypoints_path = "mission_reports/" + file_name
         path_name = file_name.replace('.csv','')
 
-        keypress_file   = open(waypoints_path)
         ## TODO: clean it first of parking flags?
-        df_chunk        = pd.read_csv(waypoints_path) #, columns=['path_label', 'status', 'timestamp', 'time_elapsed'])
+        df_moves        = pd.read_csv(waypoints_path) #, columns=['path_label', 'status', 'timestamp', 'time_elapsed'])
 
         ### Label with the matching mission file
         ### If needed, also put participant number on here
-        df_chunk['trial_group'] = path_name
+        df_moves['trial_group'] = path_name
         
         trial_names.append(path_name)
         df_chunks_mission.append(copy.copy(df_chunk))
@@ -282,6 +281,8 @@ for trial in trials_for_analysis:
     # Guess time offset from start
     ## move backwards through the thing
 
+    has_final, has_final_park = False, False
+
     to_add = []
     is_final = True
     guess_from_end = None
@@ -300,6 +301,8 @@ for trial in trials_for_analysis:
             phase = "SETUP"
         elif click_time > timestamp_start and click_time < timestamp_end:
             phase = "MAIN"
+        elif click_time > timestamp_end and click_time < timestamp_parked:
+            phase = "PARKING"
         else:
             ### How many times do people ring in after the robot is at the goal?s
             pass
@@ -309,14 +312,11 @@ for trial in trials_for_analysis:
         result = [click_guess, click_time, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
         to_add.append(result)
 
-        if is_final and (guess_from_end == correct_answer):
-            is_final = True
-        else:
+        ### TODO ADA HAS_FINAL MARK ONLY THE LAST
+        if is_final: # and (guess_from_end == correct_answer):
             is_final = False
 
-        if is_final_park and (guess_from_park == correct_answer):
-            is_final_park = True
-        else:
+        if is_final_park:
             is_final_park = False
 
 
@@ -338,7 +338,6 @@ df_results.to_csv("results.csv")
 ############################################
 
 print("QUALITY CHECKS")
-print(len(df_keypress))
 
 ############ QUALITY CHECK
 for participant_id in list(df_results['participant_id'].unique()):
@@ -430,6 +429,7 @@ for participant_id in list(df_results['participant_id'].unique()):
     export_loco = path
 
     df_part = df_results[df_results['participant_id'] == participant_id]
+    df_part.to_csv(export_loco + participant_id_short + "-all-clicks.csv")
 
     df_part_final = df_results[df_results['is_final'] == True]
     df_part_final = df_part_final.groupby(['path_name', 'path_style']).agg({'guess': list})

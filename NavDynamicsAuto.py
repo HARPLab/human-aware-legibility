@@ -10,8 +10,8 @@ class NavDynamicsAuto(AutoDiffDynamics):
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-1.0, #-1, 1
-                 max_bounds=1.0,
+                 min_bounds=-0.1, #-1, 1
+                 max_bounds=0.1,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
 
@@ -33,8 +33,8 @@ class NavDynamicsAuto(AutoDiffDynamics):
         k = exp.get_dist_scalar_k()
 
         self.constrained    = constrain
-        self.min_bounds     = min_bounds * exp.get_dt() * k * .1 # .3
-        self.max_bounds     = max_bounds * exp.get_dt() * k * .1 #.3
+        self.min_bounds     = min_bounds  #* exp.get_dt() * k * .1 # .3
+        self.max_bounds     = max_bounds    # * exp.get_dt() * k * .1 #.3
 
         print("DYNAM: min max bounds")
         print(self.min_bounds, self.max_bounds)
@@ -55,13 +55,13 @@ class NavDynamicsAuto(AutoDiffDynamics):
         min_bounds, max_bounds = self.min_bounds, self.max_bounds
 
         # # Constrain action space.
-        # if constrain:
-        #     print("speed limit")
-        #     print([u_x, u_y])
-        #     u = tensor_constrain([u_x, u_y], min_bounds, max_bounds)
-        #     print(u)
-        #     u_x = u[0]
-        #     u_y = u[1]
+        if False: #self.constrained:
+            print("speed limit")
+            # print([u[0], u[1]])
+            u = tensor_constrain([u_x, u_y], min_bounds, max_bounds)
+            # print(u)
+            u_x = u[0]
+            u_y = u[1]
 
         f = T.stack([
                 x_x + u_x * dt,

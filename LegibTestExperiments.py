@@ -359,7 +359,6 @@ def test_study_set(dash_folder, scenario_filters):
     # scale_exp = [(10, 0), (10, .5), (10, .25)]
     # scale_exp = [(1.5, 0), (1.5, .5), (1.5, .25)]
 
-    # study_vars
     scale_exp           = [10, 1.5, .75]
     target_buffer_dist  = [0, 0, 0]
     lam_values          = [8.0, 8.0, 8.0]
@@ -420,6 +419,7 @@ def test_study_set(dash_folder, scenario_filters):
     # scale_exp           = [-.6,     .6,   .75,    -.75,     .85,  -.85]
 
     # target_buffer_dist  = [.75,      1.0,   .75,     1.0,      .75,   1.0]
+
 
 
     lam = 1.3 #.75
@@ -499,9 +499,10 @@ def test_study_set(dash_folder, scenario_filters):
     # lam_values          = [5.0, 5.0, 5.0]
     # num_itr_list        = [15, 15, 15] # [1, 1, 1]
 
+    # study_vars
 
     lam = 2.0 #.75
-    numit = 25
+    numit = 1
     obs_size = 0 #.5 #.95 #.5
 
     
