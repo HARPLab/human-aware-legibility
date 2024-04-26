@@ -305,7 +305,7 @@ for trial in trials_for_analysis:
 
         guess_from_end = click_guess
 
-        result = [click_guess, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
+        result = [click_guess, click_time, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
         to_add.append(result)
 
         if is_final and (guess_from_end == correct_answer):
@@ -323,8 +323,9 @@ for trial in trials_for_analysis:
 
     ### The last correct guess is_final
 
+
 ####### SET UP RESULTS #######################
-df_results = pd.DataFrame(results_list, columns=['guess', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_name', 'path_type', 'path_style', 'trial', 'participant_id'])
+df_results = pd.DataFrame(results_list, columns=['guess', 'time', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_name', 'path_type', 'path_style', 'trial', 'participant_id'])
 
 ### Add sorting labels for convenience ###
 df_results['is_ambig'] = df_results['path_type'].isin(ambig_list)
@@ -335,6 +336,47 @@ df_results['respect_obs'] = df_results['path_type'].str.contains("obs")
 df_results.to_csv("results.csv")
 ############################################
 
+print("QUALITY CHECKS")
+print(len(df_keypress))
+
+############ QUALITY CHECK
+for participant_id in list(df_results['participant_id'].unique()):
+
+    print("+++++ " + participant_id)
+    df_part = df_results[df_results['participant_id'] == participant_id]
+    part_time_last   = df_part['time'].max()
+    part_time_first  = df_part['time'].min()
+
+    key_time_last   = df_keypress['timestamp'].max()
+    key_time_first  = df_keypress['timestamp'].min()
+
+    df_clicks = df_keypress[df_keypress['timestamp'].between(part_time_first, part_time_last, inclusive='both')]
+
+    print(part_time_first, part_time_last)
+    print(key_time_first, key_time_last)
+
+    # print(len(df_clicks))
+    # print(len(df_part))
+
+
+    keypresses = set(df_clicks['timestamp'].unique())
+    guesses = df_part['time'].unique()
+
+    # for index, row in df_part.iterrows():
+    #     if row['time'] not in keypresses:
+    #         print("Unassigned keypress: " + row)
+
+    print(len(keypresses))
+    print(len(guesses))
+
+
+
+
+    # duration / 1000000000.0
+
+####################################
+
+
 ####### PIVOT TABLES #######################
 ### TODO MAKE THIS BETTER SO JUST WHETHER THERE'S MORE THAN ONE CLICK PER
 df_pivot_count = df_results.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
@@ -343,7 +385,6 @@ df_pivot_count.to_csv("graphics/csvs/" + "raw_counts.csv")
 ##### Graph the results
 path_style_options  = list(df_results['path_style'].unique())
 path_type_options   = list(df_results['path_type'].unique())
-
 
 df_results_correct = df_results[df_results['is_correct'] == True]
 df_results_correct = df_results_correct[df_results_correct['is_final'] == True]
@@ -365,43 +406,71 @@ df_inspect_early_confused       =  df_inspect_correct[df_inspect_correct['is_fin
 df_pivot_right_wrong            = df_inspect_early_confused.pivot_table(values='is_correct', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
 df_pivot_right_wrong.to_csv('graphics/csvs/' + "right_then_wrong.csv")
 
+df_results_final        = df_results[df_results['is_final'] == True]
+df_results_final_corr   = df_results_final[df_results_final['is_correct'] == True]
+
+### What percent of the time do observers know the robot's correct goal by the end of the path?
+df_pct = df_results_final.groupby(['path_type', 'path_style'])['is_correct'].mean()
+df_pct.to_csv('graphics/csvs/' + "pct-final-correct.csv")
+
+##########################
+
+# Check if 
 
 #########################
 for participant_id in list(df_results['participant_id'].unique()):
+    participant_id_short = participant_id.replace("-mini_report", "")
+
+    path = "individuals/" + participant_id_short + "/"
+    # Check whether the specified path exists or not
+    path_exists = os.path.exists(path)
+    if not path_exists:
+       # Create a new directory because it does not exist
+       os.makedirs(path)
+    export_loco = path
+
     df_part = df_results[df_results['participant_id'] == participant_id]
+
+    df_part_final = df_results[df_results['is_final'] == True]
+    df_part_final = df_part_final.groupby(['path_name', 'path_style']).agg({'guess': list})
+    df_part_final.to_csv(export_loco + participant_id_short + "-finals.csv")
+
 
     ### get the click sequence for each participant
     df_pivot_count = df_part.pivot_table(values='trial', index=['path_type'], columns='path_style', aggfunc='count', fill_value=0)
-    df_pivot_count.to_csv("individuals/" + participant_id + "-raw_counts.csv")
+    df_pivot_count.to_csv(export_loco + participant_id_short + "-raw_counts.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part.groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-correctness.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-correctness.csv")
 
     df_guesses = df_part.groupby(['path_name', 'path_style']).agg({'guess': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-raw-guesses.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-raw-guesses.csv")
+
+    df_guesses = df_part.groupby(['path_name', 'path_style']).agg({'guess': list})
+    df_guesses.to_csv(export_loco + participant_id_short + "-raw-guesses.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part[df_part['is_long'] == True].groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-long-guesses.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-long-guesses.csv")
 
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part[df_part['is_long'] == False].groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-short-guesses.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-short-guesses.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part[df_part['is_ambig'] == True].groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-ambig-guesses.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-ambig-guesses.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part[df_part['is_ambig'] == False].groupby(['path_type', 'path_style']).agg({'is_correct': list})
-    df_guesses.to_csv("individuals/" + participant_id + "-unambig-guesses.csv")
+    df_guesses.to_csv(export_loco + participant_id_short + "-unambig-guesses.csv")
 
 
 #########################
@@ -461,7 +530,7 @@ def do_anova_and_posthoc(df, analysis_label):
     subject_id = 'participant_id'
     method_label = 'path_style'
 
-    aov = pg.rm_anova(dv=analysis_label, within=method_label, subject=subject_id, data=df)
+    aov = pg.mixed_anova(dv=analysis_label, within=method_label, subject=subject_id, data=df)
     aov.round(3)
 
     aov.to_csv(analysis_label + '_anova.csv')
@@ -536,7 +605,6 @@ def do_anova_and_posthoc(df, analysis_label):
 
 # metric_col = 'time_before_end'
 # do_anova_and_posthoc(df_results, metric_col)
-
 
 
 
