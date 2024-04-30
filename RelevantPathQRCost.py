@@ -672,6 +672,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         x_current = x_triplet[:2]
 
+        mode_heading = 'exp'
+
         debug_dict = {'x': x_triplet, 'u': u, 'i':i, 'goal': goal, 'start': self.exp.get_start(), 'all_goals':self.exp.get_goals(), 'visibility_coeff': visibility_coeff, 'N': self.exp.get_N(), 'override': override, 'mode_heading': mode_heading}
         # print("HEADING COST INPUTS")
         # print(debug_dict)
@@ -701,6 +703,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
         all_goal_headings       = []
 
         target_index = -1
+
+        comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x(x, num=num)
+        comparison_goals_group.append(goal)
+
+        all_goals = comparison_goals_group
 
         for j in range(len(all_goals)):
             alt_goal = all_goals[j]
@@ -932,16 +939,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
         return val_u_diff
 
 
-    def get_u_diff(self, x, u, i):
+    def get_u_diff(self, x, u, i, with_speed=False):
         u_calc = x[:2] - x[2:]
-        # u = u_calc
-
-        # if np.array_equal(u_calc, u):
-        #     print("NA: U calc as promised!")
-        # else:
-        #     print("ALERT: U is wrong?")
-        #     print(x, u, u_calc)
-        #     print(x[:2], x[2:])
             
         try: 
             if u.any() == None:
@@ -952,7 +951,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # print("incoming " + str(u))
         R = np.eye(2)
         
-        u_diff      = np.abs(u - self.u_path[i])
+        u_diff      = np.abs(u) # - self.u_path[i])
         # u_diff      = np.abs(u - np.asarray([0, 0]))
         val_u_diff  = np.dot(u_diff.T, R)
         val_u_diff  = np.dot(val_u_diff, u_diff)
@@ -965,7 +964,20 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # print(u, "-", self.u_path[i], u_diff, val_u_diff)
         # print(u_calc)
 
-        return val_u_diff
+        penalty = 0
+        if with_speed and False:
+            speed_low = 0 #0.125
+            speed_high = .2 #0.125
+            diff = (speed_high - speed_low)/2.0
+
+            actual_speed = np.linalg.norm(u_diff)
+
+            if actual_speed > speed_high or actual_speed < speed_low:
+                penalty += (speed_high - actual_speed) / diff
+                penalty += (actual_speed - speed_low) / diff
+
+
+        return val_u_diff, penalty
 
     # def get_u_diff_heading(self, x, u, i):
     #     u_calc = x[:2] - x[2:]
@@ -1083,7 +1095,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         observers   = self.exp.get_observers()
 
         squared_x_cost = 0 #self.get_x_diff_between_pts(x, i)
-        squared_u_cost = self.get_u_diff(x, u, i)
+        squared_u_cost, u_penalty = self.get_u_diff(x, u, i, with_speed=True)
 
 
         # squared_u_cost = max(0, squared_u_cost - .15)
@@ -1101,7 +1113,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         ###### SET VALUES SET WT
         wt_legib        = 1.0
         wt_lam          = self.exp.get_lambda()  #25 #0.125 #5 #25 # 1.0   #* (1.0 / self.exp.get_dt()) this should really be N if anything
-        wt_heading      = 1.0
+        wt_heading      = 0.0
         wt_obstacle     = 1.0   #self.exp.get_solver_scale_obstacle()
 
         wt_understanding_target     = 1.0
@@ -1133,6 +1145,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if wt_lam > 0:
             val_lam         = squared_u_cost #+ (squared_x_cost)
             print("val_lam_ex: " + str(val_lam))
+            
+            # speed = .06
+            # val_lam = 10.0 * (np.abs(val_lam - speed) * 10.0)**2
+
+
         else:
             print("ALERT: why is lam weight 0?")
 
@@ -1177,11 +1194,13 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if True and 50 == 50:
             key = (goal[0], goal[1])
             # P_d_dict[key]   #
-            p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, P_all_returned=True)
+            p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1, P_all_returned=True)
         
             FLAG_SECONDARY_CONSIDERED = True
             
             target_costs = (1.0 - p_d)   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+            # target_costs = top_values[0]
+
             max_penalty = 1.0         # (1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
             wt_lam      = self.exp.get_lambda() #.0
 
@@ -1245,23 +1264,30 @@ class RelevantPathQRCost(LegiblePathQRCost):
         sigmoid_midpoint = int(local_dist_ratio * (self.exp.get_N() + 1))
 
         # flips at 0
-        k_val = 1.0 #2 / self.exp.get_N()
-        sigmoid_scalar = 1 / (1 + np.exp(-1 * k_val * (t_index - sigmoid_midpoint)))
+        epsilon = 0 #.05
+
+        k_val = 2.0 #2.0 #2 / self.exp.get_N()
+        sigmoid_scalar = (1 / (1 + np.exp(-1 * k_val * (t_index - sigmoid_midpoint))) ) + epsilon
 
         if is_flat:
-            sigmoid_scalar = .5
+            sigmoid_scalar = .33
 
         if is_flat:
             linear_scalar = .5
         elif flipped:
-            linear_scalar = (self.exp.get_N() - i / self.exp.get_N())
+            linear_scalar = ((self.exp.get_N() - i + 1) / self.exp.get_N())
         else:
-            linear_scalar = (i / self.exp.get_N())
+            linear_scalar = ((i + 1) / self.exp.get_N())
 
-        val_understanding_target = target_costs * sigmoid_scalar #* 10.0
+        # epsilon = .00001
+        val_understanding_target = target_costs * (sigmoid_scalar)#* 10.0
+        # wt_lam = wt_lam * (1 / sigmoid_scalar)
+
+        # if flipped:
+        #     val_understanding_target * 10.0
 
 
-        if not is_vis_target:
+        if x[1] > 0:
             val_understanding_target += 1000000000.0
 
         val_understanding_secondary = 0
@@ -1282,8 +1308,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
             if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
                 val_understanding_secondary = 100.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
 
-                if x[1] > -1.0:
-                    val_understanding_secondary += 10000.0 * x[1]
+                # if x[1] > -1.0:
+                    # val_understanding_secondary += 10000.0 * x[1]
 
             # tg = closest_goal
 
@@ -1336,6 +1362,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         J += wt_understanding_target    * val_understanding_target
         J += wt_understanding_secondary * val_understanding_secondary
+        J += wt_heading * val_heading
 
 
         J += wt_lam         * val_lam           #u_diff.T.dot(R).dot(u_diff)
@@ -1345,7 +1372,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         # stage_costs = sum([wt_legib*val_legib, wt_lam*val_lam, wt_heading*val_heading, wt_obstacle*val_obstacle])
         # stage_costs = (stage_costs)
 
-        stage_costs = J
+        stage_costs = J #+ u_penalty
 
         # Don't return term cost here ie (scale_term * term_cost) 
         total = (scale_stage * stage_costs)
@@ -1518,6 +1545,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
         dist    = self.dist_between(x, goal_in)
 
         dist_linalg = np.linalg.norm(x - goal_in)
+
+        mode_dist = 'exp'
 
         if mode_dist == 'sqr':
             val = (self.inversely_proportional_to_distance(dist)**2)
@@ -1705,8 +1734,13 @@ class RelevantPathQRCost(LegiblePathQRCost):
         diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N())
         diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
 
-        n = - (diff_curr_v) - (diff_goal_v)
-        d = diff_all_v
+        # progress, max_progress = 0, 0
+        # if self.exp.is_backtracking(x, goal):
+        #     progress, max_progress = self.exp.get_overshoot(x, goal)            
+
+
+        n = - (diff_curr_v) - (diff_goal_v) #- (max_progress - progress)
+        d = diff_all_v # 100.0
 
         J = np.exp(n) / np.exp(d)
 
@@ -1823,7 +1857,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         if goal_list == None:
             # Find and compare to the closest two non-target goals
-            comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x(x, num=num)
+            comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x_nobacktrack(x, num=2) #self.exp.get_closest_daj_goalp_to_x(x, num=num)
             comparison_goals_group.append(goal)
         else:
             comparison_goals_group = goal_list
@@ -1946,11 +1980,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
             alt_goal_xy = np.asarray(alt_goal[:2])
             goal_val = self.get_nova_distance_value(i_step, start, alt_goal_xy, x, terminal, mode_dist)
 
-            FLAG_NO_OVERSHOOT = False
-            if FLAG_NO_OVERSHOOT:
-                goal_val = goal_val / self.dist_between(start, alt_goal_xy)
-
             goal_values.append(goal_val)
+
+
 
             if np.array_equal(goal[:2], alt_goal[:2]):
                 target_val = goal_val
@@ -1961,6 +1993,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
                 # print("Not it")
                 # print(goal, alt_goal)
                 pass
+
 
         print("Target val")
         print(target_val)

@@ -83,7 +83,7 @@ class PathingExperiment():
     ax = None
 
     # default values for solver
-    solver_scale_term       = 1000.0 #.01
+    solver_scale_term       = 100000.0 #.01
     solver_scale_stage      = 1.0
     solver_scale_obstacle   = 1.0
 
@@ -242,14 +242,30 @@ class PathingExperiment():
         start = self.get_start()
         N = self.get_N()
 
+        # u_blank  = np.asarray([0.0, 0.0])
+        # Urefline = np.tile(u_blank, (N, 1))
+        # Urefline = np.reshape(Urefline, (-1, action_size))
+
+        # return Urefline
+
+        # u_blank  = np.asarray([0.0, 0.0])
+        # Urefline = np.tile(u_blank, (N, 1))
+        # Urefline = np.reshape(Urefline, (-1, action_size))
+
+        # return Urefline
+
+
         crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
         step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
 
+        step_vector = [0.0, 0.0]
+
         ##### LONG EDGES
         goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+
         if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_c):
             # return int(resolution * 2)
-            step_vector = [step_vector[0], step_vector[1] + -.05] # Add a bias
+            step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
 
             u_blank  = np.asarray(step_vector)
             Urefline = np.tile(u_blank, (N, 1))
@@ -257,9 +273,20 @@ class PathingExperiment():
 
             return Urefline
 
-        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_c) and self.get_target_goal() == goal_d:
+        ##
+        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_b) and self.get_target_goal() == goal_d:
             # return int(resolution * 2)
-            step_vector = [step_vector[0] + -.05, step_vector[1]] # Add a bias
+            step_vector = [step_vector[0] - 0.01, step_vector[1]] #[-0.01, 0] # Add a bias
+
+            u_blank  = np.asarray(step_vector)
+            Urefline = np.tile(u_blank, (N, 1))
+            Urefline = np.reshape(Urefline, (-1, action_size))
+
+            return Urefline
+
+        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_b, goal_c) and (self.get_target_goal() == goal_a or self.get_target_goal() == goal_c):
+            # return int(resolution * 2)
+            step_vector = [step_vector[0], step_vector[1] + 0.05] # Add a bias
 
             u_blank  = np.asarray(step_vector)
             Urefline = np.tile(u_blank, (N, 1))
@@ -443,6 +470,39 @@ class PathingExperiment():
         goal_f  = [5.0, -3.0]
 
         return goal_a, goal_b, goal_c, goal_d, goal_e, goal_f
+
+
+    def get_goal_for_label(self, start_label):
+        if start_label == 'A' or start_label == 'a':
+            return goal_a
+        elif start_label == 'B' or start_label == 'b':
+            return goal_b
+        elif start_label == 'C' or start_label == 'c':
+            return goal_c
+        elif start_label == 'D' or start_label == 'd':
+            return goal_d
+        elif start_label == 'E' or start_label == 'e':
+            return goal_e
+        elif start_label == 'F' or start_label == 'f':
+            return goal_f
+
+
+    def is_segment(self, start_label, end_label):
+        start       = self.get_goal_for_label(start_label)
+        end         = self.get_goal_for_label(end_label)
+
+        start_goal  = self.get_start()
+        tar_goal    = self.get_target_goal()
+
+        if self.dist_between(tar_goal, start_goal) == self.dist_between(start, end):
+
+            if start == start_goal and end == tar_goal:
+                return True
+
+        return False
+
+
+
 
     def get_N(self):
 
@@ -991,23 +1051,164 @@ class PathingExperiment():
 
         return label
 
+    def get_relevance(self, x, goal):
+        Q       = np.eye(2)
+
+        goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
+
+        start = self.get_start()
+
+        start   = np.asarray(start)
+        goal    = np.asarray(goal)
+
+        goal_diff   = start - goal
+        start_diff  = (start - np.array(x))
+        togoal_diff = (np.array(x) - goal)
+
+        diff_curr   = start - x
+        diff_goal   = x - goal
+        diff_all    = np.asarray(goal_a) - np.asarray(goal_b)
+
+        diff_curr_v = np.dot(np.dot(diff_curr.T, Q), diff_curr)
+        diff_goal_v = np.dot(np.dot(diff_goal.T, Q), diff_goal)
+        diff_all_v  = np.dot(np.dot(diff_all.T, Q), diff_all)
+
+        total_steps = self.get_N()
+
+        # diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
+        # diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N())
+        # diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
+
+        n = - (diff_curr_v) - (diff_goal_v)
+        d = diff_all_v
+
+        J = np.exp(n) / np.exp(d)
+
+        return J
+
+    def get_closest_daj_goalp_to_x(self, x_in, num=1):
+        x = x_in[:2]
+
+        val_for_goals = []
+        start = self.get_start()
+
+        for goal in self.get_goals():
+            dist = self.dist_between(x, goal)#: # + self.dist_between(x, start)
+
+            if goal != self.get_target_goal():
+                val_for_goals.append((dist, goal))
+
+            # print(goal)
+            # print(overall_target)
+
+            # val = self.get_relevance(x_in, goal)
+
+        print("format what")
+        print(val_for_goals)
+
+        val_for_goals.sort(key=lambda name: name[0])
+
+        subset_goals = val_for_goals[:num]
+
+        print(subset_goals)
+
+        print("trm to goals")
+        print( [t[1] for t in subset_goals])
+        return  [t[1] for t in subset_goals]
+
+
+    def is_backtracking(self, x_in, goal):
+
+        start = self.get_start()
+
+        # u = (goal - x_in)
+        # v = (goal - self.get_start())
+
+        # proj_of_u_on_v_goal = (np.dot(u, v)/v_norm**2)*v 
+
+        u = (np.asarray(goal) - x_in[:2])
+        v = (np.asarray(goal) - np.asarray(self.get_start()))
+
+        v_norm = np.sqrt(sum(v**2))     
+        proj_of_u_on_v = (np.dot(u, v)/v_norm**2)*v
+
+        print("backtracking check")
+        print(u, v, np.linalg.norm(proj_of_u_on_v))
+
+        if np.linalg.norm(proj_of_u_on_v) > np.linalg.norm(v):
+            return True
+
+
+        return False
+        pass
+
+
+    def get_overshoot(self, x_in, goal):
+        start = self.get_start()
+
+        # u = (goal - x_in)
+        # v = (goal - self.get_start())
+
+        # proj_of_u_on_v_goal = (np.dot(u, v)/v_norm**2)*v 
+
+        u = (np.asarray(goal) - x_in[:2])
+        v = (np.asarray(goal) - np.asarray(self.get_start()))
+
+        v_norm = np.sqrt(sum(v**2))     
+        proj_of_u_on_v = (np.dot(u, v)/v_norm**2)*v
+
+        print("backtracking check")
+        print(u, v, np.linalg.norm(proj_of_u_on_v))
+
+        return np.linalg.norm(proj_of_u_on_v), np.linalg.norm(v)
+
+
+    def get_closest_nontarget_goalp_to_x_nobacktrack(self, x_in, num=1):
+        x = x_in[:2]
+
+        val_for_goals = []
+
+        for goal in self.get_goals():
+            dist = self.dist_between(x, goal)
+
+            is_backtracking = self.is_backtracking(x_in, goal)
+
+            if goal != self.get_target_goal(): # and not is_backtracking:
+                val_for_goals.append((dist, goal))
+
+
+        print("format what")
+        print(val_for_goals)
+
+        val_for_goals.sort(key=lambda name: name[0])
+
+        subset_goals = val_for_goals[:num]
+
+        print(subset_goals)
+
+        print("trm to goals")
+        print( [t[1] for t in subset_goals])
+        return  [t[1] for t in subset_goals]
+
+
+
     def get_closest_nontarget_goalp_to_x(self, x_in, num=1):
         x = x_in[:2]
 
-        dist_for_goals = []
+        val_for_goals = []
 
         for goal in self.get_goals():
             dist = self.dist_between(x, goal)
 
             if goal != self.get_target_goal():
-                dist_for_goals.append((dist, goal))
+                val_for_goals.append((dist, goal))
 
         print("format what")
-        print(dist_for_goals)
+        print(val_for_goals)
 
-        dist_for_goals.sort(key=lambda name: name[0])
+        val_for_goals.sort(key=lambda name: name[0])
 
-        subset_goals = dist_for_goals[:num]
+        subset_goals = val_for_goals[:num]
 
         print(subset_goals)
 
@@ -1019,16 +1220,16 @@ class PathingExperiment():
         x = x_in[:2]
         num = 1
 
-        dist_for_goals = []
+        val_for_goals = []
 
         for goal in self.get_goals():
             dist = self.dist_between(x, goal)
 
-            dist_for_goals.append((dist, goal))
+            val_for_goals.append((dist, goal))
 
-        dist_for_goals.sort(key=lambda name: name[0])
-        # subset_goals = dist_for_goals[:num]
-        closest_goal_info = dist_for_goals[0]
+        val_for_goals.sort(key=lambda name: name[0])
+        # subset_goals = val_for_goals[:num]
+        closest_goal_info = val_for_goals[0]
 
         return  closest_goal_info[1]
 
