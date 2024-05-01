@@ -25,12 +25,14 @@ plt.rcParams.update({'figure.max_open_warning': 0})
 FLAG_ANALYZE_EXPANDED   = False
 
 keypress_path           = "keypress_log.csv"
-
-keypress_data = []
 df_keypress = pd.read_csv(keypress_path)
 df_keypress = df_keypress.astype({"timestamp": int, "guess": str})
 df_keypress['time'] = df_keypress['timestamp']
 
+distractor_path           = "distractors.csv"
+df_distractors  = pd.read_csv(keypress_path)
+# df_keypress = df_keypress.astype({"timestamp": int, "guess": str})
+# df_keypress['time'] = df_keypress['timestamp']
 
 
 ##### Import the robot movement data
@@ -281,7 +283,10 @@ for trial in trials_for_analysis:
     path_type   = df_relevant_data['path_type'].unique()[0]
     path_style  = df_relevant_data['path_style'].unique()[0]
 
-    is_distracted = df_relevant_data['distractor']
+    if len(df_clicks['distractor'].unique()) > 0:
+        is_distracted = df_clicks['distractor'].unique()[0]
+    else:
+        is_distracted = False
 
     with_obs = df_relevant_data['path_name'].unique()[0]
     with_obs = "OBS" in with_obs
@@ -416,6 +421,16 @@ df_pivot_right_wrong.to_csv('graphics/csvs/' + "right_then_wrong.csv")
 df_results_final        = df_results[df_results['is_final'] == True]
 df_results_final_corr   = df_results_final[df_results_final['is_correct'] == True]
 
+
+############# Get some stats based on distractors
+### get the click sequence for each participant
+df_pivot_distraction = df_results.pivot_table(values='time_before_end', index=['path_type'], columns=['path_style', 'is_distracted'], aggfunc='mean', fill_value=0)
+df_pivot_distraction.to_csv('graphics/csvs/' + "time_before_end-distractors.csv")
+
+### get the click sequence for each participant
+df_pivot_distraction = df_results.pivot_table(values='time_before_end', index=['path_style'], columns=['is_distracted'], aggfunc='mean', fill_value=0)
+df_pivot_distraction.to_csv('graphics/csvs/' + "time_before_end-distractors-concise.csv")
+
 ### What percent of the time do observers know the robot's correct goal by the end of the path?
 df_pct = df_results_final.groupby(['path_type', 'path_style'])['is_correct'].mean()
 df_pct.to_csv('graphics/csvs/' + "pct-final-correct.csv")
@@ -451,10 +466,6 @@ for participant_id in list(df_results['participant_id'].unique()):
     ### get the click sequence for each participant
     df_pivot_count = df_part.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean', fill_value=0)
     df_pivot_count.to_csv(export_loco + participant_id_short + "-time_before_end.csv")
-
-    ### get the click sequence for each participant
-    df_pivot_count = df_part.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean', fill_value=0)
-    df_pivot_count.to_csv(export_loco + participant_id_short + "-time_before_end-distractors.csv")
 
     ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
