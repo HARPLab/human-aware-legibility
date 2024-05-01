@@ -254,49 +254,66 @@ class PathingExperiment():
 
         # return Urefline
 
-
-        crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
-        step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
-
         step_vector = [0.0, 0.0]
+        u_blank  = np.asarray(step_vector)
+        Urefline = np.tile(u_blank, (N, 1))
+        Urefline = np.reshape(Urefline, (-1, action_size))
+
+        # crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
+        # step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
+
 
         ##### LONG EDGES
         goal_a, goal_b, goal_c, goal_d, goal_e, goal_f = self.get_goal_squad()
 
-        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_c):
-            # return int(resolution * 2)
-            step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
-
-            u_blank  = np.asarray(step_vector)
-            Urefline = np.tile(u_blank, (N, 1))
+        if self.is_segment("A", "B"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            Urefline = [[0.37291543, 0.35940304], [0.2868237,  0.25326541], [0.21553565, 0.16057495], [0.15556699, 0.07936027], [0.10324814, 0.00549762], [ 0.06533833, -0.05333846], [ 0.07372553, -0.07929104], [ 0.07484242, -0.08588459], [ 0.0752228, -0.0861347], [ 0.07525216, -0.08619458], [ 0.07525428, -0.0862076 ], [ 0.07525458, -0.08620947], [ 0.07525462, -0.08620974], [ 0.07525463, -0.08620978], [ 0.07525463, -0.08620979], [ 0.07525463, -0.08620979]]
             Urefline = np.reshape(Urefline, (-1, action_size))
-
             return Urefline
-
         ##
-        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_a, goal_b) and self.get_target_goal() == goal_d:
+        if self.is_segment("A", "C"):
             # return int(resolution * 2)
             step_vector = [step_vector[0] - 0.01, step_vector[1]] #[-0.01, 0] # Add a bias
 
-            u_blank  = np.asarray(step_vector)
-            Urefline = np.tile(u_blank, (N, 1))
-            Urefline = np.reshape(Urefline, (-1, action_size))
 
+        if self.is_segment("A", "D"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            Urefline = [[-0.35986786, -0.38822228], [-0.25321005, -0.30196323], [-0.16111047, -0.23213754], [-0.08358655, -0.1771138 ], [-0.01675805, -0.13235135], [ 0.03910463, -0.09656519], [ 0.07053413, -0.07702418], [ 0.07821819, -0.07234532], [ 0.07941543, -0.07163051], [ 0.07958545, -0.07153108], [ 0.07960898, -0.07151744], [ 0.07961233, -0.07151571], [ 0.0796127,  -0.07151549], [ 0.07961271, -0.07151548], [ 0.07961272, -0.07151547], [ 0.07961272, -0.07151547]]
+            Urefline = np.reshape(Urefline, (-1, action_size))
             return Urefline
 
-        if self.dist_between(self.get_target_goal(), self.get_start()) == self.dist_between(goal_b, goal_c) and (self.get_target_goal() == goal_a or self.get_target_goal() == goal_c):
-            # return int(resolution * 2)
-            step_vector = [step_vector[0], step_vector[1] + 0.05] # Add a bias
-
-            u_blank  = np.asarray(step_vector)
-            Urefline = np.tile(u_blank, (N, 1))
-            Urefline = np.reshape(Urefline, (-1, action_size))
-
+        if self.is_segment("A", "E"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
             return Urefline
 
-        u_blank  = np.asarray([0.0, 0.0])
-        Urefline = np.tile(u_blank, (N, 1))
-        Urefline = np.reshape(Urefline, (-1, action_size))
+        if self.is_segment("A", "F"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            return Urefline
+
+        if self.is_segment("B", "A"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            return Urefline
+
+        if self.is_segment("B", "C"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            return Urefline
+
+        if self.is_segment("B", "D"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            Urefline = [[0.11320196, -0.19995151], [0.10495989, -0.1877859], [0.0982124, -0.17345419], [0.09286647, -0.15712068], [0.08885552, -0.13897364], [0.08614075, -0.11925201], [0.08471647, -0.09846178], [0.08456125, -0.0787806], [0.08512151, -0.06712796], [0.08541253, -0.06425035], [0.08548036, -0.06380169], [0.08549297, -0.06373803], [0.08549513, -0.06372913], [0.08549548, -0.06372789], [0.08549554, -0.06372772], [0.08549555, -0.0637277], [0.08549555, -0.06372769], [0.08549555, -0.06372769], [0.08549555, -0.06372769], [0.08549555, -0.06372769], [0.08549555, -0.06372769], [0.08549555, -0.06372769]] #horizontal_flip_u(BF_u)
+            Urefline = np.reshape(Urefline, (-1, action_size))
+            return Urefline
+
+        if self.is_segment("B", "E"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            return Urefline
+
+        if self.is_segment("B", "F"):
+            # step_vector = [step_vector[0], step_vector[1] - .05] # Add a bias
+            Urefline = [[ 0.11320196, -0.19995151], [ 0.10495989, -0.1877859 ], [ 0.0982124,  -0.17345419], [ 0.09286647, -0.15712068], [ 0.08885552, -0.13897364], [ 0.08614075, -0.11925201], [ 0.08471647, -0.09846178], [ 0.08456125, -0.0787806 ], [ 0.08512151, -0.06712796], [ 0.08541253, -0.06425035], [ 0.08548036, -0.06380169], [ 0.08549297, -0.06373803], [ 0.08549513, -0.06372913], [ 0.08549548, -0.06372789], [ 0.08549554, -0.06372772], [ 0.08549555, -0.0637277 ], [ 0.08549555, -0.06372769], [ 0.08549555, -0.06372769], [ 0.08549555, -0.06372769], [ 0.08549555, -0.06372769], [ 0.08549555, -0.06372769], [ 0.08549555, -0.06372769]]
+            Urefline = np.reshape(Urefline, (-1, action_size))
+            return Urefline
 
         return Urefline
 
@@ -474,17 +491,17 @@ class PathingExperiment():
 
     def get_goal_for_label(self, start_label):
         if start_label == 'A' or start_label == 'a':
-            return goal_a
+            return self.get_goal_squad()[0]
         elif start_label == 'B' or start_label == 'b':
-            return goal_b
+            return self.get_goal_squad()[1]
         elif start_label == 'C' or start_label == 'c':
-            return goal_c
+            return self.get_goal_squad()[2]
         elif start_label == 'D' or start_label == 'd':
-            return goal_d
+            return self.get_goal_squad()[3]
         elif start_label == 'E' or start_label == 'e':
-            return goal_e
+            return self.get_goal_squad()[4]
         elif start_label == 'F' or start_label == 'f':
-            return goal_f
+            return self.get_goal_squad()[5]
 
 
     def is_segment(self, start_label, end_label):
@@ -1230,6 +1247,23 @@ class PathingExperiment():
         val_for_goals.sort(key=lambda name: name[0])
         # subset_goals = val_for_goals[:num]
         closest_goal_info = val_for_goals[0]
+
+        return  closest_goal_info[1]
+
+    def get_second_closest_any_goal_to_x(self, x_in):
+        x = x_in[:2]
+        num = 1
+
+        val_for_goals = []
+
+        for goal in self.get_goals():
+            dist = self.dist_between(x, goal)
+
+            val_for_goals.append((dist, goal))
+
+        val_for_goals.sort(key=lambda name: name[0])
+        # subset_goals = val_for_goals[:num]
+        closest_goal_info = val_for_goals[1]
 
         return  closest_goal_info[1]
 

@@ -1194,12 +1194,33 @@ class RelevantPathQRCost(LegiblePathQRCost):
         if True and 50 == 50:
             key = (goal[0], goal[1])
             # P_d_dict[key]   #
-            p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1, P_all_returned=True)
+            p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, P_all_returned=True)
         
-            FLAG_SECONDARY_CONSIDERED = True
-            
-            target_costs = (1.0 - p_d)   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
+            FLAG_SECONDARY_CONSIDERED = False
+
+            closest_goal    = self.exp.get_closest_any_goal_to_x(x)
+            second_closest_goal    = self.exp.get_second_closest_any_goal_to_x(x)
+
+            tg              = closest_goal
+
+            if tg == goal:
+                p_goal = self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+                target_costs =  1.0 - p_goal
+            else:
+                target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+                target_costs += self.cost_nextbest_distance(start, second_closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+
+
+
+
+            # if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
+                # val_understanding_secondary = 100.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+
+            # target_costs = (1.0 - p_d)   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
             # target_costs = top_values[0]
+
+
+
 
             max_penalty = 1.0         # (1.0 - (p_d * .01)) #0.0 #np.exp(2.0)
             wt_lam      = self.exp.get_lambda() #.0
@@ -1698,10 +1719,11 @@ class RelevantPathQRCost(LegiblePathQRCost):
         diff_bad_v  = np.dot(np.dot(diff_bad.T,     Q),     diff_bad)
         diff_all_v  = np.dot(np.dot(diff_all.T,     Q),     diff_all)
 
-        # total_steps = self.exp.get_N()
-        # diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
-        # diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
-        # diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
+        if i is not None:
+            # total_steps = self.exp.get_N()
+            diff_curr_v = self.get_estimated_cost(diff_curr_v, i_step)
+            diff_goal_v = self.get_estimated_cost(diff_goal_v, self.exp.get_N() - i_step)
+            diff_all_v  = self.get_estimated_cost(diff_all_v, self.exp.get_N())
 
         # n = - (diff_curr_v) - (diff_goal_v)
         # d = diff_all_v

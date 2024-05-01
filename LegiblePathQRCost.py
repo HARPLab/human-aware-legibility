@@ -1453,7 +1453,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                 input_x = np.array([value1, value2, value1, value2])
                 input_u = np.array([0, 0])
 
-                Y[i, j] = self.l(input_x, None, None, just_stage=True) #gradient_descent(w_temp, X_scaled, y)[1]
+                Y[i, j] = self.cost_nextbest_distance(self.exp.get_start(), self.exp.get_target_goal(), input_x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2) #gradient_descent(w_temp, X_scaled, y)[1]
 
 
         # step = 0.02
@@ -1538,7 +1538,7 @@ class LegiblePathQRCost(FiniteDiffCost):
             # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
             # print("arrow2")
             # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
-                        
+            
             axarr.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
             axarr.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
 
@@ -1947,7 +1947,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("GRAPHING LEGIBILITY OVER TIME")
         ts = np.arange(self.N) * self.dt
 
-        FLAG_BONUS_GRAPHICS = False #True
+        FLAG_BONUS_GRAPHICS = False
 
         print("verts")
         print(verts)
