@@ -32,6 +32,7 @@ df_keypress = df_keypress.astype({"timestamp": int, "guess": str})
 df_keypress['time'] = df_keypress['timestamp']
 
 
+
 ##### Import the robot movement data
 dir_list    = os.listdir("mission_reports/")
 dir_list    = [f for f in dir_list if 'csv' in f]
@@ -103,6 +104,9 @@ for file_name in mini_list:
     keypress_file   = open(waypoints_path)
     df_chunk        = pd.read_csv(waypoints_path, index_col=False) #, columns=['path_label', 'status', 'timestamp', 'time_elapsed'])
     df_chunk = df_chunk.rename(columns={" status": "status", " time": "time", " iteration_number": "iteration_number"})
+
+    if len(df_chunk) == 0:
+        continue
 
     time_last   = int(df_chunk['time'].max())
     time_first  = int(df_chunk['time'].min())
@@ -244,8 +248,10 @@ for trial in trials_for_analysis:
         # print(df_relevant_data[['time', 'status']])
         # print(timestamp_prep, timestamp_start, timestamp_end)
 
-
-    timestamp_parked    = df_relevant_data[df_relevant_data['status'].str.contains('PARK')]['time'].item()
+    try:
+        timestamp_parked    = df_relevant_data[df_relevant_data['status'].str.contains('PARK')]['time'].item()
+    except:
+        timestamp_parked    = df_relevant_data[df_relevant_data['status'].str.contains('END')]['time'].item()
 
     timestamp_prep      = float(timestamp_prep)
     timestamp_start     = float(timestamp_start)
@@ -274,6 +280,8 @@ for trial in trials_for_analysis:
     path_name   = df_relevant_data['path_name'].unique()[0]
     path_type   = df_relevant_data['path_type'].unique()[0]
     path_style  = df_relevant_data['path_style'].unique()[0]
+
+    is_distracted = df_relevant_data['distractor']
 
     with_obs = df_relevant_data['path_name'].unique()[0]
     with_obs = "OBS" in with_obs
@@ -309,7 +317,7 @@ for trial in trials_for_analysis:
 
         guess_from_end = click_guess
 
-        result = [click_guess, click_time, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
+        result = [click_guess, click_time, timestamp_end - click_time, (timestamp_parked - click_time), (correct_answer == click_guess), is_final, is_final_park, is_distracted, with_obs, phase, path_name, path_type, path_style, trial, participant_id]
         to_add.append(result)
 
         ### TODO ADA HAS_FINAL MARK ONLY THE LAST
@@ -326,7 +334,7 @@ for trial in trials_for_analysis:
 
 
 ####### SET UP RESULTS #######################
-df_results = pd.DataFrame(results_list, columns=['guess', 'time', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'with_obs', 'phase', 'path_name', 'path_type', 'path_style', 'trial', 'participant_id'])
+df_results = pd.DataFrame(results_list, columns=['guess', 'time', 'time_before_end', 'time_before_park', 'is_correct', 'is_final', 'is_final_park', 'is_distracted', 'with_obs', 'phase', 'path_name', 'path_type', 'path_style', 'trial', 'participant_id'])
 
 ### Add sorting labels for convenience ###
 df_results['is_ambig'] = df_results['path_type'].isin(ambig_list)
@@ -441,6 +449,14 @@ for participant_id in list(df_results['participant_id'].unique()):
     df_pivot_count.to_csv(export_loco + participant_id_short + "-raw_counts.csv")
 
     ### get the click sequence for each participant
+    df_pivot_count = df_part.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean', fill_value=0)
+    df_pivot_count.to_csv(export_loco + participant_id_short + "-time_before_end.csv")
+
+    ### get the click sequence for each participant
+    df_pivot_count = df_part.pivot_table(values='time_before_end', index=['path_type'], columns='path_style', aggfunc='mean', fill_value=0)
+    df_pivot_count.to_csv(export_loco + participant_id_short + "-time_before_end-distractors.csv")
+
+    ### get the click sequence for each participant
     # df_guesses = df_part.pivot_table(values='guess', index=['path_type'], columns='path_style', aggfunc='join')
     df_guesses = df_part.groupby(['path_type', 'path_style']).agg({'is_correct': list})
     df_guesses.to_csv(export_loco + participant_id_short + "-correctness.csv")
@@ -523,8 +539,49 @@ for pt in path_type_options:
         plt.clf()
 
 
-
 print("Done with analysis")
+
+
+
+# def draw_results():
+
+def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict):
+    fig, axes = plt.subplot_mosaic("ABCD;EFGH;IJKL", figsize=(8, 6), gridspec_kw={'width_ratios':[1, 1, 1, 1], 'height_ratios':[1, 1, 1]})
+
+    ax_mappings = {}
+    ax_early    = axes['A']
+    ax_even     = axes['E']
+    ax_late     = axes['I']
+
+    ax_early2   = axes['B']
+    ax_even2    = axes['F']
+    ax_late2    = axes['J']
+
+    ax_early3   = axes['C']
+    ax_even3    = axes['G']
+    ax_late3    = axes['K']
+
+    ax_early4   = axes['D']
+    ax_even4    = axes['H']
+    ax_late4    = axes['L']
+
+
+
+
+    # show a legend on the plot
+    # plt.legend() #loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+     
+    # function to show the plot
+    plt.tight_layout()
+    plt.savefig('graphics/' + "overview" + '.png')
+    print('graphics/' + "overview" + '.png')
+    plt.clf()
+    plt.close()
+
+    
+    print("Exported images of all paths")
+
+
 
 def do_anova_and_posthoc(df, analysis_label):
     subject_id = 'participant_id'
