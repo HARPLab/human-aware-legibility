@@ -10,8 +10,8 @@ class NavDynamicsAuto(AutoDiffDynamics):
     def __init__(self,
                  exp,
                  constrain=True,
-                 min_bounds=-0.1, #-1, 1
-                 max_bounds=0.1,
+                 min_bounds=-0.001, #-1, 1
+                 max_bounds=0.001,
                  **kwargs):
         """Constructs an InvertedPendulumDynamics model.
 
@@ -64,8 +64,8 @@ class NavDynamicsAuto(AutoDiffDynamics):
             u_y = u[1]
 
         f = T.stack([
-                x_x + u_x * dt,
-                x_y + u_y * dt,
+                x_x + u_x,
+                x_y + u_y,
                 x_x,
                 x_y
             ])

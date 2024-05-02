@@ -1,3 +1,4 @@
+from __future__ import division
 import os
 import sys
 module_path = os.path.abspath(os.path.join('../ilqr'))
@@ -32,6 +33,8 @@ import PathingExperiment as ex
 
 from shapely.geometry import LineString
 from shapely.geometry import Point
+
+
 
 np.set_printoptions(suppress=True)
 np.seterr(divide='raise')
@@ -1196,28 +1199,22 @@ class RelevantPathQRCost(LegiblePathQRCost):
             # P_d_dict[key]   #
             p_d, top_goals, top_values = self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, P_all_returned=True)
         
-            FLAG_SECONDARY_CONSIDERED = False
+            FLAG_SECONDARY_CONSIDERED = True
 
-            closest_goal    = self.exp.get_closest_any_goal_to_x(x)
-            second_closest_goal    = self.exp.get_second_closest_any_goal_to_x(x)
+            closest_goal            = self.exp.get_closest_any_goal_to_x(x)
 
-            tg              = closest_goal
-
-            if tg == goal:
-                p_goal = self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
-                target_costs =  1.0 - p_goal
+            if closest_goal == goal:
+                target_costs = 1.0 - self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
             else:
-                target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
-                target_costs += self.cost_nextbest_distance(start, second_closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+                target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
 
 
+            # if closest_goal == goal:
+            #     target_costs = 1.0 - self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+            # else:
+            #     target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
 
 
-            # if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
-                # val_understanding_secondary = 100.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
-
-            # target_costs = (1.0 - p_d)   # * relevance_scale # * np.log(i + 1) #5.0 * (1.0 - p_d) #(1.0 - p_d) # * closeness_scalar #+ max(p_alts)
-            # target_costs = top_values[0]
 
 
 

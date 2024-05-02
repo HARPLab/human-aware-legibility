@@ -259,6 +259,8 @@ class PathingExperiment():
         Urefline = np.tile(u_blank, (N, 1))
         Urefline = np.reshape(Urefline, (-1, action_size))
 
+        return Urefline
+
         # crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
         # step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
 
@@ -274,7 +276,7 @@ class PathingExperiment():
         ##
         if self.is_segment("A", "C"):
             # return int(resolution * 2)
-            step_vector = [step_vector[0] - 0.01, step_vector[1]] #[-0.01, 0] # Add a bias
+            step_vector = [step_vector[0] - 0.5, step_vector[1]] #[-0.01, 0] # Add a bias
 
 
         if self.is_segment("A", "D"):
@@ -1188,7 +1190,7 @@ class PathingExperiment():
         for goal in self.get_goals():
             dist = self.dist_between(x, goal)
 
-            is_backtracking = self.is_backtracking(x_in, goal)
+            # is_backtracking = self.is_backtracking(x_in, goal)
 
             if goal != self.get_target_goal(): # and not is_backtracking:
                 val_for_goals.append((dist, goal))

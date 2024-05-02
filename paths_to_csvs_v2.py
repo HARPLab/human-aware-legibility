@@ -186,11 +186,11 @@ def draw_paths_by_dict(inspection_save_path, early_dict, late_dict, even_dict, o
 
 	### -AB -AC -AD -AE -AF -BA -BC -BD -BE -BF -CA -CB -CD -CE -CF -DA DB DC -DE -DF -EA -EB -EC -ED -EF -FA -FB -FC -FD -FE
 
-	title1 = "Inwards / Up"
-	group1 = ['AB', 'CB', 'DA', 'FC', 'EA', 'EC', 'FE', 'DE', ]
+	title1 = "Outwards / Down"
+	group1 = ['BA', 'BC', 'BD', 'BF', 'EF', 'ED', "AD", 'CF']
 
-	title2 = "Outwards / Down"
-	group2 = ['BA', 'BC', 'BD', 'BF', 'EF', 'ED', "AD", 'CF']
+	title2 = "Inwards / Up"
+	group2 = ['AB', 'CB', 'DA', 'FC', 'EA', 'EC', 'FE', 'DE', ]
 
 	title3 = "Long / Diagonal"
 	group3 = ['AF', 'AC'] # FA, DC CD CA DF FD
@@ -375,12 +375,12 @@ def get_path_length(path):
 	return total_length
 
 
-ramp_a = [[goal_a[0], goal_a[1] + .05], [goal_a[0], goal_a[1] + .1], [goal_a[0], goal_a[1] + .15], [goal_a[0], goal_a[1] + .2], [goal_a[0], goal_a[1] + .25], [goal_a[0], goal_a[1] + .3]]
-ramp_b = [[goal_b[0], goal_b[1] + .05], [goal_b[0], goal_b[1] + .1], [goal_b[0], goal_b[1] + .15], [goal_b[0], goal_b[1] + .2], [goal_b[0], goal_b[1] + .25], [goal_b[0], goal_b[1] + .3]]
-ramp_c = [[goal_c[0], goal_c[1] + .05], [goal_c[0], goal_c[1] + .1], [goal_c[0], goal_c[1] + .15], [goal_c[0], goal_c[1] + .2], [goal_c[0], goal_c[1] + .25], [goal_c[0], goal_c[1] + .3]]
-ramp_d = [[goal_d[0], goal_d[1] - .05], [goal_d[0], goal_d[1] - .1], [goal_d[0], goal_d[1] - .15], [goal_d[0], goal_d[1] - .2], [goal_d[0], goal_d[1] - .25], [goal_d[0], goal_d[1] - .3]]
-ramp_e = [[goal_e[0], goal_e[1] - .05], [goal_e[0], goal_e[1] - .1], [goal_e[0], goal_e[1] - .15], [goal_e[0], goal_e[1] - .2], [goal_e[0], goal_e[1] - .25], [goal_e[0], goal_e[1] - .3]]
-ramp_f = [[goal_f[0], goal_f[1] - .05], [goal_f[0], goal_f[1] - .1], [goal_f[0], goal_f[1] - .15], [goal_f[0], goal_f[1] - .2], [goal_f[0], goal_f[1] - .25], [goal_f[0], goal_f[1] - .3]]
+ramp_a = [goal_a, [goal_a[0], goal_a[1] + .05], [goal_a[0], goal_a[1] + .1], [goal_a[0], goal_a[1] + .15], [goal_a[0], goal_a[1] + .2], [goal_a[0], goal_a[1] + .25], [goal_a[0], goal_a[1] + .3], [goal_a[0], goal_a[1] + .35]]
+ramp_b = [goal_b, [goal_b[0], goal_b[1] + .05], [goal_b[0], goal_b[1] + .1], [goal_b[0], goal_b[1] + .15], [goal_b[0], goal_b[1] + .2], [goal_b[0], goal_b[1] + .25], [goal_b[0], goal_b[1] + .3], [goal_b[0], goal_b[1] + .35]]
+ramp_c = [goal_c, [goal_c[0], goal_c[1] + .05], [goal_c[0], goal_c[1] + .1], [goal_c[0], goal_c[1] + .15], [goal_c[0], goal_c[1] + .2], [goal_c[0], goal_c[1] + .25], [goal_c[0], goal_c[1] + .3], [goal_c[0], goal_c[1] + .35]]
+ramp_d = [goal_d, [goal_d[0], goal_d[1] - .05], [goal_d[0], goal_d[1] - .1], [goal_d[0], goal_d[1] - .15], [goal_d[0], goal_d[1] - .2], [goal_d[0], goal_d[1] - .25], [goal_d[0], goal_d[1] - .3], [goal_d[0], goal_d[1] - .35]]
+ramp_e = [goal_e, [goal_e[0], goal_e[1] - .05], [goal_e[0], goal_e[1] - .1], [goal_e[0], goal_e[1] - .15], [goal_e[0], goal_e[1] - .2], [goal_e[0], goal_e[1] - .25], [goal_e[0], goal_e[1] - .3], [goal_e[0], goal_e[1] - .35]]
+ramp_f = [goal_f, [goal_f[0], goal_f[1] - .05], [goal_f[0], goal_f[1] - .1], [goal_f[0], goal_f[1] - .15], [goal_f[0], goal_f[1] - .2], [goal_f[0], goal_f[1] - .25], [goal_f[0], goal_f[1] - .3], [goal_f[0], goal_f[1] - .35]]
 
 ramps = {}
 ramps['A'] = ramp_a

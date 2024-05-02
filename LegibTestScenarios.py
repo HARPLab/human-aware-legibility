@@ -2943,11 +2943,11 @@ def get_scenario_set(scenario_filters=[]):
     # scenarios[label] = exp
 
     # TEST SCENARIO
-    label, exp = scenario_study_edge(goal_index=0)
+    label, exp = scenario_study_middle(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
-    label, exp = scenario_study_middle(goal_index=0)
+    label, exp = scenario_study_edge(goal_index=0)
     scenarios[label] = exp
 
     return scenarios

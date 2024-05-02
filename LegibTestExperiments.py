@@ -1,4 +1,4 @@
-purpose = "exp_54_nova_which3_tune100" #sig_lite" #_sec" #5t_10s_l10_weighted_both" force_
+purpose = "60_nova_pgoal_just2" #with_boost" #locked_denom" #sig_lite" #_sec" #5t_10s_l10_weighted_both" force_
 # purpose = "53_sec_diff"
 # purpose = "exp_52_solo_maxp5_2xval" #local_revert"  #og_more_dense" #
 # purpose = "exp_48_legnew_novisl_raw_wthd_e-4" #_10x"
@@ -501,17 +501,33 @@ def test_study_set(dash_folder, scenario_filters):
 
     # study_vars
 
-    lam = 2.0 #.75
+    lam = 3.5 #.75s
     numit = 1
-    obs_size = 0 #.5 #.95 #.5
-
+    obs_size = 0.0 #5 #75 #.75 #0.5 #1.0 #.5 #.5 #.95 #.5
     
-    scale_exp           = [-.66,    .66,      0]
+    # scale_exp           = [-.66,    .66,      0]
+    # # scale_exp           = [-.75,    .75,      0]
+    # # scale_exp           = [-.8,    .8,      0]
+    # target_buffer_dist  = [obs_size,      obs_size,       obs_size]
+    # lam_values          = [lam,     lam,    lam]
+    # num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
+    scale_exp           = [-.66,            .66,    0]
+    # scale_exp           = [-.85,            .85]
     # scale_exp           = [-.75,    .75,      0]
     # scale_exp           = [-.8,    .8,      0]
-    target_buffer_dist  = [obs_size,      obs_size,       obs_size]
+    scale_exp           = [-.5,    .5, 0]
+    target_buffer_dist  = [obs_size,      obs_size, obs_size]
     lam_values          = [lam,     lam,    lam]
-    num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+    num_itr_list        = [numit,   numit, numit] # [1, 1, 1]
+
+    # scale_exp           = [0,        0,      0]
+    # # scale_exp           = [-.75,    .75,      0]
+    # # scale_exp           = [-.8,    .8,      0]
+    # target_buffer_dist  = [obs_size,      obs_size,       obs_size]
+    # lam_values          = [lam,     lam + .1,    lam + .1]
+    # num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
+
 
     setups = []
     for ind in range(len(scale_exp)):
