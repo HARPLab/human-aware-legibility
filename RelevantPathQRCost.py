@@ -942,6 +942,51 @@ class RelevantPathQRCost(LegiblePathQRCost):
         return val_u_diff
 
 
+    def get_u_diff_for_speed(self, x, u, i):
+        u_calc = x[:2] - x[2:]
+            
+        try: 
+            if u.any() == None:
+                return 0.0
+        except:
+            return 0.0
+
+        # print("incoming " + str(u))
+        R = np.eye(2)
+        
+        u_diff      = np.abs(u) # - self.u_path[i])
+        val_u_diff  = np.dot(u_diff.T, R)
+        val_u_diff  = np.dot(val_u_diff, u_diff)
+
+        if u[0] is np.nan or u[1] is np.nan:
+            print("FLAT PENALTY FOR NANS")
+            return 0.0 #val_u_diff * 10000.0
+
+
+        # penalty = 0
+        # if with_speed and False:
+        #     speed_low = 0 #0.125
+        #     speed_high = .2 #0.125
+        #     diff = (speed_high - speed_low)/2.0
+
+        #     actual_speed = np.linalg.norm(u_diff)
+
+        #     if actual_speed > speed_high or actual_speed < speed_low:
+        #         penalty += (speed_high - actual_speed) / diff
+        #         penalty += (actual_speed - speed_low) / diff
+
+
+        penalty             = np.linalg.norm(u)
+        target_speed        = np.linalg.norm([0, self.exp.get_target_speed()])
+       
+
+        penalty = (target_speed - penalty)**2
+
+
+        return penalty
+
+
+
     def get_u_diff(self, x, u, i, with_speed=False):
         u_calc = x[:2] - x[2:]
             
@@ -978,6 +1023,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
             if actual_speed > speed_high or actual_speed < speed_low:
                 penalty += (speed_high - actual_speed) / diff
                 penalty += (actual_speed - speed_low) / diff
+
+
+
 
 
         return val_u_diff, penalty
