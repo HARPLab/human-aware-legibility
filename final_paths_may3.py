@@ -63,6 +63,9 @@ def inspect_path_set():
 	##### draw them in groups by the early/late/etc/group
 	draw_paths_by_dict_defense(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict)
 
+	##### draw them in groups by the early/late/etc/group
+	draw_paths_by_dict_demo_defense(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict)
+
 	##### special drawings for obstacle avoidance
 	draw_obstacle_sets(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict)
 
@@ -1007,6 +1010,213 @@ def export_path_dict(export_name, path_dict):
 		f.close()
 		# print("wrote out " + filename)
 
+
+def draw_paths_by_dict_demo_defense(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict):
+	fig, axes = plt.subplot_mosaic("ABCD;IJKL", figsize=(12, 5), gridspec_kw={'width_ratios':[1, 1, 1, 1], 'height_ratios':[1, 1]})
+
+	hues = sns.color_palette("Paired", 8)[:2] + sns.color_palette("Paired", 8)[6:]
+	hues_distracted = sns.color_palette("Paired", 10)[8:]
+	hues_early_late = [hues[1], hues[3]]
+
+	color_early 	= hues_early_late[0]
+	color_late 	= hues_early_late[1]
+
+	ax_mappings = {}
+	ax_early 	= axes['A']
+	# ax_even 	= axes['E']
+	ax_late 	= axes['I']
+
+	ax_early2 	= axes['B']
+	# ax_even2 	= axes['F']
+	ax_late2 	= axes['J']
+
+	ax_early3 	= axes['C']
+	# ax_even3 	= axes['G']
+	ax_late3 	= axes['K']
+
+	ax_early4 	= axes['D']
+	# ax_even4 	= axes['H']
+	ax_late4 	= axes['L']
+
+	buffer = 1
+	ax_early.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early.set_aspect('equal')
+
+	# ax_even.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	# ax_even.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	# ax_even.set_aspect('equal')
+
+	ax_late.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late.set_aspect('equal')
+
+	ax_early2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early2.set_aspect('equal')
+
+	# ax_even2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	# ax_even2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	# ax_even2.set_aspect('equal')
+
+	ax_late2.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late2.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late2.set_aspect('equal')
+
+	ax_early3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early3.set_aspect('equal')
+
+	# ax_even3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	# ax_even3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	# ax_even3.set_aspect('equal')
+
+	ax_late3.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late3.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late3.set_aspect('equal')
+
+	ax_early4.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_early4.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_early4.set_aspect('equal')
+
+	# ax_even4.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	# ax_even4.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	# ax_even4.set_aspect('equal')
+
+	ax_late4.set_xlim([goal_a[0] - buffer, goal_c[0] + buffer])
+	ax_late4.set_ylim([goal_d[1] - buffer, goal_a[1] + buffer])
+	ax_late4.set_aspect('equal')
+
+	### -AB -AC -AD -AE -AF -BA -BC -BD -BE -BF -CA -CB -CD -CE -CF -DA DB DC -DE -DF -EA -EB -EC -ED -EF -FA -FB -FC -FD -FE
+
+	title1 = "SHORT-OUTER / SHORT-SIDE"
+	group1 = ['BA', 'BC', 'EF', 'ED', 'AD', 'FC'] # 'BD', 'BF', "AD", 'CF'
+
+	title2 = "SHORT-INNER / SHORT-MID"
+	group2 = ['AB', 'CB', 'FE', 'DE', 'BE'] # 'DA', 'FC', 'EA', 'EC', 
+
+	title3 = "DIAG-INNER / DIAG-OUTER"
+	group3 = ['AE', 'EC'] # FA, DC CD CA DF FD
+
+	title4 = "LONG / LONG-DIAG"
+	group4 = ['AF', 'AC']
+
+
+	### boringly flat
+	# 'BE', EB
+
+	ax_early.set_title("Early\n " + title1, fontweight="bold")
+	# ax_even.set_title("Even\n " + title1, fontweight="bold")
+	ax_late.set_title("Late\n " + title1, fontweight="bold")
+
+	ax_early2.set_title("Early\n " + title2, fontweight="bold")
+	# ax_even2.set_title("Even\n " + title2, fontweight="bold")
+	ax_late2.set_title("Late\n " + title2, fontweight="bold")
+
+	ax_early3.set_title("Early\n " + title3, fontweight="bold")
+	# ax_even3.set_title("Even\n " + title3, fontweight="bold")
+	ax_late3.set_title("Late\n " + title3, fontweight="bold")
+
+	ax_early4.set_title("Early\n " + title4, fontweight="bold")
+	# ax_even4.set_title("Even\n " + title4, fontweight="bold")
+	ax_late4.set_title("Late\n " + title4, fontweight="bold")
+
+	for j in range(len(goal_list)):
+		goal 	= goal_list[j]
+		color = goal_colors[j]
+
+		circle1 = plt.Circle(goal, .1, color=color)
+		ax_early.add_patch(circle1)
+
+		circle2 = plt.Circle(goal, .1, color=color)
+		ax_late.add_patch(circle2)
+		
+		# circle3 = plt.Circle(goal, .1, color=color)
+		# ax_even.add_patch(circle3)
+
+		circle4 = plt.Circle(goal, .1, color=color)
+		ax_early2.add_patch(circle4)
+
+		circle5 = plt.Circle(goal, .1, color=color)
+		ax_late2.add_patch(circle5)
+		
+		# circle6 = plt.Circle(goal, .1, color=color)
+		# ax_even2.add_patch(circle6)
+
+		circle7 = plt.Circle(goal, .1, color=color)
+		ax_early3.add_patch(circle7)
+
+		circle8 = plt.Circle(goal, .1, color=color)
+		ax_late3.add_patch(circle8)
+		
+		# circle9 = plt.Circle(goal, .1, color=color)
+		# ax_even3.add_patch(circle9)
+
+		circle10 = plt.Circle(goal, .1, color=color)
+		ax_early4.add_patch(circle10)
+
+		circle11 = plt.Circle(goal, .1, color=color)
+		ax_late4.add_patch(circle11)
+		
+		# circle12 = plt.Circle(goal, .1, color=color)
+		# ax_even4.add_patch(circle12)
+
+
+	dotsize = 2
+	for key in early_dict.keys():
+		path_early 	= early_dict[key]
+		path_late 	= late_dict[key]
+		# path_even 	= even_dict[key]
+
+		early_x, early_y 	= get_xy_from_path(path_early)
+		late_x, late_y 		= get_xy_from_path(path_late)
+		# even_x, even_y 		= get_xy_from_path(path_even)
+
+
+		if key in group1:
+			ax_early.plot(early_x, 	early_y, 	 label = "early", color=color_early, markersize=0, linestyle='solid')
+			ax_late.plot(late_x, 	late_y, 	 label = "late", color=color_late, markersize=0, linestyle='solid')
+			# ax_even.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+			ax_early.scatter(early_x, 	early_y, 	c=color_early, 	s=dotsize,	zorder=10)
+			ax_late.scatter(late_x, 	late_y, 	c=color_late, 	s=dotsize,	zorder=10)
+
+
+		if key in group2:
+			ax_early2.plot(early_x, 	early_y, 	 label = "early", color=color_early, markersize=0, linestyle='solid')
+			ax_late2.plot(late_x, 		late_y, 	 label = "late", color=color_late, markersize=0, linestyle='solid')
+			# ax_even2.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+			ax_early2.scatter(early_x, 	early_y, 	c=color_early, 	s=dotsize,	zorder=10)
+			ax_late2.scatter(late_x, 	late_y, 	c=color_late, 	s=dotsize,	zorder=10)
+
+		if key in group3:
+			ax_early3.plot(early_x, 	early_y, 	 label = "early", color=color_early, markersize=0, linestyle='solid')
+			ax_late3.plot(late_x, 		late_y, 	 label = "late", color=color_late, markersize=0, linestyle='solid')
+			# ax_even3.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+			ax_early3.scatter(early_x, 	early_y, 	c=color_early, 	s=dotsize,	zorder=10)
+			ax_late3.scatter(late_x, 	late_y, 	c=color_late, 	s=dotsize,	zorder=10)
+
+		if key in group4:
+			ax_early4.plot(early_x, 	early_y, 	 label = "early", color=color_early, markersize=0, linestyle='solid')
+			ax_late4.plot(late_x, 		late_y, 	 label = "late", color=color_late, markersize=0, linestyle='solid')
+			# ax_even4.plot(even_x, 	even_y, 	label = "even", color='blue')
+
+			ax_early4.scatter(early_x, 	early_y, 	c=color_early, 	s=dotsize,	zorder=10)
+			ax_late4.scatter(late_x, 	late_y, 	c=color_late, 	s=dotsize,	zorder=10)
+		 
+
+	# show a legend on the plot
+	# plt.legend() #loc='upper center', bbox_to_anchor=(0.5, 1.05), ncol=3, fancybox=True, shadow=True)
+	 
+	# function to show the plot
+	plt.tight_layout()
+	plt.savefig(inspection_save_path + "overview-defense-all" + '.png')
+	plt.clf()
+	plt.close()
+	
+	print("Exported images of all paths")
 
 def draw_paths_by_dict_defense(inspection_save_path, early_dict, late_dict, even_dict, obstacle_dict):
 	fig, axes = plt.subplot_mosaic("ABC;IJK", figsize=(8, 6), gridspec_kw={'width_ratios':[1, 1, 1], 'height_ratios':[1, 1]})
