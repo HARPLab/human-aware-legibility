@@ -1632,15 +1632,15 @@ def scenario_fan2(goal_index=None):
     label = "fan2" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
-    goal4 = [-5.0, 10.0]
-    goal2 = [5.0, 10.0]
+    goal4 = [-2.0, 8.0]
+    goal2 = [2.0, 8.0]
 
     goal1 = [0.0, 0.0]
 
     # goal3 = [0.0, -5.0]
 
-    goal34 = [-10.0, 10.0]
-    goal32 = [10.0, 10.0]
+    goal34 = [-6.0, 8.0]
+    goal32 = [6.0, 8.0]
 
     start       = goal1
 
@@ -1687,19 +1687,77 @@ def scenario_fan2(goal_index=None):
 
     return label, exp
 
+
+def scenario_ambig1(goal_index=None):
+    label = "ambig1" # _g" + str(goal_index)
+
+    goal1 = [0.0, -2.0]
+
+    # (2, 4), (4,2), (3,6), (5,4))
+    goal4 = [2.5, -1.4]
+    goal2 = [1.5, -2.6]
+    # goal3 = [0.0, -5.0]
+
+    goal3 = [3.5, -2.3]
+    # goal32 = [10.0, 10.0]
+
+    start       = goal1
+
+    obs_pts = []
+    # obs1 = [goal1[0] - 1.5, goal1[1], 0]
+    # obs3 = [goal3[0] + 1.5, goal3[1], 180]
+
+    obs4 = [goal4[0], goal4[1] + 2, 270]
+    obs2 = [goal2[0], goal2[1] + 3, 270]
+
+    obs3 = [goal3[0], goal3[1] + 2.7, 270]
+    # obs32 = [goal32[0], goal32[1] + 1.5, 270]
+
+    # obs_pts.append(obs1)
+    obs_pts.append(obs2)
+    # obs_pts.append(obs3)
+    # obs_pts.append(obs3)
+    obs_pts.append(obs4)
+    obs_pts.append(obs3)
+    # obs_pts.append(obs32)
+
+    target_goal = goal1
+    all_goals   = [goal2, goal4, goal3]
+
+    if goal_index is not None:
+        target_goal = all_goals[goal_index]
+    else:
+        target_goal = all_goals[0]
+
+    table_pts = []
+
+    exp = ex.PathingExperiment(label, start, target_goal, all_goals, observers=obs_pts, table_pts=table_pts)
+    # Make sure these have the same order
+
+    exp.set_observer_goal_pairs(exp.get_observers(), [goal2, goal4, goal3])
+    # exp.set_observer_goal_pairs([resto.Observer(obs2[0], obs2[1]), resto.Observer(obs4[0], obs4[1])], [goal2, goal4])
+
+    N = 10 #15
+    exp.set_N(N)
+
+    obs_scale = 10000.0
+    exp.set_solver_scale_obstacle(obs_scale)
+
+    return label, exp
+
 def scenario_fan(goal_index=None):
     label = "fan" # _g" + str(goal_index)
 
     # (2, 4), (4,2), (3,6), (5,4))
-    goal4 = [10.0, -5.0]
-    goal2 = [10.0, 5.0]
+    goal4 = [8.0, -2.0]
+    goal2 = [8.0, 2.0]
 
     goal1 = [0.0, 0.0]
 
     # goal3 = [0.0, -5.0]
 
-    goal34 = [10.0, -10.0]
-    goal32 = [10.0, 10.0]
+    goal34 = [8.0, -6.0]
+    goal32 = [8.0, 6.0]
 
     start       = goal1
 
@@ -2942,28 +3000,36 @@ def get_scenario_set(scenario_filters=[]):
     # label, exp = scenario_para_middle(goal_index=0)
     # scenarios[label] = exp
 
+
+    # # TEST SCENARIO
+    # label, exp = scenario_colin(goal_index=0)
+    # scenarios[label] = exp
+
     # TEST SCENARIO
-    label, exp = scenario_study_middle(goal_index=0)
+    label, exp = scenario_ambig1(goal_index=0)
     scenarios[label] = exp
 
     # TEST SCENARIO
     label, exp = scenario_study_edge(goal_index=0)
     scenarios[label] = exp
 
+    # TEST SCENARIO
+    label, exp = scenario_study_middle(goal_index=0)
+    scenarios[label] = exp
+
+    # TEST SCENARIO
+    label, exp = scenario_fan2(goal_index=0)
+    scenarios[label] = exp
+
     return scenarios
+
+
 
     # TEST SCENARIO
     label, exp = scenario_triangle_thin(goal_index=0)
     scenarios[label] = exp
 
 
-    # TEST SCENARIO
-    label, exp = scenario_colin(goal_index=0)
-    scenarios[label] = exp
-
-    # TEST SCENARIO
-    label, exp = scenario_fan2(goal_index=0)
-    scenarios[label] = exp
 
 
     # ############
