@@ -1733,20 +1733,31 @@ class LegiblePathQRCost(FiniteDiffCost):
         print(xmin, xmax, ymin, ymax)
 
 
+        COLOR_RED       = '#980000' # 0.066754
+        COLOR_ORANGE    = '#b45f06' ##e69138' # 0.3735
+        COLOR_YELLOW    = '#bf9000' #f1c232' # 0.5751463
+        COLOR_GREEN     = '#38761d' # 0.1388632
+        COLOR_BLUE      = '#1155cc' # 0.10975
+        COLOR_PURPLE    = '#9900ff' # 0.139923045 
+
         if len(self.exp.get_goals()) < 4:
             # Use the colors for smaller examples
-            goal_colors = ['#980000', '#f1c232', '#1155cc', '#9900ff', '#e69138', '#f1c232']
+            goal_colors = [COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_YELLOW, COLOR_ORANGE, COLOR_PURPLE]
         else:
             if self.exp.get_exp_label() == 'study_edge':
                 # no red
-                goal_colors = ['#e69138', '#f1c232', '#38761d', '#1155cc', '#9900ff']
-            else:
+                goal_colors = [COLOR_ORANGE, COLOR_YELLOW, COLOR_GREEN, COLOR_BLUE, COLOR_PURPLE]
+            elif self.exp.get_exp_label() == 'study_mid':
                 # no order
-                goal_colors = ['#980000', '#f1c232', '#38761d', '#1155cc', '#9900ff']
+                goal_colors = [COLOR_RED, COLOR_YELLOW, COLOR_GREEN, COLOR_BLUE, COLOR_PURPLE]
+            else:
+                goal_colors = [COLOR_RED, COLOR_YELLOW, COLOR_BLUE, COLOR_GREEN, COLOR_ORANGE, COLOR_PURPLE]
+
+
 
 
         print("Study label")
-        print(self.exp.get_exp_label())
+        print('-' + self.exp.get_exp_label() + '-')
 
         # xmin, xmax = 0, 6
         # xmin, xmax = .5, -4.5
@@ -1842,6 +1853,64 @@ class LegiblePathQRCost(FiniteDiffCost):
 
                     # Y[i, j] = color_mixed
 
+
+        for i, value1 in enumerate(x1):
+            for j, value2 in enumerate(x2):
+
+                Y_max = 0
+                Y_min = 1
+
+                x = np.asarray([value1, value2])
+
+                closest_goal        = self.exp.get_closest_any_goal_to_x(x)
+                closest_goal2       = self.exp.get_second_closest_any_goal_to_x(x)
+
+                # print("closest to " + str(x))
+                # print(closest_goal, closest_goal2)
+
+
+                # for gi in range(len(goals)):
+                #     if goals[gi] not in [closest_goal, closest_goal2]:
+                #         Y_array[gi][i, j] = 0
+
+
+                if False:
+                    Y_vals = []
+                    for gi in range(len(goals)):
+                        Y           = Y_array[gi]
+                        val = Y[i, j]
+                        Y_vals.append(val)
+
+                        if val > Y_max:
+                            Y_max = val
+
+                        if val < Y_min:
+                            Y_min = val
+
+                    Y_vals.sort()
+
+                    for gi in range(len(goals)):
+                        Y           = Y_array[gi]
+                        val = Y[i, j]
+
+                        if val not in Y_vals[-1:]:
+                            Y[i, j] = 0
+
+                        # if val < Y_max:
+                        #     Y[i, j] = 0
+
+                        # if val > Y_min:
+                        #     Y[i, j] = 0
+
+
+
+        for gi in range(len(goals)):
+            Y           = Y_array[gi]
+            print("Values within gi " + str(gi))
+            print(Y)
+            print(list(np.unique(Y)))
+
+
         # step = 0.02
         # m = np.amax(Y)
         # levels = np.arange(0.0, m, step) + step
@@ -1872,21 +1941,21 @@ class LegiblePathQRCost(FiniteDiffCost):
             else:
                 print("no levels just " + str(levels))
        
-
-        for gi in range(len(goals)):
+        goal_order = range(len(goals))[::-1]
+        for gi in goal_order:
             Y           = Y_array[gi]
             goal_color  = goal_colors[gi] #.replace("#", "")
             # goal_color  = "222222"
 
-            print("GOAL INDEX FOR PAINTING: " + str(gi))
-            print(goal_color)
+            # print("GOAL INDEX FOR PAINTING: " + str(gi))
+            # print(goal_color)
 
             # get colormap
             ncolors = len(levels)
 
             goal_rgb = colors.hex2color(goal_color) #tuple(int(goal_color[i:i+2], 16) for i in (0, 2, 4))
 
-            print("goal rgb " + str(goal_rgb))
+            # print("goal rgb " + str(goal_rgb))
 
             # cdict = {'red': ((0., 1., 1.),
             #          (1., 0., 0.)),
@@ -1908,8 +1977,13 @@ class LegiblePathQRCost(FiniteDiffCost):
              'blue': ((0., goal_rgb[2], goal_rgb[2]),
                       (1., goal_rgb[2], goal_rgb[2])),
 
-             'alpha': ((0., 0., 0.),
-                       (1, .5, .5))}
+             # 'alpha': ((0., 0, 0),
+             #           (1, .25, .25))}
+
+             'alpha': ((0., .01, .01),
+                        # (.5, .1, .1),
+                       (1, .15, .15))}
+
 
             goal = goals[gi]
 
@@ -1919,8 +1993,14 @@ class LegiblePathQRCost(FiniteDiffCost):
 
             print("Applying paint for " + str(goal) + " - " + str(goal_color) + " " + str(self.exp.get_target_goal()))
             print(list(np.unique(Y_array[gi])))
-            axarr.contourf(x1, x2, Y.transpose(), levels, cmap=testcmap, alpha=None) #, interpolation='nearest') #locator=mtick.LogLocator()) #alpha=None, , locator=mtick.LogLocator()) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+            # axarr.contourf(x1, x2, Y.transpose(), levels, cmap=testcmap, alpha=None) #, interpolation='nearest') #locator=mtick.LogLocator()) #alpha=None, , locator=mtick.LogLocator()) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
             # axarr.contour(x1, x2, Y.transpose(), levels, cmap=testcmap, alpha=None, locator=mtick.LogLocator())
+
+            axarr.contourf(x1, x2, Y.transpose(), cmap=testcmap, alpha=None,) # locator=mtick.LogLocator())
+
+            # axarr.contour(x1, x2, Y.transpose(), colors='black', alpha=0.25) #locator=mtick.LogLocator(), 
+
+            plt.savefig(Path(self.get_export_label(dash_folder) + '-nopath-' + str(gi) + '.png'))
 
 
         # axarr.imshow(Y.transpose()) #, interpolation='none')
