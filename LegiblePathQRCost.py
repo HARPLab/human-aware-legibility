@@ -15,6 +15,8 @@ from datetime import timedelta, datetime
 import matplotlib.ticker as mtick
 from matplotlib import cm
 
+import matplotlib
+
 from ilqr import iLQR
 from ilqr.cost import Cost
 from ilqr.cost import QRCost
@@ -32,6 +34,7 @@ import pdb
 from random import randint
 import pandas as pd
 from matplotlib import colors
+import matplotlib.colors as colors
 
 from autograd import grad, elementwise_grad, jacobian, hessian
 
@@ -43,7 +46,7 @@ PREFIX_EXPORT = 'experiment_outputs/'
 
 FLAG_SHOW_IMAGE_POPUP = False
 
-goal_colors = ['red', 'blue', 'purple', 'green', 'orange', 'pink']
+goal_colors = ['#980000', '#e69138', '#f1c232', '#38761d', '#1155cc', '#9900ff']
 
 # Base class for all of our legible pathing offshoots
 class LegiblePathQRCost(FiniteDiffCost):
@@ -493,6 +496,16 @@ class LegiblePathQRCost(FiniteDiffCost):
         # # We want the path to be smooth, so we incentivize small and distributed u
 
         return J
+
+    def combine_hex_values(self, d):
+        d_items     = sorted(d.items())
+        tot_weight  = sum(d.values())
+        red         = int(sum([int(k[:2], 16)*v for k, v in d_items])/tot_weight)
+        green       = int(sum([int(k[2:4], 16)*v for k, v in d_items])/tot_weight)
+        blue        = int(sum([int(k[4:6], 16)*v for k, v in d_items])/tot_weight)
+        zpad        = lambda x: x if len(x)==2 else '0' + x
+        return zpad(hex(red)[2:]) + zpad(hex(green)[2:]) + zpad(hex(blue)[2:])
+
 
     def path_following_stage_cost(self, start, goal, x, u, i, terminal=False):
         Q = self.Q_terminal if terminal else self.Q
@@ -1108,6 +1121,19 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         target = self.target_goal
         path_color = '#000000'
+
+        if len(self.exp.get_goals()) < 4:
+            # Use the colors for smaller examples
+            goal_colors = ['#980000', '#f1c232', '#1155cc', '#9900ff', '#e69138', '#f1c232']
+        else:
+            if self.exp.get_exp_label() == 'study_edge':
+                # no red
+                goal_colors = ['#e69138', '#f1c232', '#38761d', '#1155cc', '#9900ff']
+            else:
+                # no order
+                goal_colors = ['#980000', '#f1c232', '#38761d', '#1155cc', '#9900ff']
+
+
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
@@ -1205,8 +1231,8 @@ class LegiblePathQRCost(FiniteDiffCost):
         axarr.scatter(xs, ys, c=outline_grad, s=20)
         axarr.scatter(xs, ys, c=color_grad, s=10)
 
-
         axarr.legend(loc="upper left")
+        axarr.get_legend().remove()
         axarr.grid(False)
 
         # Deprecated method because this only accounts for one set of points, 
@@ -1224,6 +1250,15 @@ class LegiblePathQRCost(FiniteDiffCost):
             axarr.set_xlim(right=xmax)
         if ymax > y_max_cur:
             axarr.set_ylim(top=ymax)
+
+        # plt.savefig(Path(self.get_export_label(dash_folder) + '-solo.png'))
+
+        # # fig = plt.figure()
+        # extent = axarr.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        # fig.savefig(Path(self.get_export_label(dash_folder) + '-solo2.png'), bbox_inches=extent)
+
+        # # Pad the saved area by 10% in the x-direction and 20% in the y-direction
+        # fig.savefig(Path(self.get_export_label(dash_folder) + '-solo3.png'), bbox_inches=extent.expanded(1.1, 1.2))
 
         return axarr
 
@@ -1638,6 +1673,401 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
+    def draw_defense_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
+        fig, axarr = plt.subplots()
+        axarr.set_xlim((0, 6))
+        axarr.set_ylim((.5, -4.5))
+
+        axarr.set_aspect('equal')
+        # axarr.grid(axis='y')
+
+        # TABLE_RADIUS    = self.exp.get_table_radius()
+        OBS_RADIUS      = 0 #self.exp.get_observer_radius()
+        GOAL_RADIUS     = self.exp.get_goal_radius()
+        OBS_BUFFER      = 0 #self.exp.get_obstacle_buffer()
+
+        TABLE_RADIUS_BUFFER             = 0 #self.exp.get_table_radius() + self.exp.get_obstacle_buffer()
+        OBSERVER_RADIUS_BUFFER          = 0 #self.exp.get_observer_radius() + self.exp.get_obstacle_buffer()
+        GOAL_RADIUS_BUFFER              = 0 #self.exp.get_goal_radius() + self.exp.get_obstacle_buffer()
+
+        # tables      = self.restaurant.get_tables()
+        observers   = self.restaurant.get_observers()
+        local_distance = self.exp.get_local_distance()
+
+        if self.exp.get_state_size() == 4:
+            xs, ys, x_o, y_o = zip(*verts)
+        elif self.exp.get_state_size() == 3:
+            xs, ys, thetas = zip(*verts)
+        else:
+            xs, ys = zip(*verts)
+
+        gx, gy = zip(*self.goals)
+        sx, sy = self.start[0], self.start[1]
+
+
+        # Deprecated method because this only accounts for one set of points, 
+        # and since we only add them by each run, it's better to autoscale
+        # it was useful for the colinear case, however- maybe add a case for this
+        xmin, xmax, ymin, ymax = self.get_window_dimensions_for_envir(self.start, self.goals, verts, observers)
+        x_min_cur, x_max_cur = axarr.get_xlim()
+        y_min_cur, y_max_cur = axarr.get_ylim()        
+
+        # xmin -= 10.0
+        # ymin -= 10.0
+        # xmax += 10.0
+        # ymax += 10.0
+
+        # xmin = int(xmin)
+        # ymin = int(ymin)
+        # xmax = int(xmax) + 1
+        # ymax = int(ymax) + 1
+
+        if xmin < x_min_cur:
+            axarr.set_xlim(left=xmin)
+        if ymin < y_min_cur:
+            axarr.set_ylim(bottom=ymin)
+        if xmax > x_max_cur:
+            axarr.set_xlim(right=xmax)
+        if ymax > y_max_cur:
+            axarr.set_ylim(top=ymax)
+
+        nx = (xmax - xmin) * 4
+        ny = (ymax - ymin) * 4
+
+        print("x and y bounds")
+        print(xmin, xmax, ymin, ymax)
+
+        # xmin, xmax = 0, 6
+        # xmin, xmax = .5, -4.5
+
+        ##### GET THE FORCE DIAGRAM BACKGROUND GRADIENT
+        x1 = np.linspace(xmin, xmax, 100) #nx) # np.arange(xmin, xmax, .25)
+        x2 = np.linspace(ymin, ymax, 100) #ny) # np.arange(ymin, ymax, .25) #
+
+        Y_array = []
+        goals   = self.exp.get_goals()
+
+        for i in range(len(goals)):
+            Y = np.zeros(shape=(x1.size, x2.size), dtype=float)
+            Y_array.append(copy.copy(Y))
+
+        for i, value1 in enumerate(x1):
+            for j, value2 in enumerate(x2):
+                if False:
+                    Y[i, j] = 0 #self.cost_nextbest_distance(self.exp.get_start(), self.exp.get_target_goal(), input_x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+
+                else:
+                    options = {}
+                    values = {}
+
+                    for gi in range(len(self.exp.get_goals())):
+                        input_x = np.array([value1, value2, value1, value2])
+                        input_u = np.array([0, 0])
+
+                        start           = self.exp.get_start()
+                        x               = np.asarray([value1, value2])
+                        target_goal     = goals[gi]
+
+                        closest_goal        = self.exp.get_closest_any_goal_to_x(x)
+                        closest_goal2       = self.exp.get_second_closest_any_goal_to_x(x)
+
+                        if target_goal in [closest_goal, closest_goal2]:                            
+                            if closest_goal == target_goal:
+                                target_costs = 1.0 - self.cost_nextbest_distance(start, target_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+                            else:
+                                target_costs = self.cost_nextbest_distance(start, closest_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+                        else:
+                            target_costs = 0
+
+                        if target_costs < 0.5:
+                            target_costs = 0.0
+
+
+
+                        # value   = self.cost_nextbest_distance(self.exp.get_start(), goals[gi], input_x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1) #gradient_descent(w_temp, X_scaled, y)[1]
+                        Y_array[gi][i, j] = target_costs
+
+
+                    # # print(values)
+                    # # print(values.keys())
+
+                    # sorted_values   = list(values.keys())
+                    # # print(sorted_values)
+                    # sorted_values.sort()
+                    # # print(sorted_values)
+
+                    # best_one        = sorted_values[0]
+                    # best_two        = sorted_values[1]
+
+                    # goal_one = values[best_one]
+                    # goal_two = values[best_two]
+
+
+                    # goals = self.exp.get_goals()
+
+                    # for gi in range(len(goals)):
+                    #     g = goals[gi]
+                    #     if goal_one == g:
+                    #         color_one = goal_colors[gi]
+
+                    #     if goal_two == g:
+                    #         color_two = goal_colors[gi]
+
+                    # color_mixed = self.combine_hex_values({color_one[1:]: best_one, color_two[1:]: best_two})
+
+                    # Y[i, j] = color_mixed
+
+        # step = 0.02
+        # m = np.amax(Y)
+        # levels = np.arange(0.0, m, step) + step
+        # levels = [0.0, .25, .5, .74, .99, .999, .9999, .99999, 1.0]
+        levels = [0.0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
+
+        levels = [0.0, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .9, .95, 1.0]
+        levels.remove(0)
+
+        # print("LEVEL LIST")
+        # print(np.unique(Y))
+        # levels = list(np.unique(Y))
+
+      
+        # axarr.axhline(0, color='black', alpha=.5, dashes=[2, 4],linewidth=1)
+        # axarr.axvline(0, color='black', alpha=0.5, dashes=[2, 4],linewidth=1)
+        # for i in range(len(old_w) - 1):
+        #     plt.annotate('', xy=all_ws[i + 1, :], xytext=all_ws[i, :],
+        #                  arrowprops={'arrowstyle': '->', 'color': 'r', 'lw': 1},
+        #                  va='center', ha='center')
+         
+        if False:
+            if len(levels) > 1:
+                axarr.contourf(x1, x2, Y.transpose(), levels, alpha=.8, cmap=cm.PuBu_r, locator=mtick.LogLocator()) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+            else:
+                print("no levels just " + str(levels))
+       
+
+        for gi in range(len(goals)):
+            Y           = Y_array[gi]
+            goal_color  = goal_colors[gi] #.replace("#", "")
+            # goal_color  = "222222"
+
+            print("GOAL INDEX FOR PAINTING: " + str(gi))
+            print(goal_color)
+
+            # get colormap
+            ncolors = len(levels)
+
+            goal_rgb = colors.hex2color(goal_color) #tuple(int(goal_color[i:i+2], 16) for i in (0, 2, 4))
+
+            print("goal rgb " + str(goal_rgb))
+
+            # cdict = {'red': ((0., 1., 1.),
+            #          (1., 0., 0.)),
+            #  'green': ((0., 1., 1.),
+            #            (1., 0.5, 0.5)),
+            #  'blue': ((0., 1., 1.),
+            #           (1., 1., 1.)),
+            #  'alpha': ((0., 0., 0.),
+            #            (1., 1., 1.))}
+
+
+            cdict = {
+             'red': ((0., goal_rgb[0], goal_rgb[0]),
+                     (1., goal_rgb[0], goal_rgb[0])),
+
+             'green': ((0., goal_rgb[1], goal_rgb[1]),
+                       (1., goal_rgb[1], goal_rgb[1])),
+
+             'blue': ((0., goal_rgb[2], goal_rgb[2]),
+                      (1., goal_rgb[2], goal_rgb[2])),
+
+             'alpha': ((0., 0., 0.),
+                       (1, .95, .95))}
+
+            goal = goals[gi]
+
+            # colormap from dict
+            map_title   = 'test' + str(gi)
+            testcmap    = colors.LinearSegmentedColormap(map_title, cdict, N=ncolors)
+
+            print("Applying paint for " + str(goal) + " - " + str(goal_color) + " " + str(self.exp.get_target_goal()))
+            print(list(np.unique(Y_array[gi])))
+            axarr.contourf(x1, x2, Y.transpose(), levels, cmap=testcmap, alpha=None) #, interpolation='nearest') #locator=mtick.LogLocator()) #alpha=None, , locator=mtick.LogLocator()) #, cmap=cm.PuBu_r) #, locator=mtick.LogLocator()
+            # axarr.contour(x1, x2, Y.transpose(), levels, cmap=testcmap, alpha=None, locator=mtick.LogLocator())
+
+
+        # axarr.imshow(Y.transpose()) #, interpolation='none')
+
+
+        axarr.set_title("Contour Plot of Gradient Descent")
+
+        axarr.set_xlim([xmin, xmax])
+        axarr.set_ylim([ymin, ymax])
+
+        # CS = axarr.contour(x1, x2, Y.transpose(), levels, locator=mtick.LogLocator()) #, colors='black') linewidths=1, 
+        # axarr.clabel(CS, inline=1, fontsize=8)
+
+
+        # cbar = fig.colorbar(cs)
+
+
+        # https://stackoverflow.com/questions/21712068/overlaying-contour-lines-on-top-of-contourf-plot
+        # axarr.xlabel("w0")
+        # axarr.ylabel("w1")
+
+        # for table in tables:
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS_BUFFER, color='#AFE1AF', clip_on=False)
+        #     axarr.add_patch(table)
+
+        #     table = plt.Circle(table.get_center(), TABLE_RADIUS, color='#097969', clip_on=False)
+        #     axarr.add_patch(table)
+
+        for observer in observers:
+            obs_color = 'orange'
+            obs_color_outer = '#f8d568'
+            obs_pt  = observer.get_center()
+            if not multilayer_draw:
+                obs     = plt.Circle(obs_pt, OBSERVER_RADIUS_BUFFER, color=obs_color_outer, clip_on=False)
+                axarr.add_patch(obs)
+
+                obs     = plt.Circle(obs_pt, OBS_RADIUS, color=obs_color, clip_on=False)
+                axarr.add_patch(obs)
+
+            ox, oy = obs_pt
+            THETA_ARROW_RADIUS = 1
+            r = THETA_ARROW_RADIUS
+
+            # u, v = x * (np.cos(y), np.sin(y))
+
+            angle = observer.get_orientation()
+            angle_rads = angle * np.pi / 180
+            # ax1.arrow(x, y, r*np.cos(theta), r*np.sin(theta), length_includes_head=False, color=obs_color, width=.06)
+            # ax1.quiver(x, y, r*np.cos(theta), r*np.sin(theta), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(angle_rads), r*np.sin(angle_rads), color=obs_color)
+
+            half_fov = self.exp.get_FOV() / 2.0
+            obs_color = 'yellow'
+            fov1 = (angle + half_fov) % 360
+            fov2 = (angle - half_fov) % 360
+
+            fov1_rads = fov1 * np.pi / 180
+            fov2_rads = fov2 * np.pi / 180
+
+            # print("fov1, angle, fov2")
+            # print(fov1, angle, fov2)
+
+            # print("arrow1")
+            # print(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads))
+            # print("arrow2")
+            # print(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads))
+            
+            axarr.arrow(ox, oy, r*np.cos(fov1_rads), r*np.sin(fov1_rads), color=obs_color)
+            axarr.arrow(ox, oy, r*np.cos(fov2_rads), r*np.sin(fov2_rads), color=obs_color)
+
+            # ax1.arrow(x, y, r*np.cos(theta - half_fov), r*np.sin(theta - half_fov), length_includes_head=False, color=obs_color, width=.03)
+            # ax1.arrow(x, y, r*np.cos(theta + half_fov), r*np.sin(theta + half_fov), length_includes_head=False, color=obs_color, width=.03)
+
+        # # COLOR BASED ON VISIBILITY
+        # # Color code the goals for ease of reading graphs
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        path_color = '#000000'
+        for j in range(len(self.goals)):
+            goal = self.goals[j]
+            color = goal_colors[j]
+            plt.Circle(goal, local_distance, color='#555555', clip_on=False)
+
+            if goal is self.target_goal:
+                target_color = color
+
+            gx, gy = goal[:2]
+            if gx == target[0] and gy == target[1]:
+                path_color = color
+            if np.array_equal(self.exp.get_target_goal()[:2],  goal[:2]):
+                path_color = color
+
+        # color_grad_1 = self.get_color_gradient('#FFFFFF', '#f4722b', len(xs))
+        # color_grad_2 = self.get_color_gradient('#FFFFFF', '#13678A', len(xs))
+
+        ### DRAW INDICATOR OF IF IN SIGHT OR NOT
+        print("Overall legibility of path to goal")
+        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        
+        in_vis = None
+        if len(vs) > 0:
+            in_vis = [i > 0 for i in vs[0]]
+        else:
+            in_vis = [True for i in ls]
+
+        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
+
+        color_grad_1 = self.get_color_gradient(path_color, path_color, len(in_vis))
+        color_grad_2 = self.get_color_gradient(path_color, path_color, len(in_vis))
+
+        color_grad = []
+        outline_grad = []
+        for i in range(len(in_vis)):
+            can_see = True #in_vis[i]
+            # print(can_see)
+
+            if can_see == True:
+                color_grad.append(color_grad_1[i])
+                outline_grad.append(color_grad_2[i])
+                # outline_grad.append('#13678A')
+            else:
+                color_grad.append(color_grad_2[i])
+                outline_grad.append(color_grad_1[i])
+                # outline_grad.append('#f4722b')
+
+        axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
+        _ = axarr.set_xlabel("X", fontweight='bold')
+        _ = axarr.set_ylabel("Y", fontweight='bold')
+        blurb = self.exp.get_solver_status_blurb()
+        _ = axarr.set_title("Path through space", fontweight='bold')
+        # plt.show()
+        # exit()
+
+        target = self.target_goal
+        # for each goal, graph legibility
+        for j in range(len(self.exp.get_goals())):
+            goal = self.exp.get_goals()[j]
+            color = goal_colors[j]
+
+            gx, gy = goal
+
+            if gx == target[0] and gy == target[1]:
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0, label="target")
+            else:
+                if not multilayer_draw:
+                    g = plt.Circle(goal, GOAL_RADIUS_BUFFER, color='#aaaaaa', clip_on=False)
+                    axarr.add_patch(g)
+
+                    g = plt.Circle(goal, GOAL_RADIUS, color='#333333', clip_on=False)
+                    axarr.add_patch(g)
+                axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
+
+        # Draw the path itself
+        if False:
+            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+            axarr.scatter(xs, ys, c=outline_grad, s=20, zorder=1)
+            axarr.scatter(xs, ys, c=color_grad, s=10, zorder=1)
+
+            axarr.legend(loc="upper left")
+
+        axarr.grid(False)
+
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-defense.png'))
+        plt.clf()
+        plt.close()
+
+        # plt.savefig(Path(self.get_export_label(dash_folder) + '-force.png'))
+        # plt.show()
+        # exit()
+
+        return axarr
+
     def draw_vislocal_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None, just_target=False):
         axarr = ax
 
@@ -1963,21 +2393,27 @@ class LegiblePathQRCost(FiniteDiffCost):
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
 
-        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
-        ax0 = axes0['A']
-        if FLAG_BONUS_GRAPHICS:
-            ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=True)
+        # fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        # ax0 = axes0['A']
+        # if FLAG_BONUS_GRAPHICS:
+        #     ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=True)
 
-        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
-        ax0 = axes0['A']
-        if FLAG_BONUS_GRAPHICS:
-            ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=False)
+        # fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        # ax0 = axes0['A']
+        # if FLAG_BONUS_GRAPHICS:
+        #     ax0 = self.draw_vislocal_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder, just_target=False)
 
-        fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
-        ax0 = axes0['A']
-        if FLAG_BONUS_GRAPHICS:
-            ax0 = self.draw_force_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
+        # fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        # ax0 = axes0['A']
+        # if FLAG_BONUS_GRAPHICS:
+        #     ax0 = self.draw_force_diagram(verts, us, elapsed_time=None, ax=ax0, info_packet=status_packet, dash_folder=dash_folder)
         
+
+        # fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
+        # ax0 = axes0['A']
+        # if FLAG_BONUS_GRAPHICS:
+        self.draw_defense_diagram(verts, us, elapsed_time=None, ax=None, info_packet=status_packet, dash_folder=dash_folder)
+
         # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
         
         # plt.figure(figsize=(12, 6))
@@ -2009,7 +2445,18 @@ class LegiblePathQRCost(FiniteDiffCost):
         ax_none = axes['C']
         ax_none.axis('off')
 
+        fig, axes = plt.subplot_mosaic("A", figsize=(12, 6), gridspec_kw={'height_ratios':[1], 'width_ratios':[1]})
+        # fig, axes = plt.subplot_mosaic("AAB;AAC;DEF")
+        ax1 = axes['A'] # plot of movements in space
+        
         ax1 = self.get_overview_pic(verts, us, elapsed_time=None, ax=ax1, info_packet=status_packet)
+
+        plt.tight_layout()
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-overview.png'))
+        if FLAG_SHOW_IMAGE_POPUP:
+            plt.show()
+        plt.clf()
+        return
 
         ax5.axis('off')
         debug_text = self.get_debug_text(elapsed_time)
@@ -2190,6 +2637,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         _ = ax2.set_ylabel("Legibility", fontweight='bold')
         _ = ax2.set_title("Legibility according to old", fontweight='bold')
         ax2.legend() #loc="upper left")
+        ax2.get_legend().remove()
         ax2.set_ylim([-0.05, 1.05])
 
         _ = ax3.set_xlabel("Time", fontweight='bold')

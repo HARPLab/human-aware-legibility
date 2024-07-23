@@ -1372,7 +1372,8 @@ class RelevantPathQRCost(LegiblePathQRCost):
             tg              = closest_goal
 
             if tg != goal and (self.exp.dist_between(tg, x) < goal_keepout_distance):
-                val_understanding_secondary = 100.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
+                # val_understanding_secondary = 
+                val_understanding_secondary = 10.0 * self.cost_nextbest_distance(start, tg, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, goal_list=[closest_goal, goal])
 
                 # if x[1] > -1.0:
                     # val_understanding_secondary += 10000.0 * x[1]
@@ -1924,7 +1925,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
 
         if goal_list == None:
             # Find and compare to the closest two non-target goals
-            comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x_nobacktrack(x, num=2) #self.exp.get_closest_daj_goalp_to_x(x, num=num)
+            comparison_goals_group = self.exp.get_closest_nontarget_goalp_to_x_nobacktrack(x, num=num) #self.exp.get_closest_daj_goalp_to_x(x, num=num)
             comparison_goals_group.append(goal)
         else:
             comparison_goals_group = goal_list

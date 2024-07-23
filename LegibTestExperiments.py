@@ -1,4 +1,4 @@
-purpose = "60_nova_duo_happy" #with_boost" #locked_denom" #sig_lite" #_sec" #5t_10s_l10_weighted_both" force_
+purpose = "60_nova_yay_defense_rgb_nextbest4_back" #with_boost" #locked_denom" #sig_lite" #_sec" #5t_10s_l10_weighted_both" force_
 # purpose = "53_sec_diff"
 # purpose = "exp_52_solo_maxp5_2xval" #local_revert"  #og_more_dense" #
 # purpose = "exp_48_legnew_novisl_raw_wthd_e-4" #_10x"
@@ -346,6 +346,8 @@ def test_study_set(dash_folder, scenario_filters):
     # scale_set = [1, 5/4.0, 5/3.0, 5/2.0, 5.0][::-1]
     # scale_set = [1, 5/4.0, 5/2.0][::-1]
 
+    scale_set = [1]
+
 
     # scale_exp = [8, 4, 2, 0]
     # observer_gap = 1 #1.5
@@ -501,9 +503,9 @@ def test_study_set(dash_folder, scenario_filters):
 
     # study_vars
 
-    lam = 1.8 #.75s
-    numit = 50
-    obs_size = 0.75 #75 #5 #75 #.75 #0.5 #1.0 #.5 #.5 #.95 #.5
+    lam         = .75 #.75s
+    numit       = 5
+    obs_size    = 0 #0.5 #0.75 #75 #5 #75 #.75 #0.5 #1.0 #.5 #.5 #.95 #.5
     
     # scale_exp           = [-.66,    .66,      0]
     # # scale_exp           = [-.75,    .75,      0]
@@ -512,14 +514,14 @@ def test_study_set(dash_folder, scenario_filters):
     # lam_values          = [lam,     lam,    lam]
     # num_itr_list        = [numit,   numit,  numit] # [1, 1, 1]
 
-    scale_exp           = [-.66,            .66,    0]
+    # scale_exp           = [-.66,            .66]
     # scale_exp           = [-.85,            .85]
     # scale_exp           = [-.75,    .75,      0]
     # scale_exp           = [-.8,    .8,      0]
-    scale_exp           = [-.5,    .5,      0]
-    target_buffer_dist  = [obs_size,      obs_size, obs_size]
-    lam_values          = [lam,     lam,    lam]
-    num_itr_list        = [numit,   numit, numit] # [1, 1, 1]
+    scale_exp           = [0]
+    target_buffer_dist  = [obs_size]
+    lam_values          = [lam]
+    num_itr_list        = [numit] # [1, 1, 1]
 
     # scale_exp           = [0,        0,      0]
     # # scale_exp           = [-.75,    .75,      0]
@@ -645,6 +647,7 @@ def test_study_set(dash_folder, scenario_filters):
                     cost.get_overview_pic(verts, us, ax=ax, info_packet=info_packet, dash_folder=dash_folder, multilayer_draw=True)
                     _ = ax.set_title(label, fontweight='bold')
                     ax.set_aspect('equal')
+                    ax.legend()
                     ax.get_legend().remove()
                     max_key = key
 
@@ -685,7 +688,7 @@ def test_study_set(dash_folder, scenario_filters):
             _ = ax.set_title(label, fontweight='bold')
             ax.set_xlim([-.05, 6.05])
             ax.set_ylim([-4, 0])
-
+            ax.legend()
             ax.get_legend().remove()
             max_key = key
 
