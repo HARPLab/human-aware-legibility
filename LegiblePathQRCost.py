@@ -1661,7 +1661,7 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         return axarr
 
-    def draw_defense_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
+    def draw_defense_diagram(self, verts, us, outputs=None, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
         fig, axarr = plt.subplots()
         # axarr.set_xlim((0, 6))
         # axarr.set_ylim((.5, -4.5))
@@ -1682,12 +1682,19 @@ class LegiblePathQRCost(FiniteDiffCost):
         observers   = self.restaurant.get_observers()
         local_distance = self.exp.get_local_distance()
 
-        if self.exp.get_state_size() == 4:
-            xs, ys, x_o, y_o = zip(*verts)
-        elif self.exp.get_state_size() == 3:
-            xs, ys, thetas = zip(*verts)
+        if outputs is not None:
+            verts = []
+            xs = []
+            ys = []
+
         else:
-            xs, ys = zip(*verts)
+            if self.exp.get_state_size() == 4:
+                xs, ys, x_o, y_o = zip(*verts)
+            elif self.exp.get_state_size() == 3:
+                xs, ys, thetas = zip(*verts)
+            else:
+                xs, ys = zip(*verts)
+
 
         gx, gy = zip(*self.goals)
         sx, sy = self.start[0], self.start[1]
@@ -2013,34 +2020,35 @@ class LegiblePathQRCost(FiniteDiffCost):
 
         ### DRAW INDICATOR OF IF IN SIGHT OR NOT
         print("Overall legibility of path to goal")
-        ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
+        if outputs is None:
+            ls, scs, tcs, vs = self.get_legibility_of_path_to_goal(verts, us, self.exp.get_target_goal())
         
-        in_vis = None
-        if len(vs) > 0:
-            in_vis = [i > 0 for i in vs[0]]
-        else:
-            in_vis = [True for i in ls]
+        # in_vis = None
+        # if len(vs) > 0:
+        #     in_vis = [i > 0 for i in vs[0]]
+        # else:
+        #     in_vis = [True for i in ls]
 
-        color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
-        color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
+        # color_grad_1 = self.get_color_gradient('#FFFFFF', path_color, len(in_vis))
+        # color_grad_2 = self.get_color_gradient(path_color, '#000000', len(in_vis))
 
-        color_grad_1 = self.get_color_gradient(path_color, path_color, len(in_vis))
-        color_grad_2 = self.get_color_gradient(path_color, path_color, len(in_vis))
+        # color_grad_1 = self.get_color_gradient(path_color, path_color, len(in_vis))
+        # color_grad_2 = self.get_color_gradient(path_color, path_color, len(in_vis))
 
-        color_grad = []
-        outline_grad = []
-        for i in range(len(in_vis)):
-            can_see = True #in_vis[i]
-            # print(can_see)
+        # color_grad = []
+        # outline_grad = []
+        # for i in range(len(in_vis)):
+        #     can_see = True #in_vis[i]
+        #     # print(can_see)
 
-            if can_see == True:
-                color_grad.append(color_grad_1[i])
-                outline_grad.append(color_grad_2[i])
-                # outline_grad.append('#13678A')
-            else:
-                color_grad.append(color_grad_2[i])
-                outline_grad.append(color_grad_1[i])
-                # outline_grad.append('#f4722b')
+        #     if can_see == True:
+        #         color_grad.append(color_grad_1[i])
+        #         outline_grad.append(color_grad_2[i])
+        #         # outline_grad.append('#13678A')
+        #     else:
+        #         color_grad.append(color_grad_2[i])
+        #         outline_grad.append(color_grad_1[i])
+        #         # outline_grad.append('#f4722b')
 
         axarr.plot(sx, sy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor="grey", lw=0, label="start")
         _ = axarr.set_xlabel("X", fontweight='bold')
@@ -2069,13 +2077,33 @@ class LegiblePathQRCost(FiniteDiffCost):
                     axarr.add_patch(g)
                 axarr.plot(gx, gy, marker="o", markersize=10, markeredgecolor="black", markerfacecolor=color, lw=0) #, label=goal)
 
-        # Draw the path itself
-        if False:
-            axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
-            axarr.scatter(xs, ys, c=outline_grad, s=20, zorder=1)
-            axarr.scatter(xs, ys, c=color_grad, s=10, zorder=1)
+        plt.savefig(Path(self.get_export_label(dash_folder) + '-nopath.png'))
 
-            axarr.legend(loc="upper left")
+        # Draw the path itself
+        if outputs != None:
+            for key in outputs.keys():
+                ax_tuple, goal_key = key
+                verts, us, cost, label = outputs[key]
+
+
+                if self.exp.get_state_size() == 4:
+                    xs, ys, x_o, y_o = zip(*verts)
+                elif self.exp.get_state_size() == 3:
+                    xs, ys, thetas = zip(*verts)
+                else:
+                    xs, ys = zip(*verts)
+
+
+                goal_index  = goal_key
+                path_color  = goal_colors[goal_index]
+
+
+
+                axarr.plot(xs, ys, linestyle='dashed', lw=1, color='black', label="path", markersize=0)
+                axarr.scatter(xs, ys, c='black', s=20, zorder=1)
+                axarr.scatter(xs, ys, c=path_color, s=10, zorder=1)
+
+            # axarr.legend(loc="upper left")
 
         axarr.grid(False)
 
@@ -2433,7 +2461,7 @@ class LegiblePathQRCost(FiniteDiffCost):
         # fig0, axes0 = plt.subplot_mosaic("A", figsize=(8, 6))
         # ax0 = axes0['A']
         # if FLAG_BONUS_GRAPHICS:
-        self.draw_defense_diagram(verts, us, elapsed_time=None, ax=None, info_packet=status_packet, dash_folder=dash_folder)
+        # self.draw_defense_diagram(verts, us, elapsed_time=None, ax=None, info_packet=status_packet, dash_folder=dash_folder)
 
         # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(3, 2, figsize=(8, 6.5), gridspec_kw={'height_ratios': [4, 4, 1]})
         
