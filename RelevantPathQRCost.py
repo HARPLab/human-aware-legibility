@@ -1252,9 +1252,9 @@ class RelevantPathQRCost(LegiblePathQRCost):
             closest_goal            = self.exp.get_closest_any_goal_to_x(x)
 
             if closest_goal == goal:
-                target_costs = 1.0 - self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+                target_costs = 1.0 - self.cost_nextbest_distance(start, goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
             else:
-                target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+                target_costs = self.cost_nextbest_distance(start, closest_goal, x, u, i, terminal, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
 
 
             # if closest_goal == goal:
@@ -1912,7 +1912,7 @@ class RelevantPathQRCost(LegiblePathQRCost):
         return (1.0) - P_oa
 
 
-    def cost_nextbest_distance(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None, num=2, goal_list=None, P_all_returned=False):
+    def cost_nextbest_distance(self, start_input, goal_input, x_triplet, u_input, i_step, terminal, visibility_coeff, override=None, num=None, goal_list=None, P_all_returned=False):
         x       = (x_triplet[:2])
         u       = u_input
         start   = (start_input[:2])

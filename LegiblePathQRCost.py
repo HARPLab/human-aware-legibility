@@ -1122,18 +1122,6 @@ class LegiblePathQRCost(FiniteDiffCost):
         target = self.target_goal
         path_color = '#000000'
 
-        if len(self.exp.get_goals()) < 4:
-            # Use the colors for smaller examples
-            goal_colors = ['#980000', '#f1c232', '#1155cc', '#9900ff', '#e69138', '#f1c232']
-        else:
-            if self.exp.get_exp_label() == 'study_edge':
-                # no red
-                goal_colors = ['#e69138', '#f1c232', '#38761d', '#1155cc', '#9900ff']
-            else:
-                # no order
-                goal_colors = ['#980000', '#f1c232', '#38761d', '#1155cc', '#9900ff']
-
-
         for j in range(len(self.goals)):
             goal = self.goals[j]
             color = goal_colors[j]
@@ -1675,8 +1663,8 @@ class LegiblePathQRCost(FiniteDiffCost):
 
     def draw_defense_diagram(self, verts, us, elapsed_time=None, multilayer_draw=False, ax=None, info_packet=None, fn_note="", dash_folder=None):
         fig, axarr = plt.subplots()
-        axarr.set_xlim((0, 6))
-        axarr.set_ylim((.5, -4.5))
+        # axarr.set_xlim((0, 6))
+        # axarr.set_ylim((.5, -4.5))
 
         axarr.set_aspect('equal')
         # axarr.grid(axis='y')
@@ -1737,6 +1725,22 @@ class LegiblePathQRCost(FiniteDiffCost):
         print("x and y bounds")
         print(xmin, xmax, ymin, ymax)
 
+
+        if len(self.exp.get_goals()) < 4:
+            # Use the colors for smaller examples
+            goal_colors = ['#980000', '#f1c232', '#1155cc', '#9900ff', '#e69138', '#f1c232']
+        else:
+            if self.exp.get_exp_label() == 'study_edge':
+                # no red
+                goal_colors = ['#e69138', '#f1c232', '#38761d', '#1155cc', '#9900ff']
+            else:
+                # no order
+                goal_colors = ['#980000', '#f1c232', '#38761d', '#1155cc', '#9900ff']
+
+
+        print("Study label")
+        print(self.exp.get_exp_label())
+
         # xmin, xmax = 0, 6
         # xmin, xmax = .5, -4.5
 
@@ -1771,21 +1775,35 @@ class LegiblePathQRCost(FiniteDiffCost):
                         closest_goal        = self.exp.get_closest_any_goal_to_x(x)
                         closest_goal2       = self.exp.get_second_closest_any_goal_to_x(x)
 
-                        if target_goal in [closest_goal, closest_goal2]:                            
+                        # if this goal is one of the two closest goals
+                        if True: #target_goal in [closest_goal, closest_goal2]:       
+                            # if it's the closest goal
+                            # get the cost wrt the one close by                     
                             if closest_goal == target_goal:
-                                target_costs = 1.0 - self.cost_nextbest_distance(start, target_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
+                                # Probability of the goal itself
+                                P_target = self.cost_nextbest_distance(start, target_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2)
                             else:
-                                target_costs = self.cost_nextbest_distance(start, closest_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1)
-                        else:
-                            target_costs = 0
 
-                        if target_costs < 0.5:
-                            target_costs = 0.0
+                                # if it's the second closest goal
+                                # cost is the cost of the highest probability goal
+                                p_d, top_goals, top_values = self.cost_nextbest_distance(start, closest_goal, x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=2, P_all_returned=True)
+                                
+                                if target_goal in top_goals:
+                                    # and extract the value for this goal
+                                    for ti in range(len(top_goals)):
+                                        if top_goals[ti] == target_goal:
+                                            P_target = top_values[ti]
+
+                                else:
+                                    P_target = 0
+
+                        # if target_costs < 0.5:
+                        #     target_costs = 0.0
 
 
 
                         # value   = self.cost_nextbest_distance(self.exp.get_start(), goals[gi], input_x, input_u, None, False, True, override={'mode_heading':None, 'mode_dist':'exp', 'mode_blend':None}, num=1) #gradient_descent(w_temp, X_scaled, y)[1]
-                        Y_array[gi][i, j] = target_costs
+                        Y_array[gi][i, j] = P_target
 
 
                     # # print(values)
@@ -1823,7 +1841,10 @@ class LegiblePathQRCost(FiniteDiffCost):
         # levels = [0.0, .25, .5, .74, .99, .999, .9999, .99999, 1.0]
         levels = [0.0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0]
 
+        #  
         levels = [0.0, .05, .1, .15, .2, .25, .3, .35, .4, .45, .5, .55, .6, .65, .7, .75, .8, .85, .9, .95, 1.0]
+
+        # levels = [0.0, .5, .55, .6, .65, .7, .75, .8, .85, .9, .95, 1.0]
         levels.remove(0)
 
         # print("LEVEL LIST")
@@ -1881,7 +1902,7 @@ class LegiblePathQRCost(FiniteDiffCost):
                       (1., goal_rgb[2], goal_rgb[2])),
 
              'alpha': ((0., 0., 0.),
-                       (1, .95, .95))}
+                       (1, .5, .5))}
 
             goal = goals[gi]
 
