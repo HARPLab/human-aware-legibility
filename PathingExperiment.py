@@ -257,12 +257,12 @@ class PathingExperiment():
 
         # return Urefline
 
-        step_vector = [0.0, 0.0]
+        step_vector = [0.0, +0.1]
         u_blank  = np.asarray(step_vector)
         Urefline = np.tile(u_blank, (N, 1))
         Urefline = np.reshape(Urefline, (-1, action_size))
 
-        return Urefline
+
 
         # crow_flies_vector = [goal[0] - start[0], goal[1] - start[1]]
         # step_vector = [1.0 * crow_flies_vector[0] / N, 1.0 * crow_flies_vector[1] / N]
@@ -277,9 +277,10 @@ class PathingExperiment():
         #     Urefline = np.reshape(Urefline, (-1, action_size))
         #     return Urefline
         ##
-        if self.is_segment("A", "C"):
+        if self.dist_between(goal_a, goal_c) == self.dist_between(start, goal):
+            print("detected that we are AC")
             # return int(resolution * 2)
-            step_vector = [step_vector[0] - 0.5, step_vector[1]] #[-0.01, 0] # Add a bias
+            step_vector = [step_vector[0], step_vector[1] - 0.5] #[-0.01, 0] # Add a bias
 
 
         # if self.is_segment("A", "D"):
